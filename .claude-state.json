@@ -1,0 +1,22 @@
+{
+  "sesion_fecha": "2026-09-28",
+  "hora_estado": "18:25 UTC",
+  "resuelto": [
+    "Worker con lógica de /api/sync (GET/POST)",
+    "Secret GITHUB_TOKEN guardado en Cloudflare Dashboard",
+    "Deployment nuevo e94f6d78 en producción (hace 4-5 min)",
+    "Auditoría de código: worker.js y wrangler.toml sin bugs"
+  ],
+  "diagnostico_realizado": "Secret agregado DESPUES del deployment anterior (7399ab2e) — Cloudflare requiere redeploy nuevo para que el secret sea visible. Push de docs ejecutado para forzar ese redeploy. e94f6d78 ahora en producción.",
+  "siguiente": [
+    "Confirmar GET /api/sync devuelve {expedientes:[], areas:[], responsables:[]}",
+    "Si error persiste: revisar logs en Cloudflare → Deployments → e94f6d78 → Build logs",
+    "Probar POST: crear expediente desde app",
+    "Cross-device sync: cambiar en device A, verificar en device B"
+  ],
+  "deployment_activo": "e94f6d78",
+  "tiempo_deploy": "3-4 minutos atras",
+  "error_reportado": "GET /api/sync aun devuelve error GITHUB_TOKEN no configurado",
+  "causa_probable": "Cache del navegador (recarga forzada Ctrl+Shift+R puede resolver)",
+  "causa_alternativa": "Secret necesita propagacion adicional en Cloudflare (esperar 1-2 min mas)"
+}
