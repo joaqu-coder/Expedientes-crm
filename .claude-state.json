@@ -9,7 +9,10 @@
     "UI: el formulario de expediente ahora usa siempre el modal. Antes en desktop (>=1024px) se dibujaba en el sidebar pero los botones Guardar/Cancelar estaban en el footer del modal, que no se abria",
     "UI: el FAB (+) estaba oculto por CSS en >=1024px, dejando desktop sin forma de crear expedientes",
     "BUG CRITICO: guardarExpediente exigia guion medio (–) mientras actualizarValidacionNumero lo convertia a guion normal (-) en cada tecla. Era imposible guardar un expediente en cualquier viewport. Unificado en validarNumeroExpediente, que acepta -, – y —",
-    "BUG en celular: filtrarCaracteresNumero bloqueaba Backspace/Delete porque los trata como caracteres invalidos. Agregada whitelist de teclas especiales (Backspace, Delete, flechas, Tab, Home, End)"
+    "BUG en celular: filtrarCaracteresNumero bloqueaba Backspace/Delete porque los trata como caracteres invalidos. Agregada whitelist de teclas especiales (Backspace, Delete, flechas, Tab, Home, End)",
+    "Campo Fecha de Vencimiento agregado: se calcula y muestra automaticamente en tiempo real al ingresar fecha de inicio y dias habiles. Formato: dia de semana + fecha completa + dias restantes",
+    "Popup elegante para errores: reemplazados todos los alert() del navegador por un popup custom dentro de la app con icono, titulo coloreado y cierre por Escape/click afuera",
+    "Color rojo en numero expediente no se desmarcaba: agregado listener 'blur' a validarNumeroExpediente para que valide cuando se va del campo"
   ],
   "verificado_con": "Playwright sobre Chromium, viewport desktop (1440x900) y mobile (390x844), contra un server local que imita al Worker. 15 checks en verde incluyendo POST real con UTF-8 (ñ, tildes, emoji).",
   "endpoints": {
