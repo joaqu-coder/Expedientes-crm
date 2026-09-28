@@ -636,12 +636,232 @@
         display: flex;
       }
     }
+
+    /* Config Popup Modal */
+    .config-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 250;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .config-overlay.active {
+      display: flex;
+    }
+
+    .config-modal {
+      background: white;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 720px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .config-modal {
+        background: var(--gray-100);
+      }
+    }
+
+    .config-header {
+      padding: 24px;
+      border-bottom: 1px solid var(--gray-300);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .config-header h2 {
+      font-size: 18px;
+      font-weight: 700;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .config-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: var(--text-muted);
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    .config-close:hover {
+      background: var(--gray-200);
+      color: var(--text);
+    }
+
+    .config-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+    }
+
+    @media (max-width: 650px) {
+      .config-body {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+    }
+
+    .config-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .config-section h3 {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--primary);
+      margin: 0 0 12px 0;
+    }
+
+    .config-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 280px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .config-list::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .config-list::-webkit-scrollbar-thumb {
+      background: var(--gray-300);
+      border-radius: 3px;
+    }
+
+    .config-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      background: var(--gray-50);
+      border-radius: 6px;
+      font-size: 13px;
+      border: 1px solid var(--gray-300);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .config-item {
+        background: var(--gray-200);
+      }
+    }
+
+    .config-item span {
+      flex: 1;
+      word-break: break-word;
+    }
+
+    .config-item button {
+      background: none;
+      border: none;
+      color: var(--red);
+      cursor: pointer;
+      font-size: 16px;
+      padding: 4px 8px;
+      margin-left: 8px;
+      transition: all 0.2s;
+      border-radius: 4px;
+    }
+
+    .config-item button:hover {
+      background: rgba(127,0,0,0.1);
+      transform: scale(1.15);
+    }
+
+    .config-input-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .config-input-group input {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid var(--gray-300);
+      border-radius: 6px;
+      font-size: 13px;
+      background: white;
+      color: var(--text);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .config-input-group input {
+        background: var(--gray-200);
+        border-color: var(--gray-300);
+      }
+    }
+
+    .config-input-group button {
+      padding: 10px 16px;
+      background: var(--green);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .config-input-group button:hover {
+      opacity: 0.9;
+      transform: translateY(-2px);
+    }
+
+    /* Botón config en header */
+    .header-btn {
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      color: var(--text);
+      padding: 8px;
+      margin: 0 4px;
+      transition: all 0.2s;
+      border-radius: 6px;
+    }
+
+    .header-btn:hover {
+      background: var(--gray-200);
+    }
   </style>
 </head>
 <body>
   <div class="app">
     <header class="header">
       <h1 class="header-title">📋 Expedientes</h1>
+      <button class="header-btn" id="btnConfig" title="Configuración">⚙️</button>
       <button class="header-menu" id="headerMenu">☰</button>
     </header>
 
@@ -686,6 +906,36 @@
 
   <button class="fab" id="fabNuevo" title="Nuevo expediente">+</button>
 
+  <!-- Modal Config -->
+  <div class="config-overlay" id="configOverlay">
+    <div class="config-modal">
+      <div class="config-header">
+        <h2>⚙️ Configuración</h2>
+        <button class="config-close" id="configClose">✕</button>
+      </div>
+      <div class="config-body">
+        <div class="config-section">
+          <h3>📍 Áreas Responsables</h3>
+          <div class="config-list" id="areasConfigList"></div>
+          <div class="config-input-group">
+            <input type="text" id="inputArea" placeholder="Nueva área">
+            <button onclick="agregarAreaDesdeInput()">+</button>
+          </div>
+        </div>
+
+        <div class="config-section">
+          <h3>👤 Responsables</h3>
+          <div class="config-list" id="responsablesConfigList"></div>
+          <div class="config-input-group">
+            <input type="text" id="inputResponsable" placeholder="Nuevo responsable">
+            <button onclick="agregarResponsableDesdeInput()">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Expediente -->
   <div class="modal-overlay" id="modalOverlay">
     <div class="modal">
       <div class="modal-header">
@@ -1064,22 +1314,22 @@
 
     function renderizarConfigAreas() {
       const html = AREAS.map(area => `
-        <div class="editable-item">
+        <div class="config-item">
           <span>${area}</span>
-          <button type="button" class="btn-small" onclick="eliminarArea('${area}')">✕</button>
+          <button type="button" onclick="eliminarArea('${area}')">✕</button>
         </div>
       `).join('');
-      document.getElementById('areasConfigList').innerHTML = html || '<small style="color: var(--text-muted);">Ninguna área</small>';
+      document.getElementById('areasConfigList').innerHTML = html || '<p style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 20px 0;">No hay áreas</p>';
     }
 
     function renderizarConfigResponsables() {
       const html = RESPONSABLES.map(r => `
-        <div class="editable-item">
+        <div class="config-item">
           <span>${r}</span>
-          <button type="button" class="btn-small" onclick="eliminarResponsable('${r}')">✕</button>
+          <button type="button" onclick="eliminarResponsable('${r}')">✕</button>
         </div>
       `).join('');
-      document.getElementById('responsablesConfigList').innerHTML = html || '<small style="color: var(--text-muted);">Ningún responsable</small>';
+      document.getElementById('responsablesConfigList').innerHTML = html || '<p style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 20px 0;">No hay responsables</p>';
     }
 
     function agregarAreaDesdeInput() {
@@ -1316,12 +1566,31 @@
       cerrarModal();
     }
 
+    // ===== FUNCIONES CONFIG MODAL =====
+    function abrirConfigModal() {
+      document.getElementById('configOverlay').classList.add('active');
+    }
+
+    function cerrarConfigModal() {
+      document.getElementById('configOverlay').classList.remove('active');
+    }
+
     // ===== EVENTOS =====
     document.getElementById('fabNuevo').addEventListener('click', abrirNuevo);
     document.getElementById('modalClose').addEventListener('click', cerrarModal);
     document.getElementById('btnCancelar').addEventListener('click', cerrarModal);
     document.getElementById('btnGuardar').addEventListener('click', guardarExpediente);
     document.getElementById('btnEliminar').addEventListener('click', eliminarExpediente);
+
+    // Config Modal Events
+    document.getElementById('btnConfig').addEventListener('click', abrirConfigModal);
+    document.getElementById('configClose').addEventListener('click', cerrarConfigModal);
+
+    document.getElementById('configOverlay').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('configOverlay')) {
+        cerrarConfigModal();
+      }
+    });
 
     document.getElementById('headerMenu').addEventListener('click', () => {
       document.getElementById('sidebar').classList.toggle('active');
