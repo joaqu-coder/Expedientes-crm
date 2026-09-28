@@ -135,61 +135,6 @@
       .sync-indicator.sync-error::before { content: '⚠️'; }
     }
 
-    .header-menu {
-      display: none;
-      background: none;
-      border: none;
-      font-size: 24px;
-      cursor: pointer;
-      color: var(--text);
-    }
-
-    @media (max-width: 1023px) {
-      .header-menu {
-        display: block;
-      }
-    }
-
-    /* Sidebar */
-    .sidebar {
-      display: none;
-      width: 350px;
-      background: white;
-      border-right: 1px solid var(--gray-300);
-      overflow-y: auto;
-      padding: 16px;
-      flex-shrink: 0;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      .sidebar {
-        background: var(--gray-100);
-      }
-    }
-
-    @media (min-width: 1024px) {
-      .app {
-        flex-direction: row;
-      }
-
-      .sidebar {
-        display: flex !important;
-        flex-direction: column;
-        gap: 20px;
-      }
-
-      .header-menu {
-        display: none !important;
-      }
-    }
-
-    .main-content {
-      flex: 1;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-    }
-
     /* Panel de Áreas */
     .panel-areas {
       background: white;
@@ -357,12 +302,6 @@
 
     .fab:hover {
       box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
-    }
-
-    @media (min-width: 1024px) {
-      .fab {
-        display: none;
-      }
     }
 
     /* Modal */
@@ -566,123 +505,6 @@
 
     .hidden {
       display: none;
-    }
-
-    /* Config Panel */
-    .config-section {
-      margin-bottom: 16px;
-    }
-
-    .config-section-title {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      margin-bottom: 8px;
-    }
-
-    .editable-list {
-      background: var(--gray-100);
-      padding: 8px;
-      border-radius: 6px;
-      margin-bottom: 8px;
-      max-height: 150px;
-      overflow-y: auto;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      .editable-list {
-        background: var(--gray-200);
-      }
-    }
-
-    .editable-item {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-      padding: 6px;
-      background: white;
-      border-radius: 4px;
-      margin-bottom: 4px;
-      font-size: 11px;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      .editable-item {
-        background: var(--gray-100);
-      }
-    }
-
-    .editable-item span {
-      flex: 1;
-      min-width: 0;
-      word-break: break-word;
-    }
-
-    .editable-item button {
-      background: var(--red);
-      color: white;
-      border: none;
-      padding: 3px 6px;
-      border-radius: 3px;
-      cursor: pointer;
-      font-size: 10px;
-      flex-shrink: 0;
-    }
-
-    .editable-item button:hover {
-      opacity: 0.8;
-    }
-
-    .add-item-row {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 12px;
-    }
-
-    .add-item-row input {
-      flex: 1;
-      padding: 6px;
-      border: 1px solid var(--gray-300);
-      border-radius: 4px;
-      font-size: 11px;
-    }
-
-    .add-item-row button {
-      padding: 6px 10px;
-      background: var(--green);
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 11px;
-      flex-shrink: 0;
-    }
-
-    .add-item-row button:hover {
-      opacity: 0.8;
-    }
-
-    @media (max-width: 1023px) {
-      .sidebar {
-        display: none;
-        position: fixed;
-        top: 44px;
-        left: 0;
-        right: 0;
-        width: 100%;
-        height: calc(100vh - 44px);
-        z-index: 150;
-        border-right: none;
-        border-bottom: 1px solid var(--gray-300);
-        padding: 12px;
-        max-height: 50vh;
-        overflow-y: auto;
-      }
-
-      .sidebar.active {
-        display: flex;
-      }
     }
 
     /* Config Popup Modal */
@@ -911,37 +733,7 @@
       <h1 class="header-title">📋 Expedientes</h1>
       <span class="sync-indicator sync-pending" id="syncIndicator">⏳ Sincronizando...</span>
       <button class="header-btn" id="btnConfig" title="Configuración">⚙️</button>
-      <button class="header-menu" id="headerMenu">☰</button>
     </header>
-
-    <aside class="sidebar" id="sidebar">
-      <div class="config-section">
-        <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 12px;">⚙️ Configuración</h3>
-
-        <div>
-          <div class="config-section-title">Áreas Responsables</div>
-          <div class="editable-list" id="areasConfigList"></div>
-          <div class="add-item-row">
-            <input type="text" id="inputArea" placeholder="Nueva área">
-            <button type="button" class="btn btn-success btn-small" onclick="agregarAreaDesdeInput()">+</button>
-          </div>
-        </div>
-
-        <div>
-          <div class="config-section-title">Responsables</div>
-          <div class="editable-list" id="responsablesConfigList"></div>
-          <div class="add-item-row">
-            <input type="text" id="inputResponsable" placeholder="Nuevo responsable">
-            <button type="button" class="btn btn-success btn-small" onclick="agregarResponsableDesdeInput()">+</button>
-          </div>
-        </div>
-      </div>
-
-      <div style="border-top: 1px solid var(--gray-300); padding-top: 12px; flex: 1; overflow-y: auto;">
-        <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 12px;">📝 Expediente</h3>
-        <form id="formulario"></form>
-      </div>
-    </aside>
 
     <main class="main-content">
       <div class="panel-areas">
@@ -1054,8 +846,9 @@
 
     // ===== VALIDACIÓN EN TIEMPO REAL =====
     function validarNumeroExpediente(valor) {
-      // Patrón: (XXX-XXXXX/YYYY) - solo guiones normales
-      const patron = /^\(\d{1,3}\s*-\s*\d{1,5}\/\d{4}\)$/;
+      // Patrón: (XXX-XXXXX/YYYY). Acepta guión normal, medio o largo porque el
+      // número suele pegarse desde Word/PDF, que reemplazan el guión por "–".
+      const patron = /^\(\d{1,3}\s*[-–—]\s*\d{1,5}\/\d{4}\)$/;
       return patron.test(valor);
     }
 
@@ -1483,8 +1276,7 @@
       document.getElementById('modalTitle').textContent = 'Nuevo Expediente';
       document.getElementById('btnEliminar').classList.add('hidden');
 
-      const formulario = window.innerWidth >= 1024 ? document.getElementById('formulario') : document.getElementById('formularioModal');
-      formulario.innerHTML = crearFormulario();
+      document.getElementById('formularioModal').innerHTML = crearFormulario();
 
       // Agregar validación en tiempo real
       const inputNumero = document.getElementById('numero');
@@ -1493,9 +1285,7 @@
         inputNumero.addEventListener('keydown', filtrarCaracteresNumero);
       }
 
-      if (window.innerWidth < 1024) {
-        document.getElementById('modalOverlay').classList.add('active');
-      }
+      document.getElementById('modalOverlay').classList.add('active');
     }
 
     function abrirEditar(id) {
@@ -1506,8 +1296,7 @@
       document.getElementById('modalTitle').textContent = `Editar: ${exp.numero}`;
       document.getElementById('btnEliminar').classList.remove('hidden');
 
-      const formulario = window.innerWidth >= 1024 ? document.getElementById('formulario') : document.getElementById('formularioModal');
-      formulario.innerHTML = crearFormulario(exp);
+      document.getElementById('formularioModal').innerHTML = crearFormulario(exp);
 
       // Agregar validación en tiempo real
       const inputNumero = document.getElementById('numero');
@@ -1517,10 +1306,7 @@
         actualizarValidacionNumero(inputNumero);
       }
 
-      if (window.innerWidth < 1024) {
-        document.getElementById('modalOverlay').classList.add('active');
-        document.getElementById('headerMenu').click(); // Cerrar sidebar
-      }
+      document.getElementById('modalOverlay').classList.add('active');
     }
 
     function cerrarModal() {
@@ -1542,10 +1328,11 @@
         return;
       }
 
-      // Validar formato del número
-      const patronNumero = /^\(\d{1,3}\s*–\s*\d{1,5}\/\d{4}\)$/;
-      if (!patronNumero.test(numero)) {
-        alert('Formato incorrecto. Usa: (XXX – XXXXX/YYYY)\nEjemplo: (363 – 12454/2024)');
+      // Misma validación que el feedback visual del campo: una sola fuente de
+      // verdad. Antes acá se exigía guión medio (–) mientras el input lo
+      // convertía a guión normal (-) en cada tecla, así que no se podía guardar.
+      if (!validarNumeroExpediente(numero)) {
+        alert('Formato incorrecto. Usa: (XXX-XXXXX/YYYY)\nEjemplo: (363-12454/2024)');
         return;
       }
 
@@ -1627,10 +1414,6 @@
       if (e.target === document.getElementById('configOverlay')) {
         cerrarConfigModal();
       }
-    });
-
-    document.getElementById('headerMenu').addEventListener('click', () => {
-      document.getElementById('sidebar').classList.toggle('active');
     });
 
     document.getElementById('modalOverlay').addEventListener('click', (e) => {

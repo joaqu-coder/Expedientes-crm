@@ -1,22 +1,23 @@
 {
   "sesion_fecha": "2026-09-28",
-  "hora_estado": "18:25 UTC",
+  "estado": "Sincronizacion automatica FUNCIONANDO en produccion",
   "resuelto": [
-    "Worker con lógica de /api/sync (GET/POST)",
-    "Secret GITHUB_TOKEN guardado en Cloudflare Dashboard",
-    "Deployment nuevo e94f6d78 en producción (hace 4-5 min)",
-    "Auditoría de código: worker.js y wrangler.toml sin bugs"
+    "Sincronizacion via Worker sin token en el navegador: /api/sync devuelve {expedientes,areas,responsables}",
+    "CAUSA RAIZ del 'GITHUB_TOKEN no configurado': el secret estaba cargado en Settings -> Builds -> Variables and secrets (solo existen durante el build). Debe ir en Settings -> Runtime variables and secrets. Confirmado con /api/health.",
+    "Revertido un [env.production] que yo habia agregado: `npx wrangler deploy` sin --env usa la config top-level, asi que mover [assets] alli dejaba el deploy sin binding ASSETS",
+    "UI: eliminado el panel de configuracion inline del sidebar. Usaba los MISMOS id que el popup (areasConfigList, inputArea, responsablesConfigList, inputResponsable), y getElementById devuelve el primero -> el popup quedaba muerto",
+    "UI: el formulario de expediente ahora usa siempre el modal. Antes en desktop (>=1024px) se dibujaba en el sidebar pero los botones Guardar/Cancelar estaban en el footer del modal, que no se abria",
+    "UI: el FAB (+) estaba oculto por CSS en >=1024px, dejando desktop sin forma de crear expedientes",
+    "BUG CRITICO: guardarExpediente exigia guion medio (–) mientras actualizarValidacionNumero lo convertia a guion normal (-) en cada tecla. Era imposible guardar un expediente en cualquier viewport. Unificado en validarNumeroExpediente, que acepta -, – y —"
   ],
-  "diagnostico_realizado": "Secret agregado DESPUES del deployment anterior (7399ab2e) — Cloudflare requiere redeploy nuevo para que el secret sea visible. Push de docs ejecutado para forzar ese redeploy. e94f6d78 ahora en producción.",
-  "siguiente": [
-    "Confirmar GET /api/sync devuelve {expedientes:[], areas:[], responsables:[]}",
-    "Si error persiste: revisar logs en Cloudflare → Deployments → e94f6d78 → Build logs",
-    "Probar POST: crear expediente desde app",
-    "Cross-device sync: cambiar en device A, verificar en device B"
-  ],
-  "deployment_activo": "e94f6d78",
-  "tiempo_deploy": "3-4 minutos atras",
-  "error_reportado": "GET /api/sync aun devuelve error GITHUB_TOKEN no configurado",
-  "causa_probable": "Cache del navegador (recarga forzada Ctrl+Shift+R puede resolver)",
-  "causa_alternativa": "Secret necesita propagacion adicional en Cloudflare (esperar 1-2 min mas)"
+  "verificado_con": "Playwright sobre Chromium, viewport desktop (1440x900) y mobile (390x844), contra un server local que imita al Worker. 15 checks en verde incluyendo POST real con UTF-8 (ñ, tildes, emoji).",
+  "endpoints": {
+    "/api/sync": "GET devuelve el JSON; POST lo escribe en GitHub",
+    "/api/health": "diagnostico: tiene_github_token, tiene_binding_assets, claves_env. No expone el valor del secret."
+  },
+  "pendiente": [
+    "Rotar el token de GitHub: circulo por el chat y quedo cargado tambien en la seccion de Builds. Rotarlo en GitHub y actualizar SOLO el secret de runtime.",
+    "Borrar el GITHUB_TOKEN que quedo en Settings -> Builds -> Variables and secrets (no sirve para nada ahi)",
+    "Verificar sync entre dos dispositivos reales (cargar en la compu, abrir en el cel)"
+  ]
 }
