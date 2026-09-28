@@ -1,0 +1,21 @@
+{
+  "expedientes": [],
+  "areas": [
+    "Jurídica",
+    "Administración",
+    "Operación",
+    "Obras",
+    "Promoción Industrial",
+    "Intervención"
+  ],
+  "responsables": [
+    "María García",
+    "Juan López",
+    "Carlos Rodríguez",
+    "Ana Martínez",
+    "Roberto Fernández",
+    "Laura Sánchez",
+    "Diego Fernández"
+  ],
+  "timestamp": "2026-09-28T20:01:28.284Z"
+}
