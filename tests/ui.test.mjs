@@ -30,7 +30,7 @@ try {
 }
 
 const HTML = fs.readFileSync(path.join(RAIZ, 'public/index.html'), 'utf8');
-const NUMERO = '(363 – 12454/2026)'; // guión medio a propósito: la app debe normalizarlo
+const NUMERO = '363 – 1254/2026-01'; // guión medio a propósito: la app debe normalizarlo
 
 let fallas = 0;
 const ok = (cond, msg) => {
@@ -120,14 +120,14 @@ async function recorrido(nombre, viewport, puerto) {
   await page.click('#btnGuardar');
   await page.waitForTimeout(800);
 
-  ok((await page.locator('#expedientesList').textContent()).includes('12454/2026'),
+  ok((await page.locator('#expedientesList').textContent()).includes('1254/2026'),
      'el expediente aparece en la lista tras guardar');
 
   const post = ctx.getUltimoPost();
   ok(post !== null, 'la app hizo POST a /api/sync al guardar');
   if (post) {
     const exp = post.expedientes?.[0];
-    ok(/^\(363\s*-\s*12454\/2026\)$/.test(exp?.numero || ''),
+    ok(/^363\s*-\s*1254\/2026\s*-\s*01$/.test(exp?.numero || ''),
        `el número se normalizó al guión del teclado ("${exp?.numero}")`);
     ok(exp?.tema === 'Expediente de prueba — Ñandú y café ☕',
        'UTF-8 (ñ, tildes, emoji) viaja intacto');

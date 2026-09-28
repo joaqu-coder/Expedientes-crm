@@ -82,7 +82,14 @@ El Worker usa `decodeURIComponent(escape(atob(...)))` al leer y
 
 ## Formato del número de expediente
 
-`(XXX-XXXXX/YYYY)` — ejemplo: `(363-12454/2024)`.
+`XXX-XXXXX/YYYY-ZZ` — **sin paréntesis**.
+
+- Mesa: 3 dígitos
+- Número: 1-6 dígitos
+- Año: 4 dígitos
+- Sufijo: 1-2 dígitos
+
+Ejemplos válidos: `363-1254/2025-01`, `363-125477/2026-0`.
 
 **Una sola fuente de verdad: `validarNumeroExpediente()`.** Acepta guión normal,
 medio o largo (`-`, `–`, `—`) porque el número suele pegarse desde Word o un PDF,
