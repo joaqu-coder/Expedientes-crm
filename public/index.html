@@ -92,6 +92,49 @@
       flex: 1;
     }
 
+    .sync-indicator {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 4px 10px;
+      border-radius: 999px;
+      white-space: nowrap;
+      transition: all 0.3s ease;
+    }
+
+    .sync-indicator.sync-ok {
+      background: rgba(51, 109, 14, 0.12);
+      color: var(--green);
+    }
+
+    .sync-indicator.sync-pending {
+      background: rgba(107, 114, 128, 0.12);
+      color: var(--text-muted);
+    }
+
+    .sync-indicator.sync-error {
+      background: rgba(249, 115, 22, 0.12);
+      color: var(--orange);
+    }
+
+    @media (max-width: 480px) {
+      .sync-indicator {
+        font-size: 0;
+        padding: 6px;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+      }
+      .sync-indicator::before {
+        font-size: 14px;
+      }
+      .sync-indicator.sync-ok::before { content: '☁️'; }
+      .sync-indicator.sync-pending::before { content: '⏳'; }
+      .sync-indicator.sync-error::before { content: '⚠️'; }
+    }
+
     .header-menu {
       display: none;
       background: none;
@@ -866,6 +909,7 @@
   <div class="app">
     <header class="header">
       <h1 class="header-title">📋 Expedientes</h1>
+      <span class="sync-indicator sync-pending" id="syncIndicator">⏳ Sincronizando...</span>
       <button class="header-btn" id="btnConfig" title="Configuración">⚙️</button>
       <button class="header-menu" id="headerMenu">☰</button>
     </header>
@@ -1103,100 +1147,88 @@
       return { emoji: "🟢", color: "verde", orden: 3 };
     }
 
-    // ===== GITHUB SYNC =====
-    const GITHUB_OWNER = 'joaqu-coder';
-    const GITHUB_REPO = 'Expedientes-crm';
-    const GITHUB_FILE = 'expedientes.json';
-    let GITHUB_TOKEN = localStorage.getItem('_gh_token') || null;
+    // ===== SYNC (vía Worker propio, sin exponer token) =====
+    let sincronizando = false;
+    let ultimoSyncOk = null; // true/false/null (null = todavía no se intentó)
 
-    async function pedirTokenGitHub() {
-      const token = prompt('Pega tu GitHub Personal Access Token (ghp_...):');
-      if (token && token.startsWith('ghp_')) {
-        localStorage.setItem('_gh_token', token);
-        GITHUB_TOKEN = token;
-        return true;
+    function actualizarIndicadorSync(estado) {
+      ultimoSyncOk = estado;
+      const el = document.getElementById('syncIndicator');
+      if (!el) return;
+      if (estado === true) {
+        el.textContent = '☁️ Sincronizado';
+        el.className = 'sync-indicator sync-ok';
+      } else if (estado === false) {
+        el.textContent = '⚠️ Sin conexión (guardado local)';
+        el.className = 'sync-indicator sync-error';
+      } else {
+        el.textContent = '⏳ Sincronizando...';
+        el.className = 'sync-indicator sync-pending';
       }
-      if (token) alert('Token inválido. Debe empezar con "ghp_"');
-      return false;
     }
 
     async function subirAGitHub() {
-      if (!GITHUB_TOKEN) return false;
       try {
+        sincronizando = true;
+        actualizarIndicadorSync(null);
         const datos = {
           expedientes,
           areas: AREAS,
           responsables: RESPONSABLES,
           timestamp: new Date().toISOString()
         };
-        const content = btoa(JSON.stringify(datos, null, 2));
 
-        const respGet = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`, {
-          headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
+        const resp = await fetch('/api/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(datos)
         });
 
-        let sha = null;
-        if (respGet.ok) {
-          const file = await respGet.json();
-          sha = file.sha;
-        }
-
-        const payload = {
-          message: `sync: expedientes ${new Date().toLocaleString('es-AR')}`,
-          content: content,
-          branch: 'main'
-        };
-        if (sha) payload.sha = sha;
-
-        const respPut = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `token ${GITHUB_TOKEN}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payload)
-        });
-
-        return respPut.ok;
+        const ok = resp.ok;
+        actualizarIndicadorSync(ok);
+        return ok;
       } catch (e) {
-        console.error('Error al subir a GitHub:', e);
+        console.error('Error al sincronizar:', e);
+        actualizarIndicadorSync(false);
         return false;
+      } finally {
+        sincronizando = false;
       }
     }
 
     async function descargarDesdeGitHub() {
-      if (!GITHUB_TOKEN) return false;
       try {
-        const resp = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`, {
-          headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
-        });
+        const resp = await fetch('/api/sync');
+        if (!resp.ok) {
+          actualizarIndicadorSync(false);
+          return false;
+        }
 
-        if (!resp.ok) return false;
-
-        const file = await resp.json();
-        const datos = JSON.parse(atob(file.content));
+        const datos = await resp.json();
 
         expedientes = datos.expedientes || [];
-        AREAS = datos.areas || [...AREAS_DEFAULT];
-        RESPONSABLES = datos.responsables || [...RESPONSABLES_DEFAULT];
+        AREAS = (datos.areas && datos.areas.length) ? datos.areas : [...AREAS_DEFAULT];
+        RESPONSABLES = (datos.responsables && datos.responsables.length) ? datos.responsables : [...RESPONSABLES_DEFAULT];
 
-        guardarEnLS();
+        guardarEnLS(false); // guarda local sin re-subir lo que acabamos de bajar
         renderizar();
+        actualizarIndicadorSync(true);
         return true;
       } catch (e) {
-        console.error('Error al descargar de GitHub:', e);
+        console.error('Error al descargar:', e);
+        actualizarIndicadorSync(false);
         return false;
       }
     }
 
     // ===== ALMACENAMIENTO =====
-    function guardarEnLS() {
+    function guardarEnLS(sincronizar = true) {
       try {
         localStorage.setItem('expedientes_crm_expedientes', JSON.stringify(expedientes));
         localStorage.setItem('expedientes_crm_areas', JSON.stringify(AREAS));
         localStorage.setItem('expedientes_crm_responsables', JSON.stringify(RESPONSABLES));
 
-        if (GITHUB_TOKEN) {
+        if (sincronizar) {
           subirAGitHub().catch(() => {});
         }
       } catch (e) {
@@ -1610,16 +1642,9 @@
     // ===== INICIALIZACIÓN =====
     (async () => {
       cargarDesdeLS();
+      renderizar(); // Mostrar lo local de inmediato, sin esperar la red
 
-      if (!GITHUB_TOKEN) {
-        if (await pedirTokenGitHub()) {
-          await descargarDesdeGitHub();
-        }
-      } else {
-        await descargarDesdeGitHub();
-      }
-
-      renderizar();
+      await descargarDesdeGitHub(); // Trae cambios de otros dispositivos
     })();
 
     // PWA

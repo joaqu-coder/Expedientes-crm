@@ -7,8 +7,8 @@
  *
  * Cambiar CACHE_VERSION cuando hay cambios incompatibles.
  */
-const CACHE_VERSION = 'expedientes-crm-v2';
-const ASSETS = ['/icon.svg', '/manifest.json'];
+const CACHE_VERSION = 'expedientes-crm-v3';
+const ASSETS = ['/manifest.json'];
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -33,6 +33,10 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
+
+  // /api/* nunca se cachea: son datos dinámicos (sync con GitHub),
+  // siempre deben ir a la red.
+  if (url.pathname.startsWith('/api/')) return;
 
   const isHTML =
     req.mode === 'navigate' ||
