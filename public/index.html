@@ -435,6 +435,16 @@
       box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
     }
 
+    .form-input.invalid {
+      border-color: var(--red);
+      box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.1);
+    }
+
+    .form-input.valid {
+      border-color: var(--green);
+      box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.1);
+    }
+
     .form-textarea {
       resize: vertical;
       min-height: 60px;
@@ -742,6 +752,35 @@
     let expedientes = [];
     let editandoId = null;
     let filtroArea = null;
+
+    // ===== VALIDACIÓN EN TIEMPO REAL =====
+    function validarNumeroExpediente(valor) {
+      // Patrón: (XXX-XXXXX/YYYY) - solo guiones normales
+      const patron = /^\(\d{1,3}\s*-\s*\d{1,5}\/\d{4}\)$/;
+      return patron.test(valor);
+    }
+
+    function actualizarValidacionNumero(input) {
+      const valor = input.value.trim();
+
+      // Limpiar em dashes automáticamente
+      if (valor.includes('–')) {
+        input.value = valor.replace(/–/g, '-');
+        return;
+      }
+
+      input.classList.remove('invalid', 'valid');
+
+      if (valor.length === 0) {
+        return; // Sin color si está vacío
+      }
+
+      if (validarNumeroExpediente(valor)) {
+        input.classList.add('valid');
+      } else {
+        input.classList.add('invalid');
+      }
+    }
 
     // ===== FUNCIONES DE CÁLCULO =====
     function esFinDeSemana(fecha) {
@@ -1053,6 +1092,12 @@
       const formulario = window.innerWidth >= 1024 ? document.getElementById('formulario') : document.getElementById('formularioModal');
       formulario.innerHTML = crearFormulario();
 
+      // Agregar validación en tiempo real
+      const inputNumero = document.getElementById('numero');
+      if (inputNumero) {
+        inputNumero.addEventListener('input', (e) => actualizarValidacionNumero(e.target));
+      }
+
       if (window.innerWidth < 1024) {
         document.getElementById('modalOverlay').classList.add('active');
       }
@@ -1068,6 +1113,13 @@
 
       const formulario = window.innerWidth >= 1024 ? document.getElementById('formulario') : document.getElementById('formularioModal');
       formulario.innerHTML = crearFormulario(exp);
+
+      // Agregar validación en tiempo real
+      const inputNumero = document.getElementById('numero');
+      if (inputNumero) {
+        inputNumero.addEventListener('input', (e) => actualizarValidacionNumero(e.target));
+        actualizarValidacionNumero(inputNumero);
+      }
 
       if (window.innerWidth < 1024) {
         document.getElementById('modalOverlay').classList.add('active');
