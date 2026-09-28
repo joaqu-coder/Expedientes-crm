@@ -794,6 +794,20 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="alertOverlay" style="display: none; z-index: 1001;">
+    <div class="modal" style="max-width: 400px;">
+      <div class="modal-header" style="border-bottom: 2px solid var(--orange);">
+        <h2 class="modal-header-title" id="alertTitle" style="color: var(--orange);">⚠️ Aviso</h2>
+      </div>
+      <div class="modal-content">
+        <p id="alertMessage" style="margin: 0; font-size: 15px; line-height: 1.6;"></p>
+      </div>
+      <div class="modal-footer" style="justify-content: flex-end;">
+        <button class="btn btn-primary" id="alertBtn" onclick="cerrarAlert()">Aceptar</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ===== CONFIGURACIÓN =====
     const AREAS_DEFAULT = [
@@ -843,6 +857,18 @@
     let expedientes = [];
     let editandoId = null;
     let filtroArea = null;
+
+    // ===== ALERTAS ELEGANTES =====
+    function mostrarAlerta(titulo, mensaje) {
+      document.getElementById('alertTitle').textContent = titulo;
+      document.getElementById('alertMessage').textContent = mensaje;
+      document.getElementById('alertOverlay').style.display = 'flex';
+      document.getElementById('alertBtn').focus();
+    }
+
+    function cerrarAlert() {
+      document.getElementById('alertOverlay').style.display = 'none';
+    }
 
     // ===== VALIDACIÓN EN TIEMPO REAL =====
     function validarNumeroExpediente(valor) {
@@ -1028,7 +1054,7 @@
         }
       } catch (e) {
         console.error('Error al guardar:', e);
-        alert('Error al guardar los datos');
+        mostrarAlerta('❌ Error al guardar', 'No se pudieron guardar los datos. Intenta nuevamente.');
       }
     }
 
@@ -1177,7 +1203,7 @@
         input.value = '';
         renderizarConfigAreas();
       } else if (input.value.trim()) {
-        alert('El área ya existe');
+        mostrarAlerta('ℹ️ Duplicada', 'El área ya existe');
       }
     }
 
@@ -1187,7 +1213,7 @@
         input.value = '';
         renderizarConfigResponsables();
       } else if (input.value.trim()) {
-        alert('El responsable ya existe');
+        mostrarAlerta('ℹ️ Duplicado', 'El responsable ya existe');
       }
     }
 
@@ -1309,6 +1335,7 @@
       const inputNumero = document.getElementById('numero');
       if (inputNumero) {
         inputNumero.addEventListener('input', (e) => actualizarValidacionNumero(e.target));
+        inputNumero.addEventListener('blur', (e) => actualizarValidacionNumero(e.target));
         inputNumero.addEventListener('keydown', filtrarCaracteresNumero);
       }
 
@@ -1335,6 +1362,7 @@
       const inputNumero = document.getElementById('numero');
       if (inputNumero) {
         inputNumero.addEventListener('input', (e) => actualizarValidacionNumero(e.target));
+        inputNumero.addEventListener('blur', (e) => actualizarValidacionNumero(e.target));
         inputNumero.addEventListener('keydown', filtrarCaracteresNumero);
         actualizarValidacionNumero(inputNumero);
       }
@@ -1364,7 +1392,7 @@
       const notas = document.getElementById('notas').value.trim();
 
       if (!numero || !tema || !area || !responsable || !fechaInicio || !diasPlazo) {
-        alert('Completa todos los campos obligatorios');
+        mostrarAlerta('⚠️ Campos faltantes', 'Completa todos los campos obligatorios');
         return;
       }
 
@@ -1372,7 +1400,7 @@
       // verdad. Antes acá se exigía guión medio (–) mientras el input lo
       // convertía a guión normal (-) en cada tecla, así que no se podía guardar.
       if (!validarNumeroExpediente(numero)) {
-        alert('Formato incorrecto. Usa: (XXX-XXXXX/YYYY)\nEjemplo: (363-12454/2024)');
+        mostrarAlerta('❌ Formato incorrecto', 'Usa: (XXX-XXXXX/YYYY)\nEjemplo: (363-12454/2024)');
         return;
       }
 
@@ -1469,6 +1497,19 @@
 
       await descargarDesdeGitHub(); // Trae cambios de otros dispositivos
     })();
+
+    // Cerrar popup de alerta con Escape o al clickear afuera
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && document.getElementById('alertOverlay').style.display !== 'none') {
+        cerrarAlert();
+      }
+    });
+
+    document.getElementById('alertOverlay').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('alertOverlay')) {
+        cerrarAlert();
+      }
+    });
 
     // PWA
     if ('serviceWorker' in navigator) {
