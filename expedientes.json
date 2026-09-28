@@ -1,5 +1,21 @@
 {
-  "expedientes": [],
+  "expedientes": [
+    {
+      "id": "1790634879735",
+      "numero": "363-1254/2025-01",
+      "tema": "Solicitud de Terreno",
+      "area": "Administración",
+      "responsable": "María García",
+      "fechaInicio": "2026-09-28",
+      "diasPlazo": 20,
+      "intervenciones": [
+        {
+          "hora": "28/09 19:34",
+          "texto": "Prueba 1"
+        }
+      ]
+    }
+  ],
   "areas": [
     "Jurídica",
     "Administración",
@@ -11,5 +27,5 @@
     "María García",
     "Juan López"
   ],
-  "timestamp": "2026-09-28T22:10:52.201Z"
+  "timestamp": "2026-09-28T22:34:39.735Z"
 }
