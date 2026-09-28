@@ -831,12 +831,102 @@
       return { emoji: "🟢", color: "verde", orden: 3 };
     }
 
+    // ===== GITHUB SYNC =====
+    const GITHUB_OWNER = 'joaqu-coder';
+    const GITHUB_REPO = 'Expedientes-crm';
+    const GITHUB_FILE = 'expedientes.json';
+    let GITHUB_TOKEN = localStorage.getItem('_gh_token') || null;
+
+    async function pedirTokenGitHub() {
+      const token = prompt('Pega tu GitHub Personal Access Token (ghp_...):');
+      if (token && token.startsWith('ghp_')) {
+        localStorage.setItem('_gh_token', token);
+        GITHUB_TOKEN = token;
+        return true;
+      }
+      if (token) alert('Token inválido. Debe empezar con "ghp_"');
+      return false;
+    }
+
+    async function subirAGitHub() {
+      if (!GITHUB_TOKEN) return false;
+      try {
+        const datos = {
+          expedientes,
+          areas: AREAS,
+          responsables: RESPONSABLES,
+          timestamp: new Date().toISOString()
+        };
+        const content = btoa(JSON.stringify(datos, null, 2));
+
+        const respGet = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`, {
+          headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
+        });
+
+        let sha = null;
+        if (respGet.ok) {
+          const file = await respGet.json();
+          sha = file.sha;
+        }
+
+        const payload = {
+          message: `sync: expedientes ${new Date().toLocaleString('es-AR')}`,
+          content: content,
+          branch: 'main'
+        };
+        if (sha) payload.sha = sha;
+
+        const respPut = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `token ${GITHUB_TOKEN}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        return respPut.ok;
+      } catch (e) {
+        console.error('Error al subir a GitHub:', e);
+        return false;
+      }
+    }
+
+    async function descargarDesdeGitHub() {
+      if (!GITHUB_TOKEN) return false;
+      try {
+        const resp = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`, {
+          headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
+        });
+
+        if (!resp.ok) return false;
+
+        const file = await resp.json();
+        const datos = JSON.parse(atob(file.content));
+
+        expedientes = datos.expedientes || [];
+        AREAS = datos.areas || [...AREAS_DEFAULT];
+        RESPONSABLES = datos.responsables || [...RESPONSABLES_DEFAULT];
+
+        guardarEnLS();
+        renderizar();
+        return true;
+      } catch (e) {
+        console.error('Error al descargar de GitHub:', e);
+        return false;
+      }
+    }
+
     // ===== ALMACENAMIENTO =====
     function guardarEnLS() {
       try {
         localStorage.setItem('expedientes_crm_expedientes', JSON.stringify(expedientes));
         localStorage.setItem('expedientes_crm_areas', JSON.stringify(AREAS));
         localStorage.setItem('expedientes_crm_responsables', JSON.stringify(RESPONSABLES));
+
+        if (GITHUB_TOKEN) {
+          subirAGitHub().catch(() => {});
+        }
       } catch (e) {
         console.error('Error al guardar:', e);
         alert('Error al guardar los datos');
@@ -1225,8 +1315,19 @@
     });
 
     // ===== INICIALIZACIÓN =====
-    cargarDesdeLS();
-    renderizar();
+    (async () => {
+      cargarDesdeLS();
+
+      if (!GITHUB_TOKEN) {
+        if (await pedirTokenGitHub()) {
+          await descargarDesdeGitHub();
+        }
+      } else {
+        await descargarDesdeGitHub();
+      }
+
+      renderizar();
+    })();
 
     // PWA
     if ('serviceWorker' in navigator) {

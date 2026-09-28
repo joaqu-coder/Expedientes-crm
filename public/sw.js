@@ -1,58 +1,79 @@
-const CACHE_NAME = 'expedientes-crm-v1';
-const URLS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/manifest.json'
-];
+/*
+ * Service Worker — Expedientes CRM
+ *
+ * Estrategia (igual que Boletín Oficial):
+ *   - HTML: network-first (siempre intenta versión nueva)
+ *   - Assets: stale-while-revalidate
+ *
+ * Cambiar CACHE_VERSION cuando hay cambios incompatibles.
+ */
+const CACHE_VERSION = 'expedientes-crm-v2';
+const ASSETS = ['/icon.svg', '/manifest.json'];
 
-// Instalar el service worker
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(URLS_TO_CACHE);
-    })
-  );
   self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_VERSION).then((cache) => cache.addAll(ASSETS)).catch(() => {})
+  );
 });
 
-// Activar el service worker
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter((k) => k !== CACHE_VERSION).map((k) => caches.delete(k)));
+      await self.clients.claim();
+    })()
   );
-  self.clients.claim();
 });
 
-// Estrategia: Network-first con fallback a cache
 self.addEventListener('fetch', (event) => {
-  // Solo interceptar solicitudes GET
-  if (event.request.method !== 'GET') {
+  const req = event.request;
+  if (req.method !== 'GET') return;
+
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return;
+
+  const isHTML =
+    req.mode === 'navigate' ||
+    req.headers.get('accept')?.includes('text/html') ||
+    url.pathname.endsWith('.html') ||
+    url.pathname === '/' ||
+    url.pathname === '';
+
+  if (isHTML) {
+    // Network-first: intenta red, si falla usa cache
+    event.respondWith(
+      (async () => {
+        try {
+          const fresh = await fetch(req, { cache: 'no-store' });
+          const cache = await caches.open(CACHE_VERSION);
+          cache.put(req, fresh.clone());
+          return fresh;
+        } catch (_err) {
+          const cached = await caches.match(req);
+          if (cached) return cached;
+          const fallback = await caches.match('/index.html');
+          if (fallback) return fallback;
+          throw _err;
+        }
+      })()
+    );
     return;
   }
 
+  // Assets: stale-while-revalidate
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Guardar en cache si es exitoso
-        if (response && response.status === 200) {
-          const clonedResponse = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, clonedResponse);
-          });
-        }
-        return response;
-      })
-      .catch(() => {
-        // Si falla, devolver del cache
-        return caches.match(event.request);
-      })
+    (async () => {
+      const cache = await caches.open(CACHE_VERSION);
+      const cached = await cache.match(req);
+      const fetchPromise = fetch(req)
+        .then((res) => {
+          if (res.ok) cache.put(req, res.clone());
+          return res;
+        })
+        .catch(() => cached);
+      return cached || fetchPromise;
+    })()
   );
 });
