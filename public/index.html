@@ -876,10 +876,12 @@
 
     // Impedir escritura de letras mientras tipeas
     function filtrarCaracteresNumero(e) {
-      // Permitir SOLO: dígitos, paréntesis, guión y barra
+      // Permitir teclas de control: Backspace, Delete, flechas, etc.
+      // y SOLO: dígitos, paréntesis, guión y barra
+      const teclasEspeciales = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Home', 'End'];
       const caracteresPermitidos = /[0-9()/-]/;
 
-      if (!caracteresPermitidos.test(e.key)) {
+      if (!teclasEspeciales.includes(e.key) && !caracteresPermitidos.test(e.key)) {
         e.preventDefault(); // Impide que se escriba el carácter
 
         // Feedback visual: borde rojo rápido
