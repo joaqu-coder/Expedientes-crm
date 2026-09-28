@@ -782,6 +782,23 @@
       }
     }
 
+    // Impedir escritura de letras mientras tipeas
+    function filtrarCaracteresNumero(e) {
+      // Permitir SOLO: dígitos, paréntesis, guión y barra
+      const caracteresPermitidos = /[0-9()/-]/;
+
+      if (!caracteresPermitidos.test(e.key)) {
+        e.preventDefault(); // Impide que se escriba el carácter
+
+        // Feedback visual: borde rojo rápido
+        const input = e.target;
+        input.classList.add('invalid');
+        setTimeout(() => {
+          if (!input.value.trim()) input.classList.remove('invalid');
+        }, 300);
+      }
+    }
+
     // ===== FUNCIONES DE CÁLCULO =====
     function esFinDeSemana(fecha) {
       const day = fecha.getDay();
@@ -1186,6 +1203,7 @@
       const inputNumero = document.getElementById('numero');
       if (inputNumero) {
         inputNumero.addEventListener('input', (e) => actualizarValidacionNumero(e.target));
+        inputNumero.addEventListener('keydown', filtrarCaracteresNumero);
       }
 
       if (window.innerWidth < 1024) {
@@ -1208,6 +1226,7 @@
       const inputNumero = document.getElementById('numero');
       if (inputNumero) {
         inputNumero.addEventListener('input', (e) => actualizarValidacionNumero(e.target));
+        inputNumero.addEventListener('keydown', filtrarCaracteresNumero);
         actualizarValidacionNumero(inputNumero);
       }
 
