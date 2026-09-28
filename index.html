@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Expedientes CRM - Gestión de expedientes administrativos/legales">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#667eea">
+  <title>Expedientes CRM</title>
+  <style>
+    :root {
+      --primary: #667eea;
+      --red: #7f0000;
+      --orange: #f97316;
+      --yellow: #d5be00;
+      --green: #336d0e;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --text: #1f2937;
+      --text-muted: #6b7280;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --gray-50: #111827;
+        --gray-100: #1f2937;
+        --gray-200: #374151;
+        --gray-300: #4b5563;
+        --text: #f3f4f6;
+        --text-muted: #d1d5db;
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --gray-50: #111827;
+      --gray-100: #1f2937;
+      --gray-200: #374151;
+      --gray-300: #4b5563;
+      --text: #f3f4f6;
+      --text-muted: #d1d5db;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--gray-50);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .app {
+      display: flex;
+      min-height: 100vh;
+      flex-direction: column;
+    }
+
+    /* Header */
+    .header {
+      height: 44px;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--gray-300);
+      display: flex;
+      align-items: center;
+      background: white;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .header {
+        background: var(--gray-100);
+      }
+    }
+
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+      flex: 1;
+    }
+
+    .header-menu {
+      display: none;
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: var(--text);
+    }
+
+    @media (max-width: 1023px) {
+      .header-menu {
+        display: block;
+      }
+    }
+
+    /* Sidebar */
+    .sidebar {
+      display: none;
+      width: 350px;
+      background: white;
+      border-right: 1px solid var(--gray-300);
+      overflow-y: auto;
+      padding: 16px;
+      flex-shrink: 0;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .sidebar {
+        background: var(--gray-100);
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .app {
+        flex-direction: row;
+      }
+
+      .sidebar {
+        display: flex !important;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .header-menu {
+        display: none !important;
+      }
+    }
+
+    .main-content {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Panel de Áreas */
+    .panel-areas {
+      background: white;
+      padding: 12px;
+      border-bottom: 1px solid var(--gray-300);
+      position: sticky;
+      top: 44px;
+      z-index: 40;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .panel-areas {
+        background: var(--gray-100);
+      }
+    }
+
+    .panel-areas-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .area-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .area-btn {
+      padding: 8px 12px;
+      font-size: 12px;
+      background: var(--gray-100);
+      border: 1px solid var(--gray-300);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .area-btn {
+        background: var(--gray-200);
+        border-color: var(--gray-300);
+      }
+    }
+
+    .area-btn:hover {
+      border-color: var(--primary);
+    }
+
+    .area-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    /* Lista de Expedientes */
+    .expedientes-list {
+      flex: 1;
+      padding: 8px;
+      overflow-y: auto;
+    }
+
+    .expediente-card {
+      background: white;
+      border-left: 4px solid;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: box-shadow 0.2s;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .expediente-card {
+        background: var(--gray-100);
+      }
+    }
+
+    .expediente-card:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .expediente-card.rojo { border-left-color: var(--red); }
+    .expediente-card.naranja { border-left-color: var(--orange); }
+    .expediente-card.amarillo { border-left-color: var(--yellow); }
+    .expediente-card.verde { border-left-color: var(--green); }
+
+    .expediente-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 4px;
+    }
+
+    .expediente-numero {
+      font-weight: 600;
+      font-size: 13px;
+      word-break: break-word;
+    }
+
+    .semaforo-emoji {
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .expediente-tema {
+      font-size: 12px;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .expediente-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 4px;
+    }
+
+    .intervenciones-list {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--gray-200);
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
+    .intervencion {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+
+    .intervencion-hora {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    /* FAB */
+    .fab {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: box-shadow 0.2s;
+    }
+
+    .fab:hover {
+      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+    }
+
+    @media (min-width: 1024px) {
+      .fab {
+        display: none;
+      }
+    }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background: white;
+      border-radius: 8px;
+      width: 90vw;
+      max-width: 500px;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 25px rgba(0,0,0,0.15);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .modal {
+        background: var(--gray-100);
+      }
+    }
+
+    .modal-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--gray-300);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--text);
+    }
+
+    .modal-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+
+    .modal-footer {
+      padding: 16px;
+      border-top: 1px solid var(--gray-300);
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    /* Formulario */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .form-label.required::after {
+      content: " *";
+      color: var(--red);
+    }
+
+    .form-input,
+    .form-select,
+    .form-textarea {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid var(--gray-300);
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: inherit;
+      color: var(--text);
+      background: white;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .form-input,
+      .form-select,
+      .form-textarea {
+        background: var(--gray-200);
+        border-color: var(--gray-300);
+      }
+    }
+
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    .form-help {
+      color: var(--text-muted);
+      display: block;
+      margin-top: 4px;
+      font-size: 11px;
+    }
+
+    .form-error {
+      color: var(--red);
+      display: block;
+      margin-top: 4px;
+      font-size: 11px;
+    }
+
+    /* Botones */
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.9;
+    }
+
+    .btn-secondary {
+      background: var(--gray-200);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background: var(--gray-300);
+    }
+
+    .btn-danger {
+      background: var(--red);
+      color: white;
+    }
+
+    .btn-danger:hover {
+      opacity: 0.9;
+    }
+
+    .btn-small {
+      padding: 6px 12px;
+      font-size: 11px;
+    }
+
+    .btn-success {
+      background: var(--green);
+      color: white;
+    }
+
+    .btn-success:hover {
+      opacity: 0.9;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    /* Config Panel */
+    .config-section {
+      margin-bottom: 16px;
+    }
+
+    .config-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .editable-list {
+      background: var(--gray-100);
+      padding: 8px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .editable-list {
+        background: var(--gray-200);
+      }
+    }
+
+    .editable-item {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      padding: 6px;
+      background: white;
+      border-radius: 4px;
+      margin-bottom: 4px;
+      font-size: 11px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .editable-item {
+        background: var(--gray-100);
+      }
+    }
+
+    .editable-item span {
+      flex: 1;
+      min-width: 0;
+      word-break: break-word;
+    }
+
+    .editable-item button {
+      background: var(--red);
+      color: white;
+      border: none;
+      padding: 3px 6px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 10px;
+      flex-shrink: 0;
+    }
+
+    .editable-item button:hover {
+      opacity: 0.8;
+    }
+
+    .add-item-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .add-item-row input {
+      flex: 1;
+      padding: 6px;
+      border: 1px solid var(--gray-300);
+      border-radius: 4px;
+      font-size: 11px;
+    }
+
+    .add-item-row button {
+      padding: 6px 10px;
+      background: var(--green);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+
+    .add-item-row button:hover {
+      opacity: 0.8;
+    }
+
+    @media (max-width: 1023px) {
+      .sidebar {
+        display: none;
+        position: fixed;
+        top: 44px;
+        left: 0;
+        right: 0;
+        width: 100%;
+        height: calc(100vh - 44px);
+        z-index: 150;
+        border-right: none;
+        border-bottom: 1px solid var(--gray-300);
+        padding: 12px;
+        max-height: 50vh;
+        overflow-y: auto;
+      }
+
+      .sidebar.active {
+        display: flex;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <h1 class="header-title">📋 Expedientes</h1>
+      <button class="header-menu" id="headerMenu">☰</button>
+    </header>
+
+    <aside class="sidebar" id="sidebar">
+      <div class="config-section">
+        <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 12px;">⚙️ Configuración</h3>
+
+        <div>
+          <div class="config-section-title">Áreas Responsables</div>
+          <div class="editable-list" id="areasConfigList"></div>
+          <div class="add-item-row">
+            <input type="text" id="inputArea" placeholder="Nueva área">
+            <button type="button" class="btn btn-success btn-small" onclick="agregarAreaDesdeInput()">+</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="config-section-title">Responsables</div>
+          <div class="editable-list" id="responsablesConfigList"></div>
+          <div class="add-item-row">
+            <input type="text" id="inputResponsable" placeholder="Nuevo responsable">
+            <button type="button" class="btn btn-success btn-small" onclick="agregarResponsableDesdeInput()">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="border-top: 1px solid var(--gray-300); padding-top: 12px; flex: 1; overflow-y: auto;">
+        <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 12px;">📝 Expediente</h3>
+        <form id="formulario"></form>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="panel-areas">
+        <div class="panel-areas-title">Áreas Responsables</div>
+        <div class="area-buttons" id="areaBotones"></div>
+      </div>
+
+      <div class="expedientes-list" id="expedientesList"></div>
+    </main>
+  </div>
+
+  <button class="fab" id="fabNuevo" title="Nuevo expediente">+</button>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-header-title" id="modalTitle">Nuevo Expediente</h2>
+        <button class="modal-close" id="modalClose">✕</button>
+      </div>
+      <div class="modal-content">
+        <form id="formularioModal"></form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btnCancelar">Cancelar</button>
+        <button class="btn btn-danger btn-small hidden" id="btnEliminar">Eliminar</button>
+        <button class="btn btn-primary" id="btnGuardar">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== CONFIGURACIÓN =====
+    const AREAS_DEFAULT = [
+      "Jurídica",
+      "Administración",
+      "Operación",
+      "Obras",
+      "Promoción Industrial",
+      "Intervención"
+    ];
+
+    const RESPONSABLES_DEFAULT = [
+      "María García",
+      "Juan López",
+      "Carlos Rodríguez",
+      "Ana Martínez",
+      "Roberto Fernández",
+      "Laura Sánchez",
+      "Diego Fernández",
+      "Patricia González"
+    ];
+
+    let AREAS = [...AREAS_DEFAULT];
+    let RESPONSABLES = [...RESPONSABLES_DEFAULT];
+
+    // Feriados argentinos 2024-2027
+    const FERIADOS = [
+      "2024-01-01", "2024-02-12", "2024-02-13", "2024-03-24", "2024-04-02",
+      "2024-04-10", "2024-05-01", "2024-05-25", "2024-06-17", "2024-06-20",
+      "2024-07-09", "2024-07-25", "2024-08-17", "2024-10-12", "2024-11-18",
+      "2024-12-08", "2024-12-25",
+      "2025-01-01", "2025-02-10", "2025-02-11", "2025-03-24", "2025-04-02",
+      "2025-04-25", "2025-05-01", "2025-05-25", "2025-06-17", "2025-06-20",
+      "2025-07-09", "2025-07-25", "2025-08-17", "2025-10-12", "2025-11-18",
+      "2025-12-08", "2025-12-25",
+      "2026-01-01", "2026-02-16", "2026-02-17", "2026-03-24", "2026-04-02",
+      "2026-04-10", "2026-05-01", "2026-05-25", "2026-06-17", "2026-06-20",
+      "2026-07-09", "2026-07-25", "2026-08-17", "2026-10-12", "2026-11-18",
+      "2026-12-08", "2026-12-25",
+      "2027-01-01", "2027-02-08", "2027-02-09", "2027-03-24", "2027-04-02",
+      "2027-04-10", "2027-05-01", "2027-05-25", "2027-06-17", "2027-06-20",
+      "2027-07-09", "2027-07-25", "2027-08-17", "2027-10-12", "2027-11-18",
+      "2027-12-08", "2027-12-25"
+    ];
+
+    // ===== ESTADO =====
+    let expedientes = [];
+    let editandoId = null;
+    let filtroArea = null;
+
+    // ===== FUNCIONES DE CÁLCULO =====
+    function esFinDeSemana(fecha) {
+      const day = fecha.getDay();
+      return day === 0 || day === 6;
+    }
+
+    function esFeriado(fecha) {
+      const str = fecha.toISOString().split('T')[0];
+      return FERIADOS.includes(str);
+    }
+
+    function esHabil(fecha) {
+      return !esFinDeSemana(fecha) && !esFeriado(fecha);
+    }
+
+    function calcularFechaFin(fechaInicio, diasPlazo) {
+      let fecha = new Date(fechaInicio);
+      let diasContados = 0;
+
+      while (diasContados < diasPlazo) {
+        fecha.setDate(fecha.getDate() + 1);
+        if (esHabil(fecha)) diasContados++;
+      }
+
+      return fecha;
+    }
+
+    function calcularDiasRestantes(fechaInicio, diasPlazo) {
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+      const fechaFin = calcularFechaFin(fechaInicio, diasPlazo);
+      let diasRestantes = 0;
+      let fecha = new Date(hoy);
+
+      while (fecha < fechaFin) {
+        fecha.setDate(fecha.getDate() + 1);
+        if (esHabil(fecha)) diasRestantes++;
+      }
+
+      return Math.max(0, diasRestantes);
+    }
+
+    function obtenerSemaforo(diasRestantes) {
+      if (diasRestantes === 0) return { emoji: "🔴", color: "rojo", orden: 0 };
+      if (diasRestantes <= 5) return { emoji: "🟠", color: "naranja", orden: 1 };
+      if (diasRestantes <= 15) return { emoji: "🟡", color: "amarillo", orden: 2 };
+      return { emoji: "🟢", color: "verde", orden: 3 };
+    }
+
+    // ===== ALMACENAMIENTO =====
+    function guardarEnLS() {
+      try {
+        localStorage.setItem('expedientes_crm_expedientes', JSON.stringify(expedientes));
+        localStorage.setItem('expedientes_crm_areas', JSON.stringify(AREAS));
+        localStorage.setItem('expedientes_crm_responsables', JSON.stringify(RESPONSABLES));
+      } catch (e) {
+        console.error('Error al guardar:', e);
+        alert('Error al guardar los datos');
+      }
+    }
+
+    function cargarDesdeLS() {
+      try {
+        const datos = localStorage.getItem('expedientes_crm_expedientes');
+        expedientes = datos ? JSON.parse(datos) : [];
+
+        const areas = localStorage.getItem('expedientes_crm_areas');
+        AREAS = areas ? JSON.parse(areas) : [...AREAS_DEFAULT];
+
+        const responsables = localStorage.getItem('expedientes_crm_responsables');
+        RESPONSABLES = responsables ? JSON.parse(responsables) : [...RESPONSABLES_DEFAULT];
+      } catch (e) {
+        console.error('Error al cargar:', e);
+        expedientes = [];
+        AREAS = [...AREAS_DEFAULT];
+        RESPONSABLES = [...RESPONSABLES_DEFAULT];
+      }
+    }
+
+    function agregarArea(nombre) {
+      if (nombre.trim() && !AREAS.includes(nombre)) {
+        AREAS.push(nombre);
+        guardarEnLS();
+        renderizar();
+        return true;
+      }
+      return false;
+    }
+
+    function eliminarArea(nombre) {
+      AREAS = AREAS.filter(a => a !== nombre);
+      guardarEnLS();
+      renderizar();
+    }
+
+    function agregarResponsable(nombre) {
+      if (nombre.trim() && !RESPONSABLES.includes(nombre)) {
+        RESPONSABLES.push(nombre);
+        guardarEnLS();
+        renderizar();
+        return true;
+      }
+      return false;
+    }
+
+    function eliminarResponsable(nombre) {
+      RESPONSABLES = RESPONSABLES.filter(r => r !== nombre);
+      guardarEnLS();
+      renderizar();
+    }
+
+    // ===== FUNCIONES DE UI =====
+    function crearFormulario(expediente = null) {
+      const html = `
+        <div class="form-group">
+          <label class="form-label required">Nro Expediente</label>
+          <input type="text" class="form-input" id="numero" placeholder="(363 – 12454/2024)" value="${expediente?.numero || ''}" pattern="\\(\\d{1,3}\\s*–\\s*\\d{1,5}\\/\\d{4}\\)" title="Formato: (XXX – XXXXX/YYYY) ej: (363 – 12454/2024)" required>
+          <span class="form-help">Formato: (Mesa – Número/Año) ej: (363 – 12454/2024)</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required">Tema</label>
+          <input type="text" class="form-input" id="tema" placeholder="Descripción breve del asunto" value="${expediente?.tema || ''}" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required">Área Responsable</label>
+          <select class="form-select" id="area" required>
+            <option value="">Seleccionar área...</option>
+            ${AREAS.map(a => `<option value="${a}" ${expediente?.area === a ? 'selected' : ''}>${a}</option>`).join('')}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required">Responsable</label>
+          <select class="form-select" id="responsable" required>
+            <option value="">Seleccionar responsable...</option>
+            ${RESPONSABLES.map(r => `<option value="${r}" ${expediente?.responsable === r ? 'selected' : ''}>${r}</option>`).join('')}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required">Fecha de Inicio</label>
+          <input type="date" class="form-input" id="fechaInicio" value="${expediente?.fechaInicio || new Date().toISOString().split('T')[0]}" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required">Plazo en Días Hábiles</label>
+          <input type="number" class="form-input" id="diasPlazo" placeholder="30" value="${expediente?.diasPlazo || ''}" min="1" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Notas (se guardarán como intervención)</label>
+          <textarea class="form-textarea" id="notas" placeholder="Anotaciones sobre el expediente"></textarea>
+        </div>
+
+        ${expediente && expediente.intervenciones && expediente.intervenciones.length > 0 ? `
+          <div class="form-group">
+            <label class="form-label">Historial de Intervenciones</label>
+            <div class="intervenciones-list">
+              ${expediente.intervenciones.map(i => `
+                <div class="intervencion">
+                  <span class="intervencion-hora">${i.hora}</span><br><small>${i.texto}</small>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+      `;
+
+      return html;
+    }
+
+    function renderizarConfigAreas() {
+      const html = AREAS.map(area => `
+        <div class="editable-item">
+          <span>${area}</span>
+          <button type="button" class="btn-small" onclick="eliminarArea('${area}')">✕</button>
+        </div>
+      `).join('');
+      document.getElementById('areasConfigList').innerHTML = html || '<small style="color: var(--text-muted);">Ninguna área</small>';
+    }
+
+    function renderizarConfigResponsables() {
+      const html = RESPONSABLES.map(r => `
+        <div class="editable-item">
+          <span>${r}</span>
+          <button type="button" class="btn-small" onclick="eliminarResponsable('${r}')">✕</button>
+        </div>
+      `).join('');
+      document.getElementById('responsablesConfigList').innerHTML = html || '<small style="color: var(--text-muted);">Ningún responsable</small>';
+    }
+
+    function agregarAreaDesdeInput() {
+      const input = document.getElementById('inputArea');
+      if (agregarArea(input.value)) {
+        input.value = '';
+        renderizarConfigAreas();
+      } else if (input.value.trim()) {
+        alert('El área ya existe');
+      }
+    }
+
+    function agregarResponsableDesdeInput() {
+      const input = document.getElementById('inputResponsable');
+      if (agregarResponsable(input.value)) {
+        input.value = '';
+        renderizarConfigResponsables();
+      } else if (input.value.trim()) {
+        alert('El responsable ya existe');
+      }
+    }
+
+    function renderizarPanelAreas() {
+      const conteos = {};
+      conteos['Total'] = expedientes.length;
+
+      AREAS.forEach(area => {
+        conteos[area] = expedientes.filter(e => e.area === area).length;
+      });
+
+      const html = `
+        <button class="area-btn ${filtroArea === null ? 'active' : ''}" onclick="filtrarArea(null)">
+          Total (${conteos['Total']})
+        </button>
+        ${AREAS.map(area => `
+          <button class="area-btn ${filtroArea === area ? 'active' : ''}" onclick="filtrarArea('${area}')">
+            ${area} (${conteos[area]})
+          </button>
+        `).join('')}
+      `;
+
+      document.getElementById('areaBotones').innerHTML = html;
+    }
+
+    function filtrarArea(area) {
+      filtroArea = area;
+      renderizar();
+    }
+
+    function renderizar() {
+      renderizarConfigAreas();
+      renderizarConfigResponsables();
+      renderizarPanelAreas();
+
+      let filtrados = expedientes;
+      if (filtroArea) {
+        filtrados = expedientes.filter(e => e.area === filtroArea);
+      }
+
+      filtrados.sort((a, b) => {
+        const diasA = calcularDiasRestantes(a.fechaInicio, a.diasPlazo);
+        const diasB = calcularDiasRestantes(b.fechaInicio, b.diasPlazo);
+
+        const semaforoA = obtenerSemaforo(diasA);
+        const semaforoB = obtenerSemaforo(diasB);
+
+        if (semaforoA.orden !== semaforoB.orden) {
+          return semaforoA.orden - semaforoB.orden;
+        }
+
+        return diasA - diasB;
+      });
+
+      const html = filtrados.map(exp => {
+        const diasRestantes = calcularDiasRestantes(exp.fechaInicio, exp.diasPlazo);
+        const semaforo = obtenerSemaforo(diasRestantes);
+
+        return `
+          <div class="expediente-card ${semaforo.color}" onclick="abrirEditar('${exp.id}')">
+            <div class="expediente-header">
+              <div class="expediente-numero">${exp.numero}</div>
+              <div class="semaforo-emoji">${semaforo.emoji}</div>
+            </div>
+
+            <div class="expediente-tema">${exp.tema}</div>
+
+            <div class="expediente-meta">
+              <div><strong>${exp.area}</strong></div>
+              <div><strong>${exp.responsable}</strong></div>
+              <div><strong>${diasRestantes} d</strong></div>
+              ${exp.intervenciones && exp.intervenciones.length > 0 ? `
+                <div>💬 ${exp.intervenciones.length}</div>
+              ` : ''}
+            </div>
+
+            ${exp.intervenciones && exp.intervenciones.length > 0 ? `
+              <div class="intervenciones-list">
+                ${exp.intervenciones.slice(-2).map(i => `
+                  <div class="intervencion">
+                    <span class="intervencion-hora">${i.hora}</span><br><small>${i.texto.substring(0, 60)}${i.texto.length > 60 ? '...' : ''}</small>
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('expedientesList').innerHTML = html || '<p style="padding: 16px; text-align: center; color: var(--text-muted);">No hay expedientes</p>';
+    }
+
+    function abrirNuevo() {
+      editandoId = null;
+      document.getElementById('modalTitle').textContent = 'Nuevo Expediente';
+      document.getElementById('btnEliminar').classList.add('hidden');
+
+      const formulario = window.innerWidth >= 1024 ? document.getElementById('formulario') : document.getElementById('formularioModal');
+      formulario.innerHTML = crearFormulario();
+
+      if (window.innerWidth < 1024) {
+        document.getElementById('modalOverlay').classList.add('active');
+      }
+    }
+
+    function abrirEditar(id) {
+      editandoId = id;
+      const exp = expedientes.find(e => e.id === id);
+      if (!exp) return;
+
+      document.getElementById('modalTitle').textContent = `Editar: ${exp.numero}`;
+      document.getElementById('btnEliminar').classList.remove('hidden');
+
+      const formulario = window.innerWidth >= 1024 ? document.getElementById('formulario') : document.getElementById('formularioModal');
+      formulario.innerHTML = crearFormulario(exp);
+
+      if (window.innerWidth < 1024) {
+        document.getElementById('modalOverlay').classList.add('active');
+        document.getElementById('headerMenu').click(); // Cerrar sidebar
+      }
+    }
+
+    function cerrarModal() {
+      document.getElementById('modalOverlay').classList.remove('active');
+      editandoId = null;
+    }
+
+    function guardarExpediente() {
+      const numero = document.getElementById('numero').value.trim();
+      const tema = document.getElementById('tema').value.trim();
+      const area = document.getElementById('area').value;
+      const responsable = document.getElementById('responsable').value;
+      const fechaInicio = document.getElementById('fechaInicio').value;
+      const diasPlazo = parseInt(document.getElementById('diasPlazo').value);
+      const notas = document.getElementById('notas').value.trim();
+
+      if (!numero || !tema || !area || !responsable || !fechaInicio || !diasPlazo) {
+        alert('Completa todos los campos obligatorios');
+        return;
+      }
+
+      // Validar formato del número
+      const patronNumero = /^\(\d{1,3}\s*–\s*\d{1,5}\/\d{4}\)$/;
+      if (!patronNumero.test(numero)) {
+        alert('Formato incorrecto. Usa: (XXX – XXXXX/YYYY)\nEjemplo: (363 – 12454/2024)');
+        return;
+      }
+
+      let exp;
+
+      if (editandoId) {
+        exp = expedientes.find(e => e.id === editandoId);
+        if (!exp) return;
+
+        exp.numero = numero;
+        exp.tema = tema;
+        exp.area = area;
+        exp.responsable = responsable;
+        exp.fechaInicio = fechaInicio;
+        exp.diasPlazo = diasPlazo;
+      } else {
+        exp = {
+          id: Date.now().toString(),
+          numero,
+          tema,
+          area,
+          responsable,
+          fechaInicio,
+          diasPlazo,
+          intervenciones: []
+        };
+        expedientes.push(exp);
+      }
+
+      if (notas) {
+        const ahora = new Date();
+        const hh = String(ahora.getHours()).padStart(2, '0');
+        const mm = String(ahora.getMinutes()).padStart(2, '0');
+        const dd = String(ahora.getDate()).padStart(2, '0');
+        const mo = String(ahora.getMonth() + 1).padStart(2, '0');
+
+        exp.intervenciones = exp.intervenciones || [];
+        exp.intervenciones.push({
+          hora: `${dd}/${mo} ${hh}:${mm}`,
+          texto: notas
+        });
+      }
+
+      guardarEnLS();
+      renderizar();
+      cerrarModal();
+    }
+
+    function eliminarExpediente() {
+      if (!confirm('¿Estás seguro de que querés eliminar este expediente?')) return;
+
+      expedientes = expedientes.filter(e => e.id !== editandoId);
+      guardarEnLS();
+      renderizar();
+      cerrarModal();
+    }
+
+    // ===== EVENTOS =====
+    document.getElementById('fabNuevo').addEventListener('click', abrirNuevo);
+    document.getElementById('modalClose').addEventListener('click', cerrarModal);
+    document.getElementById('btnCancelar').addEventListener('click', cerrarModal);
+    document.getElementById('btnGuardar').addEventListener('click', guardarExpediente);
+    document.getElementById('btnEliminar').addEventListener('click', eliminarExpediente);
+
+    document.getElementById('headerMenu').addEventListener('click', () => {
+      document.getElementById('sidebar').classList.toggle('active');
+    });
+
+    document.getElementById('modalOverlay').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('modalOverlay')) {
+        cerrarModal();
+      }
+    });
+
+    // ===== INICIALIZACIÓN =====
+    cargarDesdeLS();
+    renderizar();
+
+    // PWA
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>
