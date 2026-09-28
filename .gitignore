@@ -17,3 +17,6 @@ Thumbs.db
 # Local dev
 .env.local
 *.log
+
+# Cloudflare (artefactos de build)
+.wrangler/
