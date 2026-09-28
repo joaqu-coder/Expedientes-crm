@@ -12,6 +12,9 @@
  * Cualquier otra ruta se sirve como archivo estático desde public/.
  */
 
+// Se incrementa a mano para confirmar qué versión está viva en producción.
+const WORKER_VERSION = 'diag-1';
+
 const GITHUB_OWNER = 'joaqu-coder';
 const GITHUB_REPO = 'Expedientes-crm';
 const GITHUB_FILE = 'expedientes.json';
@@ -74,11 +77,10 @@ async function githubPutFile(token, datos, sha) {
 
 async function manejarSync(request, env) {
   if (!env.GITHUB_TOKEN) {
-    // Si ves este error justo después de agregar el secret en el dashboard,
-    // el deployment activo es anterior al secret: hace falta un redeploy
-    // nuevo (los secrets no se aplican retroactivamente a versiones ya
-    // desplegadas). Un push nuevo alcanza.
-    return jsonResponse({ error: 'GITHUB_TOKEN no configurado en el Worker' }, 500);
+    return jsonResponse({
+      error: 'GITHUB_TOKEN no configurado en el Worker',
+      donde: 'Dashboard -> Settings -> "Runtime variables and secrets" (NO "Builds -> Variables and secrets": esas solo existen durante el build y no llegan al runtime)'
+    }, 500);
   }
 
   try {
@@ -103,6 +105,17 @@ async function manejarSync(request, env) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    // Diagnóstico: confirma qué ve el Worker en runtime sin exponer valores.
+    if (url.pathname === '/api/health') {
+      return jsonResponse({
+        version_worker: WORKER_VERSION,
+        tiene_github_token: Boolean(env.GITHUB_TOKEN),
+        largo_token: env.GITHUB_TOKEN ? env.GITHUB_TOKEN.length : 0,
+        tiene_binding_assets: Boolean(env.ASSETS),
+        claves_env: Object.keys(env).sort()
+      });
+    }
 
     if (url.pathname === '/api/sync') {
       return manejarSync(request, env);

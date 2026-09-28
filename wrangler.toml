@@ -4,19 +4,24 @@
 # Sirve los archivos estáticos de public/ (index.html, manifest.json, sw.js)
 # y expone /api/sync para guardar/leer expedientes.json en GitHub sin
 # exponer el token al navegador (queda como secret de Cloudflare).
+#
+# IMPORTANTE: el secret GITHUB_TOKEN va en Settings -> "Runtime variables and
+# secrets" del dashboard, NO en "Builds -> Variables and secrets" (esas
+# últimas solo viven durante el build y nunca llegan a env en runtime).
+#
+# Sin [env.*]: el deploy es `npx wrangler deploy` (sin --env), que usa
+# exclusivamente esta config top-level. Meter [env.production] haría que
+# assets/bindings dejaran de aplicarse a este deploy.
 
 name = "expedientes-crm"
 main = "worker.js"
 compatibility_date = "2024-12-01"
 
-[env.production]
-name = "expedientes-crm"
-routes = [
-  { pattern = "expedientes-crm.f-c-joaquin.workers.dev/*", zone_name = "workers.dev" }
-]
-
-[env.production.assets]
+[assets]
 directory = "./public"
 binding = "ASSETS"
+# Si la URL no matchea ningún archivo, devolvemos index.html
+# (ej: alguien visita la raíz "/" o un path inválido).
 not_found_handling = "single-page-application"
+# Sin "clean URLs": /index.html debe devolver 200 directo, no redirect.
 html_handling = "none"
