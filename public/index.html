@@ -1123,6 +1123,13 @@
         </div>
 
         <div class="form-group">
+          <label class="form-label">Fecha de Vencimiento</label>
+          <div class="form-input" id="fechaVencimiento" style="background-color: var(--gray-100); padding: 10px; border-radius: 6px; cursor: default; user-select: none;">
+            Completa Fecha de Inicio y Plazo
+          </div>
+        </div>
+
+        <div class="form-group">
           <label class="form-label">Notas (se guardarán como intervención)</label>
           <textarea class="form-textarea" id="notas" placeholder="Anotaciones sobre el expediente"></textarea>
         </div>
@@ -1273,6 +1280,24 @@
       document.getElementById('expedientesList').innerHTML = html || '<p style="padding: 16px; text-align: center; color: var(--text-muted);">No hay expedientes</p>';
     }
 
+    function actualizarFechaVencimiento() {
+      const fechaInicio = document.getElementById('fechaInicio')?.value;
+      const diasPlazo = parseInt(document.getElementById('diasPlazo')?.value || 0);
+
+      if (!fechaInicio || !diasPlazo) {
+        document.getElementById('fechaVencimiento').textContent = 'Completa Fecha de Inicio y Plazo';
+        return;
+      }
+
+      const fechaFin = calcularFechaFin(fechaInicio, diasPlazo);
+      const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      const fechaFormato = fechaFin.toLocaleDateString('es-AR', opciones);
+      const diasRestantes = calcularDiasRestantes(fechaInicio, diasPlazo);
+
+      document.getElementById('fechaVencimiento').textContent =
+        `${fechaFormato} (${diasRestantes} día${diasRestantes !== 1 ? 's' : ''} restante${diasRestantes !== 1 ? 's' : ''})`;
+    }
+
     function abrirNuevo() {
       editandoId = null;
       document.getElementById('modalTitle').textContent = 'Nuevo Expediente';
@@ -1286,6 +1311,12 @@
         inputNumero.addEventListener('input', (e) => actualizarValidacionNumero(e.target));
         inputNumero.addEventListener('keydown', filtrarCaracteresNumero);
       }
+
+      // Agregar cálculo de vencimiento en tiempo real
+      const fechaInicio = document.getElementById('fechaInicio');
+      const diasPlazo = document.getElementById('diasPlazo');
+      if (fechaInicio) fechaInicio.addEventListener('change', actualizarFechaVencimiento);
+      if (diasPlazo) diasPlazo.addEventListener('input', actualizarFechaVencimiento);
 
       document.getElementById('modalOverlay').classList.add('active');
     }
@@ -1307,6 +1338,13 @@
         inputNumero.addEventListener('keydown', filtrarCaracteresNumero);
         actualizarValidacionNumero(inputNumero);
       }
+
+      // Agregar cálculo de vencimiento en tiempo real
+      const fechaInicio = document.getElementById('fechaInicio');
+      const diasPlazo = document.getElementById('diasPlazo');
+      if (fechaInicio) fechaInicio.addEventListener('change', actualizarFechaVencimiento);
+      if (diasPlazo) diasPlazo.addEventListener('input', actualizarFechaVencimiento);
+      actualizarFechaVencimiento(); // Mostrar el cálculo inicial
 
       document.getElementById('modalOverlay').classList.add('active');
     }
