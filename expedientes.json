@@ -12,6 +12,10 @@
         {
           "hora": "28/09 19:34",
           "texto": "Prueba 1"
+        },
+        {
+          "hora": "28/09 19:36",
+          "texto": "Prueba 2 :Lorem ipsum dolor sit amet consectetur adipiscing, elit et penatibus himenaeos mi taciti, dictum varius integer magna ullamcorper. Ultrices aenean purus per ad posuere viverra auctor id, molestie faucibus facilisis tincidunt conubia turpis ornare platea, imperdiet vulputate congue magnis tellus pulvinar sed. Hac porta aliquam sagittis etiam facilisi, felis rutrum a morbi proin inceptos, vivamus himenaeos aptent litora"
         }
       ]
     }
@@ -27,5 +31,5 @@
     "María García",
     "Juan López"
   ],
-  "timestamp": "2026-09-28T22:34:39.735Z"
+  "timestamp": "2026-09-28T22:36:19.740Z"
 }
