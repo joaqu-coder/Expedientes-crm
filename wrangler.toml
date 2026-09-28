@@ -9,11 +9,14 @@ name = "expedientes-crm"
 main = "worker.js"
 compatibility_date = "2024-12-01"
 
-[assets]
+[env.production]
+name = "expedientes-crm"
+routes = [
+  { pattern = "expedientes-crm.f-c-joaquin.workers.dev/*", zone_name = "workers.dev" }
+]
+
+[env.production.assets]
 directory = "./public"
 binding = "ASSETS"
-# Si la URL no matchea ningún archivo, devolvemos index.html
-# (ej: alguien visita la raíz "/" o un path inválido).
 not_found_handling = "single-page-application"
-# Sin "clean URLs": /index.html debe devolver 200 directo, no redirect.
 html_handling = "none"
