@@ -859,8 +859,8 @@
       const html = `
         <div class="form-group">
           <label class="form-label required">Nro Expediente</label>
-          <input type="text" class="form-input" id="numero" placeholder="(363 – 12454/2024)" value="${expediente?.numero || ''}" pattern="\\(\\d{1,3}\\s*–\\s*\\d{1,5}\\/\\d{4}\\)" title="Formato: (XXX – XXXXX/YYYY) ej: (363 – 12454/2024)" required>
-          <span class="form-help">Formato: (Mesa – Número/Año) ej: (363 – 12454/2024)</span>
+          <input type="text" class="form-input" id="numero" placeholder="(363-12454/2024)" value="${expediente?.numero || ''}" pattern="\\(\\d{1,3}\\s*-\\s*\\d{1,5}\\/\\d{4}\\)" title="Formato: (XXX-XXXXX/YYYY) ej: (363-12454/2024)" required>
+          <span class="form-help">Formato: (Mesa-Número/Año) ej: (363-12454/2024)</span>
         </div>
 
         <div class="form-group">
