@@ -74,6 +74,10 @@ async function githubPutFile(token, datos, sha) {
 
 async function manejarSync(request, env) {
   if (!env.GITHUB_TOKEN) {
+    // Si ves este error justo después de agregar el secret en el dashboard,
+    // el deployment activo es anterior al secret: hace falta un redeploy
+    // nuevo (los secrets no se aplican retroactivamente a versiones ya
+    // desplegadas). Un push nuevo alcanza.
     return jsonResponse({ error: 'GITHUB_TOKEN no configurado en el Worker' }, 500);
   }
 
