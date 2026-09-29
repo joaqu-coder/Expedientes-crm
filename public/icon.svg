@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <!-- Gradiente para el icono -->
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2c5282;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a3a52;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+
+  <!-- Fondo circular -->
+  <circle cx="96" cy="96" r="96" fill="url(#grad1)" filter="url(#shadow)"/>
+
+  <!-- Engranaje (izquierda-atrás) -->
+  <g opacity="0.3" transform="translate(50, 70)">
+    <circle cx="0" cy="0" r="28" fill="none" stroke="white" stroke-width="3"/>
+    <!-- Dientes -->
+    <rect x="-3" y="-35" width="6" height="8" fill="white"/>
+    <rect x="-3" y="27" width="6" height="8" fill="white"/>
+    <rect x="27" y="-3" width="8" height="6" fill="white"/>
+    <rect x="-35" y="-3" width="8" height="6" fill="white"/>
+  </g>
+
+  <!-- Documento/Expediente (centro-derecha) -->
+  <g transform="translate(96, 96)">
+    <!-- Carpeta/Documento -->
+    <rect x="-30" y="-25" width="60" height="70" rx="4" fill="white" filter="url(#shadow)"/>
+
+    <!-- Pestaña de carpeta -->
+    <rect x="-30" y="-25" width="25" height="15" rx="2" fill="#f0f4f8"/>
+
+    <!-- Líneas de contenido (expediente) -->
+    <line x1="-20" y1="-8" x2="20" y2="-8" stroke="#2c5282" stroke-width="2" stroke-linecap="round"/>
+    <line x1="-20" y1="5" x2="20" y2="5" stroke="#2c5282" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+    <line x1="-20" y1="18" x2="20" y2="18" stroke="#2c5282" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+    <line x1="-20" y1="31" x2="15" y2="31" stroke="#2c5282" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+  </g>
+
+  <!-- Engranaje pequeño (derecha-abajo, decorativo) -->
+  <g opacity="0.4" transform="translate(130, 130)">
+    <circle cx="0" cy="0" r="18" fill="none" stroke="white" stroke-width="2"/>
+    <rect x="-2" y="-23" width="4" height="5" fill="white"/>
+    <rect x="-2" y="18" width="4" height="5" fill="white"/>
+    <rect x="18" y="-2" width="5" height="4" fill="white"/>
+    <rect x="-23" y="-2" width="5" height="4" fill="white"/>
+  </g>
+</svg>
