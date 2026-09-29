@@ -121,6 +121,22 @@
           "texto": "Contacro telefonico 28/09/2026. Eenviara formularios a la casilla de contable"
         }
       ]
+    },
+    {
+      "id": "1790687148313",
+      "numero": "363-7099/2026-0",
+      "tema": "Solicitud de habilitación de tarjeta de combustible Amarok",
+      "area": "Coordinación",
+      "responsable": "Joaquín Fernández Castro",
+      "fechaInicio": "2026-07-31",
+      "diasPlazo": 30,
+      "estado": "activo",
+      "intervenciones": [
+        {
+          "hora": "29/09 10:05",
+          "texto": "Hablo con Patricia. Me clmenta q el expe ya fue enviado"
+        }
+      ]
     }
   ],
   "areas": [
@@ -137,5 +153,5 @@
     "Karina Merino",
     "Joaquín Fernández Castro"
   ],
-  "timestamp": "2026-09-29T12:59:58.285Z"
+  "timestamp": "2026-09-29T13:05:48.417Z"
 }
