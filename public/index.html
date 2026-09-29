@@ -1113,9 +1113,8 @@
     function crearFormulario(expediente = null) {
       const html = `
         <div class="form-group">
-          <label class="form-label required">Nro Expediente</label>
-          <input type="text" class="form-input" id="numero" placeholder="363-1254/2025-01" value="${expediente?.numero || ''}" pattern="\\d{3}\\s*-\\s*\\d{1,6}\\/\\d{4}\\s*-\\s*\\d{1,2}" title="Formato: XXX-XXXXX/YYYY-ZZ ej: 363-1254/2025-01" required>
-          <span class="form-help">Formato: (Mesa-Número/Año) ej: (363-12454/2024)</span>
+          <label class="form-label">Nro Expediente</label>
+          <input type="text" class="form-input" id="numero" placeholder="363-1254/2025-01 (opcional)" value="${expediente?.numero || ''}" pattern="\\d{3}\\s*-\\s*\\d{1,6}\\/\\d{4}\\s*-\\s*\\d{1,2}">
         </div>
 
         <div class="form-group">
@@ -1392,15 +1391,13 @@
       const diasPlazo = parseInt(document.getElementById('diasPlazo').value);
       const notas = document.getElementById('notas').value.trim();
 
-      if (!numero || !tema || !area || !responsable || !fechaInicio || !diasPlazo) {
+      if (!tema || !area || !responsable || !fechaInicio || !diasPlazo) {
         mostrarAlerta('⚠️ Campos faltantes', 'Completa todos los campos obligatorios');
         return;
       }
 
-      // Misma validación que el feedback visual del campo: una sola fuente de
-      // verdad. Antes acá se exigía guión medio (–) mientras el input lo
-      // convertía a guión normal (-) en cada tecla, así que no se podía guardar.
-      if (!validarNumeroExpediente(numero)) {
+      // Si se ingresó un número, validar que sea correcto. El número es opcional.
+      if (numero && !validarNumeroExpediente(numero)) {
         mostrarAlerta('❌ Formato incorrecto', 'Usa: XXX-XXXXX/YYYY-ZZ\nEjemplos:\n363-1254/2025-01\n363-125477/2026-0');
         return;
       }
