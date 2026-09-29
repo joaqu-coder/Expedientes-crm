@@ -773,6 +773,10 @@
           </div>
         </div>
       </div>
+      <div class="config-footer" style="display: flex; gap: 10px; padding: 16px; border-top: 1px solid var(--gray-300); justify-content: flex-end;">
+        <button class="btn btn-secondary" onclick="document.getElementById('configOverlay').classList.remove('active')" style="border: none; background-color: var(--gray-200); color: var(--text); padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 500;">Cerrar</button>
+        <button class="btn btn-primary" onclick="guardarConfiguracion()" style="background-color: var(--primary); color: white; padding: 10px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: 500;">Guardar cambios</button>
+      </div>
     </div>
   </div>
 
@@ -1215,6 +1219,14 @@
       } else if (input.value.trim()) {
         mostrarAlerta('ℹ️ Duplicado', 'El responsable ya existe');
       }
+    }
+
+    function guardarConfiguracion() {
+      guardarEnLS(true); // Sincronizar con GitHub
+      mostrarAlerta('✅ Guardado', 'Cambios en áreas y responsables sincronizados');
+      setTimeout(() => {
+        document.getElementById('configOverlay').classList.remove('active');
+      }, 1500);
     }
 
     function renderizarPanelAreas() {
