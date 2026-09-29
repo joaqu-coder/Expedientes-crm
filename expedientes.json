@@ -16,21 +16,6 @@
       ]
     },
     {
-      "id": "1790636408918",
-      "numero": "363-45633/2025-01",
-      "tema": "Intimacion",
-      "area": "Jurídica",
-      "responsable": "Juan López",
-      "fechaInicio": "2026-09-28",
-      "diasPlazo": 12,
-      "intervenciones": [
-        {
-          "hora": "28/09 20:00",
-          "texto": "Prueba 1"
-        }
-      ]
-    },
-    {
       "id": "1790640768114",
       "numero": "363-166383/2026-0",
       "tema": "Comercial -SYRES S.R.L",
@@ -55,5 +40,5 @@
     "Karina Merino",
     "Joaquín Fernández Castro"
   ],
-  "timestamp": "2026-09-29T00:39:27.987Z"
+  "timestamp": "2026-09-29T00:40:07.582Z"
 }
