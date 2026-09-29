@@ -386,6 +386,163 @@ async function testPlazosYTarjetas() {
   ctx.server.close();
 }
 
+// ---------- Paquete 3: móvil y accesibilidad ----------
+const SEMBRAR = () => {
+  const base = { area: 'Jurídica', responsable: 'Ana', estado: 'activo', intervenciones: [] };
+  expedientes = Array.from({ length: 14 }, (_, i) => ({
+    ...base, id: 'e' + i, numero: `363-${100 + i}/2026-01`, tema: `Expediente número ${i}`,
+    fechaInicio: '2099-01-05', diasPlazo: 30 + i,
+  }));
+  renderizar();
+};
+
+async function testMovilTactil() {
+  console.log('\n=== MÓVIL TÁCTIL (390x844, touch) ===');
+  const ctx = levantarServer(8792);
+  await new Promise((r) => ctx.server.listen(8792, r));
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const page = await context.newPage();
+  const problemas = [];
+  page.on('pageerror', (e) => problemas.push('pageerror: ' + e.message));
+  await page.goto('http://localhost:8792/', { waitUntil: 'networkidle' });
+  await page.evaluate(SEMBRAR);
+
+  // iOS Safari hace zoom al enfocar un campo con fuente < 16px.
+  const fuente = (sel) => page.evaluate((s) => parseFloat(getComputedStyle(document.querySelector(s)).fontSize), sel);
+  ok((await fuente('#searchInput')) >= 16, `el buscador tiene fuente ≥16px (${await fuente('#searchInput')}px)`);
+
+  // Objetivos táctiles de 44px.
+  const alto = async (sel) => (await page.locator(sel).first().boundingBox()).height;
+  for (const [sel, nombre] of [['.btn-small', 'Resolver'], ['.area-btn', 'chip de área'], ['.pestana-btn', 'pestaña'], ['#btnConfig', 'engranaje']]) {
+    const h = await alto(sel);
+    ok(h >= 44, `${nombre} mide ≥44px de alto (${Math.round(h)}px)`);
+  }
+
+  // Los chips de área van en una sola fila con scroll horizontal.
+  const chips = await page.evaluate(() => {
+    const c = document.getElementById('areaBotones');
+    const tops = new Set([...c.children].map((b) => Math.round(b.getBoundingClientRect().top)));
+    return { filas: tops.size, scroll: c.scrollWidth > c.clientWidth };
+  });
+  ok(chips.filas === 1 && chips.scroll, `los chips de área ocupan 1 fila con scroll horizontal (filas=${chips.filas})`);
+
+  // Barra fija: al hacer scroll, header + pestañas quedan arriba y nada se superpone.
+  await page.evaluate(() => window.scrollTo(0, 600));
+  await page.waitForTimeout(100);
+  const fija = await page.evaluate(() => {
+    const r = document.querySelector('.sticky-top').getBoundingClientRect();
+    return { top: r.top, alto: r.height };
+  });
+  ok(fija.top === 0, `header + pestañas siguen fijos arriba tras scrollear (top=${fija.top})`);
+  const tapado = await page.evaluate(() => {
+    const primera = document.querySelector('.expediente-card');
+    const r = primera.getBoundingClientRect();
+    const el = document.elementFromPoint(r.x + r.width / 2, Math.max(r.y, 100) + 10);
+    return el ? !!el.closest('.sticky-top') : false;
+  });
+  ok(!tapado, 'ningún panel fijo tapa el contenido al scrollear');
+  await page.evaluate(() => window.scrollTo(0, 0));
+
+  // El formulario ocupa toda la pantalla.
+  await page.click('#fabNuevo');
+  const caja = await page.locator('.modal-form').boundingBox();
+  ok(Math.round(caja.width) === 390 && Math.round(caja.height) === 844, `el formulario es pantalla completa (${Math.round(caja.width)}x${Math.round(caja.height)})`);
+  ok((await fuente('#tema')) >= 16, 'los campos del formulario tienen fuente ≥16px');
+  ok(await page.evaluate(() => document.activeElement.getAttribute('role') === 'dialog'),
+     'en táctil el foco va al diálogo (no abre el teclado de golpe)');
+  ok(await page.evaluate(() => document.getElementById('btnGuardar').getBoundingClientRect().bottom <= innerHeight),
+     'Guardar queda visible sin scrollear');
+
+  ok(problemas.length === 0, 'sin errores de JS' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
+  await browser.close();
+  ctx.server.close();
+}
+
+async function testTecladoYFoco() {
+  console.log('\n=== TECLADO, FOCO Y ERRORES EN LÍNEA (desktop) ===');
+  const ctx = levantarServer(8791);
+  await new Promise((r) => ctx.server.listen(8791, r));
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  const problemas = [];
+  page.on('pageerror', (e) => problemas.push('pageerror: ' + e.message));
+  page.on('dialog', async (d) => { problemas.push('dialog: ' + d.message()); await d.dismiss(); });
+  await page.goto('http://localhost:8791/', { waitUntil: 'networkidle' });
+  await page.evaluate(SEMBRAR);
+
+  // Desktop: el contenido no se estira a 1440px.
+  const ancho = (await page.locator('.expediente-card').first().boundingBox()).width;
+  ok(ancho <= 960, `las tarjetas no se estiran en pantallas anchas (${Math.round(ancho)}px)`);
+
+  // Semántica
+  ok((await page.locator('[role="tab"][aria-selected="true"]').count()) === 1, 'una sola pestaña con aria-selected="true"');
+  await page.locator('.pestana-btn').nth(1).click();
+  ok(/Archivados/.test(await page.locator('[role="tab"][aria-selected="true"]').textContent()), 'aria-selected sigue a la pestaña activa');
+  await page.locator('.pestana-btn').nth(0).click();
+  for (const sel of ['#btnConfig', '#fabNuevo', '#modalClose', '#configClose']) {
+    ok(!!(await page.locator(sel).getAttribute('aria-label')), `${sel} tiene aria-label`);
+  }
+  ok((await page.locator('[role="dialog"], [role="alertdialog"]').count()) === 3, 'los 3 modales tienen role dialog/alertdialog');
+
+  // Abrir con teclado: la tarjeta es un botón real
+  const boton = page.locator('.expediente-abrir').first();
+  await boton.focus();
+  await page.keyboard.press('Enter');
+  ok(await page.locator('#modalOverlay').isVisible(), 'Enter sobre el número de la tarjeta abre el expediente');
+  ok(await page.evaluate(() => document.activeElement.id === 'tema'), 'al abrir, el foco va al primer campo (Tema)');
+  ok(await page.evaluate(() => document.querySelector('label[for="tema"]') !== null && document.querySelector('label[for="area"]') !== null), 'los labels están asociados a sus campos');
+
+  // Trampa de foco: 40 Tab no sacan el foco del modal
+  let afuera = 0;
+  for (let i = 0; i < 40; i++) {
+    await page.keyboard.press('Tab');
+    if (!(await page.evaluate(() => !!document.activeElement.closest('#modalOverlay')))) afuera++;
+  }
+  ok(afuera === 0, `Tab no saca el foco del modal (${afuera} escapes en 40 Tab)`);
+  await page.keyboard.press('Shift+Tab');
+  ok(await page.evaluate(() => !!document.activeElement.closest('#modalOverlay')), 'Shift+Tab tampoco escapa');
+
+  // Escape cierra y devuelve el foco a la tarjeta
+  await page.keyboard.press('Escape');
+  ok(!(await page.locator('#modalOverlay').isVisible()), 'Escape cierra el modal');
+  ok(await page.evaluate(() => document.activeElement.classList.contains('expediente-abrir')), 'el foco vuelve al botón de la tarjeta');
+
+  // Errores en línea (sin popup): formulario vacío
+  await page.click('#fabNuevo');
+  await page.fill('#numero', '363-12');
+  await page.fill('#diasPlazo', '');
+  await page.click('#btnGuardar');
+  ok(!(await page.locator('#alertOverlay').isVisible()), 'los errores del formulario no abren un popup');
+  ok((await page.locator('.form-error').count()) >= 5, `se marcan todos los campos con problema (${await page.locator('.form-error').count()})`);
+  ok(await page.evaluate(() => document.activeElement.id === 'numero'), 'el foco va al primer campo con error (Nro Expediente)');
+  ok(/formato/i.test(await page.locator('#error-numero').textContent()), 'el error del número explica el formato');
+  ok((await page.locator('#tema').getAttribute('aria-invalid')) === 'true', 'el campo inválido tiene aria-invalid');
+  await page.fill('#tema', 'algo');
+  ok((await page.locator('#error-tema').count()) === 0 && (await page.locator('#tema.invalid').count()) === 0, 'el error se limpia al corregir el campo');
+
+  // Enter guarda desde un input
+  await page.fill('#numero', '363-1254/2026-01');
+  await page.fill('#diasPlazo', '10');
+  await page.selectOption('#area', { index: 1 });
+  await page.selectOption('#responsable', { index: 1 });
+  await page.focus('#tema');
+  await page.keyboard.press('Enter');
+  ok(!(await page.locator('#modalOverlay').isVisible()), 'Enter en un campo guarda y cierra');
+  ok((await page.locator('#expedientesList').textContent()).includes('363-1254/2026-01'), 'el expediente guardado con Enter aparece en la lista');
+
+  // Configuración: Escape cierra y devuelve el foco al engranaje
+  await page.click('#btnConfig');
+  ok(await page.evaluate(() => document.activeElement.id === 'inputArea'), 'al abrir configuración el foco va al campo de área');
+  await page.keyboard.press('Escape');
+  ok(!(await page.locator('#configOverlay').isVisible()), 'Escape cierra configuración');
+  ok(await page.evaluate(() => document.activeElement.id === 'btnConfig'), 'el foco vuelve al engranaje');
+
+  ok(problemas.length === 0, 'sin errores de JS ni dialogs' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
+  await browser.close();
+  ctx.server.close();
+}
+
 await recorrido('DESKTOP', { width: 1440, height: 900 }, 8799);
 await recorrido('MOBILE', { width: 390, height: 844 }, 8798);
 await testFechas();
@@ -393,6 +550,8 @@ await testSyncYEscape();
 await testPendienteAlAbrir();
 await testCampoNumero();
 await testPlazosYTarjetas();
+await testMovilTactil();
+await testTecladoYFoco();
 
 console.log(fallas === 0 ? '\nUI OK en desktop y mobile' : `\n${fallas} fallas`);
 process.exit(fallas === 0 ? 0 : 1);

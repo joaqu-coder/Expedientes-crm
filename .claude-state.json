@@ -1,7 +1,8 @@
 {
   "sesion_fecha": "2026-09-29",
-  "estado": "Auditoría UX/UI: paquetes 1 y 2 resueltos. Siguen 3 (móvil/a11y) y 4 (flujo).",
+  "estado": "Auditoría UX/UI: paquetes 1, 2 y 3 resueltos. Falta el 4 (flujo).",
   "resuelto": [
+    "PAQ.3 móvil y a11y: barra sticky única (.sticky-top) sin offsets hardcodeados; chips de área en 1 fila con scroll horizontal; contenido centrado max 960px; inputs 16px (sin zoom iOS); targets 44px con @media (pointer: coarse); formulario a pantalla completa en <=600px; tarjeta con <button.expediente-abrir> (patrón enlace estirado) para teclado/lector; roles tablist/tab/dialog/alertdialog, aria-label en iconos, labels con for; foco: abre en primer campo (en táctil en el diálogo), trampa de Tab, Escape cierra el modal superior y devuelve el foco; errores por campo en línea (mostrarErrorCampo) en vez de popup; Enter guarda desde inputs; :focus-visible; prefers-reduced-motion.",
     "PAQ.2: tarjeta y estados. calcularPlazo() distingue 'vence hoy' de 'vencido' (antes ambos 0 d). Badge con texto ('Vencido hace N d háb.', 'Vence hoy', 'N d háb.') + fecha de vencimiento en la tarjeta. Archivadas en gris con 'Resuelto el X', ordenadas por fechaResolucion. Contadores de área y pestañas (Activos (n)/Archivados (n)) respetan la pestaña. Estados vacíos distintos (sin resultados / sin activos / sin archivados). Búsqueda usa oninput (antes onkeyup no filtraba al pegar/dictar). Plazo calculado una vez por expediente en el sort.",
     "AUDITORIA 2026-09-29 PAQ.1: fechas 'YYYY-MM-DD' se parseaban como UTC y en UTC-3 el fin de semana se corría un dia (viernes+1 habil = sabado). Ahora parsearFecha()/fechaISO() locales.",
     "PAQ.1: indicador de sync mentia (sincronizarEnBackground pisaba el error con 'Sincronizado'). Ahora refleja el resultado real del POST.",
@@ -32,7 +33,6 @@
     "/api/health": "diagnostico: tiene_github_token, tiene_binding_assets, claves_env. No expone el valor del secret."
   },
   "pendiente": [
-    "PAQ.3 movil y accesibilidad: inputs 16px (zoom iOS), targets 44px, barra sticky unica (offsets 104/148 hardcodeados), roles/aria/foco en modales, tarjetas navegables por teclado",
     "PAQ.4 flujo: toast con Deshacer en Resolver, confirmar borrado de areas/responsables en uso, refresco al volver a la pestaña (visibilitychange), config sin boton Guardar redundante",
     "Módulo NOTIFICACIONES: agregar array notificaciones a cada expediente. Pestaña/sección 'Notificaciones' en UI. Botón agregar + modal. Indicadores de color (rojo/amarillo/gris/verde). Registro de fechaVista con timestamp.",
     "Rotar el token de GitHub: circulo por el chat y quedo cargado tambien en la seccion de Builds. Rotarlo en GitHub y actualizar SOLO el secret de runtime.",

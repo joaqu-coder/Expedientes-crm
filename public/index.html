@@ -75,18 +75,38 @@
       flex-direction: column;
     }
 
+    /* Barra fija: header + pestañas viven en UN contenedor sticky, así no hay offsets
+       hardcodeados que se desalineen cuando cambia el alto de algo. */
+    .sticky-top {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    /* El contenido se centra en pantallas anchas; en móvil ocupa todo el ancho */
+    .header,
+    .pestanas {
+      --gutter: max(16px, calc((100% - 960px) / 2));
+    }
+
+    .main-content {
+      width: 100%;
+      max-width: 960px;
+      margin: 0 auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
     /* Header */
     .header {
       height: 44px;
-      padding: 0 16px;
+      padding: 0 var(--gutter);
       border-bottom: 1px solid var(--gray-300);
       display: flex;
       align-items: center;
       background: white;
       gap: 12px;
-      position: sticky;
-      top: 0;
-      z-index: 50;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -147,11 +167,8 @@
     /* Pestañas */
     .pestanas {
       background: white;
-      padding: 0;
+      padding: 0 var(--gutter);
       border-bottom: 1px solid var(--gray-300);
-      position: sticky;
-      top: 44px;
-      z-index: 40;
       display: flex;
       gap: 0;
     }
@@ -190,9 +207,6 @@
       background: white;
       padding: 12px;
       border-bottom: 1px solid var(--gray-300);
-      position: sticky;
-      top: 104px;
-      z-index: 40;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -209,10 +223,18 @@
       margin-bottom: 8px;
     }
 
+    /* En móvil los chips van en UNA fila con scroll horizontal (antes envolvían en 4 filas) */
     .area-buttons {
       display: flex;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: thin;
+    }
+
+    @media (min-width: 900px) {
+      .area-buttons { flex-wrap: wrap; overflow-x: visible; }
     }
 
     .area-btn {
@@ -225,6 +247,7 @@
       transition: all 0.2s;
       color: var(--text);
       white-space: nowrap;
+      flex-shrink: 0;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -249,9 +272,6 @@
       padding: 12px;
       background: white;
       border-bottom: 1px solid var(--gray-300);
-      position: sticky;
-      top: 148px;
-      z-index: 39;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -265,7 +285,7 @@
       padding: 10px 12px;
       border: 1px solid var(--gray-300);
       border-radius: 6px;
-      font-size: 13px;
+      font-size: 16px; /* <16px hace que iOS Safari haga zoom al enfocar */
       font-family: inherit;
       color: var(--text);
       background: white;
@@ -296,6 +316,7 @@
     }
 
     .expediente-card {
+      position: relative;
       background: white;
       border-left: 4px solid;
       border-radius: 8px;
@@ -331,6 +352,30 @@
       font-weight: 600;
       font-size: 13px;
       word-break: break-word;
+    }
+
+    /* El número es un <button> real (teclado + lector de pantalla); su ::after se estira
+       sobre toda la tarjeta para que un click en cualquier parte lo active. */
+    .expediente-abrir {
+      background: none;
+      border: none;
+      padding: 0;
+      font: inherit;
+      color: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .expediente-abrir::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 8px;
+    }
+
+    .expediente-acciones .btn {
+      position: relative;
+      z-index: 1; /* por encima del área clickeable estirada */
     }
 
     .expediente-card.archivado { border-left-color: var(--gray-300); }
@@ -386,7 +431,7 @@
     }
 
     .intervencion {
-      font-size: 10px;
+      font-size: 11px;
       color: var(--text-muted);
       margin-bottom: 4px;
       line-height: 1.3;
@@ -517,7 +562,7 @@
       padding: 8px;
       border: 1px solid var(--gray-300);
       border-radius: 6px;
-      font-size: 12px;
+      font-size: 16px; /* idem: sin zoom en iOS */
       font-family: inherit;
       color: var(--text);
       background: white;
@@ -540,12 +585,14 @@
       box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
     }
 
-    .form-input.invalid {
+    .form-input.invalid,
+    .form-select.invalid {
       border-color: var(--red);
       box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.1);
     }
 
-    .form-input.valid {
+    .form-input.valid,
+    .form-select.valid {
       border-color: var(--green);
       box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.1);
     }
@@ -623,6 +670,48 @@
 
     .hidden {
       display: none;
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; }
+    }
+
+    /* Pantallas táctiles: objetivos de al menos 44px */
+    @media (pointer: coarse) {
+      .btn,
+      .area-btn,
+      .pestana-btn,
+      .header-btn,
+      .modal-close,
+      .config-close,
+      .config-item button,
+      .config-input-group button {
+        min-height: 44px;
+      }
+      .header-btn,
+      .modal-close,
+      .config-close,
+      .config-item button {
+        min-width: 44px;
+      }
+    }
+
+    /* El formulario de expediente ocupa toda la pantalla en móvil: con el teclado
+       abierto un modal del 80% del alto dejaba visible casi nada. */
+    @media (max-width: 600px) {
+      .modal.modal-form {
+        width: 100%;
+        max-width: none;
+        height: 100vh;
+        height: 100dvh;
+        max-height: none;
+        border-radius: 0;
+      }
     }
 
     /* Config Popup Modal */
@@ -798,7 +887,7 @@
       padding: 10px 12px;
       border: 1px solid var(--gray-300);
       border-radius: 6px;
-      font-size: 13px;
+      font-size: 16px;
       background: white;
       color: var(--text);
     }
@@ -847,17 +936,20 @@
 </head>
 <body>
   <div class="app">
-    <header class="header">
-      <h1 class="header-title">📋 Expedientes</h1>
-      <span class="sync-indicator sync-pending" id="syncIndicator">⏳ Sincronizando...</span>
-      <button class="header-btn" id="btnConfig" title="Configuración">⚙️</button>
-    </header>
+    <div class="sticky-top">
+      <header class="header">
+        <h1 class="header-title">📋 Expedientes</h1>
+        <span class="sync-indicator sync-pending" id="syncIndicator" role="status" aria-live="polite">⏳ Sincronizando...</span>
+        <button class="header-btn" id="btnConfig" title="Configuración" aria-label="Configuración">⚙️</button>
+      </header>
+
+      <div class="pestanas" role="tablist" aria-label="Estado de los expedientes">
+        <button class="pestana-btn active" role="tab" aria-selected="true" data-pestana="activos" onclick="cambiarPestana('activos')">Activos</button>
+        <button class="pestana-btn" role="tab" aria-selected="false" data-pestana="archivados" onclick="cambiarPestana('archivados')">Archivados</button>
+      </div>
+    </div>
 
     <main class="main-content">
-      <div class="pestanas">
-        <button class="pestana-btn active" data-pestana="activos" onclick="cambiarPestana('activos')">Activos</button>
-        <button class="pestana-btn" data-pestana="archivados" onclick="cambiarPestana('archivados')">Archivados</button>
-      </div>
 
       <div class="panel-areas">
         <div class="panel-areas-title">Áreas Responsables</div>
@@ -865,21 +957,21 @@
       </div>
 
       <div class="search-box">
-        <input type="text" class="search-input" id="searchInput" placeholder="🔍 Buscar por palabra..." oninput="filtrarBusqueda()">
+        <input type="search" class="search-input" id="searchInput" placeholder="🔍 Buscar por palabra..." aria-label="Buscar expedientes" oninput="filtrarBusqueda()">
       </div>
 
-      <div class="expedientes-list" id="expedientesList"></div>
+      <div class="expedientes-list" id="expedientesList" role="tabpanel"></div>
     </main>
   </div>
 
-  <button class="fab" id="fabNuevo" title="Nuevo expediente">+</button>
+  <button class="fab" id="fabNuevo" title="Nuevo expediente" aria-label="Nuevo expediente">+</button>
 
   <!-- Modal Config -->
   <div class="config-overlay" id="configOverlay">
-    <div class="config-modal">
+    <div class="config-modal" role="dialog" aria-modal="true" aria-labelledby="configTitulo">
       <div class="config-header">
-        <h2>⚙️ Configuración</h2>
-        <button class="config-close" id="configClose">✕</button>
+        <h2 id="configTitulo">⚙️ Configuración</h2>
+        <button class="config-close" id="configClose" aria-label="Cerrar configuración">✕</button>
       </div>
       <div class="config-body">
         <div class="config-section">
@@ -901,7 +993,7 @@
         </div>
       </div>
       <div class="config-footer" style="display: flex; gap: 10px; padding: 16px; border-top: 1px solid var(--gray-300); justify-content: flex-end;">
-        <button class="btn btn-secondary" onclick="document.getElementById('configOverlay').classList.remove('active')" style="border: none; background-color: var(--gray-200); color: var(--text); padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 500;">Cerrar</button>
+        <button class="btn btn-secondary" onclick="cerrarConfigModal()" style="border: none; background-color: var(--gray-200); color: var(--text); padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 500;">Cerrar</button>
         <button class="btn btn-primary" onclick="guardarConfiguracion()" style="background-color: var(--primary); color: white; padding: 10px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: 500;">Guardar cambios</button>
       </div>
     </div>
@@ -909,10 +1001,10 @@
 
   <!-- Modal Expediente -->
   <div class="modal-overlay" id="modalOverlay">
-    <div class="modal">
+    <div class="modal modal-form" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <div class="modal-header">
         <h2 class="modal-header-title" id="modalTitle">Nuevo Expediente</h2>
-        <button class="modal-close" id="modalClose">✕</button>
+        <button class="modal-close" id="modalClose" aria-label="Cerrar">✕</button>
       </div>
       <div class="modal-content">
         <form id="formularioModal"></form>
@@ -926,7 +1018,7 @@
   </div>
 
   <div class="modal-overlay" id="alertOverlay" style="display: none; z-index: 1001;">
-    <div class="modal" style="max-width: 400px;">
+    <div class="modal" style="max-width: 400px;" role="alertdialog" aria-modal="true" aria-labelledby="alertTitle" aria-describedby="alertMessage">
       <div class="modal-header" style="border-bottom: 2px solid var(--orange);">
         <h2 class="modal-header-title" id="alertTitle" style="color: var(--orange);">⚠️ Aviso</h2>
       </div>
@@ -999,16 +1091,90 @@
       ));
     }
 
+    // ===== MODALES: foco, Escape y trampa de Tab =====
+    const OVERLAYS = ['alertOverlay', 'configOverlay', 'modalOverlay']; // del más al menos prioritario
+    const focoPrevio = {};
+
+    function overlayAbierto(id) {
+      return getComputedStyle(document.getElementById(id)).display !== 'none';
+    }
+
+    function abrirOverlay(id, selectorFoco) {
+      const overlay = document.getElementById(id);
+      if (!overlayAbierto(id)) focoPrevio[id] = document.activeElement;
+      if (id === 'alertOverlay') overlay.style.display = 'flex';
+      else overlay.classList.add('active');
+
+      const dialogo = overlay.querySelector('[role="dialog"], [role="alertdialog"]');
+      dialogo.setAttribute('tabindex', '-1');
+      // En pantallas táctiles enfocar un campo abre el teclado de golpe: se enfoca el diálogo.
+      const objetivo = !matchMedia('(pointer: coarse)').matches && selectorFoco && overlay.querySelector(selectorFoco);
+      (objetivo || dialogo).focus();
+    }
+
+    function cerrarOverlay(id) {
+      const overlay = document.getElementById(id);
+      if (id === 'alertOverlay') overlay.style.display = 'none';
+      else overlay.classList.remove('active');
+
+      // Devuelve el foco a donde estaba. Si ese elemento se redibujó (la lista se
+      // renderiza de nuevo al guardar), lo busca por id de expediente.
+      let previo = focoPrevio[id];
+      delete focoPrevio[id];
+      if (previo && !previo.isConnected && previo.dataset?.id) {
+        previo = document.querySelector(`.expediente-abrir[data-id="${CSS.escape(previo.dataset.id)}"]`);
+      }
+      if (previo && previo.isConnected && typeof previo.focus === 'function') previo.focus();
+    }
+
+    function cerrarSuperior() {
+      const id = OVERLAYS.find(overlayAbierto);
+      if (id === 'alertOverlay') cerrarAlert();
+      else if (id === 'configOverlay') cerrarConfigModal();
+      else if (id === 'modalOverlay') cerrarModal();
+    }
+
+    const SELECTOR_FOCO = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+    document.addEventListener('keydown', (e) => {
+      const id = OVERLAYS.find(overlayAbierto);
+      if (!id) return;
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        cerrarSuperior();
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        const dialogo = document.getElementById(id).querySelector('[role="dialog"], [role="alertdialog"]');
+        const foco = [...dialogo.querySelectorAll(SELECTOR_FOCO)].filter(el => el.getClientRects().length);
+        if (!foco.length) { e.preventDefault(); return; }
+        const primero = foco[0];
+        const ultimo = foco[foco.length - 1];
+        if (!dialogo.contains(document.activeElement)) {
+          e.preventDefault();
+          primero.focus();
+        } else if (e.shiftKey && (document.activeElement === primero || document.activeElement === dialogo)) {
+          e.preventDefault();
+          ultimo.focus();
+        } else if (!e.shiftKey && document.activeElement === ultimo) {
+          e.preventDefault();
+          primero.focus();
+        }
+      }
+    });
+
     // ===== ALERTAS ELEGANTES =====
     function mostrarAlerta(titulo, mensaje) {
       document.getElementById('alertTitle').textContent = titulo;
       document.getElementById('alertMessage').textContent = mensaje;
-      document.getElementById('alertOverlay').style.display = 'flex';
-      document.getElementById('alertBtn').focus();
+      abrirOverlay('alertOverlay', '#alertBtn');
+      document.getElementById('alertBtn').focus(); // en táctil también: es un solo botón, no abre teclado
     }
 
     function cerrarAlert() {
-      document.getElementById('alertOverlay').style.display = 'none';
+      cerrarOverlay('alertOverlay');
     }
 
     // ===== VALIDACIÓN EN TIEMPO REAL =====
@@ -1332,50 +1498,51 @@
     function crearFormulario(expediente = null) {
       const html = `
         <div class="form-group">
-          <label class="form-label">Nro Expediente</label>
-          <input type="text" class="form-input" id="numero" placeholder="363-1254/2025-01 (opcional)" value="${esc(expediente?.numero)}" autocomplete="off" pattern="\\d{3}\\s*-\\s*\\d{1,6}\\/\\d{4}\\s*-\\s*\\d{1,2}">
+          <label class="form-label" for="numero">Nro Expediente <span style="font-weight: 400; color: var(--text-muted);">(opcional)</span></label>
+          <input type="text" class="form-input" id="numero" placeholder="363-1254/2025-01" value="${esc(expediente?.numero)}" autocomplete="off" data-ayuda="ayuda-numero" aria-describedby="ayuda-numero" pattern="\\d{3}\\s*-\\s*\\d{1,6}\\/\\d{4}\\s*-\\s*\\d{1,2}">
+          <span class="form-help" id="ayuda-numero">Formato: 363-1254/2025-01. Podés pegarlo desde Word o PDF.</span>
         </div>
 
         <div class="form-group">
-          <label class="form-label required">Tema</label>
-          <input type="text" class="form-input" id="tema" placeholder="Descripción breve del asunto" value="${esc(expediente?.tema)}" required>
+          <label class="form-label required" for="tema">Tema</label>
+          <input type="text" class="form-input" id="tema" placeholder="Descripción breve del asunto" value="${esc(expediente?.tema)}" aria-required="true">
         </div>
 
         <div class="form-group">
-          <label class="form-label required">Área Responsable</label>
-          <select class="form-select" id="area" required>
+          <label class="form-label required" for="area">Área Responsable</label>
+          <select class="form-select" id="area" aria-required="true">
             <option value="">Seleccionar área...</option>
             ${AREAS.map(a => `<option value="${esc(a)}" ${expediente?.area === a ? 'selected' : ''}>${esc(a)}</option>`).join('')}
           </select>
         </div>
 
         <div class="form-group">
-          <label class="form-label required">Responsable</label>
-          <select class="form-select" id="responsable" required>
+          <label class="form-label required" for="responsable">Responsable</label>
+          <select class="form-select" id="responsable" aria-required="true">
             <option value="">Seleccionar responsable...</option>
             ${RESPONSABLES.map(r => `<option value="${esc(r)}" ${expediente?.responsable === r ? 'selected' : ''}>${esc(r)}</option>`).join('')}
           </select>
         </div>
 
         <div class="form-group">
-          <label class="form-label required">Fecha de Inicio</label>
-          <input type="date" class="form-input" id="fechaInicio" value="${esc(expediente?.fechaInicio || fechaISO(new Date()))}" required>
+          <label class="form-label required" for="fechaInicio">Fecha de Inicio</label>
+          <input type="date" class="form-input" id="fechaInicio" value="${esc(expediente?.fechaInicio || fechaISO(new Date()))}" aria-required="true">
         </div>
 
         <div class="form-group">
-          <label class="form-label required">Plazo en Días Hábiles</label>
-          <input type="number" class="form-input" id="diasPlazo" placeholder="30" value="${esc(expediente?.diasPlazo)}" min="1" required>
+          <label class="form-label required" for="diasPlazo">Plazo en Días Hábiles</label>
+          <input type="number" class="form-input" id="diasPlazo" placeholder="30" value="${esc(expediente?.diasPlazo)}" min="1" aria-required="true">
         </div>
 
         <div class="form-group">
           <label class="form-label">Fecha de Vencimiento</label>
-          <div class="form-input" id="fechaVencimiento" style="background-color: var(--gray-100); padding: 10px; border-radius: 6px; cursor: default; user-select: none;">
+          <div class="form-input" id="fechaVencimiento" role="status" aria-live="polite" style="background-color: var(--gray-100); padding: 10px; border-radius: 6px; cursor: default; user-select: none;">
             Completa Fecha de Inicio y Plazo
           </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Notas (se guardarán como intervención)</label>
+          <label class="form-label" for="notas">Nueva nota (se agrega al historial)</label>
           <textarea class="form-textarea" id="notas" placeholder="Anotaciones sobre el expediente"></textarea>
         </div>
 
@@ -1441,9 +1608,7 @@
       const ok = await sincronizarAhora();
       if (ok) {
         mostrarAlerta('✅ Guardado', 'Cambios en áreas y responsables sincronizados con GitHub');
-        setTimeout(() => {
-          document.getElementById('configOverlay').classList.remove('active');
-        }, 1500);
+        setTimeout(cerrarConfigModal, 1500);
       } else {
         mostrarAlerta('❌ Error', 'No se pudo sincronizar. Los cambios se guardaron localmente y se reintentarán al volver la conexión.');
       }
@@ -1489,6 +1654,7 @@
         const cantidad = expedientes.filter(e => estadoDe(e) === p).length;
         btn.textContent = `${nombres[p]} (${cantidad})`;
         btn.classList.toggle('active', p === pestanaActiva);
+        btn.setAttribute('aria-selected', String(p === pestanaActiva));
       });
     }
 
@@ -1570,9 +1736,11 @@
         const tieneInterv = exp.intervenciones && exp.intervenciones.length > 0;
 
         return `
-          <div class="expediente-card ${clase}" data-id="${esc(exp.id)}" onclick="abrirEditar(this.dataset.id)">
+          <div class="expediente-card ${clase}" data-id="${esc(exp.id)}">
             <div class="expediente-header">
-              <div class="expediente-numero">${exp.numero ? esc(exp.numero) : 'Sin número'}</div>
+              <div class="expediente-numero">
+                <button type="button" class="expediente-abrir" data-id="${esc(exp.id)}" aria-label="Editar expediente ${esc(exp.numero || 'sin número')}: ${esc(exp.tema)}" onclick="abrirEditar(this.dataset.id)">${exp.numero ? esc(exp.numero) : 'Sin número'}</button>
+              </div>
               <span class="plazo-badge ${clase}">${esc(badge)}</span>
             </div>
 
@@ -1636,27 +1804,62 @@
       document.getElementById('fechaVencimiento').textContent = `${fechaFormato} (${estado})`;
     }
 
+    // Errores en línea: se marcan el campo y el mensaje, y se limpian apenas el usuario corrige.
+    const CAMPOS_FORM = ['numero', 'tema', 'area', 'responsable', 'fechaInicio', 'diasPlazo'];
+
+    function mostrarErrorCampo(id, mensaje) {
+      const input = document.getElementById(id);
+      if (!input) return;
+      input.classList.remove('valid');
+      input.classList.add('invalid');
+      input.setAttribute('aria-invalid', 'true');
+      let err = document.getElementById('error-' + id);
+      if (!err) {
+        err = document.createElement('span');
+        err.className = 'form-error';
+        err.id = 'error-' + id;
+        err.setAttribute('role', 'alert');
+        input.insertAdjacentElement('afterend', err);
+      }
+      err.textContent = mensaje;
+      input.setAttribute('aria-describedby', ['error-' + id, input.dataset.ayuda].filter(Boolean).join(' '));
+    }
+
+    function limpiarErrorCampo(id) {
+      const input = document.getElementById(id);
+      if (!input) return;
+      input.classList.remove('invalid');
+      input.removeAttribute('aria-invalid');
+      document.getElementById('error-' + id)?.remove();
+      if (input.dataset.ayuda) input.setAttribute('aria-describedby', input.dataset.ayuda);
+      else input.removeAttribute('aria-describedby');
+    }
+
+    function enlazarFormulario() {
+      const inputNumero = document.getElementById('numero');
+      inputNumero.addEventListener('input', (e) => { limpiarErrorCampo('numero'); actualizarValidacionNumero(e.target); });
+      inputNumero.addEventListener('blur', (e) => actualizarValidacionNumero(e.target));
+
+      CAMPOS_FORM.filter(id => id !== 'numero').forEach(id => {
+        const el = document.getElementById(id);
+        el.addEventListener('input', () => limpiarErrorCampo(id));
+        el.addEventListener('change', () => limpiarErrorCampo(id));
+      });
+
+      // Cálculo de vencimiento en tiempo real
+      document.getElementById('fechaInicio').addEventListener('change', actualizarFechaVencimiento);
+      document.getElementById('diasPlazo').addEventListener('input', actualizarFechaVencimiento);
+    }
+
     function abrirNuevo() {
       editandoId = null;
       document.getElementById('modalTitle').textContent = 'Nuevo Expediente';
       document.getElementById('btnEliminar').classList.add('hidden');
 
       document.getElementById('formularioModal').innerHTML = crearFormulario();
+      enlazarFormulario();
 
-      // Agregar validación en tiempo real
-      const inputNumero = document.getElementById('numero');
-      if (inputNumero) {
-        inputNumero.addEventListener('input', (e) => actualizarValidacionNumero(e.target));
-        inputNumero.addEventListener('blur', (e) => actualizarValidacionNumero(e.target));
-      }
-
-      // Agregar cálculo de vencimiento en tiempo real
-      const fechaInicio = document.getElementById('fechaInicio');
-      const diasPlazo = document.getElementById('diasPlazo');
-      if (fechaInicio) fechaInicio.addEventListener('change', actualizarFechaVencimiento);
-      if (diasPlazo) diasPlazo.addEventListener('input', actualizarFechaVencimiento);
-
-      document.getElementById('modalOverlay').classList.add('active');
+      abrirOverlay('modalOverlay', '#numero');
     }
 
     function abrirEditar(id) {
@@ -1668,27 +1871,15 @@
       document.getElementById('btnEliminar').classList.remove('hidden');
 
       document.getElementById('formularioModal').innerHTML = crearFormulario(exp);
-
-      // Agregar validación en tiempo real
-      const inputNumero = document.getElementById('numero');
-      if (inputNumero) {
-        inputNumero.addEventListener('input', (e) => actualizarValidacionNumero(e.target));
-        inputNumero.addEventListener('blur', (e) => actualizarValidacionNumero(e.target));
-        actualizarValidacionNumero(inputNumero);
-      }
-
-      // Agregar cálculo de vencimiento en tiempo real
-      const fechaInicio = document.getElementById('fechaInicio');
-      const diasPlazo = document.getElementById('diasPlazo');
-      if (fechaInicio) fechaInicio.addEventListener('change', actualizarFechaVencimiento);
-      if (diasPlazo) diasPlazo.addEventListener('input', actualizarFechaVencimiento);
+      enlazarFormulario();
+      actualizarValidacionNumero(document.getElementById('numero'));
       actualizarFechaVencimiento(); // Mostrar el cálculo inicial
 
-      document.getElementById('modalOverlay').classList.add('active');
+      abrirOverlay('modalOverlay', '#tema');
     }
 
     function cerrarModal() {
-      document.getElementById('modalOverlay').classList.remove('active');
+      cerrarOverlay('modalOverlay');
       editandoId = null;
     }
 
@@ -1701,14 +1892,21 @@
       const diasPlazo = parseInt(document.getElementById('diasPlazo').value);
       const notas = document.getElementById('notas').value.trim();
 
-      if (!tema || !area || !responsable || !fechaInicio || !diasPlazo) {
-        mostrarAlerta('⚠️ Campos faltantes', 'Completa todos los campos obligatorios');
-        return;
-      }
+      CAMPOS_FORM.forEach(limpiarErrorCampo);
 
-      // Si se ingresó un número, validar que sea correcto. El número es opcional.
-      if (numero && !validarNumeroExpediente(numero)) {
-        mostrarAlerta('❌ Formato incorrecto', 'Usa: XXX-XXXXX/YYYY-ZZ\nEjemplos:\n363-1254/2025-01\n363-125477/2026-0');
+      // El número es opcional, pero si se ingresó tiene que ser correcto.
+      const errores = [
+        [numero && !validarNumeroExpediente(numero), 'numero', 'El número no tiene el formato esperado (mesa-número/año-sufijo)'],
+        [!tema, 'tema', 'Escribí el tema del expediente'],
+        [!area, 'area', 'Elegí un área'],
+        [!responsable, 'responsable', 'Elegí un responsable'],
+        [!fechaInicio, 'fechaInicio', 'Indicá la fecha de inicio'],
+        [!(diasPlazo > 0), 'diasPlazo', 'Indicá el plazo en días hábiles (1 o más)']
+      ].filter(([falla]) => falla);
+
+      if (errores.length) {
+        errores.forEach(([, id, mensaje]) => mostrarErrorCampo(id, mensaje));
+        document.getElementById(errores[0][1]).focus();
         return;
       }
 
@@ -1769,11 +1967,11 @@
 
     // ===== FUNCIONES CONFIG MODAL =====
     function abrirConfigModal() {
-      document.getElementById('configOverlay').classList.add('active');
+      abrirOverlay('configOverlay', '#inputArea');
     }
 
     function cerrarConfigModal() {
-      document.getElementById('configOverlay').classList.remove('active');
+      cerrarOverlay('configOverlay');
     }
 
     // ===== EVENTOS =====
@@ -1782,6 +1980,12 @@
     document.getElementById('btnCancelar').addEventListener('click', cerrarModal);
     document.getElementById('btnGuardar').addEventListener('click', guardarExpediente);
     document.getElementById('btnEliminar').addEventListener('click', eliminarExpediente);
+    document.getElementById('formularioModal').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
+        e.preventDefault();
+        guardarExpediente();
+      }
+    });
 
     // Config Modal Events
     document.getElementById('btnConfig').addEventListener('click', abrirConfigModal);
@@ -1815,13 +2019,7 @@
       if (hayPendiente()) sincronizarAhora();
     });
 
-    // Cerrar popup de alerta con Escape o al clickear afuera
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && document.getElementById('alertOverlay').style.display !== 'none') {
-        cerrarAlert();
-      }
-    });
-
+    // Cerrar popup de alerta al clickear afuera (Escape lo maneja el handler de modales)
     document.getElementById('alertOverlay').addEventListener('click', (e) => {
       if (e.target === document.getElementById('alertOverlay')) {
         cerrarAlert();
