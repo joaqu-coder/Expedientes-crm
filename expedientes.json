@@ -58,6 +58,16 @@
       "fechaInicio": "2026-09-23",
       "diasPlazo": 5,
       "intervenciones": []
+    },
+    {
+      "id": "1790640625647",
+      "numero": "",
+      "tema": "SEMIX & FCS",
+      "area": "Coordinación",
+      "responsable": "Joaquín Fernandez Castro",
+      "fechaInicio": "2026-09-10",
+      "diasPlazo": 20,
+      "intervenciones": []
     }
   ],
   "areas": [
@@ -74,5 +84,5 @@
     "Karina Merino",
     "Joaquín Fernandez Castro"
   ],
-  "timestamp": "2026-09-29T00:09:19.848Z"
+  "timestamp": "2026-09-29T00:10:25.647Z"
 }
