@@ -30,8 +30,7 @@
           "texto": "Service Finalizado."
         }
       ],
-      "estado": "archivado",
-      "fechaResolucion": "2026-09-29"
+      "estado": "activo"
     },
     {
       "id": "1790643000605",
@@ -153,5 +152,5 @@
     "Karina Merino",
     "Joaquín Fernández Castro"
   ],
-  "timestamp": "2026-09-29T13:06:32.768Z"
+  "timestamp": "2026-09-29T13:09:15.964Z"
 }
