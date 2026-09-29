@@ -235,6 +235,50 @@
       border-color: var(--primary);
     }
 
+    /* Búsqueda */
+    .search-box {
+      padding: 12px;
+      background: white;
+      border-bottom: 1px solid var(--gray-300);
+      position: sticky;
+      top: 148px;
+      z-index: 39;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .search-box {
+        background: var(--gray-100);
+      }
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--gray-300);
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: inherit;
+      color: var(--text);
+      background: white;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .search-input {
+        background: var(--gray-200);
+        border-color: var(--gray-300);
+      }
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+    }
+
+    .search-input::placeholder {
+      color: var(--text-muted);
+    }
+
     /* Lista de Expedientes */
     .expedientes-list {
       flex: 1;
@@ -787,6 +831,10 @@
         <div class="area-buttons" id="areaBotones"></div>
       </div>
 
+      <div class="search-box">
+        <input type="text" class="search-input" id="searchInput" placeholder="🔍 Buscar por palabra..." onkeyup="filtrarBusqueda()">
+      </div>
+
       <div class="expedientes-list" id="expedientesList"></div>
     </main>
   </div>
@@ -908,6 +956,7 @@
     let editandoId = null;
     let filtroArea = null;
     let pestanaActiva = 'activos';
+    let busqueda = '';
 
     // ===== ALERTAS ELEGANTES =====
     function mostrarAlerta(titulo, mensaje) {
@@ -1375,6 +1424,11 @@
       }
     }
 
+    function filtrarBusqueda() {
+      busqueda = document.getElementById('searchInput').value.toLowerCase().trim();
+      renderizar();
+    }
+
     function renderizar() {
       renderizarConfigAreas();
       renderizarConfigResponsables();
@@ -1390,6 +1444,16 @@
       // Filtrar por área
       if (filtroArea) {
         filtrados = filtrados.filter(e => e.area === filtroArea);
+      }
+
+      // Filtrar por búsqueda (número, tema, área, responsable)
+      if (busqueda) {
+        filtrados = filtrados.filter(e =>
+          (e.numero && e.numero.toLowerCase().includes(busqueda)) ||
+          (e.tema && e.tema.toLowerCase().includes(busqueda)) ||
+          (e.area && e.area.toLowerCase().includes(busqueda)) ||
+          (e.responsable && e.responsable.toLowerCase().includes(busqueda))
+        );
       }
 
       filtrados.sort((a, b) => {
@@ -1414,8 +1478,7 @@
           <div class="expediente-card ${semaforo.color}" onclick="abrirEditar('${exp.id}')">
             <div class="expediente-header">
               <div class="expediente-numero">${exp.numero}</div>
-              <div style="display: flex; gap: 8px; align-items: center;">
-                <div class="semaforo-emoji">${semaforo.emoji}</div>
+              <div style="display: flex; gap: 8px; align-items: center; justify-content: flex-end;">
                 ${exp.estado === 'archivado'
                   ? `<button class="btn btn-small" style="padding: 4px 8px; font-size: 10px; background: var(--gray-300); color: var(--text);" onclick="event.stopPropagation(); reabrirExpediente('${exp.id}')">↺ Reabrir</button>`
                   : `<button class="btn btn-small" style="padding: 4px 8px; font-size: 10px;" onclick="event.stopPropagation(); marcarResuelto('${exp.id}')">✓ Resolver</button>`
