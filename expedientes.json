@@ -16,6 +16,21 @@
       ]
     },
     {
+      "id": "1790642486016",
+      "numero": "",
+      "tema": "Mantenimiento Toyota Hiloux  LAN 097",
+      "area": "Coordinación",
+      "responsable": "Joaquín Fernández Castro",
+      "fechaInicio": "2026-09-29",
+      "diasPlazo": 10,
+      "intervenciones": [
+        {
+          "hora": "28/09 21:41",
+          "texto": "Se habla con Patricia Delgado 22/09/2026"
+        }
+      ]
+    },
+    {
       "id": "1790640768114",
       "numero": "363-166383/2026-0",
       "tema": "Comercial -SYRES S.R.L",
@@ -40,5 +55,5 @@
     "Karina Merino",
     "Joaquín Fernández Castro"
   ],
-  "timestamp": "2026-09-29T00:40:07.582Z"
+  "timestamp": "2026-09-29T00:41:26.120Z"
 }
