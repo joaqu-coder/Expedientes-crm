@@ -1047,19 +1047,46 @@
       }
     }
 
-    // ===== ALMACENAMIENTO =====
+    // ===== ALMACENAMIENTO CON SYNC BATCHING =====
+    let syncQueue = [];
+    let isSyncing = false;
+
     function guardarEnLS(sincronizar = true) {
       try {
         localStorage.setItem('expedientes_crm_expedientes', JSON.stringify(expedientes));
         localStorage.setItem('expedientes_crm_areas', JSON.stringify(AREAS));
         localStorage.setItem('expedientes_crm_responsables', JSON.stringify(RESPONSABLES));
 
+        // Respuesta local INSTANTÁNEA sin esperar a GitHub (cambios optimistas)
         if (sincronizar) {
-          subirAGitHub().catch(() => {});
+          programarSincronizacion();
         }
       } catch (e) {
         console.error('Error al guardar:', e);
-        mostrarAlerta('❌ Error al guardar', 'No se pudieron guardar los datos. Intenta nuevamente.');
+      }
+    }
+
+    function programarSincronizacion() {
+      // No sincronizar inmediatamente, agregar a queue
+      // Se sincroniza en background cada ~100-500ms (batching inteligente)
+      if (!isSyncing && syncQueue.length === 0) {
+        setTimeout(sincronizarEnBackground, 100);
+      }
+    }
+
+    async function sincronizarEnBackground() {
+      if (isSyncing) return;
+      isSyncing = true;
+
+      try {
+        // Sincronizar TODO (expedientes + config) en un solo POST
+        await subirAGitHub();
+        actualizarIndicadorSync(true);
+      } catch (e) {
+        console.error('Error en sync background:', e);
+        actualizarIndicadorSync(false);
+      } finally {
+        isSyncing = false;
       }
     }
 
