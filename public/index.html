@@ -1364,6 +1364,17 @@
       }
     }
 
+    function reabrirExpediente(expedienteId) {
+      const exp = expedientes.find(e => e.id === expedienteId);
+      if (exp) {
+        exp.estado = 'activo';
+        delete exp.fechaResolucion;
+        guardarEnLS(true);
+        mostrarAlerta('↺ Expediente reabierto', 'El expediente volvió a estar activo.');
+        renderizar();
+      }
+    }
+
     function renderizar() {
       renderizarConfigAreas();
       renderizarConfigResponsables();
@@ -1405,7 +1416,10 @@
               <div class="expediente-numero">${exp.numero}</div>
               <div style="display: flex; gap: 8px; align-items: center;">
                 <div class="semaforo-emoji">${semaforo.emoji}</div>
-                ${exp.estado === 'archivado' ? '' : `<button class="btn btn-small" style="padding: 4px 8px; font-size: 10px;" onclick="event.stopPropagation(); marcarResuelto('${exp.id}')">✓ Resolver</button>`}
+                ${exp.estado === 'archivado'
+                  ? `<button class="btn btn-small" style="padding: 4px 8px; font-size: 10px; background: var(--gray-300); color: var(--text);" onclick="event.stopPropagation(); reabrirExpediente('${exp.id}')">↺ Reabrir</button>`
+                  : `<button class="btn btn-small" style="padding: 4px 8px; font-size: 10px;" onclick="event.stopPropagation(); marcarResuelto('${exp.id}')">✓ Resolver</button>`
+                }
               </div>
             </div>
 
