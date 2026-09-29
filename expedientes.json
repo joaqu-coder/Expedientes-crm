@@ -94,6 +94,21 @@
       "fechaInicio": "2026-09-29",
       "diasPlazo": 15,
       "intervenciones": []
+    },
+    {
+      "id": "1790650865679",
+      "numero": "",
+      "tema": "Comercial BRINDAR S.R.L",
+      "area": "Coordinación",
+      "responsable": "Joaquín Fernández Castro",
+      "fechaInicio": "2026-09-29",
+      "diasPlazo": 20,
+      "intervenciones": [
+        {
+          "hora": "29/09 00:01",
+          "texto": "Contacro telefonico 28/09/2026. Eenviara formularios a la casilla de contable"
+        }
+      ]
     }
   ],
   "areas": [
@@ -110,5 +125,5 @@
     "Karina Merino",
     "Joaquín Fernández Castro"
   ],
-  "timestamp": "2026-09-29T02:57:58.587Z"
+  "timestamp": "2026-09-29T03:01:05.787Z"
 }
