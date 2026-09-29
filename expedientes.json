@@ -16,6 +16,21 @@
       ]
     },
     {
+      "id": "1790640341978",
+      "numero": "",
+      "tema": "Empresa  Los infernales - Angel Gerónimo",
+      "area": "Intervención",
+      "responsable": "Alejandro Leiva",
+      "fechaInicio": "2026-09-28",
+      "diasPlazo": 15,
+      "intervenciones": [
+        {
+          "hora": "28/09 21:05",
+          "texto": "Reunión 3/09/2026 (Reunión). Se envia pdf de propuesta a Fernanda  el 9/09/2026"
+        }
+      ]
+    },
+    {
       "id": "1790634879735",
       "numero": "363-1254/2025-01",
       "tema": "Solicitud de Terreno CECILIA BORLA",
@@ -33,28 +48,12 @@
           "texto": "Prueba 2 :Lorem ipsum dolor sit amet consectetur adipiscing, elit et penatibus himenaeos mi taciti, dictum varius integer magna ullamcorper. Ultrices aenean purus per ad posuere viverra auctor id, molestie faucibus facilisis tincidunt conubia turpis ornare platea, imperdiet vulputate congue magnis tellus pulvinar sed. Hac porta aliquam sagittis etiam facilisi, felis rutrum a morbi proin inceptos, vivamus himenaeos aptent litora"
         }
       ]
-    },
-    {
-      "id": "1790640341978",
-      "numero": "",
-      "tema": "Empresa  Los infernales - Angel Gerónimo",
-      "area": "Intervención",
-      "responsable": "Alejandro Leiva",
-      "fechaInicio": "2026-09-28",
-      "diasPlazo": 15,
-      "intervenciones": [
-        {
-          "hora": "28/09 21:05",
-          "texto": "Reunión 3/09/2026 (Reunión). Se envia pdf de propuesta a Fernanda  el 9/09/2026"
-        }
-      ]
     }
   ],
   "areas": [
     "Jurídica",
     "Administración",
     "Operación",
-    "Obras",
     "Intervención"
   ],
   "responsables": [
@@ -63,5 +62,5 @@
     "Alejandro Montaldi",
     "Karina Merino"
   ],
-  "timestamp": "2026-09-29T00:05:41.981Z"
+  "timestamp": "2026-09-29T00:06:00.640Z"
 }
