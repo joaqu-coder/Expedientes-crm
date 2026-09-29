@@ -39,25 +39,6 @@
       "fechaInicio": "2026-09-29",
       "diasPlazo": 15,
       "intervenciones": []
-    },
-    {
-      "id": "1790634879735",
-      "numero": "363-1254/2025-01",
-      "tema": "Solicitud de Terreno CECILIA BORLA",
-      "area": "Administración",
-      "responsable": "María García",
-      "fechaInicio": "2026-09-28",
-      "diasPlazo": 20,
-      "intervenciones": [
-        {
-          "hora": "28/09 19:34",
-          "texto": "Prueba 1"
-        },
-        {
-          "hora": "28/09 19:36",
-          "texto": "Prueba 2 :Lorem ipsum dolor sit amet consectetur adipiscing, elit et penatibus himenaeos mi taciti, dictum varius integer magna ullamcorper. Ultrices aenean purus per ad posuere viverra auctor id, molestie faucibus facilisis tincidunt conubia turpis ornare platea, imperdiet vulputate congue magnis tellus pulvinar sed. Hac porta aliquam sagittis etiam facilisi, felis rutrum a morbi proin inceptos, vivamus himenaeos aptent litora"
-        }
-      ]
     }
   ],
   "areas": [
@@ -74,5 +55,5 @@
     "Karina Merino",
     "Joaquín Fernández Castro"
   ],
-  "timestamp": "2026-09-29T00:37:15.571Z"
+  "timestamp": "2026-09-29T00:39:27.987Z"
 }
