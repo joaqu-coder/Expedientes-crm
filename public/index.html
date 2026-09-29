@@ -25,6 +25,9 @@
       --gray-300: #d1d5db;
       --text: #1f2937;
       --text-muted: #6b7280;
+      --badge-naranja: #9a3412;
+      --badge-amarillo: #6b5b00;
+      --badge-verde: #336d0e;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -35,6 +38,9 @@
         --gray-300: #4b5563;
         --text: #f3f4f6;
         --text-muted: #d1d5db;
+      --badge-naranja: #fdba74;
+      --badge-amarillo: #fde047;
+      --badge-verde: #86efac;
       }
     }
 
@@ -45,6 +51,9 @@
       --gray-300: #4b5563;
       --text: #f3f4f6;
       --text-muted: #d1d5db;
+      --badge-naranja: #fdba74;
+      --badge-amarillo: #fde047;
+      --badge-verde: #86efac;
     }
 
     * {
@@ -282,7 +291,7 @@
     /* Lista de Expedientes */
     .expedientes-list {
       flex: 1;
-      padding: 8px;
+      padding: 8px 8px 88px; /* deja lugar al FAB para que no tape la última tarjeta */
       overflow-y: auto;
     }
 
@@ -324,22 +333,46 @@
       word-break: break-word;
     }
 
-    .semaforo-emoji {
-      font-size: 20px;
+    .expediente-card.archivado { border-left-color: var(--gray-300); }
+
+    .expediente-header {
+      gap: 8px;
+    }
+
+    /* Plazo: el estado se dice con texto, no solo con el color del borde */
+    .plazo-badge {
       flex-shrink: 0;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .plazo-badge.rojo { background: var(--red); color: #fff; }
+    .plazo-badge.naranja { background: rgba(249, 115, 22, 0.16); color: var(--badge-naranja); }
+    .plazo-badge.amarillo { background: rgba(213, 190, 0, 0.2); color: var(--badge-amarillo); }
+    .plazo-badge.verde { background: rgba(51, 109, 14, 0.14); color: var(--badge-verde); }
+    .plazo-badge.archivado { background: var(--gray-200); color: var(--text-muted); font-weight: 600; }
+
+    .expediente-acciones {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 8px;
     }
 
     .expediente-tema {
-      font-size: 12px;
+      font-size: 14px;
+      font-weight: 500;
       color: var(--text);
       margin-bottom: 6px;
     }
 
     .expediente-meta {
-      font-size: 11px;
+      font-size: 12px;
       color: var(--text-muted);
       display: flex;
-      gap: 8px;
+      gap: 4px 12px;
       flex-wrap: wrap;
       margin-bottom: 4px;
     }
@@ -822,8 +855,8 @@
 
     <main class="main-content">
       <div class="pestanas">
-        <button class="pestana-btn active" onclick="cambiarPestana('activos')">Activos</button>
-        <button class="pestana-btn" onclick="cambiarPestana('archivados')">Archivados</button>
+        <button class="pestana-btn active" data-pestana="activos" onclick="cambiarPestana('activos')">Activos</button>
+        <button class="pestana-btn" data-pestana="archivados" onclick="cambiarPestana('archivados')">Archivados</button>
       </div>
 
       <div class="panel-areas">
@@ -832,7 +865,7 @@
       </div>
 
       <div class="search-box">
-        <input type="text" class="search-input" id="searchInput" placeholder="🔍 Buscar por palabra..." onkeyup="filtrarBusqueda()">
+        <input type="text" class="search-input" id="searchInput" placeholder="🔍 Buscar por palabra..." oninput="filtrarBusqueda()">
       </div>
 
       <div class="expedientes-list" id="expedientesList"></div>
@@ -1052,26 +1085,55 @@
       return fecha;
     }
 
-    function calcularDiasRestantes(fechaInicio, diasPlazo) {
-      const hoy = new Date();
-      hoy.setHours(0, 0, 0, 0);
-      const fechaFin = calcularFechaFin(fechaInicio, diasPlazo);
-      let diasRestantes = 0;
-      let fecha = new Date(hoy);
-
-      while (fecha < fechaFin) {
-        fecha.setDate(fecha.getDate() + 1);
-        if (esHabil(fecha)) diasRestantes++;
-      }
-
-      return Math.max(0, diasRestantes);
+    function hoyLocal() {
+      const h = new Date();
+      h.setHours(0, 0, 0, 0);
+      return h;
     }
 
-    function obtenerSemaforo(diasRestantes) {
-      if (diasRestantes === 0) return { emoji: "🔴", color: "rojo", orden: 0 };
-      if (diasRestantes <= 5) return { emoji: "🟠", color: "naranja", orden: 1 };
-      if (diasRestantes <= 15) return { emoji: "🟡", color: "amarillo", orden: 2 };
-      return { emoji: "🟢", color: "verde", orden: 3 };
+    // Días hábiles en el intervalo (desde, hasta].
+    function diasHabilesEntre(desde, hasta) {
+      let n = 0;
+      const f = new Date(desde);
+      while (f < hasta) {
+        f.setDate(f.getDate() + 1);
+        if (esHabil(f)) n++;
+      }
+      return n;
+    }
+
+    // Estado del plazo de un expediente. Distingue "vence hoy" de "vencido", que antes
+    // se confundían (ambos daban 0 días).
+    function calcularPlazo(fechaInicio, diasPlazo, hoy = hoyLocal()) {
+      const fechaFin = calcularFechaFin(fechaInicio, diasPlazo);
+      const vencido = fechaFin < hoy;
+      return {
+        fechaFin,
+        vencido,
+        venceHoy: fechaFin.getTime() === hoy.getTime(),
+        diasRestantes: vencido ? 0 : diasHabilesEntre(hoy, fechaFin),
+        diasVencido: vencido ? diasHabilesEntre(fechaFin, hoy) : 0
+      };
+    }
+
+    function obtenerSemaforo(plazo) {
+      if (plazo.vencido || plazo.venceHoy) return { color: "rojo", orden: 0 };
+      if (plazo.diasRestantes <= 5) return { color: "naranja", orden: 1 };
+      if (plazo.diasRestantes <= 15) return { color: "amarillo", orden: 2 };
+      return { color: "verde", orden: 3 };
+    }
+
+    function textoPlazo(plazo) {
+      if (plazo.vencido) {
+        return plazo.diasVencido > 0 ? `Vencido hace ${plazo.diasVencido} d háb.` : 'Vencido';
+      }
+      if (plazo.venceHoy) return 'Vence hoy';
+      return `${plazo.diasRestantes} d háb.`;
+    }
+
+    function formatearFechaCorta(fecha) {
+      return fecha.toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })
+        .replace(',', '');
     }
 
     // ===== SYNC (vía Worker propio, sin exponer token) =====
@@ -1387,21 +1449,22 @@
       }
     }
 
-    function renderizarPanelAreas() {
-      const conteos = {};
-      conteos['Total'] = expedientes.length;
+    function estadoDe(exp) {
+      return (exp.estado || 'activo') === 'archivado' ? 'archivados' : 'activos';
+    }
 
-      AREAS.forEach(area => {
-        conteos[area] = expedientes.filter(e => e.area === area).length;
-      });
+    // Los contadores reflejan la pestaña visible: antes "Total" sumaba activos y
+    // archivados y no coincidía con las tarjetas de la lista.
+    function renderizarPanelAreas() {
+      const enPestana = expedientes.filter(e => estadoDe(e) === pestanaActiva);
 
       const html = `
         <button class="area-btn ${filtroArea === null ? 'active' : ''}" data-area="" onclick="filtrarArea(this.dataset.area || null)">
-          Total (${conteos['Total']})
+          Total (${enPestana.length})
         </button>
         ${AREAS.map(area => `
           <button class="area-btn ${filtroArea === area ? 'active' : ''}" data-area="${esc(area)}" onclick="filtrarArea(this.dataset.area || null)">
-            ${esc(area)} (${conteos[area]})
+            ${esc(area)} (${enPestana.filter(e => e.area === area).length})
           </button>
         `).join('')}
       `;
@@ -1416,18 +1479,16 @@
 
     function cambiarPestana(pestana) {
       pestanaActiva = pestana;
-      document.querySelectorAll('.pestana-btn').forEach(btn => btn.classList.remove('active'));
-      event.target.classList.add('active');
       renderizar();
     }
 
     function actualizarPestanas() {
+      const nombres = { activos: 'Activos', archivados: 'Archivados' };
       document.querySelectorAll('.pestana-btn').forEach(btn => {
-        btn.classList.remove('active');
-        if ((btn.textContent.includes('Activos') && pestanaActiva === 'activos') ||
-            (btn.textContent.includes('Archivados') && pestanaActiva === 'archivados')) {
-          btn.classList.add('active');
-        }
+        const p = btn.dataset.pestana;
+        const cantidad = expedientes.filter(e => estadoDe(e) === p).length;
+        btn.textContent = `${nombres[p]} (${cantidad})`;
+        btn.classList.toggle('active', p === pestanaActiva);
       });
     }
 
@@ -1485,48 +1546,46 @@
         );
       }
 
-      filtrados.sort((a, b) => {
-        const diasA = calcularDiasRestantes(a.fechaInicio, a.diasPlazo);
-        const diasB = calcularDiasRestantes(b.fechaInicio, b.diasPlazo);
+      // El plazo se calcula una sola vez por expediente (no en cada comparación del sort).
+      const hoy = hoyLocal();
+      const items = filtrados.map(exp => ({
+        exp,
+        plazo: calcularPlazo(exp.fechaInicio, exp.diasPlazo, hoy)
+      }));
 
-        const semaforoA = obtenerSemaforo(diasA);
-        const semaforoB = obtenerSemaforo(diasB);
+      if (pestanaActiva === 'archivados') {
+        // Más recientemente resueltos primero
+        items.sort((a, b) => (b.exp.fechaResolucion || '').localeCompare(a.exp.fechaResolucion || ''));
+      } else {
+        // Vencidos primero (el más atrasado arriba), luego por fecha de vencimiento
+        items.sort((a, b) => a.plazo.fechaFin - b.plazo.fechaFin);
+      }
 
-        if (semaforoA.orden !== semaforoB.orden) {
-          return semaforoA.orden - semaforoB.orden;
-        }
-
-        return diasA - diasB;
-      });
-
-      const html = filtrados.map(exp => {
-        const diasRestantes = calcularDiasRestantes(exp.fechaInicio, exp.diasPlazo);
-        const semaforo = obtenerSemaforo(diasRestantes);
+      const html = items.map(({ exp, plazo }) => {
+        const archivado = pestanaActiva === 'archivados';
+        const clase = archivado ? 'archivado' : obtenerSemaforo(plazo).color;
+        const badge = archivado
+          ? `Resuelto el ${exp.fechaResolucion ? formatearFechaCorta(parsearFecha(exp.fechaResolucion)) : '—'}`
+          : textoPlazo(plazo);
+        const tieneInterv = exp.intervenciones && exp.intervenciones.length > 0;
 
         return `
-          <div class="expediente-card ${semaforo.color}" data-id="${esc(exp.id)}" onclick="abrirEditar(this.dataset.id)">
+          <div class="expediente-card ${clase}" data-id="${esc(exp.id)}" onclick="abrirEditar(this.dataset.id)">
             <div class="expediente-header">
               <div class="expediente-numero">${exp.numero ? esc(exp.numero) : 'Sin número'}</div>
-              <div style="display: flex; gap: 8px; align-items: center; justify-content: flex-end;">
-                ${exp.estado === 'archivado'
-                  ? `<button class="btn btn-small" style="padding: 4px 8px; font-size: 10px; background: var(--gray-300); color: var(--text);" data-id="${esc(exp.id)}" onclick="event.stopPropagation(); reabrirExpediente(this.dataset.id)">↺ Reabrir</button>`
-                  : `<button class="btn btn-small" style="padding: 4px 8px; font-size: 10px;" data-id="${esc(exp.id)}" onclick="event.stopPropagation(); marcarResuelto(this.dataset.id)">✓ Resolver</button>`
-                }
-              </div>
+              <span class="plazo-badge ${clase}">${esc(badge)}</span>
             </div>
 
             <div class="expediente-tema">${esc(exp.tema)}</div>
 
             <div class="expediente-meta">
-              <div><strong>${esc(exp.area)}</strong></div>
-              <div><strong>${esc(exp.responsable)}</strong></div>
-              <div><strong>${diasRestantes} d</strong></div>
-              ${exp.intervenciones && exp.intervenciones.length > 0 ? `
-                <div>💬 ${exp.intervenciones.length}</div>
-              ` : ''}
+              <span><strong>${esc(exp.area)}</strong></span>
+              <span><strong>${esc(exp.responsable)}</strong></span>
+              ${archivado ? '' : `<span>Vence ${esc(formatearFechaCorta(plazo.fechaFin))}</span>`}
+              ${tieneInterv ? `<span>💬 ${exp.intervenciones.length}</span>` : ''}
             </div>
 
-            ${exp.intervenciones && exp.intervenciones.length > 0 ? `
+            ${tieneInterv ? `
               <div class="intervenciones-list">
                 ${exp.intervenciones.slice(-2).map(i => `
                   <div class="intervencion">
@@ -1535,11 +1594,26 @@
                 `).join('')}
               </div>
             ` : ''}
+
+            <div class="expediente-acciones">
+              ${archivado
+                ? `<button class="btn btn-secondary btn-small" data-id="${esc(exp.id)}" onclick="event.stopPropagation(); reabrirExpediente(this.dataset.id)">↺ Reabrir</button>`
+                : `<button class="btn btn-success btn-small" data-id="${esc(exp.id)}" onclick="event.stopPropagation(); marcarResuelto(this.dataset.id)">✓ Resolver</button>`
+              }
+            </div>
           </div>
         `;
       }).join('');
 
-      document.getElementById('expedientesList').innerHTML = html || '<p style="padding: 16px; text-align: center; color: var(--text-muted);">No hay expedientes</p>';
+      document.getElementById('expedientesList').innerHTML = html || `<p style="padding: 16px; text-align: center; color: var(--text-muted);">${esc(mensajeVacio())}</p>`;
+    }
+
+    function mensajeVacio() {
+      if (busqueda) return `Sin resultados para «${busqueda}»`;
+      if (filtroArea) return `No hay expedientes ${pestanaActiva === 'archivados' ? 'archivados' : 'activos'} en ${filtroArea}`;
+      return pestanaActiva === 'archivados'
+        ? 'Todavía no hay expedientes archivados'
+        : 'No hay expedientes activos. Tocá + para cargar uno.';
     }
 
     function actualizarFechaVencimiento() {
@@ -1554,10 +1628,12 @@
       const fechaFin = calcularFechaFin(fechaInicio, diasPlazo);
       const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
       const fechaFormato = fechaFin.toLocaleDateString('es-AR', opciones);
-      const diasRestantes = calcularDiasRestantes(fechaInicio, diasPlazo);
+      const plazo = calcularPlazo(fechaInicio, diasPlazo);
+      const estado = plazo.vencido ? textoPlazo(plazo).toLowerCase()
+        : plazo.venceHoy ? 'vence hoy'
+        : `${plazo.diasRestantes} día${plazo.diasRestantes !== 1 ? 's' : ''} hábil${plazo.diasRestantes !== 1 ? 'es' : ''} restante${plazo.diasRestantes !== 1 ? 's' : ''}`;
 
-      document.getElementById('fechaVencimiento').textContent =
-        `${fechaFormato} (${diasRestantes} día${diasRestantes !== 1 ? 's' : ''} restante${diasRestantes !== 1 ? 's' : ''})`;
+      document.getElementById('fechaVencimiento').textContent = `${fechaFormato} (${estado})`;
     }
 
     function abrirNuevo() {

@@ -317,12 +317,82 @@ async function testCampoNumero() {
   ctx.server.close();
 }
 
+// ---------- Paquete 2: tarjeta y estados ----------
+async function testPlazosYTarjetas() {
+  console.log('\n=== PLAZOS Y TARJETAS ===');
+  const ctx = levantarServer(8793);
+  await new Promise((r) => ctx.server.listen(8793, r));
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  const problemas = [];
+  page.on('pageerror', (e) => problemas.push('pageerror: ' + e.message));
+  await page.goto('http://localhost:8793/', { waitUntil: 'networkidle' });
+
+  // Lógica pura con "hoy" fijo: vence hoy != vencido (antes ambos daban 0 días).
+  const r = await page.evaluate(() => {
+    const local = (s) => parsearFecha(s);
+    const p = (hoy) => { const x = calcularPlazo('2026-09-28', 5, local(hoy)); return { v: x.vencido, h: x.venceHoy, d: x.diasRestantes, a: x.diasVencido, t: textoPlazo(x), c: obtenerSemaforo(x).color }; };
+    return {
+      antes: p('2026-10-02'),      // vence lun 5/10, hoy vie 2/10 → 1 hábil
+      hoy: p('2026-10-05'),
+      ayer: p('2026-10-06'),       // vencido hace 1 hábil
+      finde: (() => { const x = calcularPlazo('2026-09-25', 5, local('2026-10-03')); return { v: x.vencido, t: textoPlazo(x) }; })(), // fin vie 2/10, hoy sáb
+    };
+  });
+  ok(r.antes.d === 1 && !r.antes.v && r.antes.c === 'naranja' && r.antes.t === '1 d háb.', `1 día hábil restante: naranja (${r.antes.t})`);
+  ok(r.hoy.h && !r.hoy.v && r.hoy.t === 'Vence hoy' && r.hoy.c === 'rojo', `vence hoy se distingue de vencido (${r.hoy.t})`);
+  ok(r.ayer.v && r.ayer.a === 1 && r.ayer.t === 'Vencido hace 1 d háb.' && r.ayer.c === 'rojo', `vencido dice hace cuánto (${r.ayer.t})`);
+  ok(r.finde.v && r.finde.t === 'Vencido', `vencido un sábado sin días hábiles de atraso dice "Vencido" (${r.finde.t})`);
+
+  // Tarjetas reales
+  await page.evaluate(() => {
+    const base = { area: 'Jurídica', responsable: 'Ana', estado: 'activo', intervenciones: [] };
+    expedientes = [
+      { ...base, id: 'lejos', numero: '363-1/2026-01', tema: 'Plazo lejano', fechaInicio: '2099-01-05', diasPlazo: 30 },
+      { ...base, id: 'viejo', numero: '363-2/2026-01', tema: 'Muy vencido', fechaInicio: '2020-01-06', diasPlazo: 5 },
+      { ...base, id: 'arch', numero: '363-3/2026-01', tema: 'Ya resuelto', fechaInicio: '2020-01-06', diasPlazo: 5, estado: 'archivado', fechaResolucion: '2026-09-20' },
+      { ...base, id: 'otra', area: 'Obras', numero: '363-4/2026-01', tema: 'Otra área', fechaInicio: '2099-01-05', diasPlazo: 10 },
+    ];
+    renderizar();
+  });
+  const cards = page.locator('.expediente-card');
+  ok((await cards.count()) === 3, 'la pestaña Activos lista solo los activos (3)');
+  ok((await cards.first().textContent()).includes('Muy vencido'), 'el vencido va primero');
+  ok(/Vencido hace \d+ d háb\./.test(await cards.first().locator('.plazo-badge').textContent()), 'el badge del vencido lleva texto, no solo color');
+  ok(await cards.first().locator('.plazo-badge.rojo').count() === 1, 'el vencido es rojo');
+  ok(/Vence \w+ \d\d\/\d\d\/2099/.test(await cards.nth(1).textContent()), 'la tarjeta muestra la fecha de vencimiento');
+  ok(/^Total \(3\)/.test((await page.locator('.area-btn').first().textContent()).trim()), 'Total cuenta solo los activos (3), no el archivado');
+  ok(/Jurídica \(2\)/.test(await page.locator('#areaBotones').textContent()), 'el contador de área respeta la pestaña (Jurídica = 2)');
+  ok(/Activos \(3\)/.test(await page.locator('.pestana-btn.active').textContent()), 'la pestaña Activos muestra su cantidad');
+  ok(/Archivados \(1\)/.test(await page.locator('.pestana-btn').nth(1).textContent()), 'la pestaña Archivados muestra su cantidad');
+
+  await page.locator('.pestana-btn', { hasText: 'Archivados' }).click();
+  ok((await cards.count()) === 1, 'la pestaña Archivados lista 1');
+  const arch = cards.first();
+  ok(/Resuelto el .*20\/09\/2026/.test(await arch.locator('.plazo-badge').textContent()), 'la archivada dice "Resuelto el …"');
+  ok(await arch.locator('.plazo-badge.archivado').count() === 1 && !(await arch.textContent()).includes('Vencido'), 'la archivada va en gris, sin semáforo ni "Vencido"');
+  ok(/^Total \(1\)/.test((await page.locator('.area-btn').first().textContent()).trim()), 'en Archivados, Total = 1');
+  ok(/Archivados/.test(await page.locator('.pestana-btn.active').textContent()), 'la pestaña activa se marca sin depender del evento global');
+
+  await page.fill('#searchInput', 'zzz');
+  ok((await page.locator('#expedientesList').textContent()).includes('Sin resultados para «zzz»'), 'búsqueda sin resultados tiene su propio mensaje');
+  await page.fill('#searchInput', '');
+  await page.locator('.pestana-btn', { hasText: 'Activos' }).click();
+  await page.evaluate(() => { expedientes = []; renderizar(); });
+  ok((await page.locator('#expedientesList').textContent()).includes('Tocá + para cargar uno'), 'estado vacío invita a crear el primero');
+
+  ok(problemas.length === 0, 'sin errores de JS' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
+  await browser.close();
+  ctx.server.close();
+}
+
 await recorrido('DESKTOP', { width: 1440, height: 900 }, 8799);
 await recorrido('MOBILE', { width: 390, height: 844 }, 8798);
 await testFechas();
 await testSyncYEscape();
 await testPendienteAlAbrir();
 await testCampoNumero();
+await testPlazosYTarjetas();
 
 console.log(fallas === 0 ? '\nUI OK en desktop y mobile' : `\n${fallas} fallas`);
 process.exit(fallas === 0 ? 0 : 1);
