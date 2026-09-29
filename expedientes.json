@@ -23,7 +23,12 @@
       "responsable": "Karina Merino",
       "fechaInicio": "2026-09-29",
       "diasPlazo": 1,
-      "intervenciones": []
+      "intervenciones": [
+        {
+          "hora": "29/09 09:13",
+          "texto": "Service Finalizado."
+        }
+      ]
     },
     {
       "id": "1790643000605",
@@ -129,5 +134,5 @@
     "Karina Merino",
     "Joaquín Fernández Castro"
   ],
-  "timestamp": "2026-09-29T12:00:47.529Z"
+  "timestamp": "2026-09-29T12:13:37.492Z"
 }
