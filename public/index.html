@@ -430,6 +430,13 @@
       line-height: 1.2;
     }
 
+    .expediente-urgencia-tema {
+      font-size: 13px;
+      line-height: 1.3;
+      margin-top: 6px;
+      opacity: 0.95;
+    }
+
     .expediente-expand-icon {
       width: 24px;
       height: 24px;
@@ -1691,14 +1698,16 @@
         const diasRestantes = calcularDiasRestantes(exp.fechaInicio, exp.diasPlazo);
         const semaforo = obtenerSemaforo(diasRestantes);
         const expandId = `exp-expand-${exp.id}`;
+        const numeroLabel = exp.numero ? exp.numero : 'Sin expediente';
 
         return `
           <div class="expediente-card-new">
             <!-- Header rojo con urgencia -->
             <div class="expediente-header-urgencia ${semaforo.color}" onclick="document.getElementById('${expandId}').classList.toggle('expanded')">
               <div class="expediente-urgencia-title">
-                <div class="expediente-urgencia-label">Expediente</div>
+                <div class="expediente-urgencia-label">${numeroLabel}</div>
                 <div class="expediente-urgencia-dias"><strong>${diasRestantes} día${diasRestantes !== 1 ? 's' : ''} hábil${diasRestantes !== 1 ? 'es' : ''}</strong></div>
+                <div class="expediente-urgencia-tema">${exp.tema}</div>
               </div>
               <div class="expediente-expand-icon">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
