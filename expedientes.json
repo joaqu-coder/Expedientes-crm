@@ -16,6 +16,21 @@
       ]
     },
     {
+      "id": "1790642567420",
+      "numero": "",
+      "tema": "Comisión RDLF",
+      "area": "Coordinación",
+      "responsable": "Joaquín Fernández Castro",
+      "fechaInicio": "2026-09-28",
+      "diasPlazo": 3,
+      "intervenciones": [
+        {
+          "hora": "28/09 21:42",
+          "texto": "Solicitar viaticos (karina, Polo, Leiva, Fernandez)"
+        }
+      ]
+    },
+    {
       "id": "1790642486016",
       "numero": "",
       "tema": "Mantenimiento Toyota Hiloux  LAN 097",
@@ -55,5 +70,5 @@
     "Karina Merino",
     "Joaquín Fernández Castro"
   ],
-  "timestamp": "2026-09-29T00:41:26.120Z"
+  "timestamp": "2026-09-29T00:42:47.534Z"
 }
