@@ -1221,12 +1221,18 @@
       }
     }
 
-    function guardarConfiguracion() {
-      guardarEnLS(true); // Sincronizar con GitHub
-      mostrarAlerta('✅ Guardado', 'Cambios en áreas y responsables sincronizados');
-      setTimeout(() => {
-        document.getElementById('configOverlay').classList.remove('active');
-      }, 1500);
+    async function guardarConfiguracion() {
+      try {
+        guardarEnLS(false); // Guardar en localStorage
+        await subirAGitHub(); // Sincronizar con GitHub
+        mostrarAlerta('✅ Guardado', 'Cambios en áreas y responsables sincronizados con GitHub');
+        setTimeout(() => {
+          document.getElementById('configOverlay').classList.remove('active');
+        }, 1500);
+      } catch (e) {
+        console.error('Error al sincronizar:', e);
+        mostrarAlerta('❌ Error', 'No se pudo sincronizar. Los cambios se guardaron localmente.');
+      }
     }
 
     function renderizarPanelAreas() {
