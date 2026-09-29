@@ -1,7 +1,13 @@
 {
   "sesion_fecha": "2026-09-29",
-  "estado": "Archivado de expedientes + Notificaciones en preparación",
+  "estado": "Auditoría UX/UI hecha. Paquete 1 (correctness) resuelto. Siguen paquetes 2-4.",
   "resuelto": [
+    "AUDITORIA 2026-09-29 PAQ.1: fechas 'YYYY-MM-DD' se parseaban como UTC y en UTC-3 el fin de semana se corría un dia (viernes+1 habil = sabado). Ahora parsearFecha()/fechaISO() locales.",
+    "PAQ.1: indicador de sync mentia (sincronizarEnBackground pisaba el error con 'Sincronizado'). Ahora refleja el resultado real del POST.",
+    "PAQ.1: edits durante un POST en vuelo no se subian. Ahora sincronizarEnBackground repite mientras haya syncPendiente.",
+    "PAQ.1: al abrir, la descarga pisaba cambios hechos offline. Flag persistente expedientes_crm_pendiente: se suben primero; si falla se conserva lo local. Reintento en evento 'online'.",
+    "PAQ.1: XSS almacenado y roturas por comillas/apostrofes. esc() en todas las plantillas; los onclick usan data-* en vez de interpolar strings.",
+    "PAQ.1: campo numero bloqueaba Ctrl+V y (probable) teclado Android por filtrar en keydown. Ahora se sanitiza en 'input' (sanitizarNumero), conservando el cursor. filtrarCaracteresNumero eliminada; sigue habiendo UNA sola validarNumeroExpediente.",
     "SISTEMA DE ARCHIVADO: Pestañas 'Activos' y 'Archivados'. Botón 'Resolver' → expediente desaparece del panel y va a archivo. Estado: 'activo'|'archivado' + fechaResolucion. Panel limpio, auditoria completa.",
     "ARQUITECTURA SUPERADORA: Respuesta instantanea + sync en background. Cambios aparecen al tiro en localStorage, se sincronizan silenciosamente a GitHub cada 100ms con batching. Cero bloqueo UI, flujo cross-device perfecto.",
     "Sync batching: programarSincronizacion() con setTimeout 100ms + sincronizarEnBackground() async. Permite múltiples cambios en un solo POST a GitHub.",
@@ -25,10 +31,16 @@
     "/api/health": "diagnostico: tiene_github_token, tiene_binding_assets, claves_env. No expone el valor del secret."
   },
   "pendiente": [
+    "PAQ.2 tarjeta y estados: 'vencido' vs 'vence hoy' (hoy Math.max(0) los mezcla), badge con texto + fecha de vencimiento, archivadas con 'Resuelto el X', contadores de area segun pestana activa",
+    "PAQ.3 movil y accesibilidad: inputs 16px (zoom iOS), targets 44px, barra sticky unica (offsets 104/148 hardcodeados), roles/aria/foco en modales, tarjetas navegables por teclado",
+    "PAQ.4 flujo: toast con Deshacer en Resolver, confirmar borrado de areas/responsables en uso, refresco al volver a la pestaña (visibilitychange), config sin boton Guardar redundante",
     "Módulo NOTIFICACIONES: agregar array notificaciones a cada expediente. Pestaña/sección 'Notificaciones' en UI. Botón agregar + modal. Indicadores de color (rojo/amarillo/gris/verde). Registro de fechaVista con timestamp.",
-    "Playwright tests: verificar archivado/desarchivado en desktop y mobile",
     "Rotar el token de GitHub: circulo por el chat y quedo cargado tambien en la seccion de Builds. Rotarlo en GitHub y actualizar SOLO el secret de runtime.",
     "Borrar el GITHUB_TOKEN que quedo en Settings -> Builds -> Variables and secrets (no sirve para nada ahi)",
     "Verificar sync entre dos dispositivos reales (cargar en la compu, abrir en el cel)"
+  ],
+  "limitaciones_conocidas": [
+    "FERIADOS solo llega a 2027: despues cuenta todo como habil sin avisar",
+    "Sync last-writer-wins sobre expedientes.json entero (ver CLAUDE.md > Pendientes)"
   ]
 }

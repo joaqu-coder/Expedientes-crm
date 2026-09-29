@@ -958,6 +958,14 @@
     let pestanaActiva = 'activos';
     let busqueda = '';
 
+    // Escapa texto para meterlo en innerHTML o en un atributo entre comillas.
+    // Los datos vienen de un JSON compartido, así que nunca se interpolan crudos.
+    function esc(valor) {
+      return String(valor ?? '').replace(/[&<>"']/g, c => (
+        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+      ));
+    }
+
     // ===== ALERTAS ELEGANTES =====
     function mostrarAlerta(titulo, mensaje) {
       document.getElementById('alertTitle').textContent = titulo;
@@ -979,56 +987,53 @@
       return patron.test(valor);
     }
 
-    function actualizarValidacionNumero(input) {
-      const valor = input.value.trim();
-
-      // Limpiar em dashes automáticamente
-      if (valor.includes('–')) {
-        input.value = valor.replace(/–/g, '-');
-        return;
-      }
-
-      input.classList.remove('invalid', 'valid');
-
-      if (valor.length === 0) {
-        return; // Sin color si está vacío
-      }
-
-      if (validarNumeroExpediente(valor)) {
-        input.classList.add('valid');
-      } else {
-        input.classList.add('invalid');
-      }
+    // Deja solo dígitos, espacios, barra y guión (sin espacios al inicio), y unifica guiones medio/largo a normal.
+    // Se filtra sobre el evento input (no keydown) para no bloquear Ctrl+V/Ctrl+C, el
+    // teclado virtual de Android ni Backspace, y para limpiar lo que se pega desde Word/PDF.
+    function sanitizarNumero(texto) {
+      return texto.replace(/[–—]/g, '-').replace(/[^0-9\s\/-]/g, '').replace(/^\s+/, '');
     }
 
-    // Impedir escritura de letras mientras tipeas
-    function filtrarCaracteresNumero(e) {
-      // Permitir teclas de control: Backspace, Delete, flechas, etc.
-      // y SOLO: dígitos, paréntesis, guión y barra
-      const teclasEspeciales = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Home', 'End'];
-      const caracteresPermitidos = /[0-9()/-]/;
+    function actualizarValidacionNumero(input) {
+      const original = input.value;
+      const limpio = sanitizarNumero(original);
 
-      if (!teclasEspeciales.includes(e.key) && !caracteresPermitidos.test(e.key)) {
-        e.preventDefault(); // Impide que se escriba el carácter
-
-        // Feedback visual: borde rojo rápido
-        const input = e.target;
-        input.classList.add('invalid');
-        setTimeout(() => {
-          if (!input.value.trim()) input.classList.remove('invalid');
-        }, 300);
+      if (limpio !== original) {
+        const pos = sanitizarNumero(original.slice(0, input.selectionStart ?? original.length)).length;
+        input.value = limpio;
+        input.setSelectionRange(pos, pos);
       }
+
+      const valor = limpio.trim();
+      input.classList.remove('invalid', 'valid');
+      if (valor.length === 0) return; // Sin color si está vacío
+
+      input.classList.add(validarNumeroExpediente(valor) ? 'valid' : 'invalid');
     }
 
     // ===== FUNCIONES DE CÁLCULO =====
+    // Las fechas 'YYYY-MM-DD' se manejan SIEMPRE como fecha local. new Date('2026-10-02')
+    // se interpreta como UTC y en Argentina (UTC-3) cae el día anterior, lo que corría
+    // el fin de semana un día y daba plazos mal calculados.
+    function parsearFecha(str) {
+      const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(str || '');
+      return m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date(str);
+    }
+
+    function fechaISO(fecha) {
+      const y = fecha.getFullYear();
+      const m = String(fecha.getMonth() + 1).padStart(2, '0');
+      const d = String(fecha.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
     function esFinDeSemana(fecha) {
       const day = fecha.getDay();
       return day === 0 || day === 6;
     }
 
     function esFeriado(fecha) {
-      const str = fecha.toISOString().split('T')[0];
-      return FERIADOS.includes(str);
+      return FERIADOS.includes(fechaISO(fecha));
     }
 
     function esHabil(fecha) {
@@ -1036,7 +1041,7 @@
     }
 
     function calcularFechaFin(fechaInicio, diasPlazo) {
-      let fecha = new Date(fechaInicio);
+      let fecha = parsearFecha(fechaInicio);
       let diasContados = 0;
 
       while (diasContados < diasPlazo) {
@@ -1128,6 +1133,9 @@
 
         const datos = await resp.json();
 
+        // Si mientras bajaba hubo cambios locales sin subir, bajar pisaría trabajo del usuario.
+        if (syncPendiente || syncPromise || hayPendiente()) return false;
+
         expedientes = datos.expedientes || [];
         AREAS = (datos.areas && datos.areas.length) ? datos.areas : [...AREAS_DEFAULT];
         RESPONSABLES = (datos.responsables && datos.responsables.length) ? datos.responsables : [...RESPONSABLES_DEFAULT];
@@ -1144,46 +1152,68 @@
     }
 
     // ===== ALMACENAMIENTO CON SYNC BATCHING =====
-    let syncQueue = [];
-    let isSyncing = false;
+    // Los cambios se guardan en localStorage al instante y se suben en background.
+    // 'syncPendiente' marca cambios locales que todavía no llegaron al servidor; se
+    // persiste en localStorage para que sobreviva a un cierre de la app sin conexión.
+    const LS_PENDIENTE = 'expedientes_crm_pendiente';
+    let syncPendiente = false;
+    let syncTimer = null;
+    let syncPromise = null;
+
+    function hayPendiente() {
+      try { return localStorage.getItem(LS_PENDIENTE) === '1'; } catch (e) { return false; }
+    }
+
+    function marcarPendiente(valor) {
+      try {
+        if (valor) localStorage.setItem(LS_PENDIENTE, '1');
+        else localStorage.removeItem(LS_PENDIENTE);
+      } catch (e) { /* sin localStorage: se sigue en memoria */ }
+    }
 
     function guardarEnLS(sincronizar = true) {
       try {
         localStorage.setItem('expedientes_crm_expedientes', JSON.stringify(expedientes));
         localStorage.setItem('expedientes_crm_areas', JSON.stringify(AREAS));
         localStorage.setItem('expedientes_crm_responsables', JSON.stringify(RESPONSABLES));
-
-        // Respuesta local INSTANTÁNEA sin esperar a GitHub (cambios optimistas)
-        if (sincronizar) {
-          programarSincronizacion();
-        }
       } catch (e) {
         console.error('Error al guardar:', e);
       }
+
+      // Respuesta local INSTANTÁNEA sin esperar a GitHub (cambios optimistas)
+      if (sincronizar) programarSincronizacion();
     }
 
     function programarSincronizacion() {
-      // No sincronizar inmediatamente, agregar a queue
-      // Se sincroniza en background cada ~100-500ms (batching inteligente)
-      if (!isSyncing && syncQueue.length === 0) {
-        setTimeout(sincronizarEnBackground, 100);
-      }
+      syncPendiente = true;
+      marcarPendiente(true);
+      // Si ya hay un sync en vuelo, su bucle levanta este cambio al terminar.
+      if (syncPromise || syncTimer) return;
+      syncTimer = setTimeout(() => { syncTimer = null; sincronizarEnBackground(); }, 100);
     }
 
-    async function sincronizarEnBackground() {
-      if (isSyncing) return;
-      isSyncing = true;
+    // Sube ya (sin esperar el batching) y devuelve true/false según el resultado real.
+    function sincronizarAhora() {
+      syncPendiente = true;
+      marcarPendiente(true);
+      if (syncTimer) { clearTimeout(syncTimer); syncTimer = null; }
+      return sincronizarEnBackground();
+    }
 
-      try {
-        // Sincronizar TODO (expedientes + config) en un solo POST
-        await subirAGitHub();
-        actualizarIndicadorSync(true);
-      } catch (e) {
-        console.error('Error en sync background:', e);
-        actualizarIndicadorSync(false);
-      } finally {
-        isSyncing = false;
-      }
+    function sincronizarEnBackground() {
+      if (syncPromise) return syncPromise;
+      syncPromise = (async () => {
+        let ok = true;
+        // Repite mientras lleguen cambios durante un POST: el último edit nunca se pierde.
+        while (syncPendiente && ok) {
+          syncPendiente = false;
+          ok = await subirAGitHub(); // deja el indicador en ok/error según el resultado real
+          if (!ok) syncPendiente = true; // sigue pendiente: reintenta con el próximo cambio o al volver la red
+        }
+        if (ok) marcarPendiente(false);
+        return ok;
+      })().finally(() => { syncPromise = null; });
+      return syncPromise;
     }
 
     function cargarDesdeLS() {
@@ -1241,19 +1271,19 @@
       const html = `
         <div class="form-group">
           <label class="form-label">Nro Expediente</label>
-          <input type="text" class="form-input" id="numero" placeholder="363-1254/2025-01 (opcional)" value="${expediente?.numero || ''}" pattern="\\d{3}\\s*-\\s*\\d{1,6}\\/\\d{4}\\s*-\\s*\\d{1,2}">
+          <input type="text" class="form-input" id="numero" placeholder="363-1254/2025-01 (opcional)" value="${esc(expediente?.numero)}" autocomplete="off" pattern="\\d{3}\\s*-\\s*\\d{1,6}\\/\\d{4}\\s*-\\s*\\d{1,2}">
         </div>
 
         <div class="form-group">
           <label class="form-label required">Tema</label>
-          <input type="text" class="form-input" id="tema" placeholder="Descripción breve del asunto" value="${expediente?.tema || ''}" required>
+          <input type="text" class="form-input" id="tema" placeholder="Descripción breve del asunto" value="${esc(expediente?.tema)}" required>
         </div>
 
         <div class="form-group">
           <label class="form-label required">Área Responsable</label>
           <select class="form-select" id="area" required>
             <option value="">Seleccionar área...</option>
-            ${AREAS.map(a => `<option value="${a}" ${expediente?.area === a ? 'selected' : ''}>${a}</option>`).join('')}
+            ${AREAS.map(a => `<option value="${esc(a)}" ${expediente?.area === a ? 'selected' : ''}>${esc(a)}</option>`).join('')}
           </select>
         </div>
 
@@ -1261,18 +1291,18 @@
           <label class="form-label required">Responsable</label>
           <select class="form-select" id="responsable" required>
             <option value="">Seleccionar responsable...</option>
-            ${RESPONSABLES.map(r => `<option value="${r}" ${expediente?.responsable === r ? 'selected' : ''}>${r}</option>`).join('')}
+            ${RESPONSABLES.map(r => `<option value="${esc(r)}" ${expediente?.responsable === r ? 'selected' : ''}>${esc(r)}</option>`).join('')}
           </select>
         </div>
 
         <div class="form-group">
           <label class="form-label required">Fecha de Inicio</label>
-          <input type="date" class="form-input" id="fechaInicio" value="${expediente?.fechaInicio || new Date().toISOString().split('T')[0]}" required>
+          <input type="date" class="form-input" id="fechaInicio" value="${esc(expediente?.fechaInicio || fechaISO(new Date()))}" required>
         </div>
 
         <div class="form-group">
           <label class="form-label required">Plazo en Días Hábiles</label>
-          <input type="number" class="form-input" id="diasPlazo" placeholder="30" value="${expediente?.diasPlazo || ''}" min="1" required>
+          <input type="number" class="form-input" id="diasPlazo" placeholder="30" value="${esc(expediente?.diasPlazo)}" min="1" required>
         </div>
 
         <div class="form-group">
@@ -1293,7 +1323,7 @@
             <div class="intervenciones-list">
               ${expediente.intervenciones.map(i => `
                 <div class="intervencion">
-                  <span class="intervencion-hora">${i.hora}</span><br><small>${i.texto}</small>
+                  <span class="intervencion-hora">${esc(i.hora)}</span><br><small>${esc(i.texto)}</small>
                 </div>
               `).join('')}
             </div>
@@ -1307,8 +1337,8 @@
     function renderizarConfigAreas() {
       const html = AREAS.map(area => `
         <div class="config-item">
-          <span>${area}</span>
-          <button type="button" onclick="eliminarArea('${area}')">✕</button>
+          <span>${esc(area)}</span>
+          <button type="button" data-nombre="${esc(area)}" onclick="eliminarArea(this.dataset.nombre)" aria-label="Eliminar área ${esc(area)}">✕</button>
         </div>
       `).join('');
       document.getElementById('areasConfigList').innerHTML = html || '<p style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 20px 0;">No hay áreas</p>';
@@ -1317,8 +1347,8 @@
     function renderizarConfigResponsables() {
       const html = RESPONSABLES.map(r => `
         <div class="config-item">
-          <span>${r}</span>
-          <button type="button" onclick="eliminarResponsable('${r}')">✕</button>
+          <span>${esc(r)}</span>
+          <button type="button" data-nombre="${esc(r)}" onclick="eliminarResponsable(this.dataset.nombre)" aria-label="Eliminar responsable ${esc(r)}">✕</button>
         </div>
       `).join('');
       document.getElementById('responsablesConfigList').innerHTML = html || '<p style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 20px 0;">No hay responsables</p>';
@@ -1345,16 +1375,15 @@
     }
 
     async function guardarConfiguracion() {
-      try {
-        guardarEnLS(false); // Guardar en localStorage
-        await subirAGitHub(); // Sincronizar con GitHub
+      guardarEnLS(false); // Guardar en localStorage
+      const ok = await sincronizarAhora();
+      if (ok) {
         mostrarAlerta('✅ Guardado', 'Cambios en áreas y responsables sincronizados con GitHub');
         setTimeout(() => {
           document.getElementById('configOverlay').classList.remove('active');
         }, 1500);
-      } catch (e) {
-        console.error('Error al sincronizar:', e);
-        mostrarAlerta('❌ Error', 'No se pudo sincronizar. Los cambios se guardaron localmente.');
+      } else {
+        mostrarAlerta('❌ Error', 'No se pudo sincronizar. Los cambios se guardaron localmente y se reintentarán al volver la conexión.');
       }
     }
 
@@ -1367,12 +1396,12 @@
       });
 
       const html = `
-        <button class="area-btn ${filtroArea === null ? 'active' : ''}" onclick="filtrarArea(null)">
+        <button class="area-btn ${filtroArea === null ? 'active' : ''}" data-area="" onclick="filtrarArea(this.dataset.area || null)">
           Total (${conteos['Total']})
         </button>
         ${AREAS.map(area => `
-          <button class="area-btn ${filtroArea === area ? 'active' : ''}" onclick="filtrarArea('${area}')">
-            ${area} (${conteos[area]})
+          <button class="area-btn ${filtroArea === area ? 'active' : ''}" data-area="${esc(area)}" onclick="filtrarArea(this.dataset.area || null)">
+            ${esc(area)} (${conteos[area]})
           </button>
         `).join('')}
       `;
@@ -1406,7 +1435,7 @@
       const exp = expedientes.find(e => e.id === expedienteId);
       if (exp) {
         exp.estado = 'archivado';
-        exp.fechaResolucion = new Date().toISOString().split('T')[0];
+        exp.fechaResolucion = fechaISO(new Date());
         guardarEnLS(true);
         mostrarAlerta('✓ Expediente archivado', 'El expediente se ha marcado como resuelto y movido al archivo.');
         renderizar();
@@ -1475,22 +1504,22 @@
         const semaforo = obtenerSemaforo(diasRestantes);
 
         return `
-          <div class="expediente-card ${semaforo.color}" onclick="abrirEditar('${exp.id}')">
+          <div class="expediente-card ${semaforo.color}" data-id="${esc(exp.id)}" onclick="abrirEditar(this.dataset.id)">
             <div class="expediente-header">
-              <div class="expediente-numero">${exp.numero}</div>
+              <div class="expediente-numero">${exp.numero ? esc(exp.numero) : 'Sin número'}</div>
               <div style="display: flex; gap: 8px; align-items: center; justify-content: flex-end;">
                 ${exp.estado === 'archivado'
-                  ? `<button class="btn btn-small" style="padding: 4px 8px; font-size: 10px; background: var(--gray-300); color: var(--text);" onclick="event.stopPropagation(); reabrirExpediente('${exp.id}')">↺ Reabrir</button>`
-                  : `<button class="btn btn-small" style="padding: 4px 8px; font-size: 10px;" onclick="event.stopPropagation(); marcarResuelto('${exp.id}')">✓ Resolver</button>`
+                  ? `<button class="btn btn-small" style="padding: 4px 8px; font-size: 10px; background: var(--gray-300); color: var(--text);" data-id="${esc(exp.id)}" onclick="event.stopPropagation(); reabrirExpediente(this.dataset.id)">↺ Reabrir</button>`
+                  : `<button class="btn btn-small" style="padding: 4px 8px; font-size: 10px;" data-id="${esc(exp.id)}" onclick="event.stopPropagation(); marcarResuelto(this.dataset.id)">✓ Resolver</button>`
                 }
               </div>
             </div>
 
-            <div class="expediente-tema">${exp.tema}</div>
+            <div class="expediente-tema">${esc(exp.tema)}</div>
 
             <div class="expediente-meta">
-              <div><strong>${exp.area}</strong></div>
-              <div><strong>${exp.responsable}</strong></div>
+              <div><strong>${esc(exp.area)}</strong></div>
+              <div><strong>${esc(exp.responsable)}</strong></div>
               <div><strong>${diasRestantes} d</strong></div>
               ${exp.intervenciones && exp.intervenciones.length > 0 ? `
                 <div>💬 ${exp.intervenciones.length}</div>
@@ -1501,7 +1530,7 @@
               <div class="intervenciones-list">
                 ${exp.intervenciones.slice(-2).map(i => `
                   <div class="intervencion">
-                    <span class="intervencion-hora">${i.hora}</span><br><small>${i.texto.substring(0, 60)}${i.texto.length > 60 ? '...' : ''}</small>
+                    <span class="intervencion-hora">${esc(i.hora)}</span><br><small>${esc(i.texto.substring(0, 60))}${i.texto.length > 60 ? '...' : ''}</small>
                   </div>
                 `).join('')}
               </div>
@@ -1543,7 +1572,6 @@
       if (inputNumero) {
         inputNumero.addEventListener('input', (e) => actualizarValidacionNumero(e.target));
         inputNumero.addEventListener('blur', (e) => actualizarValidacionNumero(e.target));
-        inputNumero.addEventListener('keydown', filtrarCaracteresNumero);
       }
 
       // Agregar cálculo de vencimiento en tiempo real
@@ -1560,7 +1588,7 @@
       const exp = expedientes.find(e => e.id === id);
       if (!exp) return;
 
-      document.getElementById('modalTitle').textContent = `Editar: ${exp.numero}`;
+      document.getElementById('modalTitle').textContent = `Editar: ${exp.numero || 'sin número'}`;
       document.getElementById('btnEliminar').classList.remove('hidden');
 
       document.getElementById('formularioModal').innerHTML = crearFormulario(exp);
@@ -1570,7 +1598,6 @@
       if (inputNumero) {
         inputNumero.addEventListener('input', (e) => actualizarValidacionNumero(e.target));
         inputNumero.addEventListener('blur', (e) => actualizarValidacionNumero(e.target));
-        inputNumero.addEventListener('keydown', filtrarCaracteresNumero);
         actualizarValidacionNumero(inputNumero);
       }
 
@@ -1701,8 +1728,16 @@
       cargarDesdeLS();
       renderizar(); // Mostrar lo local de inmediato, sin esperar la red
 
+      // Cambios hechos sin conexión: primero subirlos; si no se puede, conservar lo local
+      // en lugar de pisarlo con lo que hay en el servidor.
+      if (hayPendiente() && !(await sincronizarAhora())) return;
+
       await descargarDesdeGitHub(); // Trae cambios de otros dispositivos
     })();
+
+    window.addEventListener('online', () => {
+      if (hayPendiente()) sincronizarAhora();
+    });
 
     // Cerrar popup de alerta con Escape o al clickear afuera
     document.addEventListener('keydown', (e) => {
