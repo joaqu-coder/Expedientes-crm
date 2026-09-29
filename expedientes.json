@@ -16,21 +16,6 @@
       ]
     },
     {
-      "id": "1790640341978",
-      "numero": "",
-      "tema": "Empresa  Los infernales - Angel Gerónimo",
-      "area": "Coordinación",
-      "responsable": "Alejandro Leiva",
-      "fechaInicio": "2026-09-28",
-      "diasPlazo": 15,
-      "intervenciones": [
-        {
-          "hora": "28/09 21:05",
-          "texto": "Reunión 3/09/2026 (Reunión). Se envia pdf de propuesta a Fernanda  el 9/09/2026"
-        }
-      ]
-    },
-    {
       "id": "1790634879735",
       "numero": "363-1254/2025-01",
       "tema": "Solicitud de Terreno CECILIA BORLA",
@@ -50,23 +35,13 @@
       ]
     },
     {
-      "id": "1790640559848",
-      "numero": "",
-      "tema": "Camioneta Toyots Hiloux LAN 097",
-      "area": "Coordinación",
-      "responsable": "Joaquín Fernandez Castro",
-      "fechaInicio": "2026-09-23",
-      "diasPlazo": 5,
-      "intervenciones": []
-    },
-    {
-      "id": "1790640625647",
-      "numero": "",
-      "tema": "SEMIX & FCS",
-      "area": "Coordinación",
-      "responsable": "Joaquín Fernandez Castro",
-      "fechaInicio": "2026-09-10",
-      "diasPlazo": 20,
+      "id": "1790640768114",
+      "numero": "363-166383/2026-0",
+      "tema": "Comercial -SYRES S.R.L",
+      "area": "Administración",
+      "responsable": "Alejandro Montaldi",
+      "fechaInicio": "2026-09-29",
+      "diasPlazo": 15,
       "intervenciones": []
     }
   ],
@@ -74,15 +49,14 @@
     "Jurídica",
     "Administración",
     "Operación",
-    "Intervención",
-    "Coordinación"
+    "Obras",
+    "Intervención"
   ],
   "responsables": [
     "Alejandro Leiva",
     "Alejandro Saravia",
     "Alejandro Montaldi",
-    "Karina Merino",
-    "Joaquín Fernandez Castro"
+    "Karina Merino"
   ],
-  "timestamp": "2026-09-29T00:10:32.709Z"
+  "timestamp": "2026-09-29T00:12:48.114Z"
 }
