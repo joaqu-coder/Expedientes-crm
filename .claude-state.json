@@ -1,7 +1,11 @@
 {
-  "sesion_fecha": "2026-09-28",
-  "estado": "Sincronizacion automatica FUNCIONANDO en produccion",
+  "sesion_fecha": "2026-09-29",
+  "estado": "Arquitectura SUPERADORA + Icono EGPAIS DESPLEGADO",
   "resuelto": [
+    "ARQUITECTURA SUPERADORA: Respuesta instantanea + sync en background. Cambios aparecen al tiro en localStorage, se sincronizan silenciosamente a GitHub cada 100ms con batching. Cero bloqueo UI, flujo cross-device perfecto.",
+    "Sync batching: programarSincronizacion() con setTimeout 100ms + sincronizarEnBackground() async. Permite múltiples cambios en un solo POST a GitHub.",
+    "Indicador visual: Sync indicator muestra 'Sincronizado' tras completar POST.",
+    "Icono corporativo EGPAIS: Engranaje de 8 dientes (#5a8a8a) + texto EGPAIS. Replica diseño oficial. Actualizado en manifest.json e index.html.",
     "Sincronizacion via Worker sin token en el navegador: /api/sync devuelve {expedientes,areas,responsables}",
     "CAUSA RAIZ del 'GITHUB_TOKEN no configurado': el secret estaba cargado en Settings -> Builds -> Variables and secrets (solo existen durante el build). Debe ir en Settings -> Runtime variables and secrets. Confirmado con /api/health.",
     "Revertido un [env.production] que yo habia agregado: `npx wrangler deploy` sin --env usa la config top-level, asi que mover [assets] alli dejaba el deploy sin binding ASSETS",
