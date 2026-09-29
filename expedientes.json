@@ -1,14 +1,19 @@
 {
   "expedientes": [
     {
-      "id": "1790641970954",
-      "numero": "363-84167/2026-0",
-      "tema": "Adjudicación CIBERPLAS S.R.L",
+      "id": "1790642235469",
+      "numero": "363-186684/2023-0",
+      "tema": "Comercial - SUNGREEN S.R.L",
       "area": "Operación",
       "responsable": "Alejandro Leiva",
-      "fechaInicio": "2026-04-26",
+      "fechaInicio": "2024-02-02",
       "diasPlazo": 30,
-      "intervenciones": []
+      "intervenciones": [
+        {
+          "hora": "28/09 21:37",
+          "texto": "Reunion con Leiva el 04/09/2026"
+        }
+      ]
     },
     {
       "id": "1790636408918",
@@ -69,5 +74,5 @@
     "Karina Merino",
     "Joaquín Fernández Castro"
   ],
-  "timestamp": "2026-09-29T00:32:51.055Z"
+  "timestamp": "2026-09-29T00:37:15.571Z"
 }
