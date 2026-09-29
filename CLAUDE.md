@@ -78,6 +78,30 @@ Los expedientes tienen tildes, ñ y a veces emoji. `atob`/`btoa` solos los rompe
 El Worker usa `decodeURIComponent(escape(atob(...)))` al leer y
 `btoa(unescape(encodeURIComponent(...)))` al escribir. No simplificar.
 
+### 6. Fechas: siempre locales, nunca `new Date('YYYY-MM-DD')`
+
+`new Date('2026-10-02')` se interpreta como **UTC**; en Argentina (UTC-3) cae el
+día anterior a las 21:00 y `getDay()` corría el fin de semana un día (viernes + 1
+día hábil daba sábado). Usar `parsearFecha()` y `fechaISO()`. Tampoco
+`toISOString()` para "hoy" ni para chequear feriados. `test:ui` corre el cálculo
+en 4 zonas horarias.
+
+### 7. HTML: todo dato va por `esc()`
+
+`expedientes.json` es compartido, así que un `tema` con `<` o `"` es XSS
+almacenado o un campo roto. Todo lo que viene de datos pasa por `esc()` en
+plantillas y atributos, y los `onclick` leen `this.dataset.*` en vez de
+interpolar strings (un área `D'Angelo` rompía el handler).
+
+### 8. Sync: el indicador no miente y nada se pisa
+
+- `syncPendiente` + `expedientes_crm_pendiente` (localStorage) marcan cambios sin
+  subir. Al abrir, si hay pendientes se **suben primero**; la descarga nunca pisa
+  cambios locales. Un edit durante un POST en vuelo se sube en la vuelta siguiente.
+- El indicador refleja el resultado real del POST (antes lo pisaba con "Sincronizado").
+- El campo número se sanea en el evento `input`, **no** en `keydown`: filtrar
+  teclas bloqueaba Ctrl+V y el teclado de Android.
+
 ---
 
 ## Formato del número de expediente
@@ -117,6 +141,13 @@ El sidebar se eliminó por completo. Reglas que quedan:
   el form en el sidebar, pero Guardar/Cancelar viven en el footer del modal.
 - **El FAB (`#fabNuevo`) es visible en todos los anchos.** Tenía `display: none`
   arriba de 1024px, dejando desktop sin forma de crear un expediente.
+- **Una sola barra fija** (`.sticky-top`: header + pestañas). No volver a fijar
+  paneles con `top: NNpx` hardcodeado: se desalinean apenas cambia un alto.
+- **Modales:** abrir/cerrar con `abrirOverlay()`/`cerrarOverlay()` (foco inicial,
+  trampa de Tab, Escape, retorno del foco). Inputs a 16px (iOS hace zoom con menos)
+  y objetivos táctiles de 44px.
+- **Acciones destructivas:** toast con Deshacer (`mostrarToast`), no `confirm()` ni
+  popup bloqueante. Un área/responsable en uso por algún expediente no se borra.
 - **Antes de agregar cualquier bloque de UI, verificá que no dupliques un `id`.**
   `npm run test:ids` lo chequea.
 

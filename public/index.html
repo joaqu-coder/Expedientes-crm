@@ -121,6 +121,12 @@
       flex: 1;
     }
 
+    button.sync-indicator {
+      border: none;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
     .sync-indicator {
       font-size: 11px;
       font-weight: 500;
@@ -672,6 +678,51 @@
       display: none;
     }
 
+    /* Toast: confirma una acción y permite deshacerla sin bloquear con un popup */
+    .toast {
+      position: fixed;
+      left: 16px;
+      right: 88px; /* deja lugar al FAB */
+      bottom: 16px;
+      max-width: 420px;
+      z-index: 1100;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      background: #1f2937;
+      color: #f9fafb;
+      font-size: 14px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    }
+
+    .toast[hidden] {
+      display: none;
+    }
+
+    .toast-mensaje {
+      flex: 1;
+    }
+
+    .toast-accion {
+      background: none;
+      border: none;
+      color: #a5b4fc;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      padding: 8px;
+      margin: -8px;
+      text-transform: uppercase;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .toast { background: #f3f4f6; color: #111827; }
+      .toast-accion { color: #4338ca; }
+    }
+
     :focus-visible {
       outline: 2px solid var(--primary);
       outline-offset: 2px;
@@ -939,7 +990,7 @@
     <div class="sticky-top">
       <header class="header">
         <h1 class="header-title">📋 Expedientes</h1>
-        <span class="sync-indicator sync-pending" id="syncIndicator" role="status" aria-live="polite">⏳ Sincronizando...</span>
+        <span role="status" aria-live="polite"><button type="button" class="sync-indicator sync-pending" id="syncIndicator" title="Tocar para sincronizar ahora">⏳ Sincronizando...</button></span>
         <button class="header-btn" id="btnConfig" title="Configuración" aria-label="Configuración">⚙️</button>
       </header>
 
@@ -992,9 +1043,9 @@
           </div>
         </div>
       </div>
-      <div class="config-footer" style="display: flex; gap: 10px; padding: 16px; border-top: 1px solid var(--gray-300); justify-content: flex-end;">
-        <button class="btn btn-secondary" onclick="cerrarConfigModal()" style="border: none; background-color: var(--gray-200); color: var(--text); padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 500;">Cerrar</button>
-        <button class="btn btn-primary" onclick="guardarConfiguracion()" style="background-color: var(--primary); color: white; padding: 10px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: 500;">Guardar cambios</button>
+      <div class="modal-footer">
+        <span class="form-help" style="margin: 0 auto 0 0; align-self: center;">Los cambios se guardan y sincronizan solos.</span>
+        <button class="btn btn-primary" onclick="cerrarConfigModal()">Listo</button>
       </div>
     </div>
   </div>
@@ -1015,6 +1066,11 @@
         <button class="btn btn-primary" id="btnGuardar">Guardar</button>
       </div>
     </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden>
+    <span class="toast-mensaje" id="toastMensaje"></span>
+    <button type="button" class="toast-accion" id="toastAccion" hidden></button>
   </div>
 
   <div class="modal-overlay" id="alertOverlay" style="display: none; z-index: 1001;">
@@ -1164,6 +1220,28 @@
         }
       }
     });
+
+    // ===== TOAST (con Deshacer) =====
+    let toastTimer = null;
+    let toastAccionActual = null;
+
+    function ocultarToast() {
+      clearTimeout(toastTimer);
+      toastTimer = null;
+      toastAccionActual = null;
+      document.getElementById('toast').hidden = true;
+    }
+
+    function mostrarToast(mensaje, { etiqueta = 'Deshacer', accion = null, duracion = 6000 } = {}) {
+      clearTimeout(toastTimer);
+      toastAccionActual = accion;
+      document.getElementById('toastMensaje').textContent = mensaje;
+      const btn = document.getElementById('toastAccion');
+      btn.textContent = etiqueta;
+      btn.hidden = !accion;
+      document.getElementById('toast').hidden = false;
+      toastTimer = setTimeout(ocultarToast, duracion);
+    }
 
     // ===== ALERTAS ELEGANTES =====
     function mostrarAlerta(titulo, mensaje) {
@@ -1473,9 +1551,20 @@
     }
 
     function eliminarArea(nombre) {
+      const usos = expedientes.filter(e => e.area === nombre).length;
+      if (usos > 0) {
+        mostrarAlerta('No se puede eliminar', `El área "${nombre}" la usan ${usos} expediente${usos !== 1 ? 's' : ''} (activos o archivados). Reasignalos antes de eliminarla.`);
+        return;
+      }
+      const indice = AREAS.indexOf(nombre);
       AREAS = AREAS.filter(a => a !== nombre);
       guardarEnLS();
       renderizar();
+      mostrarToast(`Área "${nombre}" eliminada`, { accion: () => {
+        AREAS.splice(Math.min(indice, AREAS.length), 0, nombre);
+        guardarEnLS();
+        renderizar();
+      } });
     }
 
     function agregarResponsable(nombre) {
@@ -1489,9 +1578,20 @@
     }
 
     function eliminarResponsable(nombre) {
+      const usos = expedientes.filter(e => e.responsable === nombre).length;
+      if (usos > 0) {
+        mostrarAlerta('No se puede eliminar', `"${nombre}" es responsable de ${usos} expediente${usos !== 1 ? 's' : ''} (activos o archivados). Reasignalos antes de eliminarlo.`);
+        return;
+      }
+      const indice = RESPONSABLES.indexOf(nombre);
       RESPONSABLES = RESPONSABLES.filter(r => r !== nombre);
       guardarEnLS();
       renderizar();
+      mostrarToast(`"${nombre}" eliminado`, { accion: () => {
+        RESPONSABLES.splice(Math.min(indice, RESPONSABLES.length), 0, nombre);
+        guardarEnLS();
+        renderizar();
+      } });
     }
 
     // ===== FUNCIONES DE UI =====
@@ -1603,17 +1703,6 @@
       }
     }
 
-    async function guardarConfiguracion() {
-      guardarEnLS(false); // Guardar en localStorage
-      const ok = await sincronizarAhora();
-      if (ok) {
-        mostrarAlerta('✅ Guardado', 'Cambios en áreas y responsables sincronizados con GitHub');
-        setTimeout(cerrarConfigModal, 1500);
-      } else {
-        mostrarAlerta('❌ Error', 'No se pudo sincronizar. Los cambios se guardaron localmente y se reintentarán al volver la conexión.');
-      }
-    }
-
     function estadoDe(exp) {
       return (exp.estado || 'activo') === 'archivado' ? 'archivados' : 'activos';
     }
@@ -1660,24 +1749,37 @@
 
     function marcarResuelto(expedienteId) {
       const exp = expedientes.find(e => e.id === expedienteId);
-      if (exp) {
-        exp.estado = 'archivado';
-        exp.fechaResolucion = fechaISO(new Date());
+      if (!exp) return;
+      const previo = { estado: exp.estado, fechaResolucion: exp.fechaResolucion };
+
+      exp.estado = 'archivado';
+      exp.fechaResolucion = fechaISO(new Date());
+      guardarEnLS(true);
+      renderizar();
+      mostrarToast('Expediente archivado', { accion: () => {
+        exp.estado = previo.estado || 'activo';
+        if (previo.fechaResolucion) exp.fechaResolucion = previo.fechaResolucion;
+        else delete exp.fechaResolucion;
         guardarEnLS(true);
-        mostrarAlerta('✓ Expediente archivado', 'El expediente se ha marcado como resuelto y movido al archivo.');
         renderizar();
-      }
+      } });
     }
 
     function reabrirExpediente(expedienteId) {
       const exp = expedientes.find(e => e.id === expedienteId);
-      if (exp) {
-        exp.estado = 'activo';
-        delete exp.fechaResolucion;
+      if (!exp) return;
+      const previo = { estado: exp.estado, fechaResolucion: exp.fechaResolucion };
+
+      exp.estado = 'activo';
+      delete exp.fechaResolucion;
+      guardarEnLS(true);
+      renderizar();
+      mostrarToast('Expediente reabierto', { accion: () => {
+        exp.estado = previo.estado;
+        exp.fechaResolucion = previo.fechaResolucion;
         guardarEnLS(true);
-        mostrarAlerta('↺ Expediente reabierto', 'El expediente volvió a estar activo.');
         renderizar();
-      }
+      } });
     }
 
     function filtrarBusqueda() {
@@ -1946,7 +2048,7 @@
 
         exp.intervenciones = exp.intervenciones || [];
         exp.intervenciones.push({
-          hora: `${dd}/${mo} ${hh}:${mm}`,
+          hora: `${dd}/${mo}/${ahora.getFullYear()} ${hh}:${mm}`,
           texto: notas
         });
       }
@@ -1957,12 +2059,18 @@
     }
 
     function eliminarExpediente() {
-      if (!confirm('¿Estás seguro de que querés eliminar este expediente?')) return;
+      const indice = expedientes.findIndex(e => e.id === editandoId);
+      if (indice === -1) return;
+      const [eliminado] = expedientes.splice(indice, 1);
 
-      expedientes = expedientes.filter(e => e.id !== editandoId);
       guardarEnLS();
       renderizar();
       cerrarModal();
+      mostrarToast('Expediente eliminado', { accion: () => {
+        expedientes.splice(Math.min(indice, expedientes.length), 0, eliminado);
+        guardarEnLS();
+        renderizar();
+      } });
     }
 
     // ===== FUNCIONES CONFIG MODAL =====
@@ -2017,6 +2125,31 @@
 
     window.addEventListener('online', () => {
       if (hayPendiente()) sincronizarAhora();
+    });
+
+    // Trae los cambios de otro dispositivo al volver a la app, sin tener que recargar.
+    // Se limita a una vez cada 10s y no toca nada mientras se edita un expediente.
+    let ultimaDescarga = Date.now();
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'visible') return;
+      if (Date.now() - ultimaDescarga < 10000) return;
+      if (overlayAbierto('modalOverlay')) return;
+      ultimaDescarga = Date.now();
+      if (hayPendiente()) sincronizarAhora();
+      else descargarDesdeGitHub();
+    });
+
+    // Tocar el indicador fuerza una sincronización (útil si quedó en "Sin conexión").
+    document.getElementById('syncIndicator').addEventListener('click', async () => {
+      ultimaDescarga = Date.now();
+      if (hayPendiente() && !(await sincronizarAhora())) return;
+      await descargarDesdeGitHub();
+    });
+
+    document.getElementById('toastAccion').addEventListener('click', () => {
+      const accion = toastAccionActual;
+      ocultarToast();
+      if (accion) accion();
     });
 
     // Cerrar popup de alerta al clickear afuera (Escape lo maneja el handler de modales)

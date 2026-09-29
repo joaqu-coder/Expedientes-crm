@@ -40,7 +40,7 @@ const ok = (cond, msg) => {
 
 function levantarServer(puerto) {
   let ultimoPost = null;
-  const ctl = { fallar: false, demoraMs: 0, posts: 0 };
+  const ctl = { fallar: false, demoraMs: 0, posts: 0, datos: null };
   const server = http.createServer((req, res) => {
     if (req.url.startsWith('/api/sync')) {
       if (req.method === 'POST') {
@@ -62,7 +62,7 @@ function levantarServer(puerto) {
         return;
       }
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(ultimoPost || { expedientes: [], areas: [], responsables: [] }));
+      res.end(JSON.stringify(ctl.datos || ultimoPost || { expedientes: [], areas: [], responsables: [] }));
       return;
     }
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -221,11 +221,20 @@ async function testSyncYEscape() {
   ok((await page.inputValue('#area')) === "D'Angelo <b>", 'al editar, el área con apóstrofe queda seleccionada');
   await page.click('#btnCancelar');
   await page.click('#btnConfig');
-  const antes = await page.locator('#areasConfigList .config-item').count();
+  // Un área en uso no se puede borrar: se avisa en vez de dejar expedientes huérfanos.
   await page.locator('#areasConfigList .config-item', { hasText: "D'Angelo" }).locator('button').click();
-  ok((await page.locator('#areasConfigList .config-item').count()) === antes - 1, "eliminar un área con apóstrofe funciona");
+  ok(await page.locator('#alertOverlay').isVisible() && /1 expediente/.test(await page.locator('#alertMessage').textContent()),
+     'borrar un área en uso avisa cuántos expedientes la usan');
+  await page.click('#alertBtn');
+  ok(await page.evaluate(() => AREAS.includes("D'Angelo <b>")), 'el área en uso NO se borró');
+  // Un área sin uso con apóstrofe sí se borra (el onclick viejo se rompía con el apóstrofe).
+  await page.fill('#inputArea', "L'Étoile");
+  await page.locator('#areasConfigList + .config-input-group button').click();
+  const antes = await page.locator('#areasConfigList .config-item').count();
+  await page.locator('#areasConfigList .config-item', { hasText: "L'Étoile" }).locator('button').click();
+  ok((await page.locator('#areasConfigList .config-item').count()) === antes - 1, "eliminar un área sin uso con apóstrofe funciona");
   await page.click('#configClose');
-  ok(await page.evaluate(() => AREAS.every(a => !a.includes("D'Angelo"))), "el área con apóstrofe se eliminó del estado");
+  ok(await page.evaluate(() => AREAS.every(a => !a.includes("L'Étoile"))), "el área con apóstrofe se eliminó del estado");
 
   // --- indicador honesto cuando el POST falla ---
   await page.waitForTimeout(400);
@@ -543,6 +552,85 @@ async function testTecladoYFoco() {
   ctx.server.close();
 }
 
+// ---------- Paquete 4: flujo ----------
+async function testFlujo() {
+  console.log('\n=== FLUJO: TOAST, DESHACER, REFRESCO ===');
+  const ctx = levantarServer(8786);
+  await new Promise((r) => ctx.server.listen(8786, r));
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const page = await browser.newPage({ viewport: { width: 1200, height: 800 } });
+  const problemas = [];
+  page.on('pageerror', (e) => problemas.push('pageerror: ' + e.message));
+  page.on('dialog', async (d) => { problemas.push('dialog nativo: ' + d.message()); await d.dismiss(); });
+  await page.goto('http://localhost:8786/', { waitUntil: 'networkidle' });
+  await page.evaluate(() => {
+    const base = { area: 'Jurídica', responsable: 'Ana', estado: 'activo', intervenciones: [], fechaInicio: '2099-01-05', diasPlazo: 30 };
+    expedientes = [{ ...base, id: 'a', numero: '363-1/2026-01', tema: 'Primero' }, { ...base, id: 'b', numero: '363-2/2026-01', tema: 'Segundo' }];
+    guardarEnLS(false); renderizar();
+  });
+  const toast = page.locator('#toast');
+
+  // Resolver: toast con Deshacer, sin popup bloqueante
+  await page.locator('.expediente-card', { hasText: 'Primero' }).locator('button', { hasText: 'Resolver' }).click();
+  ok(await toast.isVisible() && /archivado/.test(await toast.textContent()), 'Resolver muestra un toast "archivado"');
+  ok(!(await page.locator('#alertOverlay').isVisible()), 'Resolver ya no abre un popup bloqueante');
+  ok((await page.locator('.expediente-card').count()) === 1, 'el expediente salió de Activos');
+  await page.click('#toastAccion');
+  ok((await page.locator('.expediente-card').count()) === 2, 'Deshacer lo devuelve a Activos');
+  ok(await page.evaluate(() => expedientes.find(e => e.id === 'a').fechaResolucion === undefined && expedientes.find(e => e.id === 'a').estado === 'activo'), 'Deshacer restaura estado y quita fechaResolucion');
+  ok(!(await toast.isVisible()), 'el toast se cierra al deshacer');
+  await page.waitForTimeout(400);
+  ok(ctx.getUltimoPost()?.expedientes?.find(e => e.id === 'a')?.estado === 'activo', 'el deshacer también se sincroniza');
+
+  // El toast se cierra solo
+  await page.evaluate(() => mostrarToast('temporal', { accion: () => {}, duracion: 200 }));
+  await page.waitForTimeout(400);
+  ok(!(await toast.isVisible()), 'el toast desaparece solo');
+
+  // Eliminar: sin confirm() nativo, con Deshacer y misma posición
+  await page.locator('.expediente-abrir', { hasText: '363-1/2026-01' }).click();
+  await page.click('#btnEliminar');
+  ok(!(await page.locator('#modalOverlay').isVisible()) && /eliminado/.test(await toast.textContent()), 'Eliminar cierra el modal y muestra un toast (sin confirm nativo)');
+  ok((await page.locator('.expediente-card').count()) === 1, 'el expediente se eliminó');
+  await page.click('#toastAccion');
+  ok(await page.evaluate(() => expedientes.map(e => e.id).join() === 'a,b'), 'Deshacer restaura el expediente en su posición original');
+
+  // Área sin uso: se borra con Deshacer
+  await page.click('#btnConfig');
+  await page.fill('#inputArea', 'Temporal');
+  await page.locator('#areasConfigList + .config-input-group button').click();
+  await page.locator('#areasConfigList .config-item', { hasText: 'Temporal' }).locator('button').click();
+  ok(!(await page.evaluate(() => AREAS.includes('Temporal'))) && /eliminada/.test(await toast.textContent()), 'un área sin uso se elimina con toast');
+  await page.click('#toastAccion');
+  ok(await page.evaluate(() => AREAS.includes('Temporal')), 'Deshacer restaura el área');
+  ok((await page.locator('#configOverlay button', { hasText: 'Guardar cambios' }).count()) === 0, 'la config ya no tiene el botón "Guardar cambios" redundante');
+  ok((await page.locator('#configOverlay button', { hasText: 'Listo' }).count()) === 1, 'la config cierra con "Listo"');
+  await page.keyboard.press('Escape');
+
+  // Refresco al volver a la app (otro dispositivo cambió los datos)
+  ctx.ctl.datos = { expedientes: [{ id: 'z', numero: '363-9/2026-01', tema: 'Creado en el celular', area: 'Jurídica', responsable: 'Ana', estado: 'activo', intervenciones: [], fechaInicio: '2099-01-05', diasPlazo: 30 }], areas: ['Jurídica'], responsables: ['Ana'] };
+  await page.waitForTimeout(600); // deja terminar los sync de los pasos anteriores
+  await page.evaluate(() => { ultimaDescarga = 0; document.dispatchEvent(new Event('visibilitychange')); });
+  await page.waitForTimeout(500);
+  ok((await page.locator('#expedientesList').textContent()).includes('Creado en el celular'), 'al volver a la app se traen los cambios del otro dispositivo');
+
+  // Reintento manual tocando el indicador
+  ctx.ctl.datos = null;
+  ctx.ctl.fallar = true;
+  await page.evaluate(() => { expedientes[0].tema = 'editado sin red'; guardarEnLS(); });
+  await page.waitForTimeout(500);
+  ok(/Sin conexión/.test(await page.locator('#syncIndicator').textContent()), 'sin red el indicador lo dice');
+  ctx.ctl.fallar = false;
+  await page.click('#syncIndicator');
+  await page.waitForTimeout(600);
+  ok(/Sincronizado/.test(await page.locator('#syncIndicator').textContent()), 'tocar el indicador reintenta y sincroniza');
+  ok(ctx.getUltimoPost()?.expedientes?.[0]?.tema === 'editado sin red', 'el cambio pendiente llegó al servidor');
+
+  ok(problemas.length === 0, 'sin errores de JS ni diálogos nativos' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
+  await browser.close();
+  ctx.server.close();
+}
+
 await recorrido('DESKTOP', { width: 1440, height: 900 }, 8799);
 await recorrido('MOBILE', { width: 390, height: 844 }, 8798);
 await testFechas();
@@ -552,6 +640,7 @@ await testCampoNumero();
 await testPlazosYTarjetas();
 await testMovilTactil();
 await testTecladoYFoco();
+await testFlujo();
 
 console.log(fallas === 0 ? '\nUI OK en desktop y mobile' : `\n${fallas} fallas`);
 process.exit(fallas === 0 ? 0 : 1);
