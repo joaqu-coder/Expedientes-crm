@@ -25,9 +25,6 @@
       --gray-300: #d1d5db;
       --text: #1f2937;
       --text-muted: #6b7280;
-      --badge-naranja: #9a3412;
-      --badge-amarillo: #6b5b00;
-      --badge-verde: #336d0e;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -38,9 +35,6 @@
         --gray-300: #4b5563;
         --text: #f3f4f6;
         --text-muted: #d1d5db;
-      --badge-naranja: #fdba74;
-      --badge-amarillo: #fde047;
-      --badge-verde: #86efac;
       }
     }
 
@@ -51,9 +45,6 @@
       --gray-300: #4b5563;
       --text: #f3f4f6;
       --text-muted: #d1d5db;
-      --badge-naranja: #fdba74;
-      --badge-amarillo: #fde047;
-      --badge-verde: #86efac;
     }
 
     * {
@@ -75,38 +66,18 @@
       flex-direction: column;
     }
 
-    /* Barra fija: header + pestañas viven en UN contenedor sticky, así no hay offsets
-       hardcodeados que se desalineen cuando cambia el alto de algo. */
-    .sticky-top {
-      position: sticky;
-      top: 0;
-      z-index: 50;
-    }
-
-    /* El contenido se centra en pantallas anchas; en móvil ocupa todo el ancho */
-    .header,
-    .pestanas {
-      --gutter: max(16px, calc((100% - 960px) / 2));
-    }
-
-    .main-content {
-      width: 100%;
-      max-width: 960px;
-      margin: 0 auto;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-
     /* Header */
     .header {
       height: 44px;
-      padding: 0 var(--gutter);
+      padding: 0 16px;
       border-bottom: 1px solid var(--gray-300);
       display: flex;
       align-items: center;
       background: white;
       gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -119,12 +90,6 @@
       font-size: 18px;
       font-weight: 600;
       flex: 1;
-    }
-
-    button.sync-indicator {
-      border: none;
-      font-family: inherit;
-      cursor: pointer;
     }
 
     .sync-indicator {
@@ -173,8 +138,11 @@
     /* Pestañas */
     .pestanas {
       background: white;
-      padding: 0 var(--gutter);
+      padding: 0;
       border-bottom: 1px solid var(--gray-300);
+      position: sticky;
+      top: 44px;
+      z-index: 40;
       display: flex;
       gap: 0;
     }
@@ -213,6 +181,9 @@
       background: white;
       padding: 12px;
       border-bottom: 1px solid var(--gray-300);
+      position: sticky;
+      top: 104px;
+      z-index: 40;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -229,18 +200,10 @@
       margin-bottom: 8px;
     }
 
-    /* En móvil los chips van en UNA fila con scroll horizontal (antes envolvían en 4 filas) */
     .area-buttons {
       display: flex;
-      flex-wrap: nowrap;
+      flex-wrap: wrap;
       gap: 8px;
-      overflow-x: auto;
-      padding-bottom: 4px;
-      scrollbar-width: thin;
-    }
-
-    @media (min-width: 900px) {
-      .area-buttons { flex-wrap: wrap; overflow-x: visible; }
     }
 
     .area-btn {
@@ -253,7 +216,6 @@
       transition: all 0.2s;
       color: var(--text);
       white-space: nowrap;
-      flex-shrink: 0;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -278,6 +240,9 @@
       padding: 12px;
       background: white;
       border-bottom: 1px solid var(--gray-300);
+      position: sticky;
+      top: 148px;
+      z-index: 39;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -291,7 +256,7 @@
       padding: 10px 12px;
       border: 1px solid var(--gray-300);
       border-radius: 6px;
-      font-size: 16px; /* <16px hace que iOS Safari haga zoom al enfocar */
+      font-size: 13px;
       font-family: inherit;
       color: var(--text);
       background: white;
@@ -317,12 +282,11 @@
     /* Lista de Expedientes */
     .expedientes-list {
       flex: 1;
-      padding: 8px 8px 88px; /* deja lugar al FAB para que no tape la última tarjeta */
+      padding: 8px;
       overflow-y: auto;
     }
 
     .expediente-card {
-      position: relative;
       background: white;
       border-left: 4px solid;
       border-radius: 8px;
@@ -360,70 +324,22 @@
       word-break: break-word;
     }
 
-    /* El número es un <button> real (teclado + lector de pantalla); su ::after se estira
-       sobre toda la tarjeta para que un click en cualquier parte lo active. */
-    .expediente-abrir {
-      background: none;
-      border: none;
-      padding: 0;
-      font: inherit;
-      color: inherit;
-      text-align: left;
-      cursor: pointer;
-    }
-
-    .expediente-abrir::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: 8px;
-    }
-
-    .expediente-acciones .btn {
-      position: relative;
-      z-index: 1; /* por encima del área clickeable estirada */
-    }
-
-    .expediente-card.archivado { border-left-color: var(--gray-300); }
-
-    .expediente-header {
-      gap: 8px;
-    }
-
-    /* Plazo: el estado se dice con texto, no solo con el color del borde */
-    .plazo-badge {
+    .semaforo-emoji {
+      font-size: 20px;
       flex-shrink: 0;
-      font-size: 12px;
-      font-weight: 700;
-      padding: 3px 10px;
-      border-radius: 999px;
-      white-space: nowrap;
-    }
-
-    .plazo-badge.rojo { background: var(--red); color: #fff; }
-    .plazo-badge.naranja { background: rgba(249, 115, 22, 0.16); color: var(--badge-naranja); }
-    .plazo-badge.amarillo { background: rgba(213, 190, 0, 0.2); color: var(--badge-amarillo); }
-    .plazo-badge.verde { background: rgba(51, 109, 14, 0.14); color: var(--badge-verde); }
-    .plazo-badge.archivado { background: var(--gray-200); color: var(--text-muted); font-weight: 600; }
-
-    .expediente-acciones {
-      display: flex;
-      justify-content: flex-end;
-      margin-top: 8px;
     }
 
     .expediente-tema {
-      font-size: 14px;
-      font-weight: 500;
+      font-size: 12px;
       color: var(--text);
       margin-bottom: 6px;
     }
 
     .expediente-meta {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text-muted);
       display: flex;
-      gap: 4px 12px;
+      gap: 8px;
       flex-wrap: wrap;
       margin-bottom: 4px;
     }
@@ -437,7 +353,7 @@
     }
 
     .intervencion {
-      font-size: 11px;
+      font-size: 10px;
       color: var(--text-muted);
       margin-bottom: 4px;
       line-height: 1.3;
@@ -446,6 +362,223 @@
     .intervencion-hora {
       font-weight: 600;
       color: var(--text);
+    }
+
+    /* NUEVO DISEÑO: Expediente Card Expandible */
+    .expediente-card-new {
+      background: white;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      transition: box-shadow 0.2s;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .expediente-card-new {
+        background: var(--gray-100);
+      }
+    }
+
+    .expediente-card-new:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    /* Header Urgencia (rojo) */
+    .expediente-header-urgencia {
+      padding: 16px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.2s;
+    }
+
+    .expediente-header-urgencia.rojo {
+      background: #c41e3a;
+      color: white;
+    }
+
+    .expediente-header-urgencia.naranja {
+      background: #ea580c;
+      color: white;
+    }
+
+    .expediente-header-urgencia.amarillo {
+      background: #d5be00;
+      color: #1f2937;
+    }
+
+    .expediente-header-urgencia.verde {
+      background: #15803d;
+      color: white;
+    }
+
+    .expediente-urgencia-title {
+      flex: 1;
+    }
+
+    .expediente-urgencia-label {
+      font-size: 11px;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+
+    .expediente-urgencia-dias {
+      font-size: 16px;
+      line-height: 1.2;
+    }
+
+    .expediente-expand-icon {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.3s;
+      flex-shrink: 0;
+    }
+
+    .expediente-header-urgencia.expanded .expediente-expand-icon {
+      transform: rotate(180deg);
+    }
+
+    /* Contenido expandible (oculto por defecto) */
+    .expediente-expanded-content {
+      display: none;
+      padding: 16px;
+      border-top: 1px solid var(--gray-200);
+      animation: slideDown 0.2s ease-out;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        max-height: 0;
+      }
+      to {
+        opacity: 1;
+        max-height: 1000px;
+      }
+    }
+
+    .expediente-expanded-content.expanded {
+      display: block;
+    }
+
+    .expediente-expanded-tema {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+
+    .expediente-expanded-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .expediente-expanded-meta div {
+      display: flex;
+      gap: 4px;
+    }
+
+    .expediente-expanded-meta strong {
+      color: var(--text);
+    }
+
+    .expediente-expanded-dates {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    .expediente-expanded-dates div {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .expediente-expanded-dates .label {
+      font-weight: 500;
+      color: var(--text);
+      min-width: 70px;
+    }
+
+    /* Sección de Notas */
+    .expediente-notas-section {
+      margin-bottom: 16px;
+    }
+
+    .notas-header {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+    }
+
+    .notas-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .nota-item {
+      padding: 8px;
+      background: var(--gray-50);
+      border-radius: 6px;
+      font-size: 12px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .nota-item {
+        background: var(--gray-200);
+      }
+    }
+
+    .nota-hora {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--primary);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .nota-texto {
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .notas-empty {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 8px;
+      text-align: center;
+    }
+
+    /* Acciones */
+    .expediente-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--gray-200);
+    }
+
+    .btn-full {
+      width: 100%;
+      margin: 0 !important;
     }
 
     /* FAB */
@@ -568,7 +701,7 @@
       padding: 8px;
       border: 1px solid var(--gray-300);
       border-radius: 6px;
-      font-size: 16px; /* idem: sin zoom en iOS */
+      font-size: 12px;
       font-family: inherit;
       color: var(--text);
       background: white;
@@ -591,14 +724,12 @@
       box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
     }
 
-    .form-input.invalid,
-    .form-select.invalid {
+    .form-input.invalid {
       border-color: var(--red);
       box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.1);
     }
 
-    .form-input.valid,
-    .form-select.valid {
+    .form-input.valid {
       border-color: var(--green);
       box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.1);
     }
@@ -676,93 +807,6 @@
 
     .hidden {
       display: none;
-    }
-
-    /* Toast: confirma una acción y permite deshacerla sin bloquear con un popup */
-    .toast {
-      position: fixed;
-      left: 16px;
-      right: 88px; /* deja lugar al FAB */
-      bottom: 16px;
-      max-width: 420px;
-      z-index: 1100;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 16px;
-      border-radius: 8px;
-      background: #1f2937;
-      color: #f9fafb;
-      font-size: 14px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-    }
-
-    .toast[hidden] {
-      display: none;
-    }
-
-    .toast-mensaje {
-      flex: 1;
-    }
-
-    .toast-accion {
-      background: none;
-      border: none;
-      color: #a5b4fc;
-      font-size: 14px;
-      font-weight: 700;
-      font-family: inherit;
-      cursor: pointer;
-      padding: 8px;
-      margin: -8px;
-      text-transform: uppercase;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      .toast { background: #f3f4f6; color: #111827; }
-      .toast-accion { color: #4338ca; }
-    }
-
-    :focus-visible {
-      outline: 2px solid var(--primary);
-      outline-offset: 2px;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      * { transition: none !important; }
-    }
-
-    /* Pantallas táctiles: objetivos de al menos 44px */
-    @media (pointer: coarse) {
-      .btn,
-      .area-btn,
-      .pestana-btn,
-      .header-btn,
-      .modal-close,
-      .config-close,
-      .config-item button,
-      .config-input-group button {
-        min-height: 44px;
-      }
-      .header-btn,
-      .modal-close,
-      .config-close,
-      .config-item button {
-        min-width: 44px;
-      }
-    }
-
-    /* El formulario de expediente ocupa toda la pantalla en móvil: con el teclado
-       abierto un modal del 80% del alto dejaba visible casi nada. */
-    @media (max-width: 600px) {
-      .modal.modal-form {
-        width: 100%;
-        max-width: none;
-        height: 100vh;
-        height: 100dvh;
-        max-height: none;
-        border-radius: 0;
-      }
     }
 
     /* Config Popup Modal */
@@ -938,7 +982,7 @@
       padding: 10px 12px;
       border: 1px solid var(--gray-300);
       border-radius: 6px;
-      font-size: 16px;
+      font-size: 13px;
       background: white;
       color: var(--text);
     }
@@ -987,20 +1031,17 @@
 </head>
 <body>
   <div class="app">
-    <div class="sticky-top">
-      <header class="header">
-        <h1 class="header-title">📋 Expedientes</h1>
-        <span role="status" aria-live="polite"><button type="button" class="sync-indicator sync-pending" id="syncIndicator" title="Tocar para sincronizar ahora">⏳ Sincronizando...</button></span>
-        <button class="header-btn" id="btnConfig" title="Configuración" aria-label="Configuración">⚙️</button>
-      </header>
-
-      <div class="pestanas" role="tablist" aria-label="Estado de los expedientes">
-        <button class="pestana-btn active" role="tab" aria-selected="true" data-pestana="activos" onclick="cambiarPestana('activos')">Activos</button>
-        <button class="pestana-btn" role="tab" aria-selected="false" data-pestana="archivados" onclick="cambiarPestana('archivados')">Archivados</button>
-      </div>
-    </div>
+    <header class="header">
+      <h1 class="header-title">📋 Expedientes</h1>
+      <span class="sync-indicator sync-pending" id="syncIndicator">⏳ Sincronizando...</span>
+      <button class="header-btn" id="btnConfig" title="Configuración">⚙️</button>
+    </header>
 
     <main class="main-content">
+      <div class="pestanas">
+        <button class="pestana-btn active" onclick="cambiarPestana('activos')">Activos</button>
+        <button class="pestana-btn" onclick="cambiarPestana('archivados')">Archivados</button>
+      </div>
 
       <div class="panel-areas">
         <div class="panel-areas-title">Áreas Responsables</div>
@@ -1008,21 +1049,21 @@
       </div>
 
       <div class="search-box">
-        <input type="search" class="search-input" id="searchInput" placeholder="🔍 Buscar por palabra..." aria-label="Buscar expedientes" oninput="filtrarBusqueda()">
+        <input type="text" class="search-input" id="searchInput" placeholder="🔍 Buscar por palabra..." onkeyup="filtrarBusqueda()">
       </div>
 
-      <div class="expedientes-list" id="expedientesList" role="tabpanel"></div>
+      <div class="expedientes-list" id="expedientesList"></div>
     </main>
   </div>
 
-  <button class="fab" id="fabNuevo" title="Nuevo expediente" aria-label="Nuevo expediente">+</button>
+  <button class="fab" id="fabNuevo" title="Nuevo expediente">+</button>
 
   <!-- Modal Config -->
   <div class="config-overlay" id="configOverlay">
-    <div class="config-modal" role="dialog" aria-modal="true" aria-labelledby="configTitulo">
+    <div class="config-modal">
       <div class="config-header">
-        <h2 id="configTitulo">⚙️ Configuración</h2>
-        <button class="config-close" id="configClose" aria-label="Cerrar configuración">✕</button>
+        <h2>⚙️ Configuración</h2>
+        <button class="config-close" id="configClose">✕</button>
       </div>
       <div class="config-body">
         <div class="config-section">
@@ -1043,19 +1084,19 @@
           </div>
         </div>
       </div>
-      <div class="modal-footer">
-        <span class="form-help" style="margin: 0 auto 0 0; align-self: center;">Los cambios se guardan y sincronizan solos.</span>
-        <button class="btn btn-primary" onclick="cerrarConfigModal()">Listo</button>
+      <div class="config-footer" style="display: flex; gap: 10px; padding: 16px; border-top: 1px solid var(--gray-300); justify-content: flex-end;">
+        <button class="btn btn-secondary" onclick="document.getElementById('configOverlay').classList.remove('active')" style="border: none; background-color: var(--gray-200); color: var(--text); padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 500;">Cerrar</button>
+        <button class="btn btn-primary" onclick="guardarConfiguracion()" style="background-color: var(--primary); color: white; padding: 10px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: 500;">Guardar cambios</button>
       </div>
     </div>
   </div>
 
   <!-- Modal Expediente -->
   <div class="modal-overlay" id="modalOverlay">
-    <div class="modal modal-form" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal">
       <div class="modal-header">
         <h2 class="modal-header-title" id="modalTitle">Nuevo Expediente</h2>
-        <button class="modal-close" id="modalClose" aria-label="Cerrar">✕</button>
+        <button class="modal-close" id="modalClose">✕</button>
       </div>
       <div class="modal-content">
         <form id="formularioModal"></form>
@@ -1068,13 +1109,8 @@
     </div>
   </div>
 
-  <div class="toast" id="toast" role="status" aria-live="polite" hidden>
-    <span class="toast-mensaje" id="toastMensaje"></span>
-    <button type="button" class="toast-accion" id="toastAccion" hidden></button>
-  </div>
-
   <div class="modal-overlay" id="alertOverlay" style="display: none; z-index: 1001;">
-    <div class="modal" style="max-width: 400px;" role="alertdialog" aria-modal="true" aria-labelledby="alertTitle" aria-describedby="alertMessage">
+    <div class="modal" style="max-width: 400px;">
       <div class="modal-header" style="border-bottom: 2px solid var(--orange);">
         <h2 class="modal-header-title" id="alertTitle" style="color: var(--orange);">⚠️ Aviso</h2>
       </div>
@@ -1139,120 +1175,16 @@
     let pestanaActiva = 'activos';
     let busqueda = '';
 
-    // Escapa texto para meterlo en innerHTML o en un atributo entre comillas.
-    // Los datos vienen de un JSON compartido, así que nunca se interpolan crudos.
-    function esc(valor) {
-      return String(valor ?? '').replace(/[&<>"']/g, c => (
-        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
-      ));
-    }
-
-    // ===== MODALES: foco, Escape y trampa de Tab =====
-    const OVERLAYS = ['alertOverlay', 'configOverlay', 'modalOverlay']; // del más al menos prioritario
-    const focoPrevio = {};
-
-    function overlayAbierto(id) {
-      return getComputedStyle(document.getElementById(id)).display !== 'none';
-    }
-
-    function abrirOverlay(id, selectorFoco) {
-      const overlay = document.getElementById(id);
-      if (!overlayAbierto(id)) focoPrevio[id] = document.activeElement;
-      if (id === 'alertOverlay') overlay.style.display = 'flex';
-      else overlay.classList.add('active');
-
-      const dialogo = overlay.querySelector('[role="dialog"], [role="alertdialog"]');
-      dialogo.setAttribute('tabindex', '-1');
-      // En pantallas táctiles enfocar un campo abre el teclado de golpe: se enfoca el diálogo.
-      const objetivo = !matchMedia('(pointer: coarse)').matches && selectorFoco && overlay.querySelector(selectorFoco);
-      (objetivo || dialogo).focus();
-    }
-
-    function cerrarOverlay(id) {
-      const overlay = document.getElementById(id);
-      if (id === 'alertOverlay') overlay.style.display = 'none';
-      else overlay.classList.remove('active');
-
-      // Devuelve el foco a donde estaba. Si ese elemento se redibujó (la lista se
-      // renderiza de nuevo al guardar), lo busca por id de expediente.
-      let previo = focoPrevio[id];
-      delete focoPrevio[id];
-      if (previo && !previo.isConnected && previo.dataset?.id) {
-        previo = document.querySelector(`.expediente-abrir[data-id="${CSS.escape(previo.dataset.id)}"]`);
-      }
-      if (previo && previo.isConnected && typeof previo.focus === 'function') previo.focus();
-    }
-
-    function cerrarSuperior() {
-      const id = OVERLAYS.find(overlayAbierto);
-      if (id === 'alertOverlay') cerrarAlert();
-      else if (id === 'configOverlay') cerrarConfigModal();
-      else if (id === 'modalOverlay') cerrarModal();
-    }
-
-    const SELECTOR_FOCO = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
-    document.addEventListener('keydown', (e) => {
-      const id = OVERLAYS.find(overlayAbierto);
-      if (!id) return;
-
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        cerrarSuperior();
-        return;
-      }
-
-      if (e.key === 'Tab') {
-        const dialogo = document.getElementById(id).querySelector('[role="dialog"], [role="alertdialog"]');
-        const foco = [...dialogo.querySelectorAll(SELECTOR_FOCO)].filter(el => el.getClientRects().length);
-        if (!foco.length) { e.preventDefault(); return; }
-        const primero = foco[0];
-        const ultimo = foco[foco.length - 1];
-        if (!dialogo.contains(document.activeElement)) {
-          e.preventDefault();
-          primero.focus();
-        } else if (e.shiftKey && (document.activeElement === primero || document.activeElement === dialogo)) {
-          e.preventDefault();
-          ultimo.focus();
-        } else if (!e.shiftKey && document.activeElement === ultimo) {
-          e.preventDefault();
-          primero.focus();
-        }
-      }
-    });
-
-    // ===== TOAST (con Deshacer) =====
-    let toastTimer = null;
-    let toastAccionActual = null;
-
-    function ocultarToast() {
-      clearTimeout(toastTimer);
-      toastTimer = null;
-      toastAccionActual = null;
-      document.getElementById('toast').hidden = true;
-    }
-
-    function mostrarToast(mensaje, { etiqueta = 'Deshacer', accion = null, duracion = 6000 } = {}) {
-      clearTimeout(toastTimer);
-      toastAccionActual = accion;
-      document.getElementById('toastMensaje').textContent = mensaje;
-      const btn = document.getElementById('toastAccion');
-      btn.textContent = etiqueta;
-      btn.hidden = !accion;
-      document.getElementById('toast').hidden = false;
-      toastTimer = setTimeout(ocultarToast, duracion);
-    }
-
     // ===== ALERTAS ELEGANTES =====
     function mostrarAlerta(titulo, mensaje) {
       document.getElementById('alertTitle').textContent = titulo;
       document.getElementById('alertMessage').textContent = mensaje;
-      abrirOverlay('alertOverlay', '#alertBtn');
-      document.getElementById('alertBtn').focus(); // en táctil también: es un solo botón, no abre teclado
+      document.getElementById('alertOverlay').style.display = 'flex';
+      document.getElementById('alertBtn').focus();
     }
 
     function cerrarAlert() {
-      cerrarOverlay('alertOverlay');
+      document.getElementById('alertOverlay').style.display = 'none';
     }
 
     // ===== VALIDACIÓN EN TIEMPO REAL =====
@@ -1264,53 +1196,56 @@
       return patron.test(valor);
     }
 
-    // Deja solo dígitos, espacios, barra y guión (sin espacios al inicio), y unifica guiones medio/largo a normal.
-    // Se filtra sobre el evento input (no keydown) para no bloquear Ctrl+V/Ctrl+C, el
-    // teclado virtual de Android ni Backspace, y para limpiar lo que se pega desde Word/PDF.
-    function sanitizarNumero(texto) {
-      return texto.replace(/[–—]/g, '-').replace(/[^0-9\s\/-]/g, '').replace(/^\s+/, '');
-    }
-
     function actualizarValidacionNumero(input) {
-      const original = input.value;
-      const limpio = sanitizarNumero(original);
+      const valor = input.value.trim();
 
-      if (limpio !== original) {
-        const pos = sanitizarNumero(original.slice(0, input.selectionStart ?? original.length)).length;
-        input.value = limpio;
-        input.setSelectionRange(pos, pos);
+      // Limpiar em dashes automáticamente
+      if (valor.includes('–')) {
+        input.value = valor.replace(/–/g, '-');
+        return;
       }
 
-      const valor = limpio.trim();
       input.classList.remove('invalid', 'valid');
-      if (valor.length === 0) return; // Sin color si está vacío
 
-      input.classList.add(validarNumeroExpediente(valor) ? 'valid' : 'invalid');
+      if (valor.length === 0) {
+        return; // Sin color si está vacío
+      }
+
+      if (validarNumeroExpediente(valor)) {
+        input.classList.add('valid');
+      } else {
+        input.classList.add('invalid');
+      }
+    }
+
+    // Impedir escritura de letras mientras tipeas
+    function filtrarCaracteresNumero(e) {
+      // Permitir teclas de control: Backspace, Delete, flechas, etc.
+      // y SOLO: dígitos, paréntesis, guión y barra
+      const teclasEspeciales = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Home', 'End'];
+      const caracteresPermitidos = /[0-9()/-]/;
+
+      if (!teclasEspeciales.includes(e.key) && !caracteresPermitidos.test(e.key)) {
+        e.preventDefault(); // Impide que se escriba el carácter
+
+        // Feedback visual: borde rojo rápido
+        const input = e.target;
+        input.classList.add('invalid');
+        setTimeout(() => {
+          if (!input.value.trim()) input.classList.remove('invalid');
+        }, 300);
+      }
     }
 
     // ===== FUNCIONES DE CÁLCULO =====
-    // Las fechas 'YYYY-MM-DD' se manejan SIEMPRE como fecha local. new Date('2026-10-02')
-    // se interpreta como UTC y en Argentina (UTC-3) cae el día anterior, lo que corría
-    // el fin de semana un día y daba plazos mal calculados.
-    function parsearFecha(str) {
-      const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(str || '');
-      return m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date(str);
-    }
-
-    function fechaISO(fecha) {
-      const y = fecha.getFullYear();
-      const m = String(fecha.getMonth() + 1).padStart(2, '0');
-      const d = String(fecha.getDate()).padStart(2, '0');
-      return `${y}-${m}-${d}`;
-    }
-
     function esFinDeSemana(fecha) {
       const day = fecha.getDay();
       return day === 0 || day === 6;
     }
 
     function esFeriado(fecha) {
-      return FERIADOS.includes(fechaISO(fecha));
+      const str = fecha.toISOString().split('T')[0];
+      return FERIADOS.includes(str);
     }
 
     function esHabil(fecha) {
@@ -1318,7 +1253,7 @@
     }
 
     function calcularFechaFin(fechaInicio, diasPlazo) {
-      let fecha = parsearFecha(fechaInicio);
+      let fecha = new Date(fechaInicio);
       let diasContados = 0;
 
       while (diasContados < diasPlazo) {
@@ -1329,55 +1264,26 @@
       return fecha;
     }
 
-    function hoyLocal() {
-      const h = new Date();
-      h.setHours(0, 0, 0, 0);
-      return h;
-    }
-
-    // Días hábiles en el intervalo (desde, hasta].
-    function diasHabilesEntre(desde, hasta) {
-      let n = 0;
-      const f = new Date(desde);
-      while (f < hasta) {
-        f.setDate(f.getDate() + 1);
-        if (esHabil(f)) n++;
-      }
-      return n;
-    }
-
-    // Estado del plazo de un expediente. Distingue "vence hoy" de "vencido", que antes
-    // se confundían (ambos daban 0 días).
-    function calcularPlazo(fechaInicio, diasPlazo, hoy = hoyLocal()) {
+    function calcularDiasRestantes(fechaInicio, diasPlazo) {
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
       const fechaFin = calcularFechaFin(fechaInicio, diasPlazo);
-      const vencido = fechaFin < hoy;
-      return {
-        fechaFin,
-        vencido,
-        venceHoy: fechaFin.getTime() === hoy.getTime(),
-        diasRestantes: vencido ? 0 : diasHabilesEntre(hoy, fechaFin),
-        diasVencido: vencido ? diasHabilesEntre(fechaFin, hoy) : 0
-      };
-    }
+      let diasRestantes = 0;
+      let fecha = new Date(hoy);
 
-    function obtenerSemaforo(plazo) {
-      if (plazo.vencido || plazo.venceHoy) return { color: "rojo", orden: 0 };
-      if (plazo.diasRestantes <= 5) return { color: "naranja", orden: 1 };
-      if (plazo.diasRestantes <= 15) return { color: "amarillo", orden: 2 };
-      return { color: "verde", orden: 3 };
-    }
-
-    function textoPlazo(plazo) {
-      if (plazo.vencido) {
-        return plazo.diasVencido > 0 ? `Vencido hace ${plazo.diasVencido} d háb.` : 'Vencido';
+      while (fecha < fechaFin) {
+        fecha.setDate(fecha.getDate() + 1);
+        if (esHabil(fecha)) diasRestantes++;
       }
-      if (plazo.venceHoy) return 'Vence hoy';
-      return `${plazo.diasRestantes} d háb.`;
+
+      return Math.max(0, diasRestantes);
     }
 
-    function formatearFechaCorta(fecha) {
-      return fecha.toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })
-        .replace(',', '');
+    function obtenerSemaforo(diasRestantes) {
+      if (diasRestantes === 0) return { emoji: "🔴", color: "rojo", orden: 0 };
+      if (diasRestantes <= 5) return { emoji: "🟠", color: "naranja", orden: 1 };
+      if (diasRestantes <= 15) return { emoji: "🟡", color: "amarillo", orden: 2 };
+      return { emoji: "🟢", color: "verde", orden: 3 };
     }
 
     // ===== SYNC (vía Worker propio, sin exponer token) =====
@@ -1439,9 +1345,6 @@
 
         const datos = await resp.json();
 
-        // Si mientras bajaba hubo cambios locales sin subir, bajar pisaría trabajo del usuario.
-        if (syncPendiente || syncPromise || hayPendiente()) return false;
-
         expedientes = datos.expedientes || [];
         AREAS = (datos.areas && datos.areas.length) ? datos.areas : [...AREAS_DEFAULT];
         RESPONSABLES = (datos.responsables && datos.responsables.length) ? datos.responsables : [...RESPONSABLES_DEFAULT];
@@ -1458,68 +1361,46 @@
     }
 
     // ===== ALMACENAMIENTO CON SYNC BATCHING =====
-    // Los cambios se guardan en localStorage al instante y se suben en background.
-    // 'syncPendiente' marca cambios locales que todavía no llegaron al servidor; se
-    // persiste en localStorage para que sobreviva a un cierre de la app sin conexión.
-    const LS_PENDIENTE = 'expedientes_crm_pendiente';
-    let syncPendiente = false;
-    let syncTimer = null;
-    let syncPromise = null;
-
-    function hayPendiente() {
-      try { return localStorage.getItem(LS_PENDIENTE) === '1'; } catch (e) { return false; }
-    }
-
-    function marcarPendiente(valor) {
-      try {
-        if (valor) localStorage.setItem(LS_PENDIENTE, '1');
-        else localStorage.removeItem(LS_PENDIENTE);
-      } catch (e) { /* sin localStorage: se sigue en memoria */ }
-    }
+    let syncQueue = [];
+    let isSyncing = false;
 
     function guardarEnLS(sincronizar = true) {
       try {
         localStorage.setItem('expedientes_crm_expedientes', JSON.stringify(expedientes));
         localStorage.setItem('expedientes_crm_areas', JSON.stringify(AREAS));
         localStorage.setItem('expedientes_crm_responsables', JSON.stringify(RESPONSABLES));
+
+        // Respuesta local INSTANTÁNEA sin esperar a GitHub (cambios optimistas)
+        if (sincronizar) {
+          programarSincronizacion();
+        }
       } catch (e) {
         console.error('Error al guardar:', e);
       }
-
-      // Respuesta local INSTANTÁNEA sin esperar a GitHub (cambios optimistas)
-      if (sincronizar) programarSincronizacion();
     }
 
     function programarSincronizacion() {
-      syncPendiente = true;
-      marcarPendiente(true);
-      // Si ya hay un sync en vuelo, su bucle levanta este cambio al terminar.
-      if (syncPromise || syncTimer) return;
-      syncTimer = setTimeout(() => { syncTimer = null; sincronizarEnBackground(); }, 100);
+      // No sincronizar inmediatamente, agregar a queue
+      // Se sincroniza en background cada ~100-500ms (batching inteligente)
+      if (!isSyncing && syncQueue.length === 0) {
+        setTimeout(sincronizarEnBackground, 100);
+      }
     }
 
-    // Sube ya (sin esperar el batching) y devuelve true/false según el resultado real.
-    function sincronizarAhora() {
-      syncPendiente = true;
-      marcarPendiente(true);
-      if (syncTimer) { clearTimeout(syncTimer); syncTimer = null; }
-      return sincronizarEnBackground();
-    }
+    async function sincronizarEnBackground() {
+      if (isSyncing) return;
+      isSyncing = true;
 
-    function sincronizarEnBackground() {
-      if (syncPromise) return syncPromise;
-      syncPromise = (async () => {
-        let ok = true;
-        // Repite mientras lleguen cambios durante un POST: el último edit nunca se pierde.
-        while (syncPendiente && ok) {
-          syncPendiente = false;
-          ok = await subirAGitHub(); // deja el indicador en ok/error según el resultado real
-          if (!ok) syncPendiente = true; // sigue pendiente: reintenta con el próximo cambio o al volver la red
-        }
-        if (ok) marcarPendiente(false);
-        return ok;
-      })().finally(() => { syncPromise = null; });
-      return syncPromise;
+      try {
+        // Sincronizar TODO (expedientes + config) en un solo POST
+        await subirAGitHub();
+        actualizarIndicadorSync(true);
+      } catch (e) {
+        console.error('Error en sync background:', e);
+        actualizarIndicadorSync(false);
+      } finally {
+        isSyncing = false;
+      }
     }
 
     function cargarDesdeLS() {
@@ -1551,20 +1432,9 @@
     }
 
     function eliminarArea(nombre) {
-      const usos = expedientes.filter(e => e.area === nombre).length;
-      if (usos > 0) {
-        mostrarAlerta('No se puede eliminar', `El área "${nombre}" la usan ${usos} expediente${usos !== 1 ? 's' : ''} (activos o archivados). Reasignalos antes de eliminarla.`);
-        return;
-      }
-      const indice = AREAS.indexOf(nombre);
       AREAS = AREAS.filter(a => a !== nombre);
       guardarEnLS();
       renderizar();
-      mostrarToast(`Área "${nombre}" eliminada`, { accion: () => {
-        AREAS.splice(Math.min(indice, AREAS.length), 0, nombre);
-        guardarEnLS();
-        renderizar();
-      } });
     }
 
     function agregarResponsable(nombre) {
@@ -1578,71 +1448,59 @@
     }
 
     function eliminarResponsable(nombre) {
-      const usos = expedientes.filter(e => e.responsable === nombre).length;
-      if (usos > 0) {
-        mostrarAlerta('No se puede eliminar', `"${nombre}" es responsable de ${usos} expediente${usos !== 1 ? 's' : ''} (activos o archivados). Reasignalos antes de eliminarlo.`);
-        return;
-      }
-      const indice = RESPONSABLES.indexOf(nombre);
       RESPONSABLES = RESPONSABLES.filter(r => r !== nombre);
       guardarEnLS();
       renderizar();
-      mostrarToast(`"${nombre}" eliminado`, { accion: () => {
-        RESPONSABLES.splice(Math.min(indice, RESPONSABLES.length), 0, nombre);
-        guardarEnLS();
-        renderizar();
-      } });
     }
 
     // ===== FUNCIONES DE UI =====
     function crearFormulario(expediente = null) {
       const html = `
         <div class="form-group">
-          <label class="form-label" for="numero">Nro Expediente <span style="font-weight: 400; color: var(--text-muted);">(opcional)</span></label>
-          <input type="text" class="form-input" id="numero" placeholder="363-1254/2025-01" value="${esc(expediente?.numero)}" autocomplete="off" data-ayuda="ayuda-numero" aria-describedby="ayuda-numero" pattern="\\d{3}\\s*-\\s*\\d{1,6}\\/\\d{4}\\s*-\\s*\\d{1,2}">
-          <span class="form-help" id="ayuda-numero">Formato: 363-1254/2025-01. Podés pegarlo desde Word o PDF.</span>
+          <label class="form-label">Nro Expediente</label>
+          <input type="text" class="form-input" id="numero" placeholder="363-1254/2025-01 (opcional)" value="${expediente?.numero || ''}" pattern="\\d{3}\\s*-\\s*\\d{1,6}\\/\\d{4}\\s*-\\s*\\d{1,2}">
         </div>
 
         <div class="form-group">
-          <label class="form-label required" for="tema">Tema</label>
-          <input type="text" class="form-input" id="tema" placeholder="Descripción breve del asunto" value="${esc(expediente?.tema)}" aria-required="true">
+          <label class="form-label required">Tema</label>
+          <input type="text" class="form-input" id="tema" placeholder="Descripción breve del asunto" value="${expediente?.tema || ''}" required>
         </div>
 
         <div class="form-group">
-          <label class="form-label required" for="area">Área Responsable</label>
-          <select class="form-select" id="area" aria-required="true">
+          <label class="form-label required">Área Responsable</label>
+          <select class="form-select" id="area" required>
             <option value="">Seleccionar área...</option>
-            ${AREAS.map(a => `<option value="${esc(a)}" ${expediente?.area === a ? 'selected' : ''}>${esc(a)}</option>`).join('')}
+            ${AREAS.map(a => `<option value="${a}" ${expediente?.area === a ? 'selected' : ''}>${a}</option>`).join('')}
           </select>
         </div>
 
         <div class="form-group">
-          <label class="form-label required" for="responsable">Responsable</label>
-          <select class="form-select" id="responsable" aria-required="true">
+          <label class="form-label required">Responsable</label>
+          <select class="form-select" id="responsable" required>
             <option value="">Seleccionar responsable...</option>
-            ${RESPONSABLES.map(r => `<option value="${esc(r)}" ${expediente?.responsable === r ? 'selected' : ''}>${esc(r)}</option>`).join('')}
+            ${RESPONSABLES.map(r => `<option value="${r}" ${expediente?.responsable === r ? 'selected' : ''}>${r}</option>`).join('')}
           </select>
         </div>
 
         <div class="form-group">
-          <label class="form-label required" for="fechaInicio">Fecha de Inicio</label>
-          <input type="date" class="form-input" id="fechaInicio" value="${esc(expediente?.fechaInicio || fechaISO(new Date()))}" aria-required="true">
+          <label class="form-label required">Fecha de Inicio</label>
+          <input type="date" class="form-input" id="fechaInicio" value="${expediente?.fechaInicio || new Date().toISOString().split('T')[0]}" required>
         </div>
 
         <div class="form-group">
-          <label class="form-label required" for="diasPlazo">Plazo en Días Hábiles</label>
-          <input type="number" class="form-input" id="diasPlazo" placeholder="30" value="${esc(expediente?.diasPlazo)}" min="1" aria-required="true">
+          <label class="form-label required">Plazo en Días Hábiles</label>
+          <input type="number" class="form-input" id="diasPlazo" placeholder="30" value="${expediente?.diasPlazo || ''}" min="1" required>
         </div>
 
         <div class="form-group">
           <label class="form-label">Fecha de Vencimiento</label>
-          <div class="form-input" id="fechaVencimiento" role="status" aria-live="polite" style="background-color: var(--gray-100); padding: 10px; border-radius: 6px; cursor: default; user-select: none;">
+          <div class="form-input" id="fechaVencimiento" style="background-color: var(--gray-100); padding: 10px; border-radius: 6px; cursor: default; user-select: none;">
             Completa Fecha de Inicio y Plazo
           </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="notas">Nueva nota (se agrega al historial)</label>
+          <label class="form-label">Notas (se guardarán como intervención)</label>
           <textarea class="form-textarea" id="notas" placeholder="Anotaciones sobre el expediente"></textarea>
         </div>
 
@@ -1652,7 +1510,7 @@
             <div class="intervenciones-list">
               ${expediente.intervenciones.map(i => `
                 <div class="intervencion">
-                  <span class="intervencion-hora">${esc(i.hora)}</span><br><small>${esc(i.texto)}</small>
+                  <span class="intervencion-hora">${i.hora}</span><br><small>${i.texto}</small>
                 </div>
               `).join('')}
             </div>
@@ -1666,8 +1524,8 @@
     function renderizarConfigAreas() {
       const html = AREAS.map(area => `
         <div class="config-item">
-          <span>${esc(area)}</span>
-          <button type="button" data-nombre="${esc(area)}" onclick="eliminarArea(this.dataset.nombre)" aria-label="Eliminar área ${esc(area)}">✕</button>
+          <span>${area}</span>
+          <button type="button" onclick="eliminarArea('${area}')">✕</button>
         </div>
       `).join('');
       document.getElementById('areasConfigList').innerHTML = html || '<p style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 20px 0;">No hay áreas</p>';
@@ -1676,8 +1534,8 @@
     function renderizarConfigResponsables() {
       const html = RESPONSABLES.map(r => `
         <div class="config-item">
-          <span>${esc(r)}</span>
-          <button type="button" data-nombre="${esc(r)}" onclick="eliminarResponsable(this.dataset.nombre)" aria-label="Eliminar responsable ${esc(r)}">✕</button>
+          <span>${r}</span>
+          <button type="button" onclick="eliminarResponsable('${r}')">✕</button>
         </div>
       `).join('');
       document.getElementById('responsablesConfigList').innerHTML = html || '<p style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 20px 0;">No hay responsables</p>';
@@ -1703,22 +1561,35 @@
       }
     }
 
-    function estadoDe(exp) {
-      return (exp.estado || 'activo') === 'archivado' ? 'archivados' : 'activos';
+    async function guardarConfiguracion() {
+      try {
+        guardarEnLS(false); // Guardar en localStorage
+        await subirAGitHub(); // Sincronizar con GitHub
+        mostrarAlerta('✅ Guardado', 'Cambios en áreas y responsables sincronizados con GitHub');
+        setTimeout(() => {
+          document.getElementById('configOverlay').classList.remove('active');
+        }, 1500);
+      } catch (e) {
+        console.error('Error al sincronizar:', e);
+        mostrarAlerta('❌ Error', 'No se pudo sincronizar. Los cambios se guardaron localmente.');
+      }
     }
 
-    // Los contadores reflejan la pestaña visible: antes "Total" sumaba activos y
-    // archivados y no coincidía con las tarjetas de la lista.
     function renderizarPanelAreas() {
-      const enPestana = expedientes.filter(e => estadoDe(e) === pestanaActiva);
+      const conteos = {};
+      conteos['Total'] = expedientes.length;
+
+      AREAS.forEach(area => {
+        conteos[area] = expedientes.filter(e => e.area === area).length;
+      });
 
       const html = `
-        <button class="area-btn ${filtroArea === null ? 'active' : ''}" data-area="" onclick="filtrarArea(this.dataset.area || null)">
-          Total (${enPestana.length})
+        <button class="area-btn ${filtroArea === null ? 'active' : ''}" onclick="filtrarArea(null)">
+          Total (${conteos['Total']})
         </button>
         ${AREAS.map(area => `
-          <button class="area-btn ${filtroArea === area ? 'active' : ''}" data-area="${esc(area)}" onclick="filtrarArea(this.dataset.area || null)">
-            ${esc(area)} (${enPestana.filter(e => e.area === area).length})
+          <button class="area-btn ${filtroArea === area ? 'active' : ''}" onclick="filtrarArea('${area}')">
+            ${area} (${conteos[area]})
           </button>
         `).join('')}
       `;
@@ -1733,53 +1604,41 @@
 
     function cambiarPestana(pestana) {
       pestanaActiva = pestana;
+      document.querySelectorAll('.pestana-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
       renderizar();
     }
 
     function actualizarPestanas() {
-      const nombres = { activos: 'Activos', archivados: 'Archivados' };
       document.querySelectorAll('.pestana-btn').forEach(btn => {
-        const p = btn.dataset.pestana;
-        const cantidad = expedientes.filter(e => estadoDe(e) === p).length;
-        btn.textContent = `${nombres[p]} (${cantidad})`;
-        btn.classList.toggle('active', p === pestanaActiva);
-        btn.setAttribute('aria-selected', String(p === pestanaActiva));
+        btn.classList.remove('active');
+        if ((btn.textContent.includes('Activos') && pestanaActiva === 'activos') ||
+            (btn.textContent.includes('Archivados') && pestanaActiva === 'archivados')) {
+          btn.classList.add('active');
+        }
       });
     }
 
     function marcarResuelto(expedienteId) {
       const exp = expedientes.find(e => e.id === expedienteId);
-      if (!exp) return;
-      const previo = { estado: exp.estado, fechaResolucion: exp.fechaResolucion };
-
-      exp.estado = 'archivado';
-      exp.fechaResolucion = fechaISO(new Date());
-      guardarEnLS(true);
-      renderizar();
-      mostrarToast('Expediente archivado', { accion: () => {
-        exp.estado = previo.estado || 'activo';
-        if (previo.fechaResolucion) exp.fechaResolucion = previo.fechaResolucion;
-        else delete exp.fechaResolucion;
+      if (exp) {
+        exp.estado = 'archivado';
+        exp.fechaResolucion = new Date().toISOString().split('T')[0];
         guardarEnLS(true);
+        mostrarAlerta('✓ Expediente archivado', 'El expediente se ha marcado como resuelto y movido al archivo.');
         renderizar();
-      } });
+      }
     }
 
     function reabrirExpediente(expedienteId) {
       const exp = expedientes.find(e => e.id === expedienteId);
-      if (!exp) return;
-      const previo = { estado: exp.estado, fechaResolucion: exp.fechaResolucion };
-
-      exp.estado = 'activo';
-      delete exp.fechaResolucion;
-      guardarEnLS(true);
-      renderizar();
-      mostrarToast('Expediente reabierto', { accion: () => {
-        exp.estado = previo.estado;
-        exp.fechaResolucion = previo.fechaResolucion;
+      if (exp) {
+        exp.estado = 'activo';
+        delete exp.fechaResolucion;
         guardarEnLS(true);
+        mostrarAlerta('↺ Expediente reabierto', 'El expediente volvió a estar activo.');
         renderizar();
-      } });
+      }
     }
 
     function filtrarBusqueda() {
@@ -1814,76 +1673,97 @@
         );
       }
 
-      // El plazo se calcula una sola vez por expediente (no en cada comparación del sort).
-      const hoy = hoyLocal();
-      const items = filtrados.map(exp => ({
-        exp,
-        plazo: calcularPlazo(exp.fechaInicio, exp.diasPlazo, hoy)
-      }));
+      filtrados.sort((a, b) => {
+        const diasA = calcularDiasRestantes(a.fechaInicio, a.diasPlazo);
+        const diasB = calcularDiasRestantes(b.fechaInicio, b.diasPlazo);
 
-      if (pestanaActiva === 'archivados') {
-        // Más recientemente resueltos primero
-        items.sort((a, b) => (b.exp.fechaResolucion || '').localeCompare(a.exp.fechaResolucion || ''));
-      } else {
-        // Vencidos primero (el más atrasado arriba), luego por fecha de vencimiento
-        items.sort((a, b) => a.plazo.fechaFin - b.plazo.fechaFin);
-      }
+        const semaforoA = obtenerSemaforo(diasA);
+        const semaforoB = obtenerSemaforo(diasB);
 
-      const html = items.map(({ exp, plazo }) => {
-        const archivado = pestanaActiva === 'archivados';
-        const clase = archivado ? 'archivado' : obtenerSemaforo(plazo).color;
-        const badge = archivado
-          ? `Resuelto el ${exp.fechaResolucion ? formatearFechaCorta(parsearFecha(exp.fechaResolucion)) : '—'}`
-          : textoPlazo(plazo);
-        const tieneInterv = exp.intervenciones && exp.intervenciones.length > 0;
+        if (semaforoA.orden !== semaforoB.orden) {
+          return semaforoA.orden - semaforoB.orden;
+        }
+
+        return diasA - diasB;
+      });
+
+      const html = filtrados.map(exp => {
+        const diasRestantes = calcularDiasRestantes(exp.fechaInicio, exp.diasPlazo);
+        const semaforo = obtenerSemaforo(diasRestantes);
+        const expandId = `exp-expand-${exp.id}`;
 
         return `
-          <div class="expediente-card ${clase}" data-id="${esc(exp.id)}">
-            <div class="expediente-header">
-              <div class="expediente-numero">
-                <button type="button" class="expediente-abrir" data-id="${esc(exp.id)}" aria-label="Editar expediente ${esc(exp.numero || 'sin número')}: ${esc(exp.tema)}" onclick="abrirEditar(this.dataset.id)">${exp.numero ? esc(exp.numero) : 'Sin número'}</button>
+          <div class="expediente-card-new">
+            <!-- Header rojo con urgencia -->
+            <div class="expediente-header-urgencia ${semaforo.color}" onclick="document.getElementById('${expandId}').classList.toggle('expanded')">
+              <div class="expediente-urgencia-title">
+                <div class="expediente-urgencia-label">Expediente</div>
+                <div class="expediente-urgencia-dias"><strong>${diasRestantes} día${diasRestantes !== 1 ? 's' : ''} hábil${diasRestantes !== 1 ? 'es' : ''}</strong></div>
               </div>
-              <span class="plazo-badge ${clase}">${esc(badge)}</span>
+              <div class="expediente-expand-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </div>
             </div>
 
-            <div class="expediente-tema">${esc(exp.tema)}</div>
+            <!-- Contenido expandible -->
+            <div id="${expandId}" class="expediente-expanded-content">
+              <!-- Tema -->
+              <div class="expediente-expanded-tema">${exp.tema}</div>
 
-            <div class="expediente-meta">
-              <span><strong>${esc(exp.area)}</strong></span>
-              <span><strong>${esc(exp.responsable)}</strong></span>
-              ${archivado ? '' : `<span>Vence ${esc(formatearFechaCorta(plazo.fechaFin))}</span>`}
-              ${tieneInterv ? `<span>💬 ${exp.intervenciones.length}</span>` : ''}
-            </div>
+              <!-- Meta información -->
+              <div class="expediente-expanded-meta">
+                <div><strong>${exp.area}</strong></div>
+                <div><strong>${exp.responsable}</strong></div>
+              </div>
 
-            ${tieneInterv ? `
-              <div class="intervenciones-list">
-                ${exp.intervenciones.slice(-2).map(i => `
-                  <div class="intervencion">
-                    <span class="intervencion-hora">${esc(i.hora)}</span><br><small>${esc(i.texto.substring(0, 60))}${i.texto.length > 60 ? '...' : ''}</small>
+              <!-- Fechas -->
+              <div class="expediente-expanded-dates">
+                <div>
+                  <span class="label">Inicio:</span>
+                  <span>${new Date(exp.fechaInicio).toLocaleDateString('es-AR')}</span>
+                </div>
+                <div>
+                  <span class="label">Número:</span>
+                  <span>${exp.numero}</span>
+                </div>
+              </div>
+
+              <!-- Notas/Intervenciones -->
+              ${exp.intervenciones && exp.intervenciones.length > 0 ? `
+                <div class="expediente-notas-section">
+                  <div class="notas-header">Notas (${exp.intervenciones.length})</div>
+                  <div class="notas-list">
+                    ${exp.intervenciones.map(i => `
+                      <div class="nota-item">
+                        <div class="nota-hora">${i.hora}</div>
+                        <div class="nota-texto">${i.texto}</div>
+                      </div>
+                    `).join('')}
                   </div>
-                `).join('')}
-              </div>
-            ` : ''}
+                </div>
+              ` : `
+                <div class="expediente-notas-section">
+                  <div class="notas-header">Notas</div>
+                  <div class="notas-empty">Sin notas aún</div>
+                </div>
+              `}
 
-            <div class="expediente-acciones">
-              ${archivado
-                ? `<button class="btn btn-secondary btn-small" data-id="${esc(exp.id)}" onclick="event.stopPropagation(); reabrirExpediente(this.dataset.id)">↺ Reabrir</button>`
-                : `<button class="btn btn-success btn-small" data-id="${esc(exp.id)}" onclick="event.stopPropagation(); marcarResuelto(this.dataset.id)">✓ Resolver</button>`
-              }
+              <!-- Botón de acción -->
+              <div class="expediente-actions">
+                ${exp.estado === 'archivado'
+                  ? `<button class="btn btn-secondary btn-full" onclick="event.stopPropagation(); reabrirExpediente('${exp.id}')">↺ Reabrir Expediente</button>`
+                  : `<button class="btn btn-primary btn-full" onclick="event.stopPropagation(); marcarResuelto('${exp.id}')">✓ Resolver</button>`
+                }
+                <button class="btn btn-secondary btn-full" onclick="event.stopPropagation(); abrirEditar('${exp.id}')">✎ Editar</button>
+              </div>
             </div>
           </div>
         `;
       }).join('');
 
-      document.getElementById('expedientesList').innerHTML = html || `<p style="padding: 16px; text-align: center; color: var(--text-muted);">${esc(mensajeVacio())}</p>`;
-    }
-
-    function mensajeVacio() {
-      if (busqueda) return `Sin resultados para «${busqueda}»`;
-      if (filtroArea) return `No hay expedientes ${pestanaActiva === 'archivados' ? 'archivados' : 'activos'} en ${filtroArea}`;
-      return pestanaActiva === 'archivados'
-        ? 'Todavía no hay expedientes archivados'
-        : 'No hay expedientes activos. Tocá + para cargar uno.';
+      document.getElementById('expedientesList').innerHTML = html || '<p style="padding: 16px; text-align: center; color: var(--text-muted);">No hay expedientes</p>';
     }
 
     function actualizarFechaVencimiento() {
@@ -1898,59 +1778,10 @@
       const fechaFin = calcularFechaFin(fechaInicio, diasPlazo);
       const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
       const fechaFormato = fechaFin.toLocaleDateString('es-AR', opciones);
-      const plazo = calcularPlazo(fechaInicio, diasPlazo);
-      const estado = plazo.vencido ? textoPlazo(plazo).toLowerCase()
-        : plazo.venceHoy ? 'vence hoy'
-        : `${plazo.diasRestantes} día${plazo.diasRestantes !== 1 ? 's' : ''} hábil${plazo.diasRestantes !== 1 ? 'es' : ''} restante${plazo.diasRestantes !== 1 ? 's' : ''}`;
+      const diasRestantes = calcularDiasRestantes(fechaInicio, diasPlazo);
 
-      document.getElementById('fechaVencimiento').textContent = `${fechaFormato} (${estado})`;
-    }
-
-    // Errores en línea: se marcan el campo y el mensaje, y se limpian apenas el usuario corrige.
-    const CAMPOS_FORM = ['numero', 'tema', 'area', 'responsable', 'fechaInicio', 'diasPlazo'];
-
-    function mostrarErrorCampo(id, mensaje) {
-      const input = document.getElementById(id);
-      if (!input) return;
-      input.classList.remove('valid');
-      input.classList.add('invalid');
-      input.setAttribute('aria-invalid', 'true');
-      let err = document.getElementById('error-' + id);
-      if (!err) {
-        err = document.createElement('span');
-        err.className = 'form-error';
-        err.id = 'error-' + id;
-        err.setAttribute('role', 'alert');
-        input.insertAdjacentElement('afterend', err);
-      }
-      err.textContent = mensaje;
-      input.setAttribute('aria-describedby', ['error-' + id, input.dataset.ayuda].filter(Boolean).join(' '));
-    }
-
-    function limpiarErrorCampo(id) {
-      const input = document.getElementById(id);
-      if (!input) return;
-      input.classList.remove('invalid');
-      input.removeAttribute('aria-invalid');
-      document.getElementById('error-' + id)?.remove();
-      if (input.dataset.ayuda) input.setAttribute('aria-describedby', input.dataset.ayuda);
-      else input.removeAttribute('aria-describedby');
-    }
-
-    function enlazarFormulario() {
-      const inputNumero = document.getElementById('numero');
-      inputNumero.addEventListener('input', (e) => { limpiarErrorCampo('numero'); actualizarValidacionNumero(e.target); });
-      inputNumero.addEventListener('blur', (e) => actualizarValidacionNumero(e.target));
-
-      CAMPOS_FORM.filter(id => id !== 'numero').forEach(id => {
-        const el = document.getElementById(id);
-        el.addEventListener('input', () => limpiarErrorCampo(id));
-        el.addEventListener('change', () => limpiarErrorCampo(id));
-      });
-
-      // Cálculo de vencimiento en tiempo real
-      document.getElementById('fechaInicio').addEventListener('change', actualizarFechaVencimiento);
-      document.getElementById('diasPlazo').addEventListener('input', actualizarFechaVencimiento);
+      document.getElementById('fechaVencimiento').textContent =
+        `${fechaFormato} (${diasRestantes} día${diasRestantes !== 1 ? 's' : ''} restante${diasRestantes !== 1 ? 's' : ''})`;
     }
 
     function abrirNuevo() {
@@ -1959,9 +1790,22 @@
       document.getElementById('btnEliminar').classList.add('hidden');
 
       document.getElementById('formularioModal').innerHTML = crearFormulario();
-      enlazarFormulario();
 
-      abrirOverlay('modalOverlay', '#numero');
+      // Agregar validación en tiempo real
+      const inputNumero = document.getElementById('numero');
+      if (inputNumero) {
+        inputNumero.addEventListener('input', (e) => actualizarValidacionNumero(e.target));
+        inputNumero.addEventListener('blur', (e) => actualizarValidacionNumero(e.target));
+        inputNumero.addEventListener('keydown', filtrarCaracteresNumero);
+      }
+
+      // Agregar cálculo de vencimiento en tiempo real
+      const fechaInicio = document.getElementById('fechaInicio');
+      const diasPlazo = document.getElementById('diasPlazo');
+      if (fechaInicio) fechaInicio.addEventListener('change', actualizarFechaVencimiento);
+      if (diasPlazo) diasPlazo.addEventListener('input', actualizarFechaVencimiento);
+
+      document.getElementById('modalOverlay').classList.add('active');
     }
 
     function abrirEditar(id) {
@@ -1969,19 +1813,32 @@
       const exp = expedientes.find(e => e.id === id);
       if (!exp) return;
 
-      document.getElementById('modalTitle').textContent = `Editar: ${exp.numero || 'sin número'}`;
+      document.getElementById('modalTitle').textContent = `Editar: ${exp.numero}`;
       document.getElementById('btnEliminar').classList.remove('hidden');
 
       document.getElementById('formularioModal').innerHTML = crearFormulario(exp);
-      enlazarFormulario();
-      actualizarValidacionNumero(document.getElementById('numero'));
+
+      // Agregar validación en tiempo real
+      const inputNumero = document.getElementById('numero');
+      if (inputNumero) {
+        inputNumero.addEventListener('input', (e) => actualizarValidacionNumero(e.target));
+        inputNumero.addEventListener('blur', (e) => actualizarValidacionNumero(e.target));
+        inputNumero.addEventListener('keydown', filtrarCaracteresNumero);
+        actualizarValidacionNumero(inputNumero);
+      }
+
+      // Agregar cálculo de vencimiento en tiempo real
+      const fechaInicio = document.getElementById('fechaInicio');
+      const diasPlazo = document.getElementById('diasPlazo');
+      if (fechaInicio) fechaInicio.addEventListener('change', actualizarFechaVencimiento);
+      if (diasPlazo) diasPlazo.addEventListener('input', actualizarFechaVencimiento);
       actualizarFechaVencimiento(); // Mostrar el cálculo inicial
 
-      abrirOverlay('modalOverlay', '#tema');
+      document.getElementById('modalOverlay').classList.add('active');
     }
 
     function cerrarModal() {
-      cerrarOverlay('modalOverlay');
+      document.getElementById('modalOverlay').classList.remove('active');
       editandoId = null;
     }
 
@@ -1994,21 +1851,14 @@
       const diasPlazo = parseInt(document.getElementById('diasPlazo').value);
       const notas = document.getElementById('notas').value.trim();
 
-      CAMPOS_FORM.forEach(limpiarErrorCampo);
+      if (!tema || !area || !responsable || !fechaInicio || !diasPlazo) {
+        mostrarAlerta('⚠️ Campos faltantes', 'Completa todos los campos obligatorios');
+        return;
+      }
 
-      // El número es opcional, pero si se ingresó tiene que ser correcto.
-      const errores = [
-        [numero && !validarNumeroExpediente(numero), 'numero', 'El número no tiene el formato esperado (mesa-número/año-sufijo)'],
-        [!tema, 'tema', 'Escribí el tema del expediente'],
-        [!area, 'area', 'Elegí un área'],
-        [!responsable, 'responsable', 'Elegí un responsable'],
-        [!fechaInicio, 'fechaInicio', 'Indicá la fecha de inicio'],
-        [!(diasPlazo > 0), 'diasPlazo', 'Indicá el plazo en días hábiles (1 o más)']
-      ].filter(([falla]) => falla);
-
-      if (errores.length) {
-        errores.forEach(([, id, mensaje]) => mostrarErrorCampo(id, mensaje));
-        document.getElementById(errores[0][1]).focus();
+      // Si se ingresó un número, validar que sea correcto. El número es opcional.
+      if (numero && !validarNumeroExpediente(numero)) {
+        mostrarAlerta('❌ Formato incorrecto', 'Usa: XXX-XXXXX/YYYY-ZZ\nEjemplos:\n363-1254/2025-01\n363-125477/2026-0');
         return;
       }
 
@@ -2048,7 +1898,7 @@
 
         exp.intervenciones = exp.intervenciones || [];
         exp.intervenciones.push({
-          hora: `${dd}/${mo}/${ahora.getFullYear()} ${hh}:${mm}`,
+          hora: `${dd}/${mo} ${hh}:${mm}`,
           texto: notas
         });
       }
@@ -2059,27 +1909,21 @@
     }
 
     function eliminarExpediente() {
-      const indice = expedientes.findIndex(e => e.id === editandoId);
-      if (indice === -1) return;
-      const [eliminado] = expedientes.splice(indice, 1);
+      if (!confirm('¿Estás seguro de que querés eliminar este expediente?')) return;
 
+      expedientes = expedientes.filter(e => e.id !== editandoId);
       guardarEnLS();
       renderizar();
       cerrarModal();
-      mostrarToast('Expediente eliminado', { accion: () => {
-        expedientes.splice(Math.min(indice, expedientes.length), 0, eliminado);
-        guardarEnLS();
-        renderizar();
-      } });
     }
 
     // ===== FUNCIONES CONFIG MODAL =====
     function abrirConfigModal() {
-      abrirOverlay('configOverlay', '#inputArea');
+      document.getElementById('configOverlay').classList.add('active');
     }
 
     function cerrarConfigModal() {
-      cerrarOverlay('configOverlay');
+      document.getElementById('configOverlay').classList.remove('active');
     }
 
     // ===== EVENTOS =====
@@ -2088,12 +1932,6 @@
     document.getElementById('btnCancelar').addEventListener('click', cerrarModal);
     document.getElementById('btnGuardar').addEventListener('click', guardarExpediente);
     document.getElementById('btnEliminar').addEventListener('click', eliminarExpediente);
-    document.getElementById('formularioModal').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
-        e.preventDefault();
-        guardarExpediente();
-      }
-    });
 
     // Config Modal Events
     document.getElementById('btnConfig').addEventListener('click', abrirConfigModal);
@@ -2116,43 +1954,16 @@
       cargarDesdeLS();
       renderizar(); // Mostrar lo local de inmediato, sin esperar la red
 
-      // Cambios hechos sin conexión: primero subirlos; si no se puede, conservar lo local
-      // en lugar de pisarlo con lo que hay en el servidor.
-      if (hayPendiente() && !(await sincronizarAhora())) return;
-
       await descargarDesdeGitHub(); // Trae cambios de otros dispositivos
     })();
 
-    window.addEventListener('online', () => {
-      if (hayPendiente()) sincronizarAhora();
+    // Cerrar popup de alerta con Escape o al clickear afuera
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && document.getElementById('alertOverlay').style.display !== 'none') {
+        cerrarAlert();
+      }
     });
 
-    // Trae los cambios de otro dispositivo al volver a la app, sin tener que recargar.
-    // Se limita a una vez cada 10s y no toca nada mientras se edita un expediente.
-    let ultimaDescarga = Date.now();
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState !== 'visible') return;
-      if (Date.now() - ultimaDescarga < 10000) return;
-      if (overlayAbierto('modalOverlay')) return;
-      ultimaDescarga = Date.now();
-      if (hayPendiente()) sincronizarAhora();
-      else descargarDesdeGitHub();
-    });
-
-    // Tocar el indicador fuerza una sincronización (útil si quedó en "Sin conexión").
-    document.getElementById('syncIndicator').addEventListener('click', async () => {
-      ultimaDescarga = Date.now();
-      if (hayPendiente() && !(await sincronizarAhora())) return;
-      await descargarDesdeGitHub();
-    });
-
-    document.getElementById('toastAccion').addEventListener('click', () => {
-      const accion = toastAccionActual;
-      ocultarToast();
-      if (accion) accion();
-    });
-
-    // Cerrar popup de alerta al clickear afuera (Escape lo maneja el handler de modales)
     document.getElementById('alertOverlay').addEventListener('click', (e) => {
       if (e.target === document.getElementById('alertOverlay')) {
         cerrarAlert();
