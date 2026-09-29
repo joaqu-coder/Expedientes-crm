@@ -26,6 +26,21 @@
       "intervenciones": []
     },
     {
+      "id": "1790643000605",
+      "numero": "",
+      "tema": "Intimaciones",
+      "area": "Coordinación",
+      "responsable": "Joaquín Fernández Castro",
+      "fechaInicio": "2026-09-29",
+      "diasPlazo": 1,
+      "intervenciones": [
+        {
+          "hora": "28/09 21:50",
+          "texto": "Repasar las intimaciones pendientes"
+        }
+      ]
+    },
+    {
       "id": "1790642567420",
       "numero": "",
       "tema": "Comisión RDLF",
@@ -79,21 +94,6 @@
       "fechaInicio": "2026-09-29",
       "diasPlazo": 15,
       "intervenciones": []
-    },
-    {
-      "id": "1790643000605",
-      "numero": "",
-      "tema": "Intimaciones",
-      "area": "Coordinación",
-      "responsable": "Joaquín Fernández Castro",
-      "fechaInicio": "2026-09-29",
-      "diasPlazo": 1,
-      "intervenciones": [
-        {
-          "hora": "28/09 21:50",
-          "texto": "Repasar las intimaciones pendientes"
-        }
-      ]
     }
   ],
   "areas": [
@@ -110,5 +110,5 @@
     "Karina Merino",
     "Joaquín Fernández Castro"
   ],
-  "timestamp": "2026-09-29T00:50:00.706Z"
+  "timestamp": "2026-09-29T02:57:58.587Z"
 }
