@@ -13,7 +13,9 @@
           "hora": "28/09 21:37",
           "texto": "Reunion con Leiva el 04/09/2026"
         }
-      ]
+      ],
+      "estado": "archivado",
+      "fechaResolucion": "2026-09-29"
     },
     {
       "id": "1790642909884",
@@ -134,5 +136,5 @@
     "Karina Merino",
     "Joaquín Fernández Castro"
   ],
-  "timestamp": "2026-09-29T12:13:37.492Z"
+  "timestamp": "2026-09-29T12:32:07.105Z"
 }
