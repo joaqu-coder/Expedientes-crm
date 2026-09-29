@@ -16,6 +16,16 @@
       ]
     },
     {
+      "id": "1790642909884",
+      "numero": "",
+      "tema": "Service Amarok AF079UJ",
+      "area": "Coordinación",
+      "responsable": "Karina Merino",
+      "fechaInicio": "2026-09-29",
+      "diasPlazo": 1,
+      "intervenciones": []
+    },
+    {
       "id": "1790642567420",
       "numero": "",
       "tema": "Comisión RDLF",
@@ -85,5 +95,5 @@
     "Karina Merino",
     "Joaquín Fernández Castro"
   ],
-  "timestamp": "2026-09-29T00:44:32.284Z"
+  "timestamp": "2026-09-29T00:48:29.994Z"
 }
