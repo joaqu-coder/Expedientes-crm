@@ -16,6 +16,16 @@
       ]
     },
     {
+      "id": "1790640768114",
+      "numero": "363-166383/2026-0",
+      "tema": "Comercial -SYRES S.R.L",
+      "area": "Administración",
+      "responsable": "Alejandro Montaldi",
+      "fechaInicio": "2026-09-29",
+      "diasPlazo": 15,
+      "intervenciones": []
+    },
+    {
       "id": "1790634879735",
       "numero": "363-1254/2025-01",
       "tema": "Solicitud de Terreno CECILIA BORLA",
@@ -33,16 +43,6 @@
           "texto": "Prueba 2 :Lorem ipsum dolor sit amet consectetur adipiscing, elit et penatibus himenaeos mi taciti, dictum varius integer magna ullamcorper. Ultrices aenean purus per ad posuere viverra auctor id, molestie faucibus facilisis tincidunt conubia turpis ornare platea, imperdiet vulputate congue magnis tellus pulvinar sed. Hac porta aliquam sagittis etiam facilisi, felis rutrum a morbi proin inceptos, vivamus himenaeos aptent litora"
         }
       ]
-    },
-    {
-      "id": "1790640768114",
-      "numero": "363-166383/2026-0",
-      "tema": "Comercial -SYRES S.R.L",
-      "area": "Administración",
-      "responsable": "Alejandro Montaldi",
-      "fechaInicio": "2026-09-29",
-      "diasPlazo": 15,
-      "intervenciones": []
     }
   ],
   "areas": [
@@ -50,7 +50,8 @@
     "Administración",
     "Operación",
     "Obras",
-    "Intervención"
+    "Intervención",
+    "Coordinación"
   ],
   "responsables": [
     "Alejandro Leiva",
@@ -58,5 +59,5 @@
     "Alejandro Montaldi",
     "Karina Merino"
   ],
-  "timestamp": "2026-09-29T00:12:48.114Z"
+  "timestamp": "2026-09-29T00:13:57.003Z"
 }
