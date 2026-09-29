@@ -135,13 +135,54 @@
       .sync-indicator.sync-error::before { content: '⚠️'; }
     }
 
+    /* Pestañas */
+    .pestanas {
+      background: white;
+      padding: 0;
+      border-bottom: 1px solid var(--gray-300);
+      position: sticky;
+      top: 44px;
+      z-index: 40;
+      display: flex;
+      gap: 0;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .pestanas {
+        background: var(--gray-100);
+      }
+    }
+
+    .pestana-btn {
+      flex: 1;
+      padding: 12px 16px;
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text-muted);
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .pestana-btn:hover {
+      color: var(--text);
+    }
+
+    .pestana-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
     /* Panel de Áreas */
     .panel-areas {
       background: white;
       padding: 12px;
       border-bottom: 1px solid var(--gray-300);
       position: sticky;
-      top: 44px;
+      top: 104px;
       z-index: 40;
     }
 
@@ -736,6 +777,11 @@
     </header>
 
     <main class="main-content">
+      <div class="pestanas">
+        <button class="pestana-btn active" onclick="cambiarPestana('activos')">Activos</button>
+        <button class="pestana-btn" onclick="cambiarPestana('archivados')">Archivados</button>
+      </div>
+
       <div class="panel-areas">
         <div class="panel-areas-title">Áreas Responsables</div>
         <div class="area-buttons" id="areaBotones"></div>
@@ -861,6 +907,7 @@
     let expedientes = [];
     let editandoId = null;
     let filtroArea = null;
+    let pestanaActiva = 'activos';
 
     // ===== ALERTAS ELEGANTES =====
     function mostrarAlerta(titulo, mensaje) {
@@ -1289,14 +1336,49 @@
       renderizar();
     }
 
+    function cambiarPestana(pestana) {
+      pestanaActiva = pestana;
+      document.querySelectorAll('.pestana-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      renderizar();
+    }
+
+    function actualizarPestanas() {
+      document.querySelectorAll('.pestana-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if ((btn.textContent.includes('Activos') && pestanaActiva === 'activos') ||
+            (btn.textContent.includes('Archivados') && pestanaActiva === 'archivados')) {
+          btn.classList.add('active');
+        }
+      });
+    }
+
+    function marcarResuelto(expedienteId) {
+      const exp = expedientes.find(e => e.id === expedienteId);
+      if (exp) {
+        exp.estado = 'archivado';
+        exp.fechaResolucion = new Date().toISOString().split('T')[0];
+        guardarEnLS(true);
+        mostrarAlerta('✓ Expediente archivado', 'El expediente se ha marcado como resuelto y movido al archivo.');
+        renderizar();
+      }
+    }
+
     function renderizar() {
       renderizarConfigAreas();
       renderizarConfigResponsables();
       renderizarPanelAreas();
+      actualizarPestanas();
 
       let filtrados = expedientes;
+
+      // Filtrar por pestaña (activos/archivados)
+      const estadoFiltro = pestanaActiva === 'activos' ? 'activo' : 'archivado';
+      filtrados = filtrados.filter(e => (e.estado || 'activo') === estadoFiltro);
+
+      // Filtrar por área
       if (filtroArea) {
-        filtrados = expedientes.filter(e => e.area === filtroArea);
+        filtrados = filtrados.filter(e => e.area === filtroArea);
       }
 
       filtrados.sort((a, b) => {
@@ -1321,7 +1403,10 @@
           <div class="expediente-card ${semaforo.color}" onclick="abrirEditar('${exp.id}')">
             <div class="expediente-header">
               <div class="expediente-numero">${exp.numero}</div>
-              <div class="semaforo-emoji">${semaforo.emoji}</div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <div class="semaforo-emoji">${semaforo.emoji}</div>
+                ${exp.estado === 'archivado' ? '' : `<button class="btn btn-small" style="padding: 4px 8px; font-size: 10px;" onclick="event.stopPropagation(); marcarResuelto('${exp.id}')">✓ Resolver</button>`}
+              </div>
             </div>
 
             <div class="expediente-tema">${exp.tema}</div>
@@ -1468,6 +1553,7 @@
           responsable,
           fechaInicio,
           diasPlazo,
+          estado: 'activo',
           intervenciones: []
         };
         expedientes.push(exp);
