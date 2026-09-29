@@ -1,49 +1,47 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
-  <!-- Gradiente para el icono -->
-  <defs>
-    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#2c5282;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#1a3a52;stop-opacity:1" />
-    </linearGradient>
-    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
-      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.15"/>
-    </filter>
-  </defs>
+  <!-- Fondo blanco -->
+  <rect width="192" height="192" fill="white"/>
 
-  <!-- Fondo circular -->
-  <circle cx="96" cy="96" r="96" fill="url(#grad1)" filter="url(#shadow)"/>
+  <!-- Engranaje EGPAIS - 8 dientes -->
+  <g transform="translate(96, 80)">
+    <!-- Diente arriba -->
+    <path d="M -12 -45 L 12 -45 L 8 -20 L -8 -20 Z" fill="#5a8a8a"/>
 
-  <!-- Engranaje (izquierda-atrás) -->
-  <g opacity="0.3" transform="translate(50, 70)">
-    <circle cx="0" cy="0" r="28" fill="none" stroke="white" stroke-width="3"/>
-    <!-- Dientes -->
-    <rect x="-3" y="-35" width="6" height="8" fill="white"/>
-    <rect x="-3" y="27" width="6" height="8" fill="white"/>
-    <rect x="27" y="-3" width="8" height="6" fill="white"/>
-    <rect x="-35" y="-3" width="8" height="6" fill="white"/>
-  </g>
+    <!-- Diente arriba-derecha (45°) -->
+    <path d="M 30 -30 L 40 -40 L 22 -22 L 12 -12 Z" fill="#5a8a8a"/>
 
-  <!-- Documento/Expediente (centro-derecha) -->
-  <g transform="translate(96, 96)">
-    <!-- Carpeta/Documento -->
-    <rect x="-30" y="-25" width="60" height="70" rx="4" fill="white" filter="url(#shadow)"/>
+    <!-- Diente derecha -->
+    <path d="M 45 -12 L 45 12 L 20 8 L 20 -8 Z" fill="#5a8a8a"/>
 
-    <!-- Pestaña de carpeta -->
-    <rect x="-30" y="-25" width="25" height="15" rx="2" fill="#f0f4f8"/>
+    <!-- Diente abajo-derecha (45°) -->
+    <path d="M 30 30 L 40 40 L 22 22 L 12 12 Z" fill="#5a8a8a"/>
 
-    <!-- Líneas de contenido (expediente) -->
-    <line x1="-20" y1="-8" x2="20" y2="-8" stroke="#2c5282" stroke-width="2" stroke-linecap="round"/>
-    <line x1="-20" y1="5" x2="20" y2="5" stroke="#2c5282" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
-    <line x1="-20" y1="18" x2="20" y2="18" stroke="#2c5282" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
-    <line x1="-20" y1="31" x2="15" y2="31" stroke="#2c5282" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
-  </g>
+    <!-- Diente abajo -->
+    <path d="M -12 45 L 12 45 L 8 20 L -8 20 Z" fill="#5a8a8a"/>
 
-  <!-- Engranaje pequeño (derecha-abajo, decorativo) -->
-  <g opacity="0.4" transform="translate(130, 130)">
-    <circle cx="0" cy="0" r="18" fill="none" stroke="white" stroke-width="2"/>
-    <rect x="-2" y="-23" width="4" height="5" fill="white"/>
-    <rect x="-2" y="18" width="4" height="5" fill="white"/>
-    <rect x="18" y="-2" width="5" height="4" fill="white"/>
-    <rect x="-23" y="-2" width="5" height="4" fill="white"/>
+    <!-- Diente abajo-izquierda (45°) -->
+    <path d="M -30 30 L -40 40 L -22 22 L -12 12 Z" fill="#5a8a8a"/>
+
+    <!-- Diente izquierda -->
+    <path d="M -45 -12 L -45 12 L -20 8 L -20 -8 Z" fill="#5a8a8a"/>
+
+    <!-- Diente arriba-izquierda (45°) -->
+    <path d="M -30 -30 L -40 -40 L -22 -22 L -12 -12 Z" fill="#5a8a8a"/>
+
+    <!-- Centro del engranaje - círculo -->
+    <circle cx="0" cy="0" r="18" fill="white" stroke="#5a8a8a" stroke-width="2"/>
+
+    <!-- Símbolo interior: pequeña fábrica/industria -->
+    <!-- Línea 1 (vertical izquierda) -->
+    <line x1="-6" y1="-8" x2="-6" y2="4" stroke="#5a8a8a" stroke-width="1.5" stroke-linecap="round"/>
+
+    <!-- Línea 2 (vertical centro) -->
+    <line x1="0" y1="-8" x2="0" y2="8" stroke="#5a8a8a" stroke-width="1.5" stroke-linecap="round"/>
+
+    <!-- Línea 3 (vertical derecha) -->
+    <line x1="6" y1="-8" x2="6" y2="4" stroke="#5a8a8a" stroke-width="1.5" stroke-linecap="round"/>
+
+    <!-- Zigzag/tejado (triángulo arriba) -->
+    <path d="M -8 -10 L -3 -14 L 2 -10 L 7 -14 L 8 -10" fill="none" stroke="#5a8a8a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
 </svg>
