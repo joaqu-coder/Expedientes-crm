@@ -46,6 +46,21 @@
       ]
     },
     {
+      "id": "1790642672179",
+      "numero": "",
+      "tema": "Comisión SAC",
+      "area": "Coordinación",
+      "responsable": "Joaquín Fernández Castro",
+      "fechaInicio": "2026-09-29",
+      "diasPlazo": 10,
+      "intervenciones": [
+        {
+          "hora": "28/09 21:44",
+          "texto": "mnsj con Rormando Miranda 22/09/2026"
+        }
+      ]
+    },
+    {
       "id": "1790640768114",
       "numero": "363-166383/2026-0",
       "tema": "Comercial -SYRES S.R.L",
@@ -70,5 +85,5 @@
     "Karina Merino",
     "Joaquín Fernández Castro"
   ],
-  "timestamp": "2026-09-29T00:42:47.534Z"
+  "timestamp": "2026-09-29T00:44:32.284Z"
 }
