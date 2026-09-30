@@ -28,6 +28,15 @@
       --badge-naranja: #9a3412;
       --badge-amarillo: #6b5b00;
       --badge-verde: #336d0e;
+      /* Encabezado de urgencia de la tarjeta: pasteles, no colores planos */
+      --urgencia-rojo-bg: #fbdada;
+      --urgencia-rojo-text: #8a2f2f;
+      --urgencia-naranja-bg: #fce3cc;
+      --urgencia-naranja-text: #8a4f1f;
+      --urgencia-amarillo-bg: #f7ecc0;
+      --urgencia-amarillo-text: #6b5a1a;
+      --urgencia-verde-bg: #d9ecd6;
+      --urgencia-verde-text: #2f5c2a;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -41,6 +50,14 @@
       --badge-naranja: #fdba74;
       --badge-amarillo: #fde047;
       --badge-verde: #86efac;
+      --urgencia-rojo-bg: #4a2c2c;
+      --urgencia-rojo-text: #f3c9c9;
+      --urgencia-naranja-bg: #4a3823;
+      --urgencia-naranja-text: #f4d9b8;
+      --urgencia-amarillo-bg: #46401f;
+      --urgencia-amarillo-text: #f0e6a8;
+      --urgencia-verde-bg: #2c3f2a;
+      --urgencia-verde-text: #c3e0bd;
       }
     }
 
@@ -54,6 +71,14 @@
       --badge-naranja: #fdba74;
       --badge-amarillo: #fde047;
       --badge-verde: #86efac;
+      --urgencia-rojo-bg: #4a2c2c;
+      --urgencia-rojo-text: #f3c9c9;
+      --urgencia-naranja-bg: #4a3823;
+      --urgencia-naranja-text: #f4d9b8;
+      --urgencia-amarillo-bg: #46401f;
+      --urgencia-amarillo-text: #f0e6a8;
+      --urgencia-verde-bg: #2c3f2a;
+      --urgencia-verde-text: #c3e0bd;
     }
 
     * {
@@ -484,18 +509,18 @@
     }
 
     .expediente-header-urgencia.rojo {
-      background: #c41e3a;
-      color: white;
+      background: var(--urgencia-rojo-bg);
+      color: var(--urgencia-rojo-text);
     }
 
     .expediente-header-urgencia.naranja {
-      background: #ea580c;
-      color: white;
+      background: var(--urgencia-naranja-bg);
+      color: var(--urgencia-naranja-text);
     }
 
     .expediente-header-urgencia.amarillo {
-      background: #d5be00;
-      color: #1f2937;
+      background: var(--urgencia-amarillo-bg);
+      color: var(--urgencia-amarillo-text);
     }
 
     /* Archivado = tarea finalizada: todo en gris de inmediato */
@@ -508,8 +533,8 @@
     .expediente-card-new.archivado .expediente-expanded-meta strong { color: var(--text-muted); }
 
     .expediente-header-urgencia.verde {
-      background: #15803d;
-      color: white;
+      background: var(--urgencia-verde-bg);
+      color: var(--urgencia-verde-text);
     }
 
     .expediente-urgencia-title {
