@@ -215,8 +215,9 @@ async function testSyncYEscape() {
   await page.waitForTimeout(500);
   ok(await page.evaluate(() => window.__xss === undefined), 'un tema con HTML no ejecuta código (XSS)');
   ok((await page.locator('#expedientesList').textContent()).includes(tema), 'el tema con HTML/comillas se muestra literal');
-  ok((await page.locator('#expedientesList').textContent()).includes('Sin número'), 'expediente sin número muestra "Sin número"');
-  await page.locator('.expediente-card').first().click();
+  ok((await page.locator('#expedientesList').textContent()).includes('Sin expediente'), 'expediente sin número muestra "Sin expediente"');
+  await page.locator('.expediente-header-urgencia').first().click();
+  await page.locator('.expediente-actions button', { hasText: 'Editar' }).first().click();
   ok((await page.inputValue('#tema')) === tema, 'al editar, el tema con comillas vuelve intacto');
   ok((await page.inputValue('#area')) === "D'Angelo <b>", 'al editar, el área con apóstrofe queda seleccionada');
   await page.click('#btnCancelar');
@@ -364,12 +365,12 @@ async function testPlazosYTarjetas() {
     ];
     renderizar();
   });
-  const cards = page.locator('.expediente-card');
+  const cards = page.locator('.expediente-card-new');
   ok((await cards.count()) === 3, 'la pestaña Activos lista solo los activos (3)');
   ok((await cards.first().textContent()).includes('Muy vencido'), 'el vencido va primero');
-  ok(/Vencido hace \d+ d háb\./.test(await cards.first().locator('.plazo-badge').textContent()), 'el badge del vencido lleva texto, no solo color');
-  ok(await cards.first().locator('.plazo-badge.rojo').count() === 1, 'el vencido es rojo');
-  ok(/Vence \w+ \d\d\/\d\d\/2099/.test(await cards.nth(1).textContent()), 'la tarjeta muestra la fecha de vencimiento');
+  ok(/Vencido hace \d+ d háb\./.test(await cards.first().locator('.expediente-urgencia-dias').textContent()), 'el badge del vencido lleva texto, no solo color');
+  ok(await cards.first().locator('.expediente-header-urgencia.rojo').count() === 1, 'el vencido es rojo');
+  ok(/Vence:\s*\w+ \d\d\/\d\d\/2099/.test(await cards.nth(1).textContent()), 'la tarjeta muestra la fecha de vencimiento');
   ok(/^Total \(3\)/.test((await page.locator('.area-btn').first().textContent()).trim()), 'Total cuenta solo los activos (3), no el archivado');
   ok(/Jurídica \(2\)/.test(await page.locator('#areaBotones').textContent()), 'el contador de área respeta la pestaña (Jurídica = 2)');
   ok(/Activos \(3\)/.test(await page.locator('.pestana-btn.active').textContent()), 'la pestaña Activos muestra su cantidad');
@@ -378,8 +379,11 @@ async function testPlazosYTarjetas() {
   await page.locator('.pestana-btn', { hasText: 'Archivados' }).click();
   ok((await cards.count()) === 1, 'la pestaña Archivados lista 1');
   const arch = cards.first();
-  ok(/Resuelto el .*20\/09\/2026/.test(await arch.locator('.plazo-badge').textContent()), 'la archivada dice "Resuelto el …"');
-  ok(await arch.locator('.plazo-badge.archivado').count() === 1 && !(await arch.textContent()).includes('Vencido'), 'la archivada va en gris, sin semáforo ni "Vencido"');
+  ok(/Resuelto el .*20\/09\/2026/.test(await arch.locator('.expediente-urgencia-dias').textContent()), 'la archivada dice "Resuelto el …"');
+  ok(await arch.locator('.expediente-header-urgencia.archivado').count() === 1 && !(await arch.textContent()).includes('Vencido'), 'la archivada va en gris, sin semáforo ni "Vencido"');
+  const fondo = await arch.locator('.expediente-header-urgencia').evaluate((el) => getComputedStyle(el).backgroundColor);
+  const [cr, cg, cb] = fondo.match(/\d+/g).map(Number);
+  ok(Math.max(cr, cg, cb) - Math.min(cr, cg, cb) < 20, `el encabezado de la archivada es gris neutro (${fondo})`);
   ok(/^Total \(1\)/.test((await page.locator('.area-btn').first().textContent()).trim()), 'en Archivados, Total = 1');
   ok(/Archivados/.test(await page.locator('.pestana-btn.active').textContent()), 'la pestaña activa se marca sin depender del evento global');
 
@@ -396,6 +400,12 @@ async function testPlazosYTarjetas() {
 }
 
 // ---------- Paquete 3: móvil y accesibilidad ----------
+// Expande la tarjeta si está cerrada (el estado abierto se conserva al redibujar).
+async function expandir(page, texto) {
+  const h = page.locator('.expediente-card-new', { hasText: texto }).locator('.expediente-header-urgencia');
+  if ((await h.getAttribute('aria-expanded')) !== 'true') await h.click();
+}
+
 const SEMBRAR = () => {
   const base = { area: 'Jurídica', responsable: 'Ana', estado: 'activo', intervenciones: [] };
   expedientes = Array.from({ length: 14 }, (_, i) => ({
@@ -422,8 +432,9 @@ async function testMovilTactil() {
   ok((await fuente('#searchInput')) >= 16, `el buscador tiene fuente ≥16px (${await fuente('#searchInput')}px)`);
 
   // Objetivos táctiles de 44px.
+  await page.locator('.expediente-header-urgencia').first().click();
   const alto = async (sel) => (await page.locator(sel).first().boundingBox()).height;
-  for (const [sel, nombre] of [['.btn-small', 'Resolver'], ['.area-btn', 'chip de área'], ['.pestana-btn', 'pestaña'], ['#btnConfig', 'engranaje']]) {
+  for (const [sel, nombre] of [['.expediente-actions .btn', 'Resolver'], ['.area-btn', 'chip de área'], ['.pestana-btn', 'pestaña'], ['#btnConfig', 'engranaje']]) {
     const h = await alto(sel);
     ok(h >= 44, `${nombre} mide ≥44px de alto (${Math.round(h)}px)`);
   }
@@ -445,7 +456,7 @@ async function testMovilTactil() {
   });
   ok(fija.top === 0, `header + pestañas siguen fijos arriba tras scrollear (top=${fija.top})`);
   const tapado = await page.evaluate(() => {
-    const primera = document.querySelector('.expediente-card');
+    const primera = document.querySelector('.expediente-card-new');
     const r = primera.getBoundingClientRect();
     const el = document.elementFromPoint(r.x + r.width / 2, Math.max(r.y, 100) + 10);
     return el ? !!el.closest('.sticky-top') : false;
@@ -481,7 +492,7 @@ async function testTecladoYFoco() {
   await page.evaluate(SEMBRAR);
 
   // Desktop: el contenido no se estira a 1440px.
-  const ancho = (await page.locator('.expediente-card').first().boundingBox()).width;
+  const ancho = (await page.locator('.expediente-card-new').first().boundingBox()).width;
   ok(ancho <= 960, `las tarjetas no se estiran en pantallas anchas (${Math.round(ancho)}px)`);
 
   // Semántica
@@ -495,10 +506,13 @@ async function testTecladoYFoco() {
   ok((await page.locator('[role="dialog"], [role="alertdialog"]').count()) === 3, 'los 3 modales tienen role dialog/alertdialog');
 
   // Abrir con teclado: la tarjeta es un botón real
-  const boton = page.locator('.expediente-abrir').first();
+  const boton = page.locator('.expediente-header-urgencia').first();
   await boton.focus();
   await page.keyboard.press('Enter');
-  ok(await page.locator('#modalOverlay').isVisible(), 'Enter sobre el número de la tarjeta abre el expediente');
+  ok((await boton.getAttribute('aria-expanded')) === 'true', 'Enter sobre la tarjeta la expande (aria-expanded)');
+  await page.locator('.expediente-actions button', { hasText: 'Editar' }).first().focus();
+  await page.keyboard.press('Enter');
+  ok(await page.locator('#modalOverlay').isVisible(), 'Enter sobre Editar abre el expediente');
   ok(await page.evaluate(() => document.activeElement.id === 'tema'), 'al abrir, el foco va al primer campo (Tema)');
   ok(await page.evaluate(() => document.querySelector('label[for="tema"]') !== null && document.querySelector('label[for="area"]') !== null), 'los labels están asociados a sus campos');
 
@@ -515,7 +529,7 @@ async function testTecladoYFoco() {
   // Escape cierra y devuelve el foco a la tarjeta
   await page.keyboard.press('Escape');
   ok(!(await page.locator('#modalOverlay').isVisible()), 'Escape cierra el modal');
-  ok(await page.evaluate(() => document.activeElement.classList.contains('expediente-abrir')), 'el foco vuelve al botón de la tarjeta');
+  ok(await page.evaluate(() => document.activeElement.textContent.includes('Editar')), 'el foco vuelve al botón Editar de la tarjeta');
 
   // Errores en línea (sin popup): formulario vacío
   await page.click('#fabNuevo');
@@ -571,12 +585,13 @@ async function testFlujo() {
   const toast = page.locator('#toast');
 
   // Resolver: toast con Deshacer, sin popup bloqueante
-  await page.locator('.expediente-card', { hasText: 'Primero' }).locator('button', { hasText: 'Resolver' }).click();
+  await expandir(page, 'Primero');
+  await page.locator('.expediente-card-new', { hasText: 'Primero' }).locator('button', { hasText: 'Resolver' }).click();
   ok(await toast.isVisible() && /archivado/.test(await toast.textContent()), 'Resolver muestra un toast "archivado"');
   ok(!(await page.locator('#alertOverlay').isVisible()), 'Resolver ya no abre un popup bloqueante');
-  ok((await page.locator('.expediente-card').count()) === 1, 'el expediente salió de Activos');
+  ok((await page.locator('.expediente-card-new').count()) === 1, 'el expediente salió de Activos');
   await page.click('#toastAccion');
-  ok((await page.locator('.expediente-card').count()) === 2, 'Deshacer lo devuelve a Activos');
+  ok((await page.locator('.expediente-card-new').count()) === 2, 'Deshacer lo devuelve a Activos');
   ok(await page.evaluate(() => expedientes.find(e => e.id === 'a').fechaResolucion === undefined && expedientes.find(e => e.id === 'a').estado === 'activo'), 'Deshacer restaura estado y quita fechaResolucion');
   ok(!(await toast.isVisible()), 'el toast se cierra al deshacer');
   await page.waitForTimeout(400);
@@ -588,10 +603,11 @@ async function testFlujo() {
   ok(!(await toast.isVisible()), 'el toast desaparece solo');
 
   // Eliminar: sin confirm() nativo, con Deshacer y misma posición
-  await page.locator('.expediente-abrir', { hasText: '363-1/2026-01' }).click();
+  await expandir(page, '363-1/2026-01');
+  await page.locator('.expediente-card-new', { hasText: '363-1/2026-01' }).locator('button', { hasText: 'Editar' }).click();
   await page.click('#btnEliminar');
   ok(!(await page.locator('#modalOverlay').isVisible()) && /eliminado/.test(await toast.textContent()), 'Eliminar cierra el modal y muestra un toast (sin confirm nativo)');
-  ok((await page.locator('.expediente-card').count()) === 1, 'el expediente se eliminó');
+  ok((await page.locator('.expediente-card-new').count()) === 1, 'el expediente se eliminó');
   await page.click('#toastAccion');
   ok(await page.evaluate(() => expedientes.map(e => e.id).join() === 'a,b'), 'Deshacer restaura el expediente en su posición original');
 
