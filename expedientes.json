@@ -12,6 +12,10 @@
         {
           "hora": "28/09 21:37",
           "texto": "Reunion con Leiva el 04/09/2026"
+        },
+        {
+          "hora": "05/10/2026 08:56",
+          "texto": "Solicita 7.413,93 m² (120.854.547,120)"
         }
       ],
       "estado": "activo"
@@ -163,5 +167,5 @@
     "Karina Merino",
     "Joaquín Fernández Castro"
   ],
-  "timestamp": "2026-10-05T11:44:21.569Z"
+  "timestamp": "2026-10-05T11:56:22.128Z"
 }
