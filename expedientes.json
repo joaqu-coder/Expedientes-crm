@@ -151,6 +151,22 @@
           "texto": "Hablo con Patricia. Me clmenta q el expe ya fue enviado"
         }
       ]
+    },
+    {
+      "id": "1791207573159",
+      "numero": "363-24844/2026-0",
+      "tema": "Info. de inspección prog. Radicación RDLF",
+      "area": "Jurídica",
+      "responsable": "Alejandro Saravia",
+      "fechaInicio": "2026-10-05",
+      "diasPlazo": 10,
+      "estado": "activo",
+      "intervenciones": [
+        {
+          "hora": "05/10/2026 10:39",
+          "texto": "Se inicia informe finale el 09/02/2026. La intervención no toma resolución en el tema. Se escribe correo a legales pars iniciar con intimaciónes."
+        }
+      ]
     }
   ],
   "areas": [
@@ -167,5 +183,5 @@
     "Karina Merino",
     "Joaquín Fernández Castro"
   ],
-  "timestamp": "2026-10-05T11:56:22.128Z"
+  "timestamp": "2026-10-05T13:39:33.263Z"
 }
