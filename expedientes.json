@@ -65,7 +65,9 @@
           "hora": "04/10/2026 22:59",
           "texto": "Viaje realizado 1/10/2026. Reunión con el intendente. 10 días habiles para la finalización de la obra"
         }
-      ]
+      ],
+      "estado": "archivado",
+      "fechaResolucion": "2026-10-05"
     },
     {
       "id": "1790642486016",
@@ -161,5 +163,5 @@
     "Karina Merino",
     "Joaquín Fernández Castro"
   ],
-  "timestamp": "2026-10-05T11:44:11.547Z"
+  "timestamp": "2026-10-05T11:44:21.569Z"
 }
