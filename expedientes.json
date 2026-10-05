@@ -55,7 +55,7 @@
       "area": "Coordinación",
       "responsable": "Joaquín Fernández Castro",
       "fechaInicio": "2026-09-28",
-      "diasPlazo": 3,
+      "diasPlazo": 10,
       "intervenciones": [
         {
           "hora": "28/09 21:42",
@@ -157,5 +157,5 @@
     "Karina Merino",
     "Joaquín Fernández Castro"
   ],
-  "timestamp": "2026-10-05T01:59:30.893Z"
+  "timestamp": "2026-10-05T01:59:50.650Z"
 }
