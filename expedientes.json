@@ -167,6 +167,22 @@
           "texto": "Se inicia informe finale el 09/02/2026. La intervención no toma resolución en el tema. Se escribe correo a legales pars iniciar con intimaciónes."
         }
       ]
+    },
+    {
+      "id": "1791215868934",
+      "numero": "",
+      "tema": "CIBERPLAS S.R.L",
+      "area": "Operación",
+      "responsable": "Alejandro Leiva",
+      "fechaInicio": "2026-10-05",
+      "diasPlazo": 4,
+      "estado": "activo",
+      "intervenciones": [
+        {
+          "hora": "05/10/2026 12:57",
+          "texto": "1798 m² 49.137.656 Anticipo y 3 cuotas."
+        }
+      ]
     }
   ],
   "areas": [
@@ -183,5 +199,5 @@
     "Karina Merino",
     "Joaquín Fernández Castro"
   ],
-  "timestamp": "2026-10-05T13:39:33.263Z"
+  "timestamp": "2026-10-05T15:57:49.038Z"
 }
