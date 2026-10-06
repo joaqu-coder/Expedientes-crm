@@ -183,6 +183,22 @@
           "texto": "1798 m² 49.137.656 Anticipo y 3 cuotas."
         }
       ]
+    },
+    {
+      "id": "1791289488677",
+      "numero": "363-152102/2026-0",
+      "tema": "Solicitud de tarjeta de combustible",
+      "area": "Administración",
+      "responsable": "Karina Merino",
+      "fechaInicio": "2026-07-31",
+      "diasPlazo": 30,
+      "estado": "activo",
+      "intervenciones": [
+        {
+          "hora": "06/10/2026 09:24",
+          "texto": "Hable con Favio, en 15 días estará habilitada la tarjeta de la Amarok"
+        }
+      ]
     }
   ],
   "areas": [
@@ -199,5 +215,5 @@
     "Karina Merino",
     "Joaquín Fernández Castro"
   ],
-  "timestamp": "2026-10-05T15:57:49.038Z"
+  "timestamp": "2026-10-06T12:24:48.782Z"
 }
