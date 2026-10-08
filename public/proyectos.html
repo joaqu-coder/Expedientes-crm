@@ -92,6 +92,14 @@ svg text{font-family:var(--font-body)}
 .exp-card-empresa{font-size:15px;font-weight:700;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .exp-card-aside{flex:0 0 auto;display:flex;align-items:center;gap:6px}
 .exp-card-sub{font-size:11.5px;color:var(--muted);margin-top:3px}
+/* Con dos badges (urgencia + situación), en mobile no entran al lado del
+   nombre sin truncarlo: la tarjeta pasa a apilar aside debajo de main. */
+@media (max-width:480px){
+  .exp-card{flex-direction:column;align-items:flex-start}
+  .exp-card-main{width:100%}
+  .exp-card-empresa{white-space:normal;overflow:visible;text-overflow:clip}
+  .exp-card-aside{flex-wrap:wrap}
+}
 .example-tag{font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);border:1px dashed var(--accent);border-radius:4px;padding:1px 5px;margin-left:6px;white-space:nowrap}
 .empty-state{padding:30px 14px;text-align:center;color:var(--muted);font-size:13px;background:var(--surface);border:1px solid var(--border);border-radius:10px}
 
