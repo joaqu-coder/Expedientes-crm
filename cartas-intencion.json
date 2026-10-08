@@ -41,29 +41,6 @@
       "intervenciones": []
     },
     {
-      "id": "exp_muzmw3ociq9xg",
-      "ejemplo": true,
-      "nro_expediente": "363-40882/2025-0",
-      "fecha_inicio": "11/09/2025",
-      "nombre_empresa": "Acopiadora Pichanal S.A.",
-      "parque_industrial": "Pichanal",
-      "rubro": "Alimenticia",
-      "superficie_solicitada_m2": 2500,
-      "actividad_empresa": "Planta de acopio y secado de granos",
-      "situacion": "Adjudicada",
-      "representante_nombre": "Jorge Villagrán",
-      "contacto_tel": "",
-      "contacto_mail": "",
-      "fecha_ultimo_movimiento": "20/01/2026",
-      "intervenciones": [
-        {
-          "hora": "20/01/2026 10:15",
-          "texto": "Cambio de situación: En_tratamiento → Adjudicada",
-          "tipo": "sistema"
-        }
-      ]
-    },
-    {
       "id": "exp_muzmw3octo64c",
       "ejemplo": true,
       "nro_expediente": "363-12044/2026-0",
