@@ -819,7 +819,14 @@ svg text{font-family:var(--font-body)}
     if(nota) exp.intervenciones.push({hora:ahora, texto:nota, tipo:"manual"});
     if(huboCambioEstado || nota || isNew) exp.fecha_ultimo_movimiento = ahora;
 
-    if(isNew) state.expedientes.push(exp);
+    if(isNew){
+      // Primera carga real: los ejemplos ya cumplieron su función (mostrar cómo
+      // se ve un expediente cargado) y no deben quedar mezclados con datos reales.
+      if(state.expedientes.some(function(x){return x.ejemplo;})){
+        state.expedientes = state.expedientes.filter(function(x){return !x.ejemplo;});
+      }
+      state.expedientes.push(exp);
+    }
     save();
     closeModal();
     renderList();
