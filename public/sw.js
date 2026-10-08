@@ -7,7 +7,7 @@
  *
  * Cambiar CACHE_VERSION cuando hay cambios incompatibles.
  */
-const CACHE_VERSION = 'expedientes-crm-v3';
+const CACHE_VERSION = 'expedientes-crm-v4';
 const ASSETS = ['/manifest.json'];
 
 self.addEventListener('install', (event) => {

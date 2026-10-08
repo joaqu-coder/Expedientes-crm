@@ -1,7 +1,7 @@
 # Expedientes CRM — Instrucciones del agente
 
-App de seguimiento de expedientes con plazos en días hábiles. PWA estática +
-un Cloudflare Worker propio que sincroniza contra GitHub sin exponer ningún
+Dos apps (Seguimiento y Proyectos) detrás de una landing, con un único
+Cloudflare Worker propio que sincroniza contra GitHub sin exponer ningún
 token al navegador.
 
 **Leé `.claude-state.json` al empezar.** Tiene el estado de la última sesión y
@@ -11,29 +11,50 @@ lo que quedó pendiente. Actualizalo al cerrar.
 
 ## Arquitectura (y por qué es así)
 
+Esto es un **MPA** (multi-page, documentos HTML separados), no una SPA con
+hash-routing: cada página es un archivo `.html` independiente en `public/`,
+con su propio `<head>`, CSS y `<script>`. Se decidió así para sumar "Proyectos"
+(cartas de intención, portado del repo `EGPAIS`/`Parques-Industriales`) sin
+tocar una sola línea de la lógica ya auditada de `seguimiento.html` — nada de
+mezclar los dos DOMs, los dos espacios de `id`, ni los dos `localStorage`.
+
 ```
-Navegador (public/index.html)
-    │  fetch('/api/sync')          ← nunca ve el token
-    ▼
-Cloudflare Worker (worker.js)     ← acá vive GITHUB_TOKEN, como secret
-    │  api.github.com
-    ▼
-expedientes.json en este mismo repo   ← la "base de datos"
+public/index.html        ← landing: dos botones, Seguimiento / Proyectos
+public/seguimiento.html  ← la app de expedientes (la de siempre; antes era index.html)
+public/proyectos.html    ← cartas de intención de parques industriales (EGPAIS)
+
+Navegador (seguimiento.html)          Navegador (proyectos.html)
+    │  fetch('/api/sync')                 │  fetch('/api/sync-cartas')
+    ▼                                     ▼
+            Cloudflare Worker (worker.js)      ← GITHUB_TOKEN, como secret, compartido
+                    │  api.github.com
+                    ▼
+    expedientes.json          cartas-intencion.json     ← "bases de datos", mismo repo
 ```
 
-- **El token nunca está en el navegador.** Antes la app se lo pedía al usuario
-  y lo guardaba en `localStorage`. Se migró a Worker propio para que no circule.
-- **`expedientes.json` es el estado compartido.** Cada POST lo reescribe; los
-  commits `sync: expedientes <fecha>` los hace el Worker, no una persona.
-- **`public/` se sirve vía el binding `ASSETS`** declarado en `wrangler.toml`.
+- **El token nunca está en el navegador.** Un solo Worker, un solo
+  `GITHUB_TOKEN`, usado por las dos apps — por eso se sumó Proyectos acá en
+  vez de crear un Worker aparte (evita repetir todo el setup del secret).
+- **Cada app tiene su propio archivo de datos.** `expedientes.json` para
+  Seguimiento, `cartas-intencion.json` para Proyectos. Nunca se mezclan en un
+  mismo POST: `worker.js` los resuelve por ruta (`APPS` en ese archivo).
+- **`public/` se sirve vía el binding `ASSETS`** declarado en `wrangler.toml`,
+  para las tres páginas.
+- **Si vas a sumar una tercera app**, es otro archivo `.html` en `public/`,
+  otra entrada en `APPS` (worker.js) con su propio `archivo`/`nombre`/`vacio`,
+  un botón más en la landing, y una línea en `tests/ids.test.mjs` (lista de
+  `chequearArchivo(...)`). No reuses el storage key de otra app ni su
+  endpoint de sync.
 
 ### Endpoints
 
 | Ruta | Qué hace |
 |---|---|
-| `GET /api/sync` | Devuelve `expedientes.json`. Si no existe aún, devuelve listas vacías (no es error). |
+| `GET /api/sync` | Devuelve `expedientes.json` (Seguimiento). Si no existe aún, devuelve listas vacías (no es error). |
 | `POST /api/sync` | Reescribe `expedientes.json`. Crea el archivo en el primer POST. |
-| `GET /api/health` | Diagnóstico: `tiene_github_token`, `tiene_binding_assets`, `claves_env`. **Nunca expone el valor del secret.** |
+| `GET /api/sync-cartas` | Devuelve `cartas-intencion.json` (Proyectos). Igual que arriba si no existe. |
+| `POST /api/sync-cartas` | Reescribe `cartas-intencion.json`. |
+| `GET /api/health` | Diagnóstico: `tiene_github_token`, `tiene_binding_assets`, `claves_env`, `archivos`. **Nunca expone el valor del secret.** |
 
 Cuando algo falle, `/api/health` primero. Dice qué ve el runtime sin adivinar.
 
@@ -180,8 +201,8 @@ No hay build step (`Build command: None`).
 
 Verificar que salió bien:
 1. Dashboard → Deployments → el deployment más reciente debe ser el de tu commit
-2. `GET /api/health` → `tiene_github_token: true`, `tiene_binding_assets: true`
-3. `GET /api/sync` → JSON, no error
+2. `GET /api/health` → `tiene_github_token: true`, `tiene_binding_assets: true`, `archivos` lista los dos JSON
+3. `GET /api/sync` y `GET /api/sync-cartas` → JSON, no error
 
 **No edites `public/` esperando que otra cosa lo regenere** — acá `public/` es la
 fuente, a diferencia del repo del Boletín donde lo genera el scraper.
@@ -190,6 +211,12 @@ fuente, a diferencia del repo del Boletín donde lo genera el scraper.
 
 ## Pendientes
 
+- [ ] `test:ui` (Playwright) solo cubre `seguimiento.html`. `proyectos.html` se
+      verificó a mano con un script ad hoc (landing → Proyectos → alta de
+      expediente → POST a `/api/sync-cartas` → dashboard), pero no quedó un
+      test en el repo. Si se toca `proyectos.html` de nuevo, conviene sumarlo
+      a `tests/ui.test.mjs` con el mismo patrón (server local, viewport
+      desktop + mobile).
 - [ ] **Rotar el token de GitHub.** Circuló por el chat de una sesión y quedó
       cargado también en Settings → Builds, donde no sirve para nada. Rotarlo en
       GitHub, actualizar **solo** el secret de runtime, y borrar el de Builds.

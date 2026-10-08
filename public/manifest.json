@@ -36,7 +36,7 @@
       "name": "Nuevo Expediente",
       "short_name": "Nuevo",
       "description": "Crear un nuevo expediente",
-      "url": "/index.html",
+      "url": "/seguimiento.html",
       "icons": [
         {
           "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%2367ceea' width='192' height='192' rx='44'/><text x='96' y='145' font-size='100' font-weight='bold' text-anchor='middle' fill='white'>➕</text></svg>",
@@ -49,10 +49,23 @@
       "name": "Configuración",
       "short_name": "Config",
       "description": "Abrir configuración",
-      "url": "/index.html#config",
+      "url": "/seguimiento.html#config",
       "icons": [
         {
           "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23f97316' width='192' height='192' rx='44'/><text x='96' y='145' font-size='100' font-weight='bold' text-anchor='middle' fill='white'>⚙️</text></svg>",
+          "sizes": "192x192",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "Cartas de Intención",
+      "short_name": "Proyectos",
+      "description": "Ir a Proyectos (cartas de intención)",
+      "url": "/proyectos.html",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23e8a33d' width='192' height='192' rx='44'/><text x='96' y='145' font-size='100' font-weight='bold' text-anchor='middle' fill='white'>📄</text></svg>",
           "sizes": "192x192",
           "type": "image/svg+xml"
         }
