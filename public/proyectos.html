@@ -14,7 +14,8 @@
 <title>Cartas de Intención — Parques Industriales</title>
 <style>
 /* Layout concept: dos vistas — Listado (tabla filtrable + ficha modal) y
-   Dashboard (stat tiles + 4 gráficos) — con tabs arriba y ruteo por #hash. */
+   Dashboard (stat tiles + tablas resumen con fila Suma) — con tabs arriba y
+   ruteo por #hash. */
 :root{
   --bg:#141414; --surface:#1d1d1d; --surface-2:#262625; --border:#38372f;
   --fg:#efece2; --muted:#a39d87; --accent:#e8a33d; --accent-fg:#1a1203;
@@ -24,8 +25,6 @@
   --font-display:"Public Sans","Segoe UI",system-ui,sans-serif;
   --font-body:"Public Sans","Segoe UI",system-ui,sans-serif;
   --font-mono:"JetBrains Mono","Courier New",monospace;
-  /* paleta categórica (parques) — orden fijo, no ciclar */
-  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#54c254;
 }
 @media (prefers-color-scheme: light){
   :root:not([data-theme="light"]){}
@@ -35,7 +34,6 @@
     --ok:#2f7a3c; --ok-bg:#e4f3e5; --warn:#a8650f; --warn-bg:#fbead0; --idle:#746d57; --idle-bg:#e8e5d9;
     --danger:#a1392c; --danger-bg:#f7e2dd; --orange:#b05a1a; --orange-bg:#fbe9d8;
     color-scheme: light;
-    --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300;
   }
 }
 :root[data-theme="light"]{
@@ -44,10 +42,6 @@
   --ok:#2f7a3c; --ok-bg:#e4f3e5; --warn:#a8650f; --warn-bg:#fbead0; --idle:#746d57; --idle-bg:#e8e5d9;
   --danger:#a1392c; --danger-bg:#f7e2dd; --orange:#b05a1a; --orange-bg:#fbe9d8;
   color-scheme: light;
-  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300;
-}
-:root[data-theme="dark"]{
-  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#54c254;
 }
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--fg);font-family:var(--font-body);margin:0;padding-inline:16px;padding-block:20px;-webkit-font-smoothing:antialiased}
@@ -158,6 +152,14 @@ svg text{font-family:var(--font-body)}
 .settings-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin-bottom:16px;flex-wrap:wrap}
 .settings-row input{width:64px;background:var(--surface);border:1px solid var(--border);color:var(--fg);border-radius:6px;padding:5px 7px;font-family:var(--font-mono)}
 
+/* ---- Tablas de resumen (estilo planilla: encabezado sólido, fila Suma al pie) ---- */
+.report-table{width:100%;border-collapse:collapse;font-size:13px}
+.report-table th{background:var(--surface-2);color:var(--fg);font-weight:700;text-align:left;padding:7px 10px;border-bottom:1px solid var(--border)}
+.report-table td{padding:6px 10px;border-bottom:1px solid var(--border)}
+.report-table th.num-col,.report-table td.num-col{text-align:right}
+.report-table tbody tr:last-child td{border-bottom:none}
+.report-table .report-total td{font-weight:700;border-top:2px solid var(--border);border-bottom:none}
+
 /* ---- Indicador de sincronización ---- */
 .sync-status{font-size:11.5px;color:var(--muted);white-space:nowrap}
 .sync-status.offline{color:var(--danger)}
@@ -226,27 +228,30 @@ svg text{font-family:var(--font-body)}
 
   <div class="dash-section">
     <div class="dash-section-head"><h2>Por parque industrial</h2></div>
-    <div class="dash-grid">
+    <div class="dash-grid single">
       <div class="chart-card">
-        <h3>Superficie solicitada</h3>
-        <div class="chart-sub">m² totales por parque, todos los expedientes</div>
-        <div id="chartM2"></div>
-      </div>
-      <div class="chart-card">
-        <h3>Solicitudes por año</h3>
-        <div class="chart-sub">Cartas de intención iniciadas, por parque y año</div>
-        <svg id="chartAnual" viewBox="0 0 560 260" style="width:100%;height:auto;overflow:visible"></svg>
-        <div class="legend" id="legendAnual"></div>
+        <div class="chart-sub">Cantidad de solicitudes y superficie total pedida, por parque</div>
+        <div id="tableParques"></div>
       </div>
     </div>
   </div>
 
   <div class="dash-section">
-    <div class="dash-section-head"><h2>Por rubro</h2></div>
+    <div class="dash-section-head"><h2>Por año</h2></div>
+    <div class="dash-grid single">
+      <div class="chart-card">
+        <div class="chart-sub">Cartas de intención iniciadas, por año</div>
+        <div id="tableAnual"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-section">
+    <div class="dash-section-head"><h2>Por tipo de industria</h2></div>
     <div class="dash-grid single">
       <div class="chart-card">
         <div class="chart-sub">Cantidad de expedientes según rubro de la empresa</div>
-        <div id="chartRubro"></div>
+        <div id="tableRubro"></div>
       </div>
     </div>
   </div>
@@ -259,10 +264,10 @@ svg text{font-family:var(--font-body)}
 (function(){
   "use strict";
 
-  var PARQUES = ["Salta","Güemes","RDLF","Mosconi","Pichanal","SAC"];
-  var PARQUE_COLOR = {Salta:"--s1",Güemes:"--s2",RDLF:"--s3",Mosconi:"--s4",Pichanal:"--s5",SAC:"--s6"};
-  var RUBROS = ["Logística","Química","Alimenticia","Metalmecánica","Servicios","Textil",
-                "Materiales de construcción","Maderera","Plástica","Otro"];
+  // Listas normalizadas contra los parques/rubros reales que usa EGPAIS
+  // (antes tenían nombres de prueba que no eran los oficiales).
+  var PARQUES = ["Güemes","Salta","RDLF","Mosconi","SAC","Olacapato","Salar de Pocitos"];
+  var RUBROS = ["Manufacturas","Servicios","Acopios","Metalmecánica","Metalúrgica","Logística","Químicas","Textiles"];
   var SITUACIONES = [
     {id:"Sin_tratamiento", label:"Sin tratamiento"},
     {id:"En_tratamiento",  label:"En tratamiento"},
@@ -390,7 +395,7 @@ svg text{font-family:var(--font-body)}
     return [
       {id:uid(), ejemplo:true, nro_expediente:"363-65027/2026-0", fecha_inicio:"15/04/2026",
        nombre_empresa:"Premoldeados del Norte S.A.",
-       parque_industrial:"Salta", rubro:"Materiales de construcción", superficie_solicitada_m2:1200,
+       parque_industrial:"Salta", rubro:"Manufacturas", superficie_solicitada_m2:1200,
        actividad_empresa:"Fábrica de premoldeados de hormigón", situacion:"En_tratamiento",
        representante_nombre:"Manuel Molina", contacto_tel:"", contacto_mail:"",
        fecha_ultimo_movimiento:hoy,
@@ -402,21 +407,21 @@ svg text{font-family:var(--font-body)}
        representante_nombre:"Carla Ibáñez", contacto_tel:"", contacto_mail:"",
        fecha_ultimo_movimiento:"02/02/2026", intervenciones:[]},
       {id:uid(), ejemplo:true, nro_expediente:"363-40882/2025-0", fecha_inicio:"11/09/2025",
-       nombre_empresa:"Acopiadora Pichanal S.A.",
-       parque_industrial:"Pichanal", rubro:"Alimenticia", superficie_solicitada_m2:2500,
+       nombre_empresa:"Acopiadora del Norte S.A.",
+       parque_industrial:"Olacapato", rubro:"Acopios", superficie_solicitada_m2:2500,
        actividad_empresa:"Planta de acopio y secado de granos", situacion:"Adjudicada",
        representante_nombre:"Jorge Villagrán", contacto_tel:"", contacto_mail:"",
        fecha_ultimo_movimiento:"20/01/2026",
        intervenciones:[{hora:"20/01/2026 10:15", texto:"Cambio de situación: En_tratamiento → Adjudicada", tipo:"sistema"}]},
       {id:uid(), ejemplo:true, nro_expediente:"363-58213/2025-0", fecha_inicio:"05/03/2025",
        nombre_empresa:"Metalúrgica Ortiz Hnos.",
-       parque_industrial:"Salta", rubro:"Metalmecánica", superficie_solicitada_m2:950,
+       parque_industrial:"Salta", rubro:"Metalúrgica", superficie_solicitada_m2:950,
        actividad_empresa:"Taller de mecanizado y estructuras metálicas", situacion:"Adjudicada",
        representante_nombre:"Rubén Ortiz", contacto_tel:"", contacto_mail:"",
        fecha_ultimo_movimiento:"18/08/2025", intervenciones:[]},
       {id:uid(), ejemplo:true, nro_expediente:"363-12044/2026-0", fecha_inicio:"20/01/2026",
        nombre_empresa:"Agroquímica Patricia Luna",
-       parque_industrial:"RDLF", rubro:"Química", superficie_solicitada_m2:1800,
+       parque_industrial:"RDLF", rubro:"Químicas", superficie_solicitada_m2:1800,
        actividad_empresa:"Formulación de agroquímicos", situacion:"En_tratamiento",
        representante_nombre:"Patricia Luna", contacto_tel:"", contacto_mail:"",
        fecha_ultimo_movimiento:"03/06/2026", intervenciones:[]}
@@ -621,12 +626,6 @@ svg text{font-family:var(--font-body)}
       tile(porSituacion.En_tratamiento, "En tratamiento") +
       tile(porSituacion.Sin_tratamiento, "Sin tratamiento");
 
-    // -- m² por parque (barras horizontales, un solo color) --
-    var m2PorParque = {};
-    PARQUES.forEach(function(p){ m2PorParque[p]=0; });
-    list.forEach(function(e){ if(e.parque_industrial) m2PorParque[e.parque_industrial] = (m2PorParque[e.parque_industrial]||0) + (Number(e.superficie_solicitada_m2)||0); });
-    renderBarList("chartM2", m2PorParque, function(v){ return v.toLocaleString("es-AR")+" m²"; });
-
     // -- situación (barras horizontales, color por status) --
     var sitColor = {Adjudicada:"var(--ok)", En_tratamiento:"var(--warn)", Sin_tratamiento:"var(--idle)"};
     var sitData = {};
@@ -636,13 +635,83 @@ svg text{font-family:var(--font-body)}
       return s ? sitColor[s.id] : "var(--accent)";
     });
 
-    // -- rubro (barras horizontales) --
-    var porRubro = {};
-    list.forEach(function(e){ var r=e.rubro||"Sin especificar"; porRubro[r]=(porRubro[r]||0)+1; });
-    renderBarList("chartRubro", porRubro, function(v){return String(v);}, null, true);
+    // -- tablas estilo planilla, con fila "Suma" al pie --
+    renderTablaParques(list);
+    renderTablaAnual(list);
+    renderTablaRubro(list);
+  }
 
-    // -- solicitudes anuales por parque (barras apiladas SVG) --
-    renderAnual(list);
+  // Arma filas {clave, ...valores} + una fila "Suma" al pie, y las vuelca en
+  // una tabla. `columnas` son los <th> después de la primera columna (label).
+  function tablaConSuma(containerId, columnas, filas, formateadores){
+    var el = document.getElementById(containerId);
+    if(!filas.length){
+      el.innerHTML = '<div class="chart-sub">Sin datos todavía.</div>';
+      return;
+    }
+    var totales = columnas.map(function(_, i){
+      return filas.reduce(function(s,f){ return s+f.valores[i]; }, 0);
+    });
+    function fila(label, valores, esTotal){
+      var tds = valores.map(function(v, i){
+        var txt = formateadores && formateadores[i] ? formateadores[i](v) : String(v);
+        return '<td class="num-col mono">'+esc(txt)+'</td>';
+      }).join("");
+      return '<tr'+(esTotal?' class="report-total"':'')+'><td>'+esc(label)+'</td>'+tds+'</tr>';
+    }
+    el.innerHTML =
+      '<table class="report-table"><thead><tr><th></th>'+
+      columnas.map(function(c){return '<th class="num-col">'+esc(c)+'</th>';}).join("")+
+      '</tr></thead><tbody>'+
+      filas.map(function(f){ return fila(f.label, f.valores); }).join("")+
+      fila("Suma", totales, true)+
+      '</tbody></table>';
+  }
+
+  function renderTablaParques(list){
+    var datos = {};
+    PARQUES.forEach(function(p){ datos[p] = {cant:0, m2:0}; });
+    var sinParque = {cant:0, m2:0};
+    list.forEach(function(e){
+      var bucket = e.parque_industrial && datos[e.parque_industrial];
+      if(!bucket){ sinParque.cant++; sinParque.m2 += Number(e.superficie_solicitada_m2)||0; return; }
+      bucket.cant++;
+      bucket.m2 += Number(e.superficie_solicitada_m2)||0;
+    });
+    var filas = PARQUES.map(function(p){ return {label:p, valores:[datos[p].cant, datos[p].m2]}; });
+    if(sinParque.cant) filas.push({label:"Sin especificar", valores:[sinParque.cant, sinParque.m2]});
+    tablaConSuma("tableParques", ["Cant. de solicitudes","Sup. solicitada / m²"], filas,
+      [null, function(v){ return v.toLocaleString("es-AR")+" m²"; }]);
+  }
+
+  function renderTablaAnual(list){
+    var porAnio = {};
+    list.forEach(function(e){
+      var d = parseFechaLocal(e.fecha_inicio);
+      if(!d) return;
+      var a = d.getFullYear();
+      porAnio[a] = (porAnio[a]||0) + 1;
+    });
+    var anios = Object.keys(porAnio).sort();
+    var filas = anios.map(function(a){ return {label:a, valores:[porAnio[a]]}; });
+    tablaConSuma("tableAnual", ["Cant. solicitudes"], filas);
+  }
+
+  function renderTablaRubro(list){
+    var datos = {};
+    RUBROS.forEach(function(r){ datos[r] = 0; });
+    var sinRubro = 0;
+    list.forEach(function(e){
+      if(e.rubro){ datos[e.rubro] = (datos[e.rubro]||0) + 1; }
+      else sinRubro++;
+    });
+    var filas = RUBROS.map(function(r){ return {label:r, valores:[datos[r]]}; });
+    // rubros que aparecen en los datos pero no están en la lista oficial (dato legado o cargado a mano)
+    Object.keys(datos).forEach(function(r){
+      if(RUBROS.indexOf(r)===-1) filas.push({label:r, valores:[datos[r]]});
+    });
+    if(sinRubro) filas.push({label:"Sin especificar", valores:[sinRubro]});
+    tablaConSuma("tableRubro", ["Cant."], filas);
   }
 
   function renderBarList(containerId, dataObj, fmt, colorFn, sortDesc){
@@ -665,66 +734,6 @@ svg text{font-family:var(--font-body)}
     }).join("");
   }
 
-  function renderAnual(list){
-    var porAnio = {}; // {anio: {parque: count}}
-    list.forEach(function(e){
-      var d = parseFechaLocal(e.fecha_inicio);
-      if(!d) return;
-      var anio = d.getFullYear();
-      porAnio[anio] = porAnio[anio] || {};
-      porAnio[anio][e.parque_industrial] = (porAnio[anio][e.parque_industrial]||0) + 1;
-    });
-    var anios = Object.keys(porAnio).sort();
-    var svg = document.getElementById("chartAnual");
-    var legend = document.getElementById("legendAnual");
-    if(!anios.length){
-      svg.innerHTML = "";
-      legend.innerHTML = '<span>Sin datos todavía.</span>';
-      return;
-    }
-    var W=560,H=260, padL=34, padB=28, padT=12, padR=10;
-    var plotW = W-padL-padR, plotH = H-padT-padB;
-    var totales = anios.map(function(a){
-      return PARQUES.reduce(function(s,p){ return s+(porAnio[a][p]||0); },0);
-    });
-    var max = Math.max.apply(null, totales.concat([1]));
-    var niceMax = Math.ceil(max/5)*5 || 5;
-    var barW = Math.min(64, plotW/anios.length*0.55);
-    var slot = plotW/anios.length;
-
-    var svgParts = [];
-    // gridlines + eje Y
-    var steps=5;
-    for(var i=0;i<=steps;i++){
-      var yVal = niceMax*i/steps;
-      var y = padT + plotH - (yVal/niceMax)*plotH;
-      svgParts.push('<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="var(--border)" stroke-width="1"/>');
-      svgParts.push('<text x="'+(padL-8)+'" y="'+(y+4)+'" text-anchor="end" font-size="10" fill="var(--muted)">'+Math.round(yVal)+'</text>');
-    }
-    // barras apiladas
-    anios.forEach(function(anio, idx){
-      var x0 = padL + idx*slot + (slot-barW)/2;
-      var yCursor = padT+plotH;
-      PARQUES.forEach(function(p){
-        var v = porAnio[anio][p]||0;
-        if(!v) return;
-        var hgt = (v/niceMax)*plotH;
-        yCursor -= hgt;
-        svgParts.push('<rect x="'+x0+'" y="'+yCursor+'" width="'+barW+'" height="'+Math.max(hgt-2,0)+'" rx="2" fill="var('+PARQUE_COLOR[p]+')"><title>'+esc(p)+' '+anio+': '+v+'</title></rect>');
-      });
-      svgParts.push('<text x="'+(x0+barW/2)+'" y="'+(padT+plotH+18)+'" text-anchor="middle" font-size="11" fill="var(--muted)">'+anio+'</text>');
-      var total = totales[idx];
-      svgParts.push('<text x="'+(x0+barW/2)+'" y="'+(padT+plotH-( (total/niceMax)*plotH )-6)+'" text-anchor="middle" font-size="10.5" fill="var(--fg)" font-weight="600">'+total+'</text>');
-    });
-    svg.innerHTML = svgParts.join("");
-
-    var parquesConDatos = PARQUES.filter(function(p){
-      return anios.some(function(a){ return (porAnio[a][p]||0)>0; });
-    });
-    legend.innerHTML = parquesConDatos.map(function(p){
-      return '<span><i style="background:var('+PARQUE_COLOR[p]+')"></i>'+esc(p)+'</span>';
-    }).join("");
-  }
 
   // ---- Modal: nuevo / editar ----
   var veil = document.getElementById("veil"), modal = document.getElementById("modal");
