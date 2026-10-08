@@ -22,40 +22,6 @@
           "tipo": "sistema"
         }
       ]
-    },
-    {
-      "id": "exp_muzmw3oct2nd1",
-      "ejemplo": true,
-      "nro_expediente": "363-71140/2026-0",
-      "fecha_inicio": "02/02/2026",
-      "nombre_empresa": "Logística del Valle S.R.L.",
-      "parque_industrial": "Güemes",
-      "rubro": "Logística",
-      "superficie_solicitada_m2": 800,
-      "actividad_empresa": "Depósito y logística de insumos agrícolas",
-      "situacion": "Sin_tratamiento",
-      "representante_nombre": "Carla Ibáñez",
-      "contacto_tel": "",
-      "contacto_mail": "",
-      "fecha_ultimo_movimiento": "02/02/2026",
-      "intervenciones": []
-    },
-    {
-      "id": "exp_muzmw3octo64c",
-      "ejemplo": true,
-      "nro_expediente": "363-12044/2026-0",
-      "fecha_inicio": "20/01/2026",
-      "nombre_empresa": "Agroquímica Patricia Luna",
-      "parque_industrial": "RDLF",
-      "rubro": "Química",
-      "superficie_solicitada_m2": 1800,
-      "actividad_empresa": "Formulación de agroquímicos",
-      "situacion": "En_tratamiento",
-      "representante_nombre": "Patricia Luna",
-      "contacto_tel": "",
-      "contacto_mail": "",
-      "fecha_ultimo_movimiento": "03/06/2026",
-      "intervenciones": []
     }
   ],
   "plazoDias": 30
