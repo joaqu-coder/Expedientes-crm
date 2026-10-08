@@ -64,23 +64,6 @@
       ]
     },
     {
-      "id": "exp_muzmv0j85fs24",
-      "ejemplo": true,
-      "nro_expediente": "363-58213/2025-0",
-      "fecha_inicio": "05/03/2025",
-      "nombre_empresa": "Metalúrgica Ortiz Hnos.",
-      "parque_industrial": "Salta",
-      "rubro": "Metalmecánica",
-      "superficie_solicitada_m2": 950,
-      "actividad_empresa": "Taller de mecanizado y estructuras metálicas",
-      "situacion": "Adjudicada",
-      "representante_nombre": "Rubén Ortiz",
-      "contacto_tel": "",
-      "contacto_mail": "",
-      "fecha_ultimo_movimiento": "18/08/2025",
-      "intervenciones": []
-    },
-    {
       "id": "exp_muzmv0j89sttw",
       "ejemplo": true,
       "nro_expediente": "363-12044/2026-0",
