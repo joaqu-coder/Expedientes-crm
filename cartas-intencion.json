@@ -94,8 +94,14 @@
       "representante_nombre": "Patricia Luna",
       "contacto_tel": "",
       "contacto_mail": "Loremipsum@gmail.com",
-      "fecha_ultimo_movimiento": "03/06/2026",
-      "intervenciones": []
+      "fecha_ultimo_movimiento": "08/10/2026 16:00",
+      "intervenciones": [
+        {
+          "hora": "08/10/2026 16:00",
+          "texto": "Presenta documentacion",
+          "tipo": "manual"
+        }
+      ]
     }
   ],
   "plazoDias": 30
