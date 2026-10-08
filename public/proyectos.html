@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="description" content="Cartas de intención de parques industriales — EGPAIS">
-<meta name="theme-color" content="#141414">
+<meta name="theme-color" content="#667eea">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Proyectos">
@@ -12,36 +12,35 @@
 <link rel="icon" type="image/svg+xml" href="/icon.svg">
 <link rel="apple-touch-icon" href="/icon.svg">
 <title>Cartas de Intención — Parques Industriales</title>
+<script>
+// Aplicado antes del primer paint para no parpadear a oscuro si el usuario ya lo eligió.
+(function(){
+  var saved = localStorage.getItem("cartas_intencion_theme_v1");
+  if(saved==="dark") document.documentElement.setAttribute("data-theme","dark");
+})();
+</script>
 <style>
 /* Layout concept: dos vistas — Listado (tabla filtrable + ficha modal) y
    Dashboard (stat tiles + tablas resumen con fila Suma) — con tabs arriba y
-   ruteo por #hash. */
+   ruteo por #hash.
+   Paleta unificada con Seguimiento/landing: mismo acento índigo, misma
+   escala de grises y misma fuente del sistema en toda la app. */
 :root{
-  --bg:#141414; --surface:#1d1d1d; --surface-2:#262625; --border:#38372f;
-  --fg:#efece2; --muted:#a39d87; --accent:#e8a33d; --accent-fg:#1a1203;
-  --ok:#5fae6b; --ok-bg:#1b2a1c; --warn:#e8a33d; --warn-bg:#2d2311; --idle:#8d8674; --idle-bg:#262520;
-  --danger:#d26a5c; --danger-bg:#301e1b; --orange:#e3833f; --orange-bg:#2c2111;
-  color-scheme: dark;
-  --font-display:"Public Sans","Segoe UI",system-ui,sans-serif;
-  --font-body:"Public Sans","Segoe UI",system-ui,sans-serif;
-  --font-mono:"JetBrains Mono","Courier New",monospace;
-}
-@media (prefers-color-scheme: light){
-  :root:not([data-theme="light"]){}
-  :root:not([data-theme="dark"]){
-    --bg:#f3f1ea; --surface:#ffffff; --surface-2:#eceadf; --border:#d8d4c4;
-    --fg:#211f17; --muted:#6b6652; --accent:#a8650f; --accent-fg:#fff8ec;
-    --ok:#2f7a3c; --ok-bg:#e4f3e5; --warn:#a8650f; --warn-bg:#fbead0; --idle:#746d57; --idle-bg:#e8e5d9;
-    --danger:#a1392c; --danger-bg:#f7e2dd; --orange:#b05a1a; --orange-bg:#fbe9d8;
-    color-scheme: light;
-  }
-}
-:root[data-theme="light"]{
-  --bg:#f3f1ea; --surface:#ffffff; --surface-2:#eceadf; --border:#d8d4c4;
-  --fg:#211f17; --muted:#6b6652; --accent:#a8650f; --accent-fg:#fff8ec;
+  --bg:#f9fafb; --surface:#ffffff; --surface-2:#f3f4f6; --border:#e5e7eb;
+  --fg:#1f2937; --muted:#6b7280; --accent:#667eea; --accent-fg:#ffffff;
   --ok:#2f7a3c; --ok-bg:#e4f3e5; --warn:#a8650f; --warn-bg:#fbead0; --idle:#746d57; --idle-bg:#e8e5d9;
   --danger:#a1392c; --danger-bg:#f7e2dd; --orange:#b05a1a; --orange-bg:#fbe9d8;
   color-scheme: light;
+  --font-display:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --font-body:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --font-mono:ui-monospace,"SF Mono","Cascadia Code","Roboto Mono","Courier New",monospace;
+}
+:root[data-theme="dark"]{
+  --bg:#141414; --surface:#1d1d1d; --surface-2:#262625; --border:#38372f;
+  --fg:#efece2; --muted:#a39d87; --accent:#667eea; --accent-fg:#ffffff;
+  --ok:#5fae6b; --ok-bg:#1b2a1c; --warn:#e8a33d; --warn-bg:#2d2311; --idle:#8d8674; --idle-bg:#262520;
+  --danger:#d26a5c; --danger-bg:#301e1b; --orange:#e3833f; --orange-bg:#2c2111;
+  color-scheme: dark;
 }
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--fg);font-family:var(--font-body);margin:0;padding-inline:16px;padding-block:20px;-webkit-font-smoothing:antialiased}
@@ -62,6 +61,8 @@ svg text{font-family:var(--font-body)}
 .page-header-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .btn-new{background:var(--accent);color:var(--accent-fg);border:none;border-radius:8px;padding:10px 16px;font-weight:600;font-size:14px;white-space:nowrap}
 .btn-new:hover{filter:brightness(1.08)}
+.btn-theme{background:var(--surface);border:1px solid var(--border);color:var(--fg);border-radius:8px;width:38px;height:38px;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.btn-theme:hover{border-color:var(--accent)}
 
 .tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:22px}
 .tab{background:none;border:none;color:var(--muted);font-size:13.5px;font-weight:600;padding:9px 4px;margin-right:18px;border-bottom:2px solid transparent;position:relative;top:1px}
@@ -208,6 +209,7 @@ svg text{font-family:var(--font-body)}
   </div>
   <div class="page-header-actions">
     <span class="sync-status" id="syncStatus">☁️ Sincronizado</span>
+    <button class="btn-theme" id="btnTheme" aria-label="Cambiar a modo oscuro">🌙</button>
     <button class="btn-new" id="btnNew">+ Nuevo expediente</button>
   </div>
 </div>
@@ -959,6 +961,22 @@ svg text{font-family:var(--font-body)}
     save(); closeModal(); renderList();
     if(!viewDash.hidden) renderDashboard();
   }
+
+  // ---- Tema claro/oscuro ----
+  var THEME_KEY = "cartas_intencion_theme_v1";
+  var btnTheme = document.getElementById("btnTheme");
+  function applyThemeButton(){
+    var dark = document.documentElement.getAttribute("data-theme")==="dark";
+    btnTheme.textContent = dark ? "☀️" : "🌙";
+    btnTheme.setAttribute("aria-label", dark ? "Cambiar a modo claro" : "Cambiar a modo oscuro");
+  }
+  btnTheme.addEventListener("click", function(){
+    var dark = document.documentElement.getAttribute("data-theme")==="dark";
+    if(dark){ document.documentElement.removeAttribute("data-theme"); localStorage.setItem(THEME_KEY,"light"); }
+    else { document.documentElement.setAttribute("data-theme","dark"); localStorage.setItem(THEME_KEY,"dark"); }
+    applyThemeButton();
+  });
+  applyThemeButton();
 
   renderList();
   if(location.hash === "#dashboard") showView("dashboard"); else showView("list");
