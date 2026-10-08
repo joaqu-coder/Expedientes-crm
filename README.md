@@ -1,6 +1,11 @@
 # Expedientes CRM
 
-Aplicación web progresiva (PWA) para gestión de expedientes administrativos/legales con sistema automático de semáforo basado en días hábiles hasta vencimiento.
+Dos aplicaciones web progresivas (PWA) detrás de una misma landing:
+
+- **Seguimiento** (`public/seguimiento.html`): gestión de expedientes administrativos/legales con sistema automático de semáforo basado en días hábiles hasta vencimiento.
+- **Proyectos** (`public/proyectos.html`): cartas de intención de parques industriales (EGPAIS), con listado filtrable y dashboard.
+
+Comparten un mismo Cloudflare Worker (`worker.js`) y el mismo `GITHUB_TOKEN`, pero cada una sincroniza su propio archivo JSON en este repo (`expedientes.json` / `cartas-intencion.json`) por rutas de API separadas (`/api/sync` / `/api/sync-cartas`). Ver `CLAUDE.md` para el detalle de la arquitectura.
 
 ## ✨ Características
 

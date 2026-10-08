@@ -1,24 +1,42 @@
 /*
  * Worker — Expedientes CRM
  *
- * Sirve los archivos estáticos de public/ y expone /api/sync para
- * sincronizar expedientes.json con GitHub, sin exponer ningún token
- * al navegador. El token vive SOLO como secret de Cloudflare
- * (GITHUB_TOKEN), configurado en el dashboard, nunca en el código.
+ * Sirve los archivos estáticos de public/ (landing + dos apps: Seguimiento y
+ * Proyectos) y expone dos pares de endpoints de sync, uno por app, sin
+ * exponer ningún token al navegador. El token vive SOLO como secret de
+ * Cloudflare (GITHUB_TOKEN), configurado en el dashboard, nunca en el código.
+ * Ambas apps comparten el mismo Worker y el mismo token; cada una escribe su
+ * propio archivo en este repo.
  *
- * GET  /api/sync  -> devuelve el contenido actual de expedientes.json
- * POST /api/sync  -> sobreescribe expedientes.json con el body recibido
+ * GET  /api/sync         -> devuelve expedientes.json (Seguimiento)
+ * POST /api/sync         -> sobreescribe expedientes.json
+ * GET  /api/sync-cartas  -> devuelve cartas-intencion.json (Proyectos)
+ * POST /api/sync-cartas  -> sobreescribe cartas-intencion.json
  *
  * Cualquier otra ruta se sirve como archivo estático desde public/.
  */
 
 // Se incrementa a mano para confirmar qué versión está viva en producción.
-const WORKER_VERSION = 'diag-1';
+const WORKER_VERSION = 'diag-2';
 
 const GITHUB_OWNER = 'joaqu-coder';
 const GITHUB_REPO = 'Expedientes-crm';
-const GITHUB_FILE = 'expedientes.json';
 const GITHUB_BRANCH = 'main';
+
+// Una entrada por app: el archivo que guarda en este repo y el valor por
+// defecto que devuelve GET cuando ese archivo todavía no existe.
+const APPS = {
+  '/api/sync': {
+    archivo: 'expedientes.json',
+    nombre: 'expedientes',
+    vacio: { expedientes: [], areas: [], responsables: [] }
+  },
+  '/api/sync-cartas': {
+    archivo: 'cartas-intencion.json',
+    nombre: 'cartas',
+    vacio: { expedientes: [], plazoDias: 90 }
+  }
+};
 
 function jsonResponse(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -27,9 +45,9 @@ function jsonResponse(data, status = 200) {
   });
 }
 
-async function githubGetFile(token) {
+async function githubGetFile(token, archivo) {
   const resp = await fetch(
-    `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}?ref=${GITHUB_BRANCH}`,
+    `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${archivo}?ref=${GITHUB_BRANCH}`,
     {
       headers: {
         'Authorization': `token ${token}`,
@@ -47,18 +65,18 @@ async function githubGetFile(token) {
   return { sha: file.sha, datos: JSON.parse(contenido) };
 }
 
-async function githubPutFile(token, datos, sha) {
+async function githubPutFile(token, archivo, nombre, datos, sha) {
   const content = btoa(unescape(encodeURIComponent(JSON.stringify(datos, null, 2))));
 
   const payload = {
-    message: `sync: expedientes ${new Date().toISOString()}`,
+    message: `sync: ${nombre} ${new Date().toISOString()}`,
     content,
     branch: GITHUB_BRANCH
   };
   if (sha) payload.sha = sha;
 
   const resp = await fetch(
-    `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`,
+    `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${archivo}`,
     {
       method: 'PUT',
       headers: {
@@ -75,7 +93,7 @@ async function githubPutFile(token, datos, sha) {
   return resp.json();
 }
 
-async function manejarSync(request, env) {
+async function manejarSync(request, env, app) {
   if (!env.GITHUB_TOKEN) {
     return jsonResponse({
       error: 'GITHUB_TOKEN no configurado en el Worker',
@@ -85,14 +103,14 @@ async function manejarSync(request, env) {
 
   try {
     if (request.method === 'GET') {
-      const { datos } = await githubGetFile(env.GITHUB_TOKEN);
-      return jsonResponse(datos || { expedientes: [], areas: [], responsables: [] });
+      const { datos } = await githubGetFile(env.GITHUB_TOKEN, app.archivo);
+      return jsonResponse(datos || app.vacio);
     }
 
     if (request.method === 'POST') {
       const nuevosDatos = await request.json();
-      const { sha } = await githubGetFile(env.GITHUB_TOKEN);
-      await githubPutFile(env.GITHUB_TOKEN, nuevosDatos, sha);
+      const { sha } = await githubGetFile(env.GITHUB_TOKEN, app.archivo);
+      await githubPutFile(env.GITHUB_TOKEN, app.archivo, app.nombre, nuevosDatos, sha);
       return jsonResponse({ ok: true });
     }
 
@@ -113,12 +131,14 @@ export default {
         tiene_github_token: Boolean(env.GITHUB_TOKEN),
         largo_token: env.GITHUB_TOKEN ? env.GITHUB_TOKEN.length : 0,
         tiene_binding_assets: Boolean(env.ASSETS),
-        claves_env: Object.keys(env).sort()
+        claves_env: Object.keys(env).sort(),
+        archivos: Object.values(APPS).map((a) => a.archivo)
       });
     }
 
-    if (url.pathname === '/api/sync') {
-      return manejarSync(request, env);
+    const app = APPS[url.pathname];
+    if (app) {
+      return manejarSync(request, env, app);
     }
 
     return env.ASSETS.fetch(request);

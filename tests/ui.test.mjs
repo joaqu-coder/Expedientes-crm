@@ -29,7 +29,7 @@ try {
   }
 }
 
-const HTML = fs.readFileSync(path.join(RAIZ, 'public/index.html'), 'utf8');
+const HTML = fs.readFileSync(path.join(RAIZ, 'public/seguimiento.html'), 'utf8');
 const NUMERO = '363 – 1254/2026-01'; // guión medio a propósito: la app debe normalizarlo
 
 let fallas = 0;
