@@ -100,6 +100,11 @@
           "hora": "08/10/2026 16:00",
           "texto": "Presenta documentacion",
           "tipo": "manual"
+        },
+        {
+          "hora": "08/10/2026 16:00",
+          "texto": "No sabe lo que dice",
+          "tipo": "manual"
         }
       ]
     }
