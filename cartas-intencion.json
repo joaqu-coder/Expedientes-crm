@@ -1,4 +1,85 @@
 {
-  "expedientes": [],
+  "expedientes": [
+    {
+      "id": "exp_muzmw3oc60t14",
+      "ejemplo": true,
+      "nro_expediente": "363-65027/2026-0",
+      "fecha_inicio": "15/04/2026",
+      "nombre_empresa": "Premoldeados del Norte S.A.",
+      "parque_industrial": "Salta",
+      "rubro": "Materiales de construcción",
+      "superficie_solicitada_m2": 1200,
+      "actividad_empresa": "Fábrica de premoldeados de hormigón",
+      "situacion": "En_tratamiento",
+      "representante_nombre": "Manuel Molina",
+      "contacto_tel": "",
+      "contacto_mail": "",
+      "fecha_ultimo_movimiento": "08/10/2026 11:30",
+      "intervenciones": [
+        {
+          "hora": "08/10/2026 11:30",
+          "texto": "Expediente cargado como ejemplo. Podés editarlo o eliminarlo.",
+          "tipo": "sistema"
+        }
+      ]
+    },
+    {
+      "id": "exp_muzmw3oct2nd1",
+      "ejemplo": true,
+      "nro_expediente": "363-71140/2026-0",
+      "fecha_inicio": "02/02/2026",
+      "nombre_empresa": "Logística del Valle S.R.L.",
+      "parque_industrial": "Güemes",
+      "rubro": "Logística",
+      "superficie_solicitada_m2": 800,
+      "actividad_empresa": "Depósito y logística de insumos agrícolas",
+      "situacion": "Sin_tratamiento",
+      "representante_nombre": "Carla Ibáñez",
+      "contacto_tel": "",
+      "contacto_mail": "",
+      "fecha_ultimo_movimiento": "02/02/2026",
+      "intervenciones": []
+    },
+    {
+      "id": "exp_muzmw3ociq9xg",
+      "ejemplo": true,
+      "nro_expediente": "363-40882/2025-0",
+      "fecha_inicio": "11/09/2025",
+      "nombre_empresa": "Acopiadora Pichanal S.A.",
+      "parque_industrial": "Pichanal",
+      "rubro": "Alimenticia",
+      "superficie_solicitada_m2": 2500,
+      "actividad_empresa": "Planta de acopio y secado de granos",
+      "situacion": "Adjudicada",
+      "representante_nombre": "Jorge Villagrán",
+      "contacto_tel": "",
+      "contacto_mail": "",
+      "fecha_ultimo_movimiento": "20/01/2026",
+      "intervenciones": [
+        {
+          "hora": "20/01/2026 10:15",
+          "texto": "Cambio de situación: En_tratamiento → Adjudicada",
+          "tipo": "sistema"
+        }
+      ]
+    },
+    {
+      "id": "exp_muzmw3octo64c",
+      "ejemplo": true,
+      "nro_expediente": "363-12044/2026-0",
+      "fecha_inicio": "20/01/2026",
+      "nombre_empresa": "Agroquímica Patricia Luna",
+      "parque_industrial": "RDLF",
+      "rubro": "Química",
+      "superficie_solicitada_m2": 1800,
+      "actividad_empresa": "Formulación de agroquímicos",
+      "situacion": "En_tratamiento",
+      "representante_nombre": "Patricia Luna",
+      "contacto_tel": "",
+      "contacto_mail": "",
+      "fecha_ultimo_movimiento": "03/06/2026",
+      "intervenciones": []
+    }
+  ],
   "plazoDias": 30
 }
