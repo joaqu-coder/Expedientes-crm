@@ -39,23 +39,6 @@
       "contacto_mail": "",
       "fecha_ultimo_movimiento": "02/02/2026",
       "intervenciones": []
-    },
-    {
-      "id": "exp_muzmv0j89sttw",
-      "ejemplo": true,
-      "nro_expediente": "363-12044/2026-0",
-      "fecha_inicio": "20/01/2026",
-      "nombre_empresa": "Agroquímica Patricia Luna",
-      "parque_industrial": "RDLF",
-      "rubro": "Química",
-      "superficie_solicitada_m2": 1800,
-      "actividad_empresa": "Formulación de agroquímicos",
-      "situacion": "En_tratamiento",
-      "representante_nombre": "Patricia Luna",
-      "contacto_tel": "",
-      "contacto_mail": "",
-      "fecha_ultimo_movimiento": "03/06/2026",
-      "intervenciones": []
     }
   ],
   "plazoDias": 30
