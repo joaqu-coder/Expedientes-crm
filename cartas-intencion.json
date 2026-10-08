@@ -1,28 +1,4 @@
 {
-  "expedientes": [
-    {
-      "id": "exp_muzmv0j8xfi02",
-      "ejemplo": true,
-      "nro_expediente": "363-65027/2026-0",
-      "fecha_inicio": "15/04/2026",
-      "nombre_empresa": "Premoldeados del Norte S.A.",
-      "parque_industrial": "Salta",
-      "rubro": "Materiales de construcción",
-      "superficie_solicitada_m2": 1200,
-      "actividad_empresa": "Fábrica de premoldeados de hormigón",
-      "situacion": "En_tratamiento",
-      "representante_nombre": "Manuel Molina",
-      "contacto_tel": "",
-      "contacto_mail": "",
-      "fecha_ultimo_movimiento": "08/10/2026 11:29",
-      "intervenciones": [
-        {
-          "hora": "08/10/2026 11:29",
-          "texto": "Expediente cargado como ejemplo. Podés editarlo o eliminarlo.",
-          "tipo": "sistema"
-        }
-      ]
-    }
-  ],
+  "expedientes": [],
   "plazoDias": 30
 }
