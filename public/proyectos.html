@@ -82,7 +82,8 @@ svg text{font-family:var(--font-body)}
 .exp-card-main{min-width:0}
 .exp-card-exp{font-family:var(--font-mono);font-size:11.5px;color:var(--muted)}
 .exp-card-empresa{font-size:15px;font-weight:700;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.exp-card-aside{flex:0 0 auto;display:flex;align-items:center}
+.exp-card-aside{flex:0 0 auto;display:flex;align-items:center;gap:6px}
+.exp-card-sub{font-size:11.5px;color:var(--muted);margin-top:3px}
 .example-tag{font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);border:1px dashed var(--accent);border-radius:4px;padding:1px 5px;margin-left:6px;white-space:nowrap}
 .empty-state{padding:30px 14px;text-align:center;color:var(--muted);font-size:13px;background:var(--surface);border:1px solid var(--border);border-radius:10px}
 
@@ -129,6 +130,21 @@ svg text{font-family:var(--font-body)}
 .btn-primary{flex:1;background:var(--accent);color:var(--accent-fg);border:none;border-radius:8px;padding:11px;font-weight:600;font-size:14px}
 .btn-ghost{background:none;border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:11px 14px;font-size:14px}
 .btn-danger{background:none;border:1px solid var(--danger);color:var(--danger);border-radius:8px;padding:11px 14px;font-size:13px}
+.btn-edit{background:none;border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:11px 14px;font-size:14px}
+
+/* ---- Modal: vista de lectura ---- */
+.view-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.view-empresa{font-size:16px;font-weight:700}
+.view-exp{font-family:var(--font-mono);font-size:11.5px;color:var(--muted);margin-top:2px}
+.view-urg{margin-top:10px}
+.view-section{margin-top:14px;padding-top:13px;border-top:1px solid var(--border)}
+.view-section h3{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:9px;font-weight:700}
+.view-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px 12px}
+.view-item label{display:block;color:var(--muted);font-size:12px}
+.view-item .v{margin-top:1px;font-size:13.5px;font-weight:600}
+.view-actividad{font-size:13.5px;margin-top:11px;line-height:1.45}
+.view-empty{font-size:12.5px;color:var(--muted)}
+.view-actions{display:flex;gap:8px;margin-top:16px}
 
 /* ---- Dashboard charts ---- */
 .dash-section{margin-bottom:26px}
@@ -526,7 +542,7 @@ svg text{font-family:var(--font-body)}
     }
   }
 
-  var state = { expedientes: load(), editingId: null, filterParque:"", filterRubro:"", filterSituacion:"", search:"", plazoDias: loadPlazo() };
+  var state = { expedientes: load(), editingId: null, modalMode: null, filterParque:"", filterRubro:"", filterSituacion:"", search:"", plazoDias: loadPlazo() };
 
   // ---- Tabs / routing ----
   var tabList = document.getElementById("tabList"), tabDash = document.getElementById("tabDash");
@@ -586,12 +602,19 @@ svg text{font-family:var(--font-body)}
       cont.innerHTML = '<div class="empty-state">Sin expedientes que coincidan con el filtro.</div>';
       return;
     }
+    var SIT_BADGE = {Adjudicada:"b-ok", En_tratamiento:"b-warn", Sin_tratamiento:"b-idle"};
     cont.innerHTML = filtrados.map(function(x){
-      var e = x.e;
+      var e = x.e, urg = x.urg;
+      var sub = [e.parque_industrial, e.rubro].filter(Boolean).join(" · ");
       return '<button class="exp-card" data-open="'+e.id+'">'+
         '<div class="exp-card-main">'+
           '<div class="exp-card-exp">'+esc(e.nro_expediente||"s/n")+(e.ejemplo?'<span class="example-tag">Ejemplo</span>':'')+'</div>'+
           '<div class="exp-card-empresa">'+esc(e.nombre_empresa||"(sin nombre de empresa)")+'</div>'+
+          (sub?'<div class="exp-card-sub">'+esc(sub)+'</div>':'')+
+        '</div>'+
+        '<div class="exp-card-aside">'+
+          (urg?'<span class="urg urg-'+urg.color+'">'+esc(urg.texto)+'</span>':'')+
+          '<span class="badge '+(SIT_BADGE[e.situacion]||"b-idle")+'">'+esc(labelSituacion(e.situacion))+'</span>'+
         '</div>'+
         '</button>';
     }).join("");
@@ -742,9 +765,70 @@ svg text{font-family:var(--font-body)}
 
   function openModal(id){
     state.editingId = id;
+    state.modalMode = id ? "view" : "edit";
+    veil.hidden = false;
+    renderModal();
+  }
+
+  function renderModal(){
+    var id = state.editingId;
     var e = id ? state.expedientes.find(function(x){return x.id===id;}) : null;
     var isNew = !e;
+    if(isNew || state.modalMode==="edit"){ renderModalEdit(e, isNew); }
+    else { renderModalView(e); }
+  }
 
+  function renderModalView(e){
+    var SIT_BADGE = {Adjudicada:"b-ok", En_tratamiento:"b-warn", Sin_tratamiento:"b-idle"};
+    var urg = urgenciaDe(e, state.plazoDias);
+    var hayContacto = e.representante_nombre || e.contacto_tel || e.contacto_mail;
+
+    modal.innerHTML =
+      '<div class="modal-head"><button class="x-close" id="xCloseView">&times;</button></div>'+
+      '<div class="view-head">'+
+        '<div><div class="view-empresa">'+esc(e.nombre_empresa||"(sin nombre de empresa)")+'</div>'+
+          '<div class="view-exp">'+esc(e.nro_expediente||"s/n")+'</div></div>'+
+        '<span class="badge '+(SIT_BADGE[e.situacion]||"b-idle")+'">'+esc(labelSituacion(e.situacion))+'</span>'+
+      '</div>'+
+      (urg?'<div class="view-urg"><span class="urg urg-'+urg.color+'">'+esc(urg.texto)+'</span></div>':'')+
+
+      '<div class="view-section"><h3>Expediente</h3>'+
+        '<div class="view-grid">'+
+          viewItem("Parque", e.parque_industrial)+
+          viewItem("Superficie", e.superficie_solicitada_m2 ? (Number(e.superficie_solicitada_m2).toLocaleString("es-AR")+" m²") : "")+
+          viewItem("Rubro", e.rubro)+
+          viewItem("Inicio", e.fecha_inicio)+
+        '</div>'+
+        (e.actividad_empresa?'<p class="view-actividad">'+esc(e.actividad_empresa)+'</p>':'')+
+      '</div>'+
+
+      '<div class="view-section"><h3>Contacto</h3>'+
+        (hayContacto
+          ? '<div class="view-grid">'+
+              viewItem("Representante", e.representante_nombre)+
+              viewItem("Tel/Cel", e.contacto_tel)+
+              viewItem("Mail", e.contacto_mail)+
+            '</div>'
+          : '<p class="view-empty">Sin datos de contacto.</p>')+
+      '</div>'+
+
+      historialHtml(e)+
+
+      '<div class="view-actions">'+
+        '<button type="button" class="btn-primary" id="btnEdit">Editar</button>'+
+        '<button type="button" class="btn-danger" id="btnDeleteView">Eliminar</button>'+
+      '</div>';
+
+    document.getElementById("xCloseView").addEventListener("click", closeModal);
+    document.getElementById("btnEdit").addEventListener("click", function(){ state.modalMode="edit"; renderModal(); });
+    document.getElementById("btnDeleteView").addEventListener("click", onDelete);
+  }
+
+  function viewItem(label, value){
+    return '<div class="view-item"><label>'+esc(label)+'</label><div class="v">'+(value?esc(value):'<span class="view-empty">—</span>')+'</div></div>';
+  }
+
+  function renderModalEdit(e, isNew){
     modal.innerHTML =
       '<div class="modal-head"><h2>'+(isNew?"Nuevo expediente":"Editar expediente")+'</h2><button class="x-close" id="xClose">&times;</button></div>'+
       '<form id="expForm">'+
@@ -759,7 +843,7 @@ svg text{font-family:var(--font-body)}
         '<div class="field"><label for="f_nota">Nueva nota (se agrega al historial)</label><textarea id="f_nota" placeholder="Observación, llamado, documentación recibida…"></textarea></div>'+
         historialHtml(e)+
         '<div class="modal-actions"><button type="submit" class="btn-primary">Guardar</button>'+
-        (isNew?'':'<button type="button" class="btn-danger" id="btnDelete">Eliminar</button>')+'</div>'+
+        (isNew?'':'<button type="button" class="btn-edit" id="btnCancelEdit">Cancelar</button><button type="button" class="btn-danger" id="btnDelete">Eliminar</button>')+'</div>'+
       '</form>';
 
     veil.hidden = false;
@@ -767,6 +851,8 @@ svg text{font-family:var(--font-body)}
     document.getElementById("expForm").addEventListener("submit", onSave);
     var delBtn = document.getElementById("btnDelete");
     if(delBtn) delBtn.addEventListener("click", onDelete);
+    var cancelBtn = document.getElementById("btnCancelEdit");
+    if(cancelBtn) cancelBtn.addEventListener("click", function(){ state.modalMode="view"; renderModal(); });
   }
 
   function field(name,label,type,e,placeholder,mono){
@@ -793,7 +879,7 @@ svg text{font-family:var(--font-body)}
       : '<div class="hist-empty">Sin notas aún.</div>';
     return '<div class="hist"><h3>Historial ('+notas.length+')</h3>'+body+'</div>';
   }
-  function closeModal(){ veil.hidden = true; state.editingId = null; }
+  function closeModal(){ veil.hidden = true; state.editingId = null; state.modalMode = null; }
 
   function onSave(ev){
     ev.preventDefault();
