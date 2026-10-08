@@ -87,13 +87,13 @@
       "fecha_inicio": "20/01/2026",
       "nombre_empresa": "Agroquímica Patricia Luna",
       "parque_industrial": "RDLF",
-      "rubro": "Química",
+      "rubro": "Manufacturas",
       "superficie_solicitada_m2": 1800,
       "actividad_empresa": "Formulación de agroquímicos",
       "situacion": "En_tratamiento",
       "representante_nombre": "Patricia Luna",
       "contacto_tel": "",
-      "contacto_mail": "",
+      "contacto_mail": "Loremipsum@gmail.com",
       "fecha_ultimo_movimiento": "03/06/2026",
       "intervenciones": []
     }
