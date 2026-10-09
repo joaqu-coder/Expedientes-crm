@@ -1,0 +1,37 @@
+{
+  "resoluciones": [
+    {
+      "id": "res_mv0b56f7twyr7",
+      "ejemplo": true,
+      "nro_resolucion": "045",
+      "anio": "2026",
+      "fecha": "15/03/2026",
+      "tema": "Venta de lotes",
+      "nro_expediente": "363-65027/2026-0",
+      "autoridad": "Directorio EGPAIS",
+      "observaciones": "Resolución cargada como ejemplo. Podés editarla o eliminarla."
+    },
+    {
+      "id": "res_mv0b56f7ftie1",
+      "ejemplo": true,
+      "nro_resolucion": "012",
+      "anio": "2026",
+      "fecha": "28/01/2026",
+      "tema": "Convenios",
+      "nro_expediente": "363-12044/2026-0",
+      "autoridad": "Directorio EGPAIS",
+      "observaciones": ""
+    },
+    {
+      "id": "res_mv0b56f7pqqy9",
+      "ejemplo": true,
+      "nro_resolucion": "098",
+      "anio": "2025",
+      "fecha": "11/09/2025",
+      "tema": "Designaciones",
+      "nro_expediente": "363-40882/2025-0",
+      "autoridad": "Presidencia EGPAIS",
+      "observaciones": ""
+    }
+  ]
+}
