@@ -8,10 +8,12 @@
  * Ambas apps comparten el mismo Worker y el mismo token; cada una escribe su
  * propio archivo en este repo.
  *
- * GET  /api/sync         -> devuelve expedientes.json (Seguimiento)
- * POST /api/sync         -> sobreescribe expedientes.json
- * GET  /api/sync-cartas  -> devuelve cartas-intencion.json (Proyectos)
- * POST /api/sync-cartas  -> sobreescribe cartas-intencion.json
+ * GET  /api/sync              -> devuelve expedientes.json (Seguimiento)
+ * POST /api/sync              -> sobreescribe expedientes.json
+ * GET  /api/sync-cartas       -> devuelve cartas-intencion.json (Proyectos)
+ * POST /api/sync-cartas       -> sobreescribe cartas-intencion.json
+ * GET  /api/sync-resoluciones -> devuelve resoluciones.json (Resoluciones)
+ * POST /api/sync-resoluciones -> sobreescribe resoluciones.json
  *
  * Cualquier otra ruta se sirve como archivo estático desde public/.
  */
@@ -35,6 +37,11 @@ const APPS = {
     archivo: 'cartas-intencion.json',
     nombre: 'cartas',
     vacio: { expedientes: [], plazoDias: 90 }
+  },
+  '/api/sync-resoluciones': {
+    archivo: 'resoluciones.json',
+    nombre: 'resoluciones',
+    vacio: { resoluciones: [] }
   }
 };
 

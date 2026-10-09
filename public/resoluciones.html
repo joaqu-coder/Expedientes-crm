@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="Resoluciones — EGPAIS">
+<meta name="theme-color" content="#667eea">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Resoluciones">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="apple-touch-icon" href="/icon.svg">
+<title>Resoluciones — EGPAIS</title>
+<script>
+// Aplicado antes del primer paint para no parpadear a oscuro si el usuario ya lo eligió.
+(function(){
+  var saved = localStorage.getItem("resoluciones_crm_theme_v1");
+  if(saved==="dark") document.documentElement.setAttribute("data-theme","dark");
+})();
+</script>
+<style>
+/* Misma paleta/tipografía que Seguimiento y Proyectos: mismo acento índigo,
+   misma escala de grises, fuente del sistema en toda la app. */
+:root{
+  --bg:#f9fafb; --surface:#ffffff; --surface-2:#f3f4f6; --border:#e5e7eb;
+  --fg:#1f2937; --muted:#6b7280; --accent:#667eea; --accent-fg:#ffffff;
+  --danger:#a1392c; --danger-bg:#f7e2dd;
+  --c1:#667eea; --c1-bg:#e7e9fb;
+  --c2:#2f7a3c; --c2-bg:#e4f3e5;
+  --c3:#a8650f; --c3-bg:#fbead0;
+  --c4:#b05a1a; --c4-bg:#fbe9d8;
+  --c5:#746d57; --c5-bg:#e8e5d9;
+  --c6:#1f6f78; --c6-bg:#dcf0f1;
+  color-scheme: light;
+  --font-display:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --font-body:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --font-mono:ui-monospace,"SF Mono","Cascadia Code","Roboto Mono","Courier New",monospace;
+}
+:root[data-theme="dark"]{
+  --bg:#141414; --surface:#1d1d1d; --surface-2:#262625; --border:#38372f;
+  --fg:#efece2; --muted:#a39d87; --accent:#667eea; --accent-fg:#ffffff;
+  --danger:#d26a5c; --danger-bg:#301e1b;
+  --c1:#8f9ff2; --c1-bg:#242a4d;
+  --c2:#5fae6b; --c2-bg:#1b2a1c;
+  --c3:#e8a33d; --c3-bg:#2d2311;
+  --c4:#e3833f; --c4-bg:#2c2111;
+  --c5:#8d8674; --c5-bg:#262520;
+  --c6:#4fb3bd; --c6-bg:#13282a;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);margin:0;padding-inline:16px;padding-block:20px;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+button{font-family:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.volver{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;color:var(--muted);text-decoration:none;margin-bottom:12px}
+.volver:hover{color:var(--fg)}
+
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.page-header .eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.page-header h1{font-size:21px;font-weight:700;margin-top:4px}
+.page-header-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.btn-new{background:var(--accent);color:var(--accent-fg);border:none;border-radius:8px;padding:10px 16px;font-weight:600;font-size:14px;white-space:nowrap}
+.btn-new:hover{filter:brightness(1.08)}
+.btn-theme{background:var(--surface);border:1px solid var(--border);color:var(--fg);border-radius:8px;width:38px;height:38px;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.btn-theme:hover{border-color:var(--accent)}
+
+/* ---- Toolbar: búsqueda siempre visible + filtros ---- */
+.toolbar-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:20px;display:flex;flex-direction:column;gap:12px}
+.toolbar-card select,.toolbar-card input[type=search]{background:var(--surface-2);border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:8px 10px;font-size:13px}
+.toolbar-search input[type=search]{width:100%}
+.toolbar-filters{display:flex;gap:8px;flex-wrap:wrap}
+.toolbar-filters select{flex:1 1 160px}
+
+/* ---- Listado de tarjetas ---- */
+.res-list{display:flex;flex-direction:column;gap:8px}
+.res-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;text-align:left;width:100%}
+.res-card:hover{border-color:var(--accent)}
+.res-card-main{min-width:0}
+.res-card-title{font-size:15px;font-weight:700}
+.res-card-sub{font-size:11.5px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.res-card-aside{flex:0 0 auto;display:flex;align-items:center;gap:6px}
+@media (max-width:480px){
+  .res-card{flex-direction:column;align-items:flex-start}
+  .res-card-main{width:100%}
+  .res-card-sub{white-space:normal;overflow:visible;text-overflow:clip}
+}
+.empty-state{padding:30px 14px;text-align:center;color:var(--muted);font-size:13px;background:var(--surface);border:1px solid var(--border);border-radius:10px}
+
+.badge{display:inline-flex;align-items:center;font-size:11.5px;font-weight:600;border-radius:6px;padding:3px 8px;white-space:nowrap}
+
+/* ---- Modal ---- */
+.veil{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;z-index:20;padding-top:40px}
+@media (min-width:640px){.veil{align-items:center}}
+.veil[hidden]{display:none}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:14px 14px 0 0;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;padding:18px}
+@media (min-width:640px){.modal{border-radius:14px}}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px}
+.modal-head h2{font-size:17px}
+.x-close{background:none;border:none;color:var(--muted);font-size:20px;line-height:1;padding:4px}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.field label{font-size:12px;color:var(--muted)}
+.field input,.field select,.field textarea{background:var(--surface-2);border:1px solid var(--border);color:var(--fg);border-radius:7px;padding:9px 10px;font-size:14px;font-family:inherit;width:100%}
+.field textarea{resize:vertical;min-height:70px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:420px){.row2{grid-template-columns:1fr}}
+
+.modal-actions{display:flex;gap:8px;margin-top:16px}
+.btn-primary{flex:1;background:var(--accent);color:var(--accent-fg);border:none;border-radius:8px;padding:11px;font-weight:600;font-size:14px}
+.btn-ghost{background:none;border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:11px 14px;font-size:14px}
+.btn-danger{background:none;border:1px solid var(--danger);color:var(--danger);border-radius:8px;padding:11px 14px;font-size:13px}
+.btn-edit{background:none;border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:11px 14px;font-size:14px}
+
+/* ---- Modal: vista de lectura ---- */
+.view-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.view-title{font-size:16px;font-weight:700}
+.view-sub{font-family:var(--font-mono);font-size:11.5px;color:var(--muted);margin-top:2px}
+.view-section{margin-top:14px;padding-top:13px;border-top:1px solid var(--border)}
+.view-section h3{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:9px;font-weight:700}
+.view-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px 12px}
+.view-item label{display:block;color:var(--muted);font-size:12px}
+.view-item .v{margin-top:1px;font-size:13.5px;font-weight:600}
+.view-obs{font-size:13.5px;margin-top:11px;line-height:1.45;white-space:pre-wrap}
+.view-empty{font-size:12.5px;color:var(--muted)}
+.view-actions{display:flex;gap:8px;margin-top:16px}
+.btn-view-action{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;background:none;border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:11px;font-weight:600;font-size:14px}
+.btn-view-action:hover{border-color:var(--muted)}
+.btn-view-action svg{flex:0 0 auto}
+
+/* ---- Indicador de sincronización ---- */
+.sync-status{font-size:11.5px;color:var(--muted);white-space:nowrap}
+.sync-status.offline{color:var(--danger)}
+</style>
+</head>
+<body>
+
+<a class="volver" href="/index.html">&larr; Inicio</a>
+
+<div class="page-header">
+  <div>
+    <div class="eyebrow">EGPAIS · Resoluciones</div>
+    <h1>Resoluciones</h1>
+  </div>
+  <div class="page-header-actions">
+    <span class="sync-status" id="syncStatus">☁️ Sincronizado</span>
+    <button class="btn-theme" id="btnTheme" aria-label="Cambiar a modo oscuro">🌙</button>
+    <button class="btn-new" id="btnNew">+ Nueva resolución</button>
+  </div>
+</div>
+
+<div class="toolbar-card">
+  <div class="toolbar-search">
+    <input type="search" id="search" placeholder="Buscar por N° de resolución, expediente, autoridad u observaciones…">
+  </div>
+  <div class="toolbar-filters">
+    <select id="filterTema"><option value="">Todos los temas</option></select>
+    <select id="filterAnio"><option value="">Todos los años</option></select>
+  </div>
+</div>
+
+<div class="res-list" id="resList"></div>
+
+<div class="veil" id="veil" hidden><div class="modal" id="modal"></div></div>
+
+<script>
+(function(){
+  "use strict";
+
+  // Enum fijo de Temas (15 valores, pedido del usuario). El color del badge
+  // cicla entre 6 tonos para que temas distintos no queden todos iguales.
+  var TEMAS = [
+    "Adendas","Comodatos","Convenios","Intimaciones","Desadjudicaciones",
+    "Disposiciones","Requerimientos","Aumento de precios","Cesión de derechos",
+    "Renuncias","Recursos de reconsideración","Regularización catastral",
+    "Venta de lotes","Designaciones","Revocación"
+  ];
+  function claseTema(tema){
+    var i = TEMAS.indexOf(tema);
+    var n = (i===-1 ? 0 : i) % 6 + 1;
+    return "c"+n;
+  }
+
+  var ICON_EDIT = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"></path></svg>';
+  var ICON_TRASH = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>';
+
+  var STORAGE_KEY = "resoluciones_crm_v1";
+
+  function esc(s){
+    return String(s==null?"":s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  function uid(){ return "res_"+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+  function ejemplos(){
+    return [
+      {id:uid(), ejemplo:true, nro_resolucion:"045", anio:"2026", fecha:"15/03/2026",
+       tema:"Venta de lotes", nro_expediente:"363-65027/2026-0",
+       autoridad:"Directorio EGPAIS",
+       observaciones:"Resolución cargada como ejemplo. Podés editarla o eliminarla."},
+      {id:uid(), ejemplo:true, nro_resolucion:"012", anio:"2026", fecha:"28/01/2026",
+       tema:"Convenios", nro_expediente:"363-12044/2026-0",
+       autoridad:"Directorio EGPAIS", observaciones:""},
+      {id:uid(), ejemplo:true, nro_resolucion:"098", anio:"2025", fecha:"11/09/2025",
+       tema:"Designaciones", nro_expediente:"363-40882/2025-0",
+       autoridad:"Presidencia EGPAIS", observaciones:""}
+    ];
+  }
+
+  function load(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return ejemplos();
+      var data = JSON.parse(raw);
+      return (Array.isArray(data) && data.length) ? data : ejemplos();
+    }catch(e){ return ejemplos(); }
+  }
+  function save(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state.resoluciones)); }catch(e){}
+    marcarPendiente();
+  }
+
+  // ---- Sync: GitHub-como-base-de-datos detrás del Worker (/api/sync-resoluciones) ----
+  // Guardado local SIEMPRE instantáneo (ya ocurrió en save()). La subida real
+  // va en background, debounced, y nunca bloquea al usuario. Endpoint propio
+  // (distinto de /api/sync y /api/sync-cartas) porque las tres apps comparten
+  // el mismo Worker/token pero escriben archivos distintos.
+  var SYNC_ENDPOINT = "/api/sync-resoluciones";
+  var SYNC_PENDING_KEY = "resoluciones_crm_sync_pendiente_v1";
+  var syncTimer = null, syncEnProgreso = false;
+
+  function marcarPendiente(){
+    try{ localStorage.setItem(SYNC_PENDING_KEY, "1"); }catch(e){}
+    setSyncStatus("pendiente");
+    if(syncTimer) clearTimeout(syncTimer);
+    syncTimer = setTimeout(subirCambios, 100);
+  }
+  function haySyncPendiente(){
+    try{ return localStorage.getItem(SYNC_PENDING_KEY) === "1"; }catch(e){ return false; }
+  }
+  function setSyncStatus(s){
+    var el = document.getElementById("syncStatus");
+    if(!el) return;
+    var map = {
+      sincronizado: ["☁️ Sincronizado", ""],
+      cargando: ["⏳ Cargando…", ""],
+      pendiente: ["⏳ Sincronizando…", ""],
+      subiendo: ["⏳ Sincronizando…", ""],
+      offline: ["⚠️ Sin conexión", "offline"]
+    };
+    var m = map[s] || map.sincronizado;
+    el.textContent = m[0];
+    el.className = "sync-status "+m[1];
+  }
+
+  async function subirCambios(){
+    if(syncEnProgreso || !haySyncPendiente()) return;
+    syncEnProgreso = true;
+    setSyncStatus("subiendo");
+    try{
+      var resp = await fetch(SYNC_ENDPOINT, {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({resoluciones: state.resoluciones})
+      });
+      if(!resp.ok) throw new Error("POST falló: "+resp.status);
+      try{ localStorage.removeItem(SYNC_PENDING_KEY); }catch(e){}
+      setSyncStatus("sincronizado");
+    }catch(e){
+      setSyncStatus("offline");
+    }
+    syncEnProgreso = false;
+    if(haySyncPendiente()) subirCambios(); // llegó algo nuevo mientras el POST estaba en vuelo
+  }
+
+  async function bajarCambiosIniciales(){
+    if(haySyncPendiente()){
+      // hay cambios locales sin subir: los subimos primero, nunca pisamos trabajo no sincronizado
+      subirCambios();
+      return;
+    }
+    setSyncStatus("cargando");
+    try{
+      var resp = await fetch(SYNC_ENDPOINT);
+      if(!resp.ok) throw new Error("GET falló: "+resp.status);
+      var datos = await resp.json();
+      if(datos && Array.isArray(datos.resoluciones) && datos.resoluciones.length){
+        state.resoluciones = datos.resoluciones;
+        try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state.resoluciones)); }catch(e){}
+        renderFiltros();
+        renderList();
+      }
+      setSyncStatus("sincronizado");
+    }catch(e){
+      setSyncStatus("offline");
+    }
+  }
+
+  var state = { resoluciones: load(), editingId: null, modalMode: null, filterTema:"", filterAnio:"", search:"" };
+
+  // ---- Filtros ----
+  var selTema = document.getElementById("filterTema");
+  var selAnio = document.getElementById("filterAnio");
+  function renderFiltros(){
+    var temaActual = selTema.value, anioActual = selAnio.value;
+    selTema.innerHTML = '<option value="">Todos los temas</option>'+
+      TEMAS.map(function(t){ return '<option value="'+esc(t)+'">'+esc(t)+'</option>'; }).join("");
+    var anios = Array.from(new Set(state.resoluciones.map(function(r){return r.anio;}).filter(Boolean))).sort().reverse();
+    selAnio.innerHTML = '<option value="">Todos los años</option>'+
+      anios.map(function(a){ return '<option value="'+esc(a)+'">'+esc(a)+'</option>'; }).join("");
+    selTema.value = temaActual; selAnio.value = anioActual;
+  }
+  selTema.addEventListener("change", function(){ state.filterTema=this.value; renderList(); });
+  selAnio.addEventListener("change", function(){ state.filterAnio=this.value; renderList(); });
+  document.getElementById("search").addEventListener("input", function(){ state.search=this.value.toLowerCase(); renderList(); });
+
+  function resolucionesFiltradas(){
+    return state.resoluciones.filter(function(r){
+      if(state.filterTema && r.tema!==state.filterTema) return false;
+      if(state.filterAnio && r.anio!==state.filterAnio) return false;
+      if(state.search){
+        var blob = (r.nro_resolucion+" "+r.anio+" "+r.tema+" "+r.nro_expediente+" "+r.autoridad+" "+r.observaciones).toLowerCase();
+        if(blob.indexOf(state.search)===-1) return false;
+      }
+      return true;
+    });
+  }
+
+  // ---- Listado (tarjetas) ----
+  function renderList(){
+    var cont = document.getElementById("resList");
+    var filtradas = resolucionesFiltradas().slice().sort(function(a,b){
+      // más recientes primero: año desc, luego N° de resolución desc
+      if(a.anio!==b.anio) return (b.anio||"").localeCompare(a.anio||"");
+      return (b.nro_resolucion||"").localeCompare(a.nro_resolucion||"");
+    });
+    if(!filtradas.length){
+      cont.innerHTML = '<div class="empty-state">Sin resoluciones que coincidan con el filtro.</div>';
+      return;
+    }
+    cont.innerHTML = filtradas.map(function(r){
+      var sub = [r.fecha, r.nro_expediente?("Expte. "+r.nro_expediente):"", r.autoridad].filter(Boolean).join(" · ");
+      return '<button class="res-card" data-open="'+esc(r.id)+'">'+
+        '<div class="res-card-main">'+
+          '<div class="res-card-title">N° '+esc(r.nro_resolucion||"s/n")+(r.anio?('/'+esc(r.anio)):'')+'</div>'+
+          (sub?'<div class="res-card-sub">'+esc(sub)+'</div>':'')+
+        '</div>'+
+        '<div class="res-card-aside">'+
+          (r.tema?'<span class="badge" style="background:var(--'+claseTema(r.tema)+'-bg);color:var(--'+claseTema(r.tema)+')">'+esc(r.tema)+'</span>':'')+
+        '</div>'+
+        '</button>';
+    }).join("");
+    cont.querySelectorAll("[data-open]").forEach(function(btn){
+      btn.addEventListener("click", function(){ openModal(btn.getAttribute("data-open")); });
+    });
+  }
+
+  // ---- Modal: nuevo / editar / ver ----
+  var veil = document.getElementById("veil"), modal = document.getElementById("modal");
+  document.getElementById("btnNew").addEventListener("click", function(){ openModal(null); });
+  veil.addEventListener("click", function(ev){ if(ev.target===veil) closeModal(); });
+
+  function openModal(id){
+    state.editingId = id;
+    state.modalMode = id ? "view" : "edit";
+    veil.hidden = false;
+    renderModal();
+  }
+
+  function renderModal(){
+    var id = state.editingId;
+    var r = id ? state.resoluciones.find(function(x){return x.id===id;}) : null;
+    var isNew = !r;
+    if(isNew || state.modalMode==="edit"){ renderModalEdit(r, isNew); }
+    else { renderModalView(r); }
+  }
+
+  function renderModalView(r){
+    modal.innerHTML =
+      '<div class="modal-head"><button class="x-close" id="xCloseView">&times;</button></div>'+
+      '<div class="view-head">'+
+        '<div><div class="view-title">N° '+esc(r.nro_resolucion||"s/n")+(r.anio?('/'+esc(r.anio)):'')+'</div>'+
+          (r.nro_expediente?'<div class="view-sub">Expte. '+esc(r.nro_expediente)+'</div>':'')+'</div>'+
+        (r.tema?'<span class="badge" style="background:var(--'+claseTema(r.tema)+'-bg);color:var(--'+claseTema(r.tema)+')">'+esc(r.tema)+'</span>':'')+
+      '</div>'+
+
+      '<div class="view-section"><h3>Datos</h3>'+
+        '<div class="view-grid">'+
+          viewItem("Fecha", r.fecha)+
+          viewItem("Autoridad", r.autoridad)+
+        '</div>'+
+        (r.observaciones?'<p class="view-obs">'+esc(r.observaciones)+'</p>':'')+
+      '</div>'+
+
+      '<div class="view-actions">'+
+        '<button type="button" class="btn-view-action" id="btnEdit">'+ICON_EDIT+'Editar</button>'+
+        '<button type="button" class="btn-view-action" id="btnDeleteView">'+ICON_TRASH+'Eliminar</button>'+
+      '</div>';
+
+    document.getElementById("xCloseView").addEventListener("click", closeModal);
+    document.getElementById("btnEdit").addEventListener("click", function(){ state.modalMode="edit"; renderModal(); });
+    document.getElementById("btnDeleteView").addEventListener("click", onDelete);
+  }
+
+  function viewItem(label, value){
+    return '<div class="view-item"><label>'+esc(label)+'</label><div class="v">'+(value?esc(value):'<span class="view-empty">—</span>')+'</div></div>';
+  }
+
+  function renderModalEdit(r, isNew){
+    modal.innerHTML =
+      '<div class="modal-head"><h2>'+(isNew?"Nueva resolución":"Editar resolución")+'</h2><button class="x-close" id="xClose">&times;</button></div>'+
+      '<form id="resForm">'+
+        '<div class="row2">'+field("nro_resolucion","N° de Resolución","text",r,"045")+field("anio","Año","text",r,"2026")+'</div>'+
+        '<div class="row2">'+field("fecha","Fecha","text",r,"dd/mm/aaaa")+selectField("tema","Tema",TEMAS,r)+'</div>'+
+        field("nro_expediente","N° de Expe.","text",r,"363-65027/2026-0",true)+
+        field("autoridad","Autoridad","text",r,"Directorio EGPAIS")+
+        '<div class="field"><label for="f_observaciones">Observaciones</label><textarea id="f_observaciones" name="observaciones" placeholder="Observaciones…">'+esc(r?r.observaciones:"")+'</textarea></div>'+
+        '<div class="modal-actions"><button type="submit" class="btn-primary">Guardar</button>'+
+        (isNew?'':'<button type="button" class="btn-edit" id="btnCancelEdit">Cancelar</button><button type="button" class="btn-danger" id="btnDelete">Eliminar</button>')+'</div>'+
+      '</form>';
+
+    veil.hidden = false;
+    document.getElementById("xClose").addEventListener("click", closeModal);
+    document.getElementById("resForm").addEventListener("submit", onSave);
+    var delBtn = document.getElementById("btnDelete");
+    if(delBtn) delBtn.addEventListener("click", onDelete);
+    var cancelBtn = document.getElementById("btnCancelEdit");
+    if(cancelBtn) cancelBtn.addEventListener("click", function(){
+      if(isNew){ closeModal(); } else { state.modalMode="view"; renderModal(); }
+    });
+  }
+
+  function field(name,label,type,r,placeholder,mono){
+    var val = r ? (r[name]==null?"":r[name]) : "";
+    return '<div class="field"><label for="f_'+name+'">'+esc(label)+'</label>'+
+      '<input class="'+(mono?"mono":"")+'" id="f_'+name+'" name="'+name+'" type="'+type+'" value="'+esc(val)+'" placeholder="'+esc(placeholder||"")+'"></div>';
+  }
+  function selectField(name,label,options,r){
+    var current = r ? r[name] : "";
+    var opts = options.map(function(opt){
+      return '<option value="'+esc(opt)+'" '+(opt===current?"selected":"")+'>'+esc(opt)+'</option>';
+    }).join("");
+    var blank = (!current) ? '<option value="" selected disabled>Seleccionar…</option>' : '';
+    return '<div class="field"><label for="f_'+name+'">'+esc(label)+'</label><select id="f_'+name+'" name="'+name+'">'+blank+opts+'</select></div>';
+  }
+  function closeModal(){ veil.hidden = true; state.editingId = null; state.modalMode = null; }
+
+  function onSave(ev){
+    ev.preventDefault();
+    var id = state.editingId;
+    var existing = id ? state.resoluciones.find(function(x){return x.id===id;}) : null;
+    var isNew = !existing;
+    var g = function(name){ var el=document.getElementById("f_"+name); return el?el.value:""; };
+
+    var res = existing || {id:uid(), ejemplo:false};
+    res.nro_resolucion = g("nro_resolucion").trim();
+    res.anio = g("anio").trim();
+    res.fecha = g("fecha").trim();
+    res.tema = g("tema");
+    res.nro_expediente = g("nro_expediente").trim();
+    res.autoridad = g("autoridad").trim();
+    res.observaciones = g("observaciones").trim();
+
+    if(isNew){
+      // Primera carga real: los ejemplos ya cumplieron su función (mostrar
+      // cómo se ve una resolución cargada) y no deben quedar mezclados con
+      // datos reales.
+      if(state.resoluciones.some(function(x){return x.ejemplo;})){
+        state.resoluciones = state.resoluciones.filter(function(x){return !x.ejemplo;});
+      }
+      state.resoluciones.push(res);
+    }
+    save();
+    closeModal();
+    renderFiltros();
+    renderList();
+  }
+  function onDelete(){
+    if(!state.editingId) return;
+    state.resoluciones = state.resoluciones.filter(function(x){return x.id!==state.editingId;});
+    save(); closeModal(); renderFiltros(); renderList();
+  }
+
+  // ---- Tema claro/oscuro ----
+  var THEME_KEY = "resoluciones_crm_theme_v1";
+  var btnTheme = document.getElementById("btnTheme");
+  function applyThemeButton(){
+    var dark = document.documentElement.getAttribute("data-theme")==="dark";
+    btnTheme.textContent = dark ? "☀️" : "🌙";
+    btnTheme.setAttribute("aria-label", dark ? "Cambiar a modo claro" : "Cambiar a modo oscuro");
+  }
+  btnTheme.addEventListener("click", function(){
+    var dark = document.documentElement.getAttribute("data-theme")==="dark";
+    if(dark){ document.documentElement.removeAttribute("data-theme"); localStorage.setItem(THEME_KEY,"light"); }
+    else { document.documentElement.setAttribute("data-theme","dark"); localStorage.setItem(THEME_KEY,"dark"); }
+    applyThemeButton();
+  });
+  applyThemeButton();
+
+  renderFiltros();
+  renderList();
+  bajarCambiosIniciales();
+
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  }
+})();
+</script>
+</body>
+</html>
