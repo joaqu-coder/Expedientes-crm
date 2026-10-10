@@ -712,11 +712,21 @@ async function testResoluciones(viewport, puerto) {
   const esperado2016 = datos.resoluciones.filter((r) => r.anio === '2016').length;
   ok((await page.locator('#resCount').textContent()).startsWith(esperado2016 + ' de '),
      `el filtro por año deja ${esperado2016} resoluciones de 2016`);
-  await page.selectOption('#filterTema', 'Intimaciones');
+  await page.selectOption('#filterTema', 'Intimación');
   await page.waitForTimeout(150);
-  const esperadoTema = datos.resoluciones.filter((r) => r.anio === '2016' && r.tema === 'Intimaciones').length;
+  const esperadoTema = datos.resoluciones.filter((r) => r.anio === '2016' && r.tema === 'Intimación').length;
   ok((await page.locator('#resCount').textContent()).startsWith(esperadoTema + ' de '),
      `año + tema combinan (${esperadoTema})`);
+
+  // El enum de temas tiene que ser exactamente el del archivo: ni un tema de
+  // los datos fuera del filtro, ni una opción del filtro que no filtre nada.
+  const enum_ = await page.$$eval('#filterTema option', (o) => o.map((x) => x.value).filter(Boolean));
+  const enDatos = [...new Set(datos.resoluciones.map((r) => r.tema))];
+  ok(enDatos.every((t) => t && enum_.includes(t)),
+     'todos los temas de los datos están en el filtro');
+  ok(enum_.every((t) => enDatos.includes(t)),
+     'ninguna opción del filtro queda sin resoluciones');
+  ok(enum_.length === 30, `el filtro ofrece las 30 clasificaciones (ofrece ${enum_.length})`);
   await page.selectOption('#filterAnio', '');
   await page.selectOption('#filterTema', '');
 

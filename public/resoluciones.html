@@ -175,21 +175,21 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 (function(){
   "use strict";
 
-  // Enum de Temas. Arrancó con 15 valores (pedido del usuario); al cargar el
-  // archivo histórico 2012-2025 aparecieron categorías que ese enum no cubría
-  // (Boletos de compra venta son 40 resoluciones, Revocación 37...), así que
-  // se sumaron. "Sin dato" es el marcador del propio archivo para las
-  // resoluciones cuyo documento falta. El color del badge cicla entre 6 tonos
-  // para que temas distintos no queden todos iguales.
+  // Enum de Temas: son exactamente las 30 categorías del archivo histórico,
+  // escritas como las escribe el archivo (en singular). Si el archivo traía la
+  // misma categoría de varias formas (mayúsculas, espaciado) se unificó en una
+  // sola grafía, porque dos entradas del filtro para lo mismo no sirven.
+  // "Falta" es el marcador del propio archivo para las resoluciones cuyo
+  // documento no está. El color del badge cicla entre 6 tonos para que temas
+  // distintos no queden todos iguales.
   var TEMAS = [
-    "Adendas","Adjudicaciones","Alquileres","Asignaciones","Aumento de precios",
-    "Autorizaciones","Boletos de compra venta","Cesión de derechos","Comodatos",
-    "Contratos","Contratos de adjudicación","Contratos de locación",
-    "Contratos de servicios","Convenios","Desadjudicaciones","Designaciones",
-    "Devoluciones","Disposiciones","Intimaciones","Licencias","Otorgamientos",
-    "Prórrogas","Protocolos","Rechazos","Recursos de reconsideración",
-    "Regularización catastral","Renuncias","Requerimientos","Revocación",
-    "Sin dato","Venta de lotes"
+    "Adenda","Adjudicación","Alquiler","Asignar","Aumento de precio",
+    "Autorización","Boleto de compra venta","Cesión de derechos","Comodato",
+    "Contrato","Contrato de adjudicación","Contrato de locación",
+    "Contrato de servicios","Convenio","Desadjudicación","Designación",
+    "Devolución","Disposición","Falta","Intimación","Licencia","Otorgamiento",
+    "Prórroga","Protocolo","Rechazo","Recurso de reconsideración",
+    "Regularización catastral","Renuncia","Requerimiento","Revocación"
   ];
   var PAGINA = 100; // cuántas tarjetas se pintan por tanda (el archivo tiene 422)
   function claseTema(tema){

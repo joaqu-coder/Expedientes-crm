@@ -136,7 +136,7 @@ prueba: es el registro, y se muestra tal como vino.
 
 - **Nada de inventar datos.** El export tiene 14 resoluciones cuyo documento
   falta en el archivo (número y año conocidos, todo lo demás dice "Falta"):
-  entran igual, con tema `Sin dato`, porque documentan un hueco en la
+  entran igual, con tema `Falta`, porque documentan un hueco en la
   numeración. Hay además fechas que el original trae mal tipeadas
   (`09/09/0214`, `11/012021`) o ausentes; se muestran literales, no se corrigen
   a ojo. Y 4 pares comparten número+año con contenido distinto: son registros
@@ -145,11 +145,23 @@ prueba: es el registro, y se muestra tal como vino.
   por año desc y después por `localeCompare` sobre ese string: sin padding,
   `"9"` queda arriba de `"31"`. Si cargás una resolución a mano, respetá los 3
   dígitos.
-- **`tema` es un enum** (`TEMAS` en `resoluciones.html`). Arrancó con 15
-  valores; el archivo histórico trajo categorías que no estaban (Boletos de
-  compra venta son 40 resoluciones, Revocación 37) y el enum se amplió a 31. Si
-  sumás un tema nuevo, va a `TEMAS`, no suelto en los datos: el filtro se arma
-  desde el enum.
+- **`tema` es un enum** (`TEMAS` en `resoluciones.html`) y son **exactamente
+  las 30 categorías del archivo, escritas como las escribe el archivo**: en
+  singular (`Requerimiento`, no `Requerimientos`). Arrancó con 15 valores
+  inventados cuando la app tenía 3 ejemplos; el 2026-10-10 se reemplazaron por
+  los del archivo, que es la fuente de verdad. `test:ui` sostiene la
+  correspondencia en los dos sentidos: ningún tema de los datos fuera del
+  filtro, ninguna opción del filtro sin resoluciones. Si sumás un tema nuevo va
+  a `TEMAS` **y** tiene que tener al menos una resolución, o el test falla.
+  Dos salvedades, las únicas: el archivo trae la misma categoría escrita de
+  varias formas (`requerimiento`/`Requerimiento`, `Des adjudicación`) y se
+  unificó en una sola grafía; y `Prorroga` se corrigió a `Prórroga`, que es lo
+  único que se tocó de ortografía.
+- **Dos resoluciones venían sin tema** y se clasificaron por su contenido:
+  la 023/2021 como `Adenda` (aprueba una adenda a un contrato de adjudicación)
+  y la 034/2016 como `Falta` (su contenido en el archivo dice "CHAT GPT": no
+  hay resolución ahí). Si aparece otra sin tema, clasificala: el test exige
+  que ninguna quede afuera del filtro.
 - **`contenido` es el texto resolutivo** y es el campo que justifica la app. Se
   busca por él, se muestra recortado a 2 líneas en la tarjeta y completo en la
   ficha. No lo mezcles con `observaciones` (28 resoluciones tienen observación
