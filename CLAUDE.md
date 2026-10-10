@@ -1,8 +1,8 @@
 # Expedientes CRM — Instrucciones del agente
 
-Dos apps (Seguimiento y Proyectos) detrás de una landing, con un único
-Cloudflare Worker propio que sincroniza contra GitHub sin exponer ningún
-token al navegador.
+Tres apps (Seguimiento, Proyectos y Resoluciones) detrás de una landing, con
+un único Cloudflare Worker propio que sincroniza contra GitHub sin exponer
+ningún token al navegador.
 
 **Leé `.claude-state.json` al empezar.** Tiene el estado de la última sesión y
 lo que quedó pendiente. Actualizalo al cerrar.
@@ -19,17 +19,18 @@ tocar una sola línea de la lógica ya auditada de `seguimiento.html` — nada d
 mezclar los dos DOMs, los dos espacios de `id`, ni los dos `localStorage`.
 
 ```
-public/index.html        ← landing: dos botones, Seguimiento / Proyectos
+public/index.html        ← landing: tres tarjetas, Seguimiento / Proyectos / Resoluciones
 public/seguimiento.html  ← la app de expedientes (la de siempre; antes era index.html)
 public/proyectos.html    ← cartas de intención de parques industriales (EGPAIS)
+public/resoluciones.html ← resoluciones del Directorio (archivo histórico 2012-2025)
 
-Navegador (seguimiento.html)          Navegador (proyectos.html)
-    │  fetch('/api/sync')                 │  fetch('/api/sync-cartas')
-    ▼                                     ▼
+Navegador (seguimiento)      Navegador (proyectos)        Navegador (resoluciones)
+    │  /api/sync                 │  /api/sync-cartas           │  /api/sync-resoluciones
+    ▼                            ▼                             ▼
             Cloudflare Worker (worker.js)      ← GITHUB_TOKEN, como secret, compartido
                     │  api.github.com
                     ▼
-    expedientes.json          cartas-intencion.json     ← "bases de datos", mismo repo
+    expedientes.json      cartas-intencion.json      resoluciones.json  ← mismo repo
 ```
 
 - **El token nunca está en el navegador.** Un solo Worker, un solo
@@ -54,6 +55,8 @@ Navegador (seguimiento.html)          Navegador (proyectos.html)
 | `POST /api/sync` | Reescribe `expedientes.json`. Crea el archivo en el primer POST. |
 | `GET /api/sync-cartas` | Devuelve `cartas-intencion.json` (Proyectos). Igual que arriba si no existe. |
 | `POST /api/sync-cartas` | Reescribe `cartas-intencion.json`. |
+| `GET /api/sync-resoluciones` | Devuelve `resoluciones.json` (Resoluciones). Igual que arriba si no existe. |
+| `POST /api/sync-resoluciones` | Reescribe `resoluciones.json` (~320 KB: el archivo histórico entero). |
 | `GET /api/health` | Diagnóstico: `tiene_github_token`, `tiene_binding_assets`, `claves_env`, `archivos`. **Nunca expone el valor del secret.** |
 
 Cuando algo falle, `/api/health` primero. Dice qué ve el runtime sin adivinar.
@@ -122,6 +125,40 @@ interpolar strings (un área `D'Angelo` rompía el handler).
 - El indicador refleja el resultado real del POST (antes lo pisaba con "Sincronizado").
 - El campo número se sanea en el evento `input`, **no** en `keydown`: filtrar
   teclas bloqueaba Ctrl+V y el teclado de Android.
+
+---
+
+## Resoluciones: el archivo histórico
+
+`resoluciones.json` trae el corpus real del Ente: **422 resoluciones de 2012 a
+2025**, cargadas el 2026-10-10 desde un export del usuario. No son datos de
+prueba: es el registro, y se muestra tal como vino.
+
+- **Nada de inventar datos.** El export tiene 14 resoluciones cuyo documento
+  falta en el archivo (número y año conocidos, todo lo demás dice "Falta"):
+  entran igual, con tema `Sin dato`, porque documentan un hueco en la
+  numeración. Hay además fechas que el original trae mal tipeadas
+  (`09/09/0214`, `11/012021`) o ausentes; se muestran literales, no se corrigen
+  a ojo. Y 4 pares comparten número+año con contenido distinto: son registros
+  distintos, no duplicados.
+- **`nro_resolucion` va con ceros a la izquierda** (`"031"`). El listado ordena
+  por año desc y después por `localeCompare` sobre ese string: sin padding,
+  `"9"` queda arriba de `"31"`. Si cargás una resolución a mano, respetá los 3
+  dígitos.
+- **`tema` es un enum** (`TEMAS` en `resoluciones.html`). Arrancó con 15
+  valores; el archivo histórico trajo categorías que no estaban (Boletos de
+  compra venta son 40 resoluciones, Revocación 37) y el enum se amplió a 31. Si
+  sumás un tema nuevo, va a `TEMAS`, no suelto en los datos: el filtro se arma
+  desde el enum.
+- **`contenido` es el texto resolutivo** y es el campo que justifica la app. Se
+  busca por él, se muestra recortado a 2 líneas en la tarjeta y completo en la
+  ficha. No lo mezcles con `observaciones` (28 resoluciones tienen observación
+  propia, que es otra cosa).
+- **El listado pagina de a 100.** 422 tarjetas de una sola vez es scroll
+  infinito en el celular.
+- **Peso:** cada POST reescribe los ~320 KB enteros, como las otras dos apps.
+  Hoy funciona; si alguna vez molesta, el camino es paginar el archivo o
+  separar el texto resolutivo, no borrar historia.
 
 ---
 
@@ -211,12 +248,13 @@ fuente, a diferencia del repo del Boletín donde lo genera el scraper.
 
 ## Pendientes
 
-- [ ] `test:ui` (Playwright) solo cubre `seguimiento.html`. `proyectos.html` se
+- [ ] `test:ui` (Playwright) cubre `seguimiento.html` y, desde el 2026-10-10,
+      `resoluciones.html` (`testResoluciones()`: server local que sirve el
+      `resoluciones.json` real, paginado, filtros, búsqueda en el contenido,
+      ficha y POST, en desktop y mobile). Falta `proyectos.html`, que se
       verificó a mano con un script ad hoc (landing → Proyectos → alta de
-      expediente → POST a `/api/sync-cartas` → dashboard), pero no quedó un
-      test en el repo. Si se toca `proyectos.html` de nuevo, conviene sumarlo
-      a `tests/ui.test.mjs` con el mismo patrón (server local, viewport
-      desktop + mobile).
+      expediente → POST a `/api/sync-cartas` → dashboard) pero no dejó test.
+      Si se toca de nuevo, sumarlo con el mismo patrón.
 - [ ] **Rotar el token de GitHub.** Circuló por el chat de una sesión y quedó
       cargado también en Settings → Builds, donde no sirve para nada. Rotarlo en
       GitHub, actualizar **solo** el secret de runtime, y borrar el de Builds.

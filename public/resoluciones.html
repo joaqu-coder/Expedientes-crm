@@ -77,11 +77,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 /* ---- Listado de tarjetas ---- */
 .res-list{display:flex;flex-direction:column;gap:8px}
-.res-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;text-align:left;width:100%}
+.res-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;cursor:pointer;text-align:left;width:100%}
 .res-card:hover{border-color:var(--accent)}
 .res-card-main{min-width:0}
 .res-card-title{font-size:15px;font-weight:700}
-.res-card-sub{font-size:11.5px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.res-card-snippet{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.res-card-sub{font-size:11.5px;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.res-count{font-size:12px;color:var(--muted);margin-bottom:12px;font-variant-numeric:tabular-nums}
+.res-more{display:flex;justify-content:center;margin-top:12px}
 .res-card-aside{flex:0 0 auto;display:flex;align-items:center;gap:6px}
 @media (max-width:480px){
   .res-card{flex-direction:column;align-items:flex-start}
@@ -124,6 +127,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .view-item label{display:block;color:var(--muted);font-size:12px}
 .view-item .v{margin-top:1px;font-size:13.5px;font-weight:600}
 .view-obs{font-size:13.5px;margin-top:11px;line-height:1.45;white-space:pre-wrap}
+.view-texto{font-size:13.5px;line-height:1.5;white-space:pre-wrap;margin:0}
 .view-empty{font-size:12.5px;color:var(--muted)}
 .view-actions{display:flex;gap:8px;margin-top:16px}
 .btn-view-action{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;background:none;border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:11px;font-weight:600;font-size:14px}
@@ -153,7 +157,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 <div class="toolbar-card">
   <div class="toolbar-search">
-    <input type="search" id="search" placeholder="Buscar por N° de resolución, expediente, autoridad u observaciones…">
+    <input type="search" id="search" placeholder="Buscar por N° de resolución, expediente, autoridad o texto de la resolución…">
   </div>
   <div class="toolbar-filters">
     <select id="filterTema"><option value="">Todos los temas</option></select>
@@ -161,7 +165,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   </div>
 </div>
 
+<div class="res-count" id="resCount"></div>
 <div class="res-list" id="resList"></div>
+<div class="res-more" id="resMore"></div>
 
 <div class="veil" id="veil" hidden><div class="modal" id="modal"></div></div>
 
@@ -169,14 +175,23 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 (function(){
   "use strict";
 
-  // Enum fijo de Temas (15 valores, pedido del usuario). El color del badge
-  // cicla entre 6 tonos para que temas distintos no queden todos iguales.
+  // Enum de Temas. Arrancó con 15 valores (pedido del usuario); al cargar el
+  // archivo histórico 2012-2025 aparecieron categorías que ese enum no cubría
+  // (Boletos de compra venta son 40 resoluciones, Revocación 37...), así que
+  // se sumaron. "Sin dato" es el marcador del propio archivo para las
+  // resoluciones cuyo documento falta. El color del badge cicla entre 6 tonos
+  // para que temas distintos no queden todos iguales.
   var TEMAS = [
-    "Adendas","Comodatos","Convenios","Intimaciones","Desadjudicaciones",
-    "Disposiciones","Requerimientos","Aumento de precios","Cesión de derechos",
-    "Renuncias","Recursos de reconsideración","Regularización catastral",
-    "Venta de lotes","Designaciones","Revocación"
+    "Adendas","Adjudicaciones","Alquileres","Asignaciones","Aumento de precios",
+    "Autorizaciones","Boletos de compra venta","Cesión de derechos","Comodatos",
+    "Contratos","Contratos de adjudicación","Contratos de locación",
+    "Contratos de servicios","Convenios","Desadjudicaciones","Designaciones",
+    "Devoluciones","Disposiciones","Intimaciones","Licencias","Otorgamientos",
+    "Prórrogas","Protocolos","Rechazos","Recursos de reconsideración",
+    "Regularización catastral","Renuncias","Requerimientos","Revocación",
+    "Sin dato","Venta de lotes"
   ];
+  var PAGINA = 100; // cuántas tarjetas se pintan por tanda (el archivo tiene 422)
   function claseTema(tema){
     var i = TEMAS.indexOf(tema);
     var n = (i===-1 ? 0 : i) % 6 + 1;
@@ -196,28 +211,28 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
   function uid(){ return "res_"+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 
-  function ejemplos(){
-    return [
-      {id:uid(), ejemplo:true, nro_resolucion:"045", anio:"2026", fecha:"15/03/2026",
-       tema:"Venta de lotes", nro_expediente:"363-65027/2026-0",
-       autoridad:"Directorio EGPAIS",
-       observaciones:"Resolución cargada como ejemplo. Podés editarla o eliminarla."},
-      {id:uid(), ejemplo:true, nro_resolucion:"012", anio:"2026", fecha:"28/01/2026",
-       tema:"Convenios", nro_expediente:"363-12044/2026-0",
-       autoridad:"Directorio EGPAIS", observaciones:""},
-      {id:uid(), ejemplo:true, nro_resolucion:"098", anio:"2025", fecha:"11/09/2025",
-       tema:"Designaciones", nro_expediente:"363-40882/2025-0",
-       autoridad:"Presidencia EGPAIS", observaciones:""}
-    ];
+  // Las 3 resoluciones de ejemplo (ejemplo:true) se dieron de baja al cargar
+  // el archivo histórico real: ya no se siembran y se descartan si quedaron
+  // guardadas en localStorage o en resoluciones.json.
+  function sinEjemplos(arr){
+    return arr.filter(function(r){ return !r || r.ejemplo !== true; });
   }
 
   function load(){
     try{
       var raw = localStorage.getItem(STORAGE_KEY);
-      if(!raw) return ejemplos();
+      if(!raw) return [];
       var data = JSON.parse(raw);
-      return (Array.isArray(data) && data.length) ? data : ejemplos();
-    }catch(e){ return ejemplos(); }
+      if(!Array.isArray(data)) return [];
+      var limpias = sinEjemplos(data);
+      // La limpieza se persiste local, pero NO se marca para subir: eso lo
+      // decide bajarCambiosIniciales() con los datos del servidor en la mano,
+      // para no pisar resoluciones que este navegador todavía no vio.
+      if(limpias.length !== data.length){
+        try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(limpias)); }catch(e2){}
+      }
+      return limpias;
+    }catch(e){ return []; }
   }
   function save(){
     try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state.resoluciones)); }catch(e){}
@@ -289,8 +304,12 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
       if(!resp.ok) throw new Error("GET falló: "+resp.status);
       var datos = await resp.json();
       if(datos && Array.isArray(datos.resoluciones) && datos.resoluciones.length){
-        state.resoluciones = datos.resoluciones;
+        var remotas = datos.resoluciones;
+        var limpias = sinEjemplos(remotas);
+        state.resoluciones = limpias;
         try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state.resoluciones)); }catch(e){}
+        // había ejemplos arriba: ahora sí corresponde subir la limpieza
+        if(limpias.length !== remotas.length) marcarPendiente();
         renderFiltros();
         renderList();
       }
@@ -300,7 +319,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     }
   }
 
-  var state = { resoluciones: load(), editingId: null, modalMode: null, filterTema:"", filterAnio:"", search:"" };
+  var state = { resoluciones: load(), editingId: null, modalMode: null, filterTema:"", filterAnio:"", search:"", limite: PAGINA };
 
   // ---- Filtros ----
   var selTema = document.getElementById("filterTema");
@@ -314,16 +333,17 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
       anios.map(function(a){ return '<option value="'+esc(a)+'">'+esc(a)+'</option>'; }).join("");
     selTema.value = temaActual; selAnio.value = anioActual;
   }
-  selTema.addEventListener("change", function(){ state.filterTema=this.value; renderList(); });
-  selAnio.addEventListener("change", function(){ state.filterAnio=this.value; renderList(); });
-  document.getElementById("search").addEventListener("input", function(){ state.search=this.value.toLowerCase(); renderList(); });
+  function cambioFiltro(){ state.limite = PAGINA; renderList(); }
+  selTema.addEventListener("change", function(){ state.filterTema=this.value; cambioFiltro(); });
+  selAnio.addEventListener("change", function(){ state.filterAnio=this.value; cambioFiltro(); });
+  document.getElementById("search").addEventListener("input", function(){ state.search=this.value.toLowerCase(); cambioFiltro(); });
 
   function resolucionesFiltradas(){
     return state.resoluciones.filter(function(r){
       if(state.filterTema && r.tema!==state.filterTema) return false;
       if(state.filterAnio && r.anio!==state.filterAnio) return false;
       if(state.search){
-        var blob = (r.nro_resolucion+" "+r.anio+" "+r.tema+" "+r.nro_expediente+" "+r.autoridad+" "+r.observaciones).toLowerCase();
+        var blob = [r.nro_resolucion,r.anio,r.tema,r.nro_expediente,r.autoridad,r.observaciones,r.contenido].join(" ").toLowerCase();
         if(blob.indexOf(state.search)===-1) return false;
       }
       return true;
@@ -333,20 +353,32 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   // ---- Listado (tarjetas) ----
   function renderList(){
     var cont = document.getElementById("resList");
+    var cuenta = document.getElementById("resCount");
+    var mas = document.getElementById("resMore");
     var filtradas = resolucionesFiltradas().slice().sort(function(a,b){
       // más recientes primero: año desc, luego N° de resolución desc
+      // (el N° va con ceros a la izquierda, así "031" no queda sobre "100")
       if(a.anio!==b.anio) return (b.anio||"").localeCompare(a.anio||"");
       return (b.nro_resolucion||"").localeCompare(a.nro_resolucion||"");
     });
+    var total = state.resoluciones.length;
+    cuenta.textContent = !total ? ""
+      : (filtradas.length===total ? total+" resoluciones" : filtradas.length+" de "+total+" resoluciones");
     if(!filtradas.length){
-      cont.innerHTML = '<div class="empty-state">Sin resoluciones que coincidan con el filtro.</div>';
+      mas.innerHTML = "";
+      cont.innerHTML = '<div class="empty-state">'+
+        (total ? 'Sin resoluciones que coincidan con el filtro.'
+               : 'Todavía no hay resoluciones cargadas. Usá “+ Nueva resolución”.')+
+        '</div>';
       return;
     }
-    cont.innerHTML = filtradas.map(function(r){
+    var visibles = filtradas.slice(0, state.limite);
+    cont.innerHTML = visibles.map(function(r){
       var sub = [r.fecha, r.nro_expediente?("Expte. "+r.nro_expediente):"", r.autoridad].filter(Boolean).join(" · ");
       return '<button class="res-card" data-open="'+esc(r.id)+'">'+
         '<div class="res-card-main">'+
           '<div class="res-card-title">N° '+esc(r.nro_resolucion||"s/n")+(r.anio?('/'+esc(r.anio)):'')+'</div>'+
+          (r.contenido?'<div class="res-card-snippet">'+esc(r.contenido)+'</div>':'')+
           (sub?'<div class="res-card-sub">'+esc(sub)+'</div>':'')+
         '</div>'+
         '<div class="res-card-aside">'+
@@ -357,6 +389,12 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     cont.querySelectorAll("[data-open]").forEach(function(btn){
       btn.addEventListener("click", function(){ openModal(btn.getAttribute("data-open")); });
     });
+    var restantes = filtradas.length - visibles.length;
+    mas.innerHTML = restantes>0
+      ? '<button type="button" class="btn-ghost" id="btnMas">Mostrar '+Math.min(restantes,PAGINA)+' más ('+restantes+' restantes)</button>'
+      : "";
+    var btnMas = document.getElementById("btnMas");
+    if(btnMas) btnMas.addEventListener("click", function(){ state.limite += PAGINA; renderList(); });
   }
 
   // ---- Modal: nuevo / editar / ver ----
@@ -393,8 +431,17 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
           viewItem("Fecha", r.fecha)+
           viewItem("Autoridad", r.autoridad)+
         '</div>'+
-        (r.observaciones?'<p class="view-obs">'+esc(r.observaciones)+'</p>':'')+
       '</div>'+
+
+      '<div class="view-section"><h3>Contenido</h3>'+
+        (r.contenido
+          ? '<p class="view-texto">'+esc(r.contenido)+'</p>'
+          : '<p class="view-empty">Sin texto cargado.</p>')+
+      '</div>'+
+
+      (r.observaciones
+        ? '<div class="view-section"><h3>Observaciones</h3><p class="view-texto">'+esc(r.observaciones)+'</p></div>'
+        : '')+
 
       '<div class="view-actions">'+
         '<button type="button" class="btn-view-action" id="btnEdit">'+ICON_EDIT+'Editar</button>'+
@@ -418,6 +465,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
         '<div class="row2">'+field("fecha","Fecha","text",r,"dd/mm/aaaa")+selectField("tema","Tema",TEMAS,r)+'</div>'+
         field("nro_expediente","N° de Expe.","text",r,"363-65027/2026-0",true)+
         field("autoridad","Autoridad","text",r,"Directorio EGPAIS")+
+        '<div class="field"><label for="f_contenido">Contenido</label><textarea id="f_contenido" name="contenido" placeholder="Texto resolutivo…">'+esc(r?r.contenido:"")+'</textarea></div>'+
         '<div class="field"><label for="f_observaciones">Observaciones</label><textarea id="f_observaciones" name="observaciones" placeholder="Observaciones…">'+esc(r?r.observaciones:"")+'</textarea></div>'+
         '<div class="modal-actions"><button type="submit" class="btn-primary">Guardar</button>'+
         (isNew?'':'<button type="button" class="btn-edit" id="btnCancelEdit">Cancelar</button><button type="button" class="btn-danger" id="btnDelete">Eliminar</button>')+'</div>'+
@@ -456,24 +504,17 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     var isNew = !existing;
     var g = function(name){ var el=document.getElementById("f_"+name); return el?el.value:""; };
 
-    var res = existing || {id:uid(), ejemplo:false};
+    var res = existing || {id:uid()};
     res.nro_resolucion = g("nro_resolucion").trim();
     res.anio = g("anio").trim();
     res.fecha = g("fecha").trim();
     res.tema = g("tema");
     res.nro_expediente = g("nro_expediente").trim();
     res.autoridad = g("autoridad").trim();
+    res.contenido = g("contenido").trim();
     res.observaciones = g("observaciones").trim();
 
-    if(isNew){
-      // Primera carga real: los ejemplos ya cumplieron su función (mostrar
-      // cómo se ve una resolución cargada) y no deben quedar mezclados con
-      // datos reales.
-      if(state.resoluciones.some(function(x){return x.ejemplo;})){
-        state.resoluciones = state.resoluciones.filter(function(x){return !x.ejemplo;});
-      }
-      state.resoluciones.push(res);
-    }
+    if(isNew) state.resoluciones.push(res);
     save();
     closeModal();
     renderFiltros();

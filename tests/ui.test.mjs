@@ -647,6 +647,110 @@ async function testFlujo() {
   ctx.server.close();
 }
 
+/*
+ * Resoluciones: la página carga el archivo histórico real (resoluciones.json,
+ * 422 registros) desde un server local que imita al Worker. Existe porque esta
+ * página pasó de 3 ejemplos a 422 registros reales con texto resolutivo, y los
+ * tests estáticos no ven ni el paginado, ni los filtros, ni la ficha.
+ */
+async function testResoluciones(viewport, puerto) {
+  console.log(`\n=== RESOLUCIONES (${viewport.width}x${viewport.height}) ===`);
+  const html = fs.readFileSync(path.join(RAIZ, 'public/resoluciones.html'), 'utf8');
+  const datos = JSON.parse(fs.readFileSync(path.join(RAIZ, 'resoluciones.json'), 'utf8'));
+  let ultimoPost = null;
+
+  const server = http.createServer((req, res) => {
+    if (req.url.startsWith('/api/')) {
+      if (req.method === 'POST') {
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', () => {
+          ultimoPost = JSON.parse(body);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true }));
+        });
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(datos));
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(html);
+  });
+  await new Promise((r) => server.listen(puerto, r));
+
+  const problemas = [];
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const page = await browser.newPage({ viewport });
+  page.on('pageerror', (e) => problemas.push('pageerror: ' + e.message));
+  page.on('dialog', async (d) => { problemas.push('alert: ' + d.message()); await d.dismiss(); });
+  await page.goto(`http://localhost:${puerto}/`, { waitUntil: 'networkidle' });
+  await page.waitForFunction(() => document.querySelectorAll('.res-card').length > 0);
+
+  const total = datos.resoluciones.length;
+  ok(total === 422, `el archivo trae las ${total} resoluciones`);
+  ok(!datos.resoluciones.some((r) => r.ejemplo), 'no quedó ninguna resolución de ejemplo');
+  ok((await page.locator('#resCount').textContent()).includes(String(total)),
+     'el contador muestra el total');
+
+  // Paginado: 422 tarjetas de una sola vez es una lista infinita en el celular.
+  const primeraTanda = await page.locator('.res-card').count();
+  ok(primeraTanda === 100, `la primera tanda pinta 100 tarjetas (pintó ${primeraTanda})`);
+  await page.click('#btnMas');
+  await page.waitForTimeout(200);
+  ok((await page.locator('.res-card').count()) === 200, '"Mostrar más" suma otra tanda');
+
+  // Orden: más nueva primero. El N° va con ceros a la izquierda justamente
+  // para que el sort por string no ponga "031" arriba de "100".
+  const primera = await page.locator('.res-card-title').first().textContent();
+  ok(/\/2025$/.test(primera), `la primera tarjeta es del año más nuevo (${primera})`);
+
+  // Filtros
+  await page.selectOption('#filterAnio', '2016');
+  await page.waitForTimeout(150);
+  const esperado2016 = datos.resoluciones.filter((r) => r.anio === '2016').length;
+  ok((await page.locator('#resCount').textContent()).startsWith(esperado2016 + ' de '),
+     `el filtro por año deja ${esperado2016} resoluciones de 2016`);
+  await page.selectOption('#filterTema', 'Intimaciones');
+  await page.waitForTimeout(150);
+  const esperadoTema = datos.resoluciones.filter((r) => r.anio === '2016' && r.tema === 'Intimaciones').length;
+  ok((await page.locator('#resCount').textContent()).startsWith(esperadoTema + ' de '),
+     `año + tema combinan (${esperadoTema})`);
+  await page.selectOption('#filterAnio', '');
+  await page.selectOption('#filterTema', '');
+
+  // La búsqueda tiene que entrar al texto resolutivo, no solo a los metadatos.
+  await page.fill('#search', 'petroandina');
+  await page.waitForTimeout(150);
+  ok((await page.locator('.res-card').count()) === 1, 'la búsqueda encuentra texto del contenido');
+  await page.fill('#search', '');
+  await page.waitForTimeout(150);
+
+  // Ficha: el contenido es el dato principal de una resolución.
+  await page.locator('.res-card').first().click();
+  await page.waitForSelector('.view-texto');
+  const ficha = await page.locator('#modal').textContent();
+  ok(ficha.includes('Contenido'), 'la ficha muestra la sección Contenido');
+  ok((await page.locator('.view-texto').first().textContent()).length > 40,
+     'la ficha trae el texto resolutivo completo');
+
+  // Editar: el contenido tiene que ir y volver por el POST.
+  await page.click('#btnEdit');
+  await page.waitForSelector('#f_contenido');
+  ok((await page.inputValue('#f_contenido')).length > 40, 'el formulario precarga el contenido');
+  await page.fill('#f_contenido', 'Texto editado — ñandú ☕');
+  await page.click('#resForm button[type=submit]');
+  await page.waitForTimeout(600);
+  ok(ultimoPost?.resoluciones?.length === total, 'el POST sube las 422 resoluciones');
+  ok(ultimoPost.resoluciones.some((r) => r.contenido === 'Texto editado — ñandú ☕'),
+     'el contenido editado llega al servidor con tildes y emoji intactos');
+
+  ok(problemas.length === 0, 'sin errores de JS ni diálogos nativos' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
+  await browser.close();
+  server.close();
+}
+
 await recorrido('DESKTOP', { width: 1440, height: 900 }, 8799);
 await recorrido('MOBILE', { width: 390, height: 844 }, 8798);
 await testFechas();
@@ -657,6 +761,8 @@ await testPlazosYTarjetas();
 await testMovilTactil();
 await testTecladoYFoco();
 await testFlujo();
+await testResoluciones({ width: 1440, height: 900 }, 8797);
+await testResoluciones({ width: 390, height: 844 }, 8796);
 
 console.log(fallas === 0 ? '\nUI OK en desktop y mobile' : `\n${fallas} fallas`);
 process.exit(fallas === 0 ? 0 : 1);
