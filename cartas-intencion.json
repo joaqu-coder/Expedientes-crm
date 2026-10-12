@@ -350,7 +350,7 @@
       "representante_nombre": "Pablo Ernersto Fernando García / Silvia. C García",
       "contacto_tel": "387852-5309",
       "contacto_mail": "Profesilviagarcia@gmail.com - GarciaHonos.comercial@gmail.com",
-      "fecha_ultimo_movimiento": "09/02/2026",
+      "fecha_ultimo_movimiento": "12/10/2026 19:14",
       "intervenciones": [
         {
           "hora": "09/02/2026",
@@ -361,10 +361,15 @@
           "hora": "12/10/2026 19:13",
           "texto": "Archivado automáticamente: superó los 6 meses hábiles sin tratamiento.",
           "tipo": "sistema"
+        },
+        {
+          "hora": "12/10/2026 19:14",
+          "texto": "Rescatado del archivo.",
+          "tipo": "sistema"
         }
       ],
-      "archivado": true,
-      "fecha_archivado": "12/10/2026 19:13"
+      "archivado": false,
+      "actualizado_en": "2026-10-12T22:14:44.891Z"
     },
     {
       "id": "exp_imp019",
