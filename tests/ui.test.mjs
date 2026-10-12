@@ -761,6 +761,83 @@ async function testResoluciones(viewport, puerto) {
   server.close();
 }
 
+async function testProyectos(viewport, puerto) {
+  console.log(`\n=== PROYECTOS (${viewport.width}x${viewport.height}) ===`);
+  const html = fs.readFileSync(path.join(RAIZ, 'public/proyectos.html'), 'utf8');
+  const datos = JSON.parse(fs.readFileSync(path.join(RAIZ, 'cartas-intencion.json'), 'utf8'));
+  let ultimoPost = null;
+  const SHA = 'sha-fijo-de-prueba';
+
+  const server = http.createServer((req, res) => {
+    if (req.url.startsWith('/api/version-cartas')) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ version: SHA }));
+      return;
+    }
+    if (req.url.startsWith('/api/sync-cartas')) {
+      if (req.method === 'POST') {
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', () => {
+          ultimoPost = JSON.parse(body);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true }));
+        });
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(Object.assign({}, ultimoPost || datos, { _meta: { existe: true, sha: SHA } })));
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(html);
+  });
+  await new Promise((r) => server.listen(puerto, r));
+
+  const problemas = [];
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const page = await browser.newPage({ viewport });
+  page.on('pageerror', (e) => problemas.push('pageerror: ' + e.message));
+  page.on('dialog', async (d) => { problemas.push('alert: ' + d.message()); await d.dismiss(); });
+  await page.goto(`http://localhost:${puerto}/`, { waitUntil: 'networkidle' });
+  await page.waitForFunction(() => document.querySelectorAll('.exp-card').length > 0);
+
+  const total = datos.expedientes.length;
+  ok(total === 157, `el archivo trae los ${total} expedientes reales`);
+  ok((await page.locator('.exp-card').count()) === total,
+     `el listado pinta las ${total} tarjetas`);
+
+  // Dashboard: las 5 secciones que reemplazaron a las tarjetas sueltas.
+  await page.click('#tabDash');
+  await page.waitForSelector('.dash-section');
+  for (const sec of ['Resumen', 'Situación', 'Parques', 'Rubros', 'Urgencias']) {
+    await page.click(`[data-sec="${sec === 'Resumen' ? 'resumen' : sec === 'Situación' ? 'situacion' : sec === 'Parques' ? 'parques' : sec === 'Rubros' ? 'rubros' : 'urgencias'}"]`);
+    await page.waitForTimeout(100);
+    ok((await page.locator('.dash-section-head h2').first().textContent()).length > 0,
+       `la sección "${sec}" del dashboard renderiza`);
+  }
+  await page.click('#tabList');
+  await page.waitForSelector('.exp-list');
+
+  // Ficha + edición: el POST tiene que llegar con tildes/ñ intactas.
+  await page.locator('.exp-card').first().click();
+  await page.waitForSelector('#btnEdit');
+  await page.click('#btnEdit');
+  await page.waitForSelector('#f_nombre_empresa');
+  await page.fill('#f_nombre_empresa', 'Editado — Güemes ñandú ☕ S.A.');
+  await page.click('#expForm button[type=submit]');
+  // Esta app debounce la subida 1500ms (DEBOUNCE_MS), a diferencia de
+  // Seguimiento/Resoluciones que suben casi al instante.
+  await page.waitForTimeout(2000);
+  ok(ultimoPost?.expedientes?.length === total, `el POST sube los ${total} expedientes`);
+  ok(ultimoPost.expedientes.some((e) => e.nombre_empresa === 'Editado — Güemes ñandú ☕ S.A.'),
+     'el nombre editado llega al servidor con tildes, ñ y emoji intactos');
+
+  ok(problemas.length === 0, 'sin errores de JS ni diálogos nativos' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
+  await browser.close();
+  server.close();
+}
+
 await recorrido('DESKTOP', { width: 1440, height: 900 }, 8799);
 await recorrido('MOBILE', { width: 390, height: 844 }, 8798);
 await testFechas();
@@ -773,6 +850,8 @@ await testTecladoYFoco();
 await testFlujo();
 await testResoluciones({ width: 1440, height: 900 }, 8797);
 await testResoluciones({ width: 390, height: 844 }, 8796);
+await testProyectos({ width: 1440, height: 900 }, 8795);
+await testProyectos({ width: 390, height: 844 }, 8794);
 
 console.log(fallas === 0 ? '\nUI OK en desktop y mobile' : `\n${fallas} fallas`);
 process.exit(fallas === 0 ? 0 : 1);
