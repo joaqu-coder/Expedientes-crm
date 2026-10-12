@@ -768,6 +768,17 @@ async function testProyectos(viewport, puerto) {
   let ultimoPost = null;
   const SHA = 'sha-fijo-de-prueba';
 
+  // Expediente sintético, bien por encima del umbral de archivado automático
+  // (132 días hábiles ≈ 6 meses hábiles): sirve para probar el archivado sin
+  // tocar el archivo real.
+  const expedienteViejo = {
+    id: 'exp_archivo_test', nro_expediente: '999-00000/2020-0',
+    nombre_empresa: 'Archivable De Prueba S.A.', fecha_inicio: '01/01/2020',
+    parque_industrial: 'Salta', rubro: 'Manufactura', situacion: 'Sin_tratamiento',
+    fecha_ultimo_movimiento: '01/01/2020 00:00', intervenciones: []
+  };
+  const datosConViejo = Object.assign({}, datos, { expedientes: [expedienteViejo, ...datos.expedientes] });
+
   const server = http.createServer((req, res) => {
     if (req.url.startsWith('/api/version-cartas')) {
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -786,7 +797,7 @@ async function testProyectos(viewport, puerto) {
         return;
       }
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(Object.assign({}, ultimoPost || datos, { _meta: { existe: true, sha: SHA } })));
+      res.end(JSON.stringify(Object.assign({}, ultimoPost || datosConViejo, { _meta: { existe: true, sha: SHA } })));
       return;
     }
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -802,10 +813,27 @@ async function testProyectos(viewport, puerto) {
   await page.goto(`http://localhost:${puerto}/`, { waitUntil: 'networkidle' });
   await page.waitForFunction(() => document.querySelectorAll('.exp-card').length > 0);
 
-  const total = datos.expedientes.length;
+  const total = datos.expedientes.length; // el archivo real, sin el sintético
+  const totalServido = datosConViejo.expedientes.length; // + el sintético que agrega este test
   ok(total === 157, `el archivo trae los ${total} expedientes reales`);
-  ok((await page.locator('.exp-card').count()) === total,
-     `el listado pinta las ${total} tarjetas`);
+  // No asume que el listado pinta los 157 tarjetas: con el archivado
+  // automático, cuántas quedan activas depende de la fecha de hoy contra
+  // fecha_ultimo_movimiento de cada una — es una propiedad real de los
+  // datos, no una constante. Lo que SÍ tiene que valer siempre es la
+  // conservación: nadie desaparece, cada expediente servido está en el
+  // listado o en Archivo, nunca en ningún otro lado ni en los dos.
+  const activosInicial = await page.locator('.exp-card').count();
+  await page.click('#tabArchivo');
+  await page.waitForSelector('#archivoList');
+  const archivadosInicial = await page.locator('#archivoList .exp-card').count();
+  ok(activosInicial + archivadosInicial === totalServido,
+     `listado (${activosInicial}) + archivo (${archivadosInicial}) suman los ${totalServido} expedientes servidos`);
+  ok((await page.locator('#archivoList').textContent()).includes('Archivable De Prueba'),
+     'el expediente sintético (último movimiento en 2020) está en Archivo');
+  ok((await page.locator('#archivoList').textContent()).includes('Archivado el'),
+     'las tarjetas en Archivo muestran la fecha de archivado');
+  await page.click('#tabList');
+  await page.waitForSelector('#expList');
 
   // Dashboard: las 5 secciones que reemplazaron a las tarjetas sueltas.
   await page.click('#tabDash');
@@ -817,7 +845,7 @@ async function testProyectos(viewport, puerto) {
        `la sección "${sec}" del dashboard renderiza`);
   }
   await page.click('#tabList');
-  await page.waitForSelector('.exp-list');
+  await page.waitForSelector('#expList');
 
   // Ficha + edición: el POST tiene que llegar con tildes/ñ intactas.
   await page.locator('.exp-card').first().click();
@@ -829,9 +857,25 @@ async function testProyectos(viewport, puerto) {
   // Esta app debounce la subida 1500ms (DEBOUNCE_MS), a diferencia de
   // Seguimiento/Resoluciones que suben casi al instante.
   await page.waitForTimeout(2000);
-  ok(ultimoPost?.expedientes?.length === total, `el POST sube los ${total} expedientes`);
+  ok(ultimoPost?.expedientes?.length === totalServido, `el POST sube los ${totalServido} expedientes`);
   ok(ultimoPost.expedientes.some((e) => e.nombre_empresa === 'Editado — Güemes ñandú ☕ S.A.'),
      'el nombre editado llega al servidor con tildes, ñ y emoji intactos');
+
+  // Rescatar: el expediente sintético vuelve del Archivo al listado.
+  await page.click('#tabArchivo');
+  await page.waitForSelector('#archivoList');
+  await page.locator('#archivoList .exp-card', { hasText: 'Archivable De Prueba' }).first().click();
+  await page.waitForSelector('#btnRescatar');
+  ok((await page.locator('#modal').textContent()).includes('Archivado el'),
+     'la ficha del expediente archivado muestra cuándo se archivó');
+  await page.click('#btnRescatar');
+  await page.waitForTimeout(2000); // debounce de la subida
+  ok(ultimoPost?.expedientes?.find((e) => e.id === 'exp_archivo_test' && e.archivado === false) != null,
+     'rescatarlo sube archivado:false al servidor');
+  await page.click('#tabList');
+  await page.waitForSelector('#expList');
+  ok((await page.locator('.exp-card', { hasText: 'Archivable De Prueba' }).count()) === 1,
+     'el expediente rescatado vuelve a aparecer en el listado');
 
   ok(problemas.length === 0, 'sin errores de JS ni diálogos nativos' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
   await browser.close();
