@@ -107,9 +107,10 @@ async function testSinTokenConfigurado() {
   assert(data.error.includes('GITHUB_TOKEN'), 'el error menciona GITHUB_TOKEN faltante');
 }
 
-// ===== /api/sync-cartas (Proyectos / Cartas de Intención) =====
-// Mismo Worker y mismo GITHUB_TOKEN que /api/sync, pero escribe un archivo
-// distinto (cartas-intencion.json) para no pisar expedientes.json.
+// ===== /api/sync-cartas y /api/version-cartas (Proyectos / Cartas de Intención) =====
+// Protocolo más rico que /api/sync: sondeo de versión + concurrencia
+// optimista (409 con el contenido actual en vez de pisar en silencio).
+// Portado de joaqu-coder/Parques-Industriales, donde se armó y probó.
 
 async function testCartasGetSinArchivoTodavia() {
   llamadas = [];
@@ -124,6 +125,7 @@ async function testCartasGetSinArchivoTodavia() {
   assert(resp.status === 200, 'GET /api/sync-cartas sin archivo devuelve 200');
   assert(Array.isArray(data.expedientes) && data.expedientes.length === 0, 'expedientes vacío por defecto');
   assert(data.plazoDias === 90, 'plazoDias default es 90');
+  assert(data._meta.existe === false, '_meta.existe es false cuando el archivo no existe todavía');
 }
 
 async function testCartasPostEscribeArchivoPropio() {
@@ -139,6 +141,7 @@ async function testCartasPostEscribeArchivoPropio() {
       const contenidoDecodificado = Buffer.from(body.content, 'base64').toString('utf8');
       const datos = JSON.parse(contenidoDecodificado);
       assert(datos.expedientes[0].nombre_empresa === 'Ñandú S.A.', 'UTF-8 (ñ) se preserva en el PUT');
+      assert(!('_baseSha' in datos) && !('_meta' in datos), '_baseSha/_meta nunca se escriben en el archivo');
       return new Response(JSON.stringify({ content: { sha: 'nuevo-sha' } }), { status: 201 });
     }
     throw new Error('metodo inesperado: ' + opts.method);
@@ -154,6 +157,58 @@ async function testCartasPostEscribeArchivoPropio() {
   const resp = await worker.fetch(req, env);
   const data = await resp.json();
   assert(resp.status === 200 && data.ok === true, 'POST /api/sync-cartas responde ok:true');
+}
+
+async function testCartasConflicto409() {
+  llamadas = [];
+  const actuales = { expedientes: [{ id: '1', nombre_empresa: 'Original S.A.' }], plazoDias: 90 };
+  const base64 = Buffer.from(JSON.stringify(actuales), 'utf8').toString('base64');
+  mockFetch(async () => new Response(JSON.stringify({ sha: 'sha-servidor', content: base64 }), { status: 200 }));
+
+  const payload = { expedientes: [{ id: '1', nombre_empresa: 'Editado localmente' }], plazoDias: 90, _baseSha: 'sha-viejo' };
+  const req = new Request('https://x.workers.dev/api/sync-cartas', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+  const env = { GITHUB_TOKEN: 'fake-token', ASSETS: { fetch: async () => new Response('no debería llamarse') } };
+
+  const resp = await worker.fetch(req, env);
+  const data = await resp.json();
+  assert(resp.status === 409, 'sha base distinto del sha del servidor devuelve 409');
+  assert(data.error === 'conflicto', 'el 409 trae error:"conflicto"');
+  assert(data.actual.expedientes[0].nombre_empresa === 'Original S.A.', 'el 409 trae el contenido actual del servidor para fusionar');
+}
+
+async function testCartasValidacionRechazaDatosRotos() {
+  llamadas = [];
+  const req = new Request('https://x.workers.dev/api/sync-cartas', {
+    method: 'POST',
+    body: JSON.stringify({ expedientes: 'no-es-un-array' })
+  });
+  const env = { GITHUB_TOKEN: 'fake-token', ASSETS: { fetch: async () => new Response('no debería llamarse') } };
+
+  const resp = await worker.fetch(req, env);
+  const data = await resp.json();
+  assert(resp.status === 422, "'expedientes' no-array se rechaza con 422, nunca se llega a escribir");
+  assert(data.error === 'Datos rechazados', 'el 422 explica el motivo');
+}
+
+async function testCartasVersion() {
+  llamadas = [];
+  mockFetch(async (url) => {
+    assert(String(url).includes('/contents?ref=main'), '/api/version-cartas lista el directorio raíz, no pide el archivo entero');
+    return new Response(JSON.stringify([
+      { name: 'cartas-intencion.json', sha: 'sha-del-blob' },
+      { name: 'expedientes.json', sha: 'otro-sha' }
+    ]), { status: 200 });
+  });
+
+  const req = new Request('https://x.workers.dev/api/version-cartas', { method: 'GET' });
+  const env = { GITHUB_TOKEN: 'fake-token', ASSETS: { fetch: async () => new Response('no debería llamarse') } };
+
+  const resp = await worker.fetch(req, env);
+  const data = await resp.json();
+  assert(data.version === 'sha-del-blob', '/api/version-cartas devuelve el sha del blob, no del commit');
 }
 
 async function testSyncYCartasNoSeMezclan() {
@@ -177,6 +232,9 @@ async function main() {
   await testSinTokenConfigurado();
   await testCartasGetSinArchivoTodavia();
   await testCartasPostEscribeArchivoPropio();
+  await testCartasConflicto409();
+  await testCartasValidacionRechazaDatosRotos();
+  await testCartasVersion();
   await testSyncYCartasNoSeMezclan();
   console.log('\n✅ TODOS LOS TESTS PASARON');
 }

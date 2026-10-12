@@ -3,10 +3,10 @@
 Tres aplicaciones web progresivas (PWA) detrás de una misma landing:
 
 - **Seguimiento** (`public/seguimiento.html`): gestión de expedientes administrativos/legales con sistema automático de semáforo basado en días hábiles hasta vencimiento.
-- **Proyectos** (`public/proyectos.html`): cartas de intención de parques industriales (EGPAIS), con listado filtrable y dashboard.
+- **Proyectos** (`public/proyectos.html`): cartas de intención de parques industriales (EGPAIS) — listado filtrable, dashboard de 5 secciones, sondeo de cambios en tiempo real y fusión sin pérdidas cuando dos dispositivos editan a la vez. Portada del repo `joaqu-coder/Parques-Industriales`, donde se armó y probó.
 - **Resoluciones** (`public/resoluciones.html`): resoluciones del Directorio — 422 resoluciones de 2012 a 2025, con filtros por tema y año, búsqueda en el texto resolutivo y ficha por resolución.
 
-Comparten un mismo Cloudflare Worker (`worker.js`) y el mismo `GITHUB_TOKEN`, pero cada una sincroniza su propio archivo JSON en este repo (`expedientes.json` / `cartas-intencion.json` / `resoluciones.json`) por rutas de API separadas (`/api/sync` / `/api/sync-cartas` / `/api/sync-resoluciones`). Ver `CLAUDE.md` para el detalle de la arquitectura.
+Comparten un mismo Cloudflare Worker (`worker.js`) y el mismo `GITHUB_TOKEN`, pero cada una sincroniza su propio archivo JSON en este repo (`expedientes.json` / `cartas-intencion.json` / `resoluciones.json`) por rutas de API separadas (`/api/sync` / `/api/sync-cartas` + `/api/version-cartas` / `/api/sync-resoluciones`). Ver `CLAUDE.md` para el detalle de la arquitectura.
 
 ## ✨ Características
 
