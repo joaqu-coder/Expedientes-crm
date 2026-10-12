@@ -143,6 +143,53 @@ interpolar strings (un área `D'Angelo` rompía el handler).
 
 ---
 
+## Proyectos: archivado automático
+
+Pedido explícito del usuario (2026-10-12), para el mismo problema que ya
+había diagnosticado una sesión anterior en `docs/PENDIENTES.md` de
+`Parques-Industriales`: con 90 días hábiles de plazo aplicados
+retroactivamente a expedientes de hace años, el semáforo de Urgencias
+quedaba saturado de rojo — no priorizaba nada. La salida que ese documento
+proponía y el usuario pidió: una clasificación de archivo que saque del
+semáforo lo que de hecho ya nadie va a tratar.
+
+- **Qué archiva**: solo `Sin_tratamiento` / `En_tratamiento` sin ningún
+  movimiento (nota, edición o cambio de situación — `fecha_ultimo_movimiento`)
+  en `UMBRAL_ARCHIVO_DIAS_HABILES` (132, ≈ 6 meses hábiles) días hábiles.
+  `Adjudicada`/`Desestimada` nunca entran: ya están resueltas y
+  `urgenciaDe()` ya las excluye del semáforo, archivarlas no cambiaría nada
+  visible.
+- **Cuándo corre**: `aplicarArchivadoAutomatico()` se llama al cargar la app
+  y cada vez que `bajarCambiosIniciales()` trae datos nuevos del servidor
+  (carga inicial, sondeo de versión, volver a la pestaña). No hay cron en el
+  Worker — si nadie abre la app en meses, el archivado se aplica igual la
+  próxima vez que alguien entre, contado contra la fecha de ESE momento. Fue
+  una decisión explícita del usuario (la alternativa, un Cloudflare Cron
+  Trigger, se descartó por agregar infraestructura para esto solo).
+- **Reversible, siempre**: un expediente archivado tiene `archivado:true` +
+  `fecha_archivado`. "Rescatar" (pestaña Archivo, o el botón dedicado en la
+  ficha) lo saca del archivo, actualiza `fecha_ultimo_movimiento` a ahora (si
+  no, volvería a cumplir el umbral en el próximo chequeo) y deja una nota en
+  `intervenciones`. **Editar un archivado también lo rescata solo** —
+  `onSave` lo trata como "darle tratamiento" — así que no hace falta pasar
+  primero por el botón si de todos modos se lo va a editar.
+- **`worker.js` no sabe nada de esto.** `archivado`/`fecha_archivado` son
+  campos de expediente como cualquier otro; `validarCartas()` no restringe
+  qué campos puede tener un expediente, así que no hizo falta tocar el
+  Worker.
+- **Primer deploy**: con la base real (157 expedientes), ~95 caen en Archivo
+  de entrada — más de la mitad. Es el resultado esperado, no un bug: es
+  justamente la acumulación de años que motivó el pedido. Verificado con
+  Playwright contra los datos reales antes de confirmar con el usuario.
+- **Test**: `testProyectos()` en `tests/ui.test.mjs` inyecta un expediente
+  sintético con `fecha_ultimo_movimiento` de 2020 (bien por encima del
+  umbral, sin depender de la fecha de hoy) y verifica archivado automático +
+  Rescatar de punta a punta. No asume un conteo fijo de cuántos de los 157
+  reales se archivan — esa cifra cambia día a día a propósito; solo verifica
+  conservación (listado + archivo = total servido).
+
+---
+
 ## Resoluciones: el archivo histórico
 
 `resoluciones.json` trae el corpus real del Ente: **422 resoluciones de 2012 a
