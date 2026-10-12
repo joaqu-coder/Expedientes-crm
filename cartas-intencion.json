@@ -3817,7 +3817,7 @@
       "fecha_archivado": "12/10/2026 19:13"
     }
   ],
-  "plazoDias": 90,
+  "plazoDias": 40,
   "umbrales": {
     "alerta": 30,
     "critico": 15
