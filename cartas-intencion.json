@@ -270,16 +270,21 @@
       "representante_nombre": "Jorge Ernesto Cein",
       "contacto_tel": "38708032014",
       "contacto_mail": "jorge.cein@ceybasrl.com.ar",
-      "fecha_ultimo_movimiento": "17/03/2026",
+      "fecha_ultimo_movimiento": "12/10/2026 19:14",
       "intervenciones": [
         {
           "hora": "12/10/2026 19:13",
           "texto": "Archivado automáticamente: superó los 6 meses hábiles sin tratamiento.",
           "tipo": "sistema"
+        },
+        {
+          "hora": "12/10/2026 19:14",
+          "texto": "Rescatado del archivo.",
+          "tipo": "sistema"
         }
       ],
-      "archivado": true,
-      "fecha_archivado": "12/10/2026 19:13"
+      "archivado": false,
+      "actualizado_en": "2026-10-12T22:14:30.198Z"
     },
     {
       "id": "exp_imp016",
