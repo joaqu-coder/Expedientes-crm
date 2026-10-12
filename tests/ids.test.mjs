@@ -58,7 +58,6 @@ function chequearArchivo(archivo) {
 
 chequearArchivo('public/index.html');
 const htmlSeguimiento = chequearArchivo('public/seguimiento.html');
-chequearArchivo('public/proyectos.html');
 chequearArchivo('public/resoluciones.html');
 
 // Una sola fuente de verdad para el formato del número de expediente: si el

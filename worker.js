@@ -2,16 +2,14 @@
  * Worker — Expedientes CRM
  *
  * Sirve los archivos estáticos de public/ (landing + dos apps: Seguimiento y
- * Proyectos) y expone dos pares de endpoints de sync, uno por app, sin
- * exponer ningún token al navegador. El token vive SOLO como secret de
- * Cloudflare (GITHUB_TOKEN), configurado en el dashboard, nunca en el código.
- * Ambas apps comparten el mismo Worker y el mismo token; cada una escribe su
+ * Resoluciones) y expone un par de endpoints de sync por app, sin exponer
+ * ningún token al navegador. El token vive SOLO como secret de Cloudflare
+ * (GITHUB_TOKEN), configurado en el dashboard, nunca en el código. Ambas
+ * apps comparten el mismo Worker y el mismo token; cada una escribe su
  * propio archivo en este repo.
  *
  * GET  /api/sync              -> devuelve expedientes.json (Seguimiento)
  * POST /api/sync              -> sobreescribe expedientes.json
- * GET  /api/sync-cartas       -> devuelve cartas-intencion.json (Proyectos)
- * POST /api/sync-cartas       -> sobreescribe cartas-intencion.json
  * GET  /api/sync-resoluciones -> devuelve resoluciones.json (Resoluciones)
  * POST /api/sync-resoluciones -> sobreescribe resoluciones.json
  *
@@ -32,11 +30,6 @@ const APPS = {
     archivo: 'expedientes.json',
     nombre: 'expedientes',
     vacio: { expedientes: [], areas: [], responsables: [] }
-  },
-  '/api/sync-cartas': {
-    archivo: 'cartas-intencion.json',
-    nombre: 'cartas',
-    vacio: { expedientes: [], plazoDias: 90 }
   },
   '/api/sync-resoluciones': {
     archivo: 'resoluciones.json',

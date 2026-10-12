@@ -1,8 +1,8 @@
 # Expedientes CRM — Instrucciones del agente
 
-Tres apps (Seguimiento, Proyectos y Resoluciones) detrás de una landing, con
-un único Cloudflare Worker propio que sincroniza contra GitHub sin exponer
-ningún token al navegador.
+Dos apps (Seguimiento y Resoluciones) detrás de una landing, con un único
+Cloudflare Worker propio que sincroniza contra GitHub sin exponer ningún
+token al navegador.
 
 **Leé `.claude-state.json` al empezar.** Tiene el estado de la última sesión y
 lo que quedó pendiente. Actualizalo al cerrar.
@@ -13,35 +13,33 @@ lo que quedó pendiente. Actualizalo al cerrar.
 
 Esto es un **MPA** (multi-page, documentos HTML separados), no una SPA con
 hash-routing: cada página es un archivo `.html` independiente en `public/`,
-con su propio `<head>`, CSS y `<script>`. Se decidió así para sumar "Proyectos"
-(cartas de intención, portado del repo `EGPAIS`/`Parques-Industriales`) sin
-tocar una sola línea de la lógica ya auditada de `seguimiento.html` — nada de
-mezclar los dos DOMs, los dos espacios de `id`, ni los dos `localStorage`.
+con su propio `<head>`, CSS y `<script>` — así una app nueva no toca una sola
+línea de la lógica ya auditada de otra: nada de mezclar los dos DOMs, los dos
+espacios de `id`, ni los dos `localStorage`.
 
 ```
-public/index.html        ← landing: tres tarjetas, Seguimiento / Proyectos / Resoluciones
+public/index.html        ← landing: dos tarjetas, Seguimiento / Resoluciones
 public/seguimiento.html  ← la app de expedientes (la de siempre; antes era index.html)
-public/proyectos.html    ← cartas de intención de parques industriales (EGPAIS)
 public/resoluciones.html ← resoluciones del Directorio (archivo histórico 2012-2025)
 
-Navegador (seguimiento)      Navegador (proyectos)        Navegador (resoluciones)
-    │  /api/sync                 │  /api/sync-cartas           │  /api/sync-resoluciones
-    ▼                            ▼                             ▼
-            Cloudflare Worker (worker.js)      ← GITHUB_TOKEN, como secret, compartido
+Navegador (seguimiento)      Navegador (resoluciones)
+    │  /api/sync                 │  /api/sync-resoluciones
+    ▼                            ▼
+    Cloudflare Worker (worker.js)      ← GITHUB_TOKEN, como secret, compartido
                     │  api.github.com
                     ▼
-    expedientes.json      cartas-intencion.json      resoluciones.json  ← mismo repo
+    expedientes.json      resoluciones.json  ← mismo repo
 ```
 
 - **El token nunca está en el navegador.** Un solo Worker, un solo
-  `GITHUB_TOKEN`, usado por las dos apps — por eso se sumó Proyectos acá en
-  vez de crear un Worker aparte (evita repetir todo el setup del secret).
+  `GITHUB_TOKEN`, usado por las dos apps — así se evita repetir todo el setup
+  del secret si se suma una app nueva acá en vez de un Worker aparte.
 - **Cada app tiene su propio archivo de datos.** `expedientes.json` para
-  Seguimiento, `cartas-intencion.json` para Proyectos. Nunca se mezclan en un
+  Seguimiento, `resoluciones.json` para Resoluciones. Nunca se mezclan en un
   mismo POST: `worker.js` los resuelve por ruta (`APPS` en ese archivo).
 - **`public/` se sirve vía el binding `ASSETS`** declarado en `wrangler.toml`,
-  para las tres páginas.
-- **Si vas a sumar una tercera app**, es otro archivo `.html` en `public/`,
+  para las dos páginas.
+- **Si vas a sumar una app nueva**, es otro archivo `.html` en `public/`,
   otra entrada en `APPS` (worker.js) con su propio `archivo`/`nombre`/`vacio`,
   un botón más en la landing, y una línea en `tests/ids.test.mjs` (lista de
   `chequearArchivo(...)`). No reuses el storage key de otra app ni su
@@ -53,8 +51,6 @@ Navegador (seguimiento)      Navegador (proyectos)        Navegador (resolucione
 |---|---|
 | `GET /api/sync` | Devuelve `expedientes.json` (Seguimiento). Si no existe aún, devuelve listas vacías (no es error). |
 | `POST /api/sync` | Reescribe `expedientes.json`. Crea el archivo en el primer POST. |
-| `GET /api/sync-cartas` | Devuelve `cartas-intencion.json` (Proyectos). Igual que arriba si no existe. |
-| `POST /api/sync-cartas` | Reescribe `cartas-intencion.json`. |
 | `GET /api/sync-resoluciones` | Devuelve `resoluciones.json` (Resoluciones). Igual que arriba si no existe. |
 | `POST /api/sync-resoluciones` | Reescribe `resoluciones.json` (~320 KB: el archivo histórico entero). |
 | `GET /api/health` | Diagnóstico: `tiene_github_token`, `tiene_binding_assets`, `claves_env`, `archivos`. **Nunca expone el valor del secret.** |
@@ -251,7 +247,7 @@ No hay build step (`Build command: None`).
 Verificar que salió bien:
 1. Dashboard → Deployments → el deployment más reciente debe ser el de tu commit
 2. `GET /api/health` → `tiene_github_token: true`, `tiene_binding_assets: true`, `archivos` lista los dos JSON
-3. `GET /api/sync` y `GET /api/sync-cartas` → JSON, no error
+3. `GET /api/sync` y `GET /api/sync-resoluciones` → JSON, no error
 
 **No edites `public/` esperando que otra cosa lo regenere** — acá `public/` es la
 fuente, a diferencia del repo del Boletín donde lo genera el scraper.
@@ -263,10 +259,7 @@ fuente, a diferencia del repo del Boletín donde lo genera el scraper.
 - [ ] `test:ui` (Playwright) cubre `seguimiento.html` y, desde el 2026-10-10,
       `resoluciones.html` (`testResoluciones()`: server local que sirve el
       `resoluciones.json` real, paginado, filtros, búsqueda en el contenido,
-      ficha y POST, en desktop y mobile). Falta `proyectos.html`, que se
-      verificó a mano con un script ad hoc (landing → Proyectos → alta de
-      expediente → POST a `/api/sync-cartas` → dashboard) pero no dejó test.
-      Si se toca de nuevo, sumarlo con el mismo patrón.
+      ficha y POST, en desktop y mobile).
 - [ ] **Rotar el token de GitHub.** Circuló por el chat de una sesión y quedó
       cargado también en Settings → Builds, donde no sirve para nada. Rotarlo en
       GitHub, actualizar **solo** el secret de runtime, y borrar el de Builds.

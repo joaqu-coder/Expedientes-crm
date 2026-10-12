@@ -242,8 +242,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   // ---- Sync: GitHub-como-base-de-datos detrás del Worker (/api/sync-resoluciones) ----
   // Guardado local SIEMPRE instantáneo (ya ocurrió en save()). La subida real
   // va en background, debounced, y nunca bloquea al usuario. Endpoint propio
-  // (distinto de /api/sync y /api/sync-cartas) porque las tres apps comparten
-  // el mismo Worker/token pero escriben archivos distintos.
+  // (distinto de /api/sync) porque las dos apps comparten el mismo
+  // Worker/token pero escriben archivos distintos.
   var SYNC_ENDPOINT = "/api/sync-resoluciones";
   var SYNC_PENDING_KEY = "resoluciones_crm_sync_pendiente_v1";
   var syncTimer = null, syncEnProgreso = false;
