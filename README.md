@@ -1,213 +1,90 @@
 # Expedientes CRM
 
-Tres aplicaciones web progresivas (PWA) detrás de una misma landing:
+Tres aplicaciones web progresivas (PWA) detrás de una misma landing, con un
+único Cloudflare Worker que sincroniza contra GitHub ("GitHub como base de
+datos"): el navegador nunca ve el token de GitHub, solo habla con el Worker.
 
-- **Seguimiento** (`public/seguimiento.html`): gestión de expedientes administrativos/legales con sistema automático de semáforo basado en días hábiles hasta vencimiento.
-- **Proyectos** (`public/proyectos.html`): cartas de intención de parques industriales (EGPAIS) — listado filtrable, dashboard de 5 secciones, sondeo de cambios en tiempo real y fusión sin pérdidas cuando dos dispositivos editan a la vez. Portada del repo `joaqu-coder/Parques-Industriales`, donde se armó y probó.
-- **Resoluciones** (`public/resoluciones.html`): resoluciones del Directorio — 422 resoluciones de 2012 a 2025, con filtros por tema y año, búsqueda en el texto resolutivo y ficha por resolución.
+| App | Página | Qué es |
+|---|---|---|
+| **Seguimiento** | `public/seguimiento.html` | Expedientes administrativos/legales, con semáforo automático de vencimiento basado en días hábiles. |
+| **Proyectos** | `public/proyectos.html` | Cartas de intención de parques industriales (EGPAIS) — listado filtrable, dashboard de 5 secciones, sondeo de cambios en tiempo real y fusión sin pérdidas cuando dos dispositivos editan a la vez. Portada el 2026-10-12 desde el repo `joaqu-coder/Parques-Industriales` (archivado, ver su propio README), donde se armó y probó primero. |
+| **Resoluciones** | `public/resoluciones.html` | Resoluciones del Directorio — archivo histórico real: 422 resoluciones de 2012 a 2025, con filtros por tema y año, búsqueda en el texto resolutivo y ficha por resolución. |
 
-Comparten un mismo Cloudflare Worker (`worker.js`) y el mismo `GITHUB_TOKEN`, pero cada una sincroniza su propio archivo JSON en este repo (`expedientes.json` / `cartas-intencion.json` / `resoluciones.json`) por rutas de API separadas (`/api/sync` / `/api/sync-cartas` + `/api/version-cartas` / `/api/sync-resoluciones`). Ver `CLAUDE.md` para el detalle de la arquitectura.
+**Para la arquitectura completa, las trampas ya pisadas y las decisiones de
+diseño de cada app, el documento vivo es [`CLAUDE.md`](CLAUDE.md).** Este
+README es el resumen operativo; si algo acá contradice a `CLAUDE.md`,
+`CLAUDE.md` tiene la razón (y hay que corregir este archivo).
 
-## ✨ Características
+## Cómo está armado
 
-- 📋 **CRUD completo**: Crear, editar, eliminar y listar expedientes
-- 🚦 **Semáforo automático**: Estado visual según días hábiles restantes
-- 📅 **Cálculo inteligente**: Considera fines de semana y feriados argentinos
-- 🏢 **Áreas editables**: Gestiona dinámicamente las áreas responsables
-- 👤 **Responsables editables**: Agrega o elimina responsables en tiempo real
-- 📝 **Intervenciones**: Historial de cambios con timestamp automático
-- 💾 **Persistencia local**: LocalStorage sin servidor necesario
-- 📱 **Responsive**: Móvil y desktop (sidebar en desktop, modal en móvil)
-- 🌙 **Modo oscuro**: Soporte automático por preferencia del navegador
-- 📲 **PWA**: Instalable en home screen, funciona offline
-- ✅ **Validación**: Formato de expediente con patrón regex
-
-## 🎯 Semáforo de Estados
-
-| Emoji | Color | Rango | Descripción |
-|-------|-------|-------|------------|
-| 🔴 | Rojo (#7f0000) | 0 días | Vencido o vence hoy |
-| 🟠 | Naranja | 1-5 días | Urgente |
-| 🟡 | Amarillo (#d5be00) | 6-15 días | Atención |
-| 🟢 | Verde (#336d0e) | 16+ días | En plazo |
-
-## 📋 Formato de Expediente
+Es un **MPA** (multi-page), no una SPA: cada app es un `.html` independiente
+en `public/`, con su propio `<head>`, CSS, `<script>` y claves de
+`localStorage` — nada se mezcla entre apps. Un único `worker.js` sirve los
+estáticos (binding `ASSETS`, declarado en `wrangler.toml`) y expone los
+endpoints de sync, usando un solo secret `GITHUB_TOKEN` compartido por las
+tres apps.
 
 ```
-(Mesa – Número/Año)
-Ejemplo: (363 – 12454/2024)
+Navegador (seguimiento)      Navegador (proyectos)         Navegador (resoluciones)
+    │  /api/sync                 │  /api/sync-cartas            │  /api/sync-resoluciones
+    │                            │  /api/version-cartas (sondeo)│
+    ▼                            ▼                               ▼
+            Cloudflare Worker (worker.js)      ← GITHUB_TOKEN, como secret, compartido
+                    │  api.github.com
+                    ▼
+    expedientes.json      cartas-intencion.json      resoluciones.json  ← mismo repo, rama main
 ```
 
-- **Mesa**: 1-3 dígitos
-- **Número**: 1-5 dígitos
-- **Año**: 4 dígitos
+Cada app escribe su propio archivo JSON en este mismo repo, rama `main`.
+Seguimiento y Resoluciones usan un protocolo simple (GET trae el archivo,
+POST lo reescribe entero — "última escritura gana"). Proyectos usa uno más
+rico, con sondeo de versión y concurrencia optimista (ver `CLAUDE.md`).
 
-## 🚀 Inicio Rápido
+## Deploy
 
-### Opción 1: Abrir directamente
+**Automático**: push a `main` → Cloudflare Workers Builds → `npx wrangler
+deploy` (sin build step). No hace falta tocar nada en Cloudflare para que un
+cambio de código llegue a producción, salvo la configuración inicial del
+Worker (una sola vez):
+
+1. En Cloudflare → tu Worker → **Settings → Runtime variables and secrets**
+   (⚠️ no en "Builds → Variables and secrets", esas no llegan al runtime):
+   cargar `GITHUB_TOKEN`, un Personal Access Token de GitHub con permiso
+   `repo` (o fine-grained con Contents: Read & write) sobre este repo.
+2. Verificar con `GET /api/health` → `tiene_github_token: true`,
+   `tiene_binding_assets: true`, `archivos` lista los tres JSON.
+3. `GET /api/sync`, `GET /api/sync-cartas` y `GET /api/sync-resoluciones` →
+   JSON, no error.
+
+**No edites `public/` esperando que otra cosa lo regenere** — acá `public/`
+es la fuente directa, no se genera desde ningún otro lado.
+
+## Dónde está el dato
+
+- `expedientes.json`, `cartas-intencion.json`, `resoluciones.json`: en la
+  raíz de este mismo repo, en `main`. El Worker es lo único que los escribe
+  (vía la API de GitHub); no se editan a mano salvo para corregir algo
+  puntual con cuidado.
+- No hay base de datos aparte, ni D1, ni KV: el historial de commits de este
+  repo **es** el respaldo.
+
+## Tests
+
 ```bash
-# Clonar o descargar el repositorio
-git clone https://github.com/tu-usuario/expedientes-crm.git
-cd expedientes-crm
-
-# Servir con Python (3.7+)
-python3 -m http.server 8000
-
-# O con Node
-npx http-server
+npm run test          # todo: ids + worker + ui
+npm run test:ids      # ids duplicados/huérfanos en cada HTML (rápido, sin navegador)
+npm run test:worker   # worker.js contra una API de GitHub mockeada
+npm run test:ui       # Playwright/Chromium real, desktop y mobile
 ```
 
-Luego abrir en navegador: `http://localhost:8000`
+Antes de dar por buena cualquier cambio de UI, abrilo en un navegador real
+(`test:ui` lo hace solo, contra un server local que imita al Worker — no
+toca producción). Ver `CLAUDE.md` para el detalle de qué cubre cada test.
 
-### Opción 2: GitHub Pages
-1. Fork este repositorio
-2. Ir a Settings → Pages
-3. Seleccionar "Deploy from a branch" → main
-4. Tu app estará en `https://tu-usuario.github.io/expedientes-crm`
+## Licencia
 
-### Opción 3: Instalable
-- Abrir en navegador móvil o desktop
-- Tocar "Instalar app" (depende del navegador)
-- Aparecerá en home screen/menú apps
-
-## 📐 Estructura
-
-```
-expedientes-crm/
-├── index.html       # App completa (HTML + CSS + JS)
-├── manifest.json    # Configuración PWA
-├── sw.js           # Service Worker
-├── README.md       # Este archivo
-└── LICENSE         # MIT License
-```
-
-## 🎨 Personalización
-
-### Cambiar colores del semáforo
-Edita en `index.html` (líneas ~30):
-```css
---red: #7f0000;      /* Cambiar rojo */
---yellow: #d5be00;   /* Cambiar amarillo */
---green: #336d0e;    /* Cambiar verde */
-```
-
-### Agregar feriados
-Edita el array `FERIADOS` en `index.html` (línea ~880):
-```javascript
-const FERIADOS = [
-  "2024-01-01",   // Año Nuevo
-  "2024-12-25",   // Navidad
-  // Agrega más aquí
-];
-```
-
-### Cambiar nombre/ícono
-Edita `manifest.json`:
-```json
-{
-  "name": "Tu Nombre",
-  "short_name": "Corto",
-  "theme_color": "#667eea"
-}
-```
-
-## 💾 Datos
-
-- **Ubicación**: LocalStorage del navegador
-- **Formato**: JSON
-- **Claves**:
-  - `expedientes_crm_expedientes`: Lista de expedientes
-  - `expedientes_crm_areas`: Áreas editables
-  - `expedientes_crm_responsables`: Responsables editables
-
-### Exportar datos
-Abre DevTools (F12) → Console y copia:
-```javascript
-console.log(JSON.parse(localStorage.getItem('expedientes_crm_expedientes')))
-```
-
-### Importar datos
-```javascript
-localStorage.setItem('expedientes_crm_expedientes', JSON.stringify([...]));
-location.reload();
-```
-
-## 🔧 Requisitos
-
-- Navegador moderno (Chrome, Firefox, Safari, Edge)
-- JavaScript habilitado
-- LocalStorage disponible
-
-## 🌍 Compatibilidad
-
-| Navegador | Desktop | Mobile |
-|-----------|---------|--------|
-| Chrome | ✅ | ✅ |
-| Firefox | ✅ | ✅ |
-| Safari | ✅ | ✅ |
-| Edge | ✅ | ✅ |
-
-## 📚 Guía de Uso
-
-### Crear expediente
-1. Toca botón **+** (móvil) o formulario en sidebar (desktop)
-2. Completa campos (el número es requerido con formato correcto)
-3. Toca **Guardar**
-
-### Editar expediente
-1. Toca tarjeta del expediente
-2. Modifica lo que necesites
-3. Agrega nota opcional (crea intervención con timestamp)
-4. Toca **Guardar**
-
-### Filtrar por área
-1. En panel superior, toca botón del área
-2. Se muestran solo expedientes de esa área
-3. Toca **Total** para ver todos
-
-### Administrar áreas/responsables
-1. En sidebar (desktop) o menú ☰ (móvil)
-2. Sección **⚙️ Configuración**
-3. Agrega con **+** o elimina con **✕**
-
-### Eliminar expediente
-1. Abre expediente
-2. Toca botón **Eliminar** (rojo)
-3. Confirma
-
-## 🐛 Problemas Comunes
-
-### "No aparecen mis cambios"
-→ Recarga la página (Ctrl+R)
-
-### "Los datos se borraron"
-→ Vacía cache (DevTools → Storage → Clear Site Data)
-
-### "No se instala como PWA"
-→ Debe estar en HTTPS (exceto localhost) y tener manifest.json
-
-### "El formato de expediente no valida"
-→ Usa exactamente: `(XXX – XXXXX/YYYY)`
-
-## 🤝 Contribuir
-
-1. Fork el repo
-2. Crea rama: `git checkout -b mejora/tu-mejora`
-3. Commit: `git commit -m "Agregar..."` 
-4. Push: `git push origin mejora/tu-mejora`
-5. Pull Request
-
-## 📄 Licencia
-
-MIT License - Ver archivo [LICENSE](LICENSE)
-
-## 👨‍💻 Desarrollado
-
-Claude Code | Anthropic
+MIT License — ver [LICENSE](LICENSE).
 
 ---
 
-**¿Preguntas o sugerencias?** Abre un [Issue](../../issues) en GitHub.
-
-## Deploy Status
-- Last updated: Mon Sep 28 15:20:57 UTC 2026
+**¿Preguntas o sugerencias?** Abrí un [Issue](../../issues) en GitHub.
