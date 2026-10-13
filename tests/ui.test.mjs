@@ -768,16 +768,27 @@ async function testProyectos(viewport, puerto) {
   let ultimoPost = null;
   const SHA = 'sha-fijo-de-prueba';
 
-  // Expediente sintético, bien por encima del umbral de archivado automático
-  // (132 días hábiles ≈ 6 meses hábiles): sirve para probar el archivado sin
-  // tocar el archivo real.
+  // Expedientes sintéticos, bien por encima del umbral de archivado
+  // automático (132 días hábiles ≈ 6 meses hábiles): sirven para probar el
+  // archivado sin tocar el archivo real. Uno Sin_tratamiento (debe
+  // archivarse) y uno En_tratamiento con la misma fecha vieja (NO debe
+  // archivarse — "en tratamiento" significa que alguien lo está trabajando,
+  // aunque no haya quedado nota en la app).
   const expedienteViejo = {
     id: 'exp_archivo_test', nro_expediente: '999-00000/2020-0',
     nombre_empresa: 'Archivable De Prueba S.A.', fecha_inicio: '01/01/2020',
     parque_industrial: 'Salta', rubro: 'Manufactura', situacion: 'Sin_tratamiento',
     fecha_ultimo_movimiento: '01/01/2020 00:00', intervenciones: []
   };
-  const datosConViejo = Object.assign({}, datos, { expedientes: [expedienteViejo, ...datos.expedientes] });
+  const expedienteEnTratamientoViejo = {
+    id: 'exp_no_archivo_test', nro_expediente: '999-00001/2020-0',
+    nombre_empresa: 'No Archivable En Tratamiento S.A.', fecha_inicio: '01/01/2020',
+    parque_industrial: 'Salta', rubro: 'Manufactura', situacion: 'En_tratamiento',
+    fecha_ultimo_movimiento: '01/01/2020 00:00', intervenciones: []
+  };
+  const datosConViejo = Object.assign({}, datos, {
+    expedientes: [expedienteViejo, expedienteEnTratamientoViejo, ...datos.expedientes]
+  });
 
   const server = http.createServer((req, res) => {
     if (req.url.startsWith('/api/version-cartas')) {
@@ -829,11 +840,15 @@ async function testProyectos(viewport, puerto) {
   ok(activosInicial + archivadosInicial === totalServido,
      `listado (${activosInicial}) + archivo (${archivadosInicial}) suman los ${totalServido} expedientes servidos`);
   ok((await page.locator('#archivoList').textContent()).includes('Archivable De Prueba'),
-     'el expediente sintético (último movimiento en 2020) está en Archivo');
+     'el expediente sintético Sin_tratamiento (último movimiento en 2020) está en Archivo');
+  ok(!(await page.locator('#archivoList').textContent()).includes('No Archivable En Tratamiento'),
+     'el expediente sintético En_tratamiento NO entra a Archivo aunque tenga la misma fecha vieja');
   ok((await page.locator('#archivoList').textContent()).includes('Archivado el'),
      'las tarjetas en Archivo muestran la fecha de archivado');
   await page.click('#tabList');
   await page.waitForSelector('#expList');
+  ok((await page.locator('.exp-card', { hasText: 'No Archivable En Tratamiento' }).count()) === 1,
+     'el expediente En_tratamiento sigue en el listado normal');
 
   // Dashboard: las 5 secciones que reemplazaron a las tarjetas sueltas.
   await page.click('#tabDash');
