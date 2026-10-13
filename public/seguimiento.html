@@ -12,6 +12,13 @@
   <link rel="icon" type="image/svg+xml" href="/icon.svg">
   <link rel="apple-touch-icon" href="/icon.svg">
   <title>Expedientes CRM</title>
+  <script>
+  // Aplicado antes del primer paint para no parpadear a oscuro si el usuario ya lo eligió.
+  (function(){
+    var saved = localStorage.getItem("seguimiento_crm_theme_v1");
+    if(saved==="dark") document.documentElement.setAttribute("data-theme","dark");
+  })();
+  </script>
   <style>
     :root {
       --primary: #667eea;
@@ -150,6 +157,10 @@
         background: var(--gray-100);
       }
     }
+    :where([data-theme="dark"]) .header {
+        background: var(--gray-100);
+      }
+
 
     .header-title {
       font-size: 18px;
@@ -220,6 +231,10 @@
         background: var(--gray-100);
       }
     }
+    :where([data-theme="dark"]) .pestanas {
+        background: var(--gray-100);
+      }
+
 
     .pestana-btn {
       flex: 1;
@@ -256,6 +271,10 @@
         background: var(--gray-100);
       }
     }
+    :where([data-theme="dark"]) .panel-areas {
+        background: var(--gray-100);
+      }
+
 
     .panel-areas-title {
       font-size: 11px;
@@ -298,6 +317,11 @@
         border-color: var(--gray-300);
       }
     }
+    :where([data-theme="dark"]) .area-btn {
+        background: var(--gray-200);
+        border-color: var(--gray-300);
+      }
+
 
     .area-btn:hover {
       border-color: var(--primary);
@@ -321,6 +345,10 @@
         background: var(--gray-100);
       }
     }
+    :where([data-theme="dark"]) .search-box {
+        background: var(--gray-100);
+      }
+
 
     .search-input {
       width: 100%;
@@ -339,6 +367,11 @@
         border-color: var(--gray-300);
       }
     }
+    :where([data-theme="dark"]) .search-input {
+        background: var(--gray-200);
+        border-color: var(--gray-300);
+      }
+
 
     .search-input:focus {
       outline: none;
@@ -373,6 +406,10 @@
         background: var(--gray-100);
       }
     }
+    :where([data-theme="dark"]) .expediente-card {
+        background: var(--gray-100);
+      }
+
 
     .expediente-card:hover {
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -499,6 +536,10 @@
         background: var(--gray-100);
       }
     }
+    :where([data-theme="dark"]) .expediente-card-new {
+        background: var(--gray-100);
+      }
+
 
     .expediente-card-new:hover {
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
@@ -684,6 +725,10 @@
         background: var(--gray-200);
       }
     }
+    :where([data-theme="dark"]) .nota-item {
+        background: var(--gray-200);
+      }
+
 
     .nota-hora {
       font-size: 10px;
@@ -743,7 +788,7 @@
     }
 
     .fab:hover {
-      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+      box-shadow: 0 8px 18px rgba(102, 126, 234, 0.45);
     }
 
     /* Modal */
@@ -772,14 +817,19 @@
       max-height: 80vh;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 20px 25px rgba(0,0,0,0.15);
+      box-shadow: 0 8px 20px -8px rgba(0,0,0,0.3);
     }
+    /* Techo del sistema de diseño: nada en la app debería pasar de esta magnitud (shadow-md) */
 
     @media (prefers-color-scheme: dark) {
       .modal {
         background: var(--gray-100);
       }
     }
+    :where([data-theme="dark"]) .modal {
+        background: var(--gray-100);
+      }
+
 
     .modal-header {
       padding: 16px;
@@ -855,6 +905,11 @@
         border-color: var(--gray-300);
       }
     }
+    :where([data-theme="dark"]) .form-input, :where([data-theme="dark"]) .form-select, :where([data-theme="dark"]) .form-textarea {
+        background: var(--gray-200);
+        border-color: var(--gray-300);
+      }
+
 
     .form-input:focus,
     .form-select:focus,
@@ -987,7 +1042,7 @@
       background: #1f2937;
       color: #f9fafb;
       font-size: 14px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+      box-shadow: 0 8px 20px -6px rgba(0,0,0,0.3);
     }
 
     .toast[hidden] {
@@ -1015,6 +1070,9 @@
       .toast { background: #f3f4f6; color: #111827; }
       .toast-accion { color: #4338ca; }
     }
+    :where([data-theme="dark"]) .toast { background: #f3f4f6; color: #111827; }
+    :where([data-theme="dark"]) .toast-accion { color: #4338ca; }
+
 
     :focus-visible {
       outline: 2px solid var(--primary);
@@ -1085,7 +1143,7 @@
       max-height: 85vh;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+      box-shadow: 0 8px 20px -8px rgba(0,0,0,0.3);
     }
 
     @media (prefers-color-scheme: dark) {
@@ -1093,6 +1151,10 @@
         background: var(--gray-100);
       }
     }
+    :where([data-theme="dark"]) .config-modal {
+        background: var(--gray-100);
+      }
+
 
     .config-header {
       padding: 24px;
@@ -1197,6 +1259,10 @@
         background: var(--gray-200);
       }
     }
+    :where([data-theme="dark"]) .config-item {
+        background: var(--gray-200);
+      }
+
 
     .config-item span {
       flex: 1;
@@ -1242,6 +1308,11 @@
         border-color: var(--gray-300);
       }
     }
+    :where([data-theme="dark"]) .config-input-group input {
+        background: var(--gray-200);
+        border-color: var(--gray-300);
+      }
+
 
     .config-input-group button {
       padding: 10px 16px;
@@ -1276,15 +1347,27 @@
     .header-btn:hover {
       background: var(--gray-200);
     }
+
+    /* Breadcrumb EGPAIS — mismo patrón que proyectos.html/resoluciones.html/parques.html */
+    .eyebrow-bar {
+      font-size: 11px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 600;
+      padding: 2px 16px 8px;
+    }
   </style>
 </head>
 <body>
   <a class="volver" href="/index.html">&larr; Inicio</a>
+  <div class="eyebrow-bar">EGPAIS · Seguimiento</div>
   <div class="app">
     <div class="sticky-top">
       <header class="header">
         <h1 class="header-title">📋 Expedientes</h1>
         <span role="status" aria-live="polite"><button type="button" class="sync-indicator sync-pending" id="syncIndicator" title="Tocar para sincronizar ahora">⏳ Sincronizando...</button></span>
+        <button class="header-btn" id="btnTheme" title="Cambiar a modo oscuro" aria-label="Cambiar a modo oscuro">🌙</button>
         <button class="header-btn" id="btnConfig" title="Configuración" aria-label="Configuración">⚙️</button>
       </header>
 
@@ -2413,6 +2496,26 @@
         guardarExpediente();
       }
     });
+
+    // ---- Tema claro/oscuro ----
+    (function(){
+      var THEME_KEY = "seguimiento_crm_theme_v1";
+      var btnTheme = document.getElementById("btnTheme");
+      function applyThemeButton(){
+        var dark = document.documentElement.getAttribute("data-theme")==="dark";
+        btnTheme.textContent = dark ? "☀️" : "🌙";
+        var label = dark ? "Cambiar a modo claro" : "Cambiar a modo oscuro";
+        btnTheme.title = label;
+        btnTheme.setAttribute("aria-label", label);
+      }
+      btnTheme.addEventListener("click", function(){
+        var dark = document.documentElement.getAttribute("data-theme")==="dark";
+        if(dark){ document.documentElement.removeAttribute("data-theme"); localStorage.setItem(THEME_KEY,"light"); }
+        else { document.documentElement.setAttribute("data-theme","dark"); localStorage.setItem(THEME_KEY,"dark"); }
+        applyThemeButton();
+      });
+      applyThemeButton();
+    })();
 
     // Config Modal Events
     document.getElementById('btnConfig').addEventListener('click', abrirConfigModal);
