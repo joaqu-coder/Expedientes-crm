@@ -255,7 +255,15 @@
       "contacto_tel": "",
       "contacto_mail": "",
       "fecha_ultimo_movimiento": "31/03/2026",
-      "intervenciones": []
+      "intervenciones": [
+        {
+          "hora": "13/10/2026 09:08",
+          "texto": "Archivado automáticamente: superó los 6 meses hábiles sin tratamiento.",
+          "tipo": "sistema"
+        }
+      ],
+      "archivado": true,
+      "fecha_archivado": "13/10/2026 09:08"
     },
     {
       "id": "exp_imp015",
