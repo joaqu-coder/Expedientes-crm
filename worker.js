@@ -12,6 +12,8 @@
  * POST /api/sync              -> sobreescribe expedientes.json
  * GET  /api/sync-resoluciones -> devuelve resoluciones.json (Resoluciones)
  * POST /api/sync-resoluciones -> sobreescribe resoluciones.json
+ * GET  /api/sync-parques      -> devuelve parques.json (Parques — lotes/empresas de Güemes)
+ * POST /api/sync-parques      -> sobreescribe parques.json
  * GET  /api/version-cartas    -> sha de cartas-intencion.json, para el sondeo
  * GET  /api/sync-cartas       -> devuelve cartas-intencion.json (Proyectos)
  * POST /api/sync-cartas       -> sobreescribe cartas-intencion.json (con
@@ -45,6 +47,11 @@ const APPS = {
     archivo: 'resoluciones.json',
     nombre: 'resoluciones',
     vacio: { resoluciones: [] }
+  },
+  '/api/sync-parques': {
+    archivo: 'parques.json',
+    nombre: 'parques',
+    vacio: { parque: 'Güemes', empresas: [], lotes: [], ocupaciones: [], reservas: [] }
   }
 };
 

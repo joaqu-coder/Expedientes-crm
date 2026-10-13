@@ -1,8 +1,8 @@
 # Expedientes CRM — Instrucciones del agente
 
-Tres apps (Seguimiento, Proyectos y Resoluciones) detrás de una landing, con
-un único Cloudflare Worker propio que sincroniza contra GitHub sin exponer
-ningún token al navegador.
+Cuatro apps (Seguimiento, Proyectos, Resoluciones y Parques) detrás de una
+landing, con un único Cloudflare Worker propio que sincroniza contra GitHub
+sin exponer ningún token al navegador.
 
 **Leé `.claude-state.json` al empezar.** Tiene el estado de la última sesión y
 lo que quedó pendiente. Actualizalo al cerrar.
@@ -18,27 +18,29 @@ línea de la lógica ya auditada de otra: nada de mezclar los dos DOMs, los dos
 espacios de `id`, ni los dos `localStorage`.
 
 ```
-public/index.html        ← landing: tres tarjetas, Seguimiento / Proyectos / Resoluciones
+public/index.html        ← landing: cuatro tarjetas, Seguimiento / Proyectos / Resoluciones / Parques
 public/seguimiento.html  ← la app de expedientes (la de siempre; antes era index.html)
 public/proyectos.html    ← cartas de intención de parques industriales (EGPAIS)
 public/resoluciones.html ← resoluciones del Directorio (archivo histórico 2012-2025)
+public/parques.html      ← lotes y empresas instaladas en los parques (hoy: solo Güemes)
 
-Navegador (seguimiento)      Navegador (proyectos)         Navegador (resoluciones)
-    │  /api/sync                 │  /api/sync-cartas            │  /api/sync-resoluciones
-    │                            │  /api/version-cartas (sondeo)│
-    ▼                            ▼                               ▼
-            Cloudflare Worker (worker.js)      ← GITHUB_TOKEN, como secret, compartido
-                    │  api.github.com
-                    ▼
-    expedientes.json      cartas-intencion.json      resoluciones.json  ← mismo repo
+Navegador (seguimiento)   Navegador (proyectos)      Navegador (resoluciones)  Navegador (parques)
+    │  /api/sync              │  /api/sync-cartas         │  /api/sync-resoluciones  │  /api/sync-parques
+    │                         │  /api/version-cartas (sondeo)                        │
+    ▼                         ▼                            ▼                         ▼
+              Cloudflare Worker (worker.js)      ← GITHUB_TOKEN, como secret, compartido
+                      │  api.github.com
+                      ▼
+    expedientes.json   cartas-intencion.json   resoluciones.json   parques.json  ← mismo repo
 ```
 
 - **El token nunca está en el navegador.** Un solo Worker, un solo
-  `GITHUB_TOKEN`, usado por las tres apps — así se evita repetir todo el setup
-  del secret si se suma una app nueva acá en vez de un Worker aparte.
+  `GITHUB_TOKEN`, usado por las cuatro apps — así se evita repetir todo el
+  setup del secret si se suma una app nueva acá en vez de un Worker aparte.
 - **Cada app tiene su propio archivo de datos.** `expedientes.json` para
   Seguimiento, `cartas-intencion.json` para Proyectos, `resoluciones.json`
-  para Resoluciones. Nunca se mezclan en un mismo POST.
+  para Resoluciones, `parques.json` para Parques. Nunca se mezclan en un
+  mismo POST.
 - **Proyectos usa un protocolo distinto, más rico, que las otras dos.**
   Seguimiento y Resoluciones son "última escritura gana" vía el patrón
   `APPS`/`manejarSync` en `worker.js` (simple: un GET, un POST). Proyectos
@@ -72,6 +74,8 @@ Navegador (seguimiento)      Navegador (proyectos)         Navegador (resolucion
 | `POST /api/sync-cartas` | Reescribe `cartas-intencion.json`. Si el cliente manda `_baseSha` y no coincide con el sha actual, responde **409** con el contenido real en vez de pisarlo. |
 | `GET /api/sync-resoluciones` | Devuelve `resoluciones.json` (Resoluciones). Igual que arriba si no existe. |
 | `POST /api/sync-resoluciones` | Reescribe `resoluciones.json` (~320 KB: el archivo histórico entero). |
+| `GET /api/sync-parques` | Devuelve `parques.json` (Parques: lotes/empresas de Güemes). Si no existe, devuelve listas vacías. |
+| `POST /api/sync-parques` | Reescribe `parques.json`. Protocolo simple (como Resoluciones), no el de Proyectos. |
 | `GET /api/health` | Diagnóstico: `tiene_github_token`, `tiene_binding_assets`, `claves_env`, `archivos`. **Nunca expone el valor del secret.** |
 
 Cuando algo falle, `/api/health` primero. Dice qué ve el runtime sin adivinar.
@@ -247,6 +251,72 @@ prueba: es el registro, y se muestra tal como vino.
   separar el texto resolutivo, no borrar historia.
 
 ---
+
+## Parques: lotes y empresas de Güemes
+
+Pedido del usuario (2026-10-13): una cuarta tarjeta para gestionar lotes y
+contactos de las empresas instaladas en los parques industriales. **Alcance
+explícito de esta sesión: solo Güemes.** Rosario de la Frontera y los demás
+parques quedaron afuera a pedido del usuario ("Solo güemes") — no asumir que
+lo que sigue generaliza a otro parque sin volver a normalizar con él primero.
+
+- **El dato no vino de las planillas de Google Drive.** Se exploraron
+  ("Sistema güemes", "Contactos PI Salta", " Lotes ") y resultaron
+  inconsistentes entre sí y dentro de la misma planilla (columnas corridas,
+  dos tablas distintas pegadas una al lado de la otra en la misma hoja). El
+  usuario las estaba normalizando aparte y subió el resultado como una base
+  **SQLite** (`parques_industriales.db`), con un schema relacional ya
+  limpio: `empresas`, `lotes` (con `id_empresa` opcional — `NULL` es lote
+  libre o pendiente de revisión), `ocupaciones` (sublocación: titular ≠
+  ocupante), `reservas` y `historial_cambios` (estas dos últimas, vacías por
+  ahora). `parques.json` es el dump de esas tablas, no una reconstrucción a
+  mano de las planillas.
+- **Verificar la procedencia antes de cargar, no asumir.** El usuario dijo
+  "aquí desplegaremos parque Salta" al subir la base, pero el contenido real
+  (V8 Productos de Hormigón, AGSOF, Alimar, Alimentos Sofía — las mismas
+  empresas de "Sistema güemes") es inequívocamente Güemes. Se confirmó con
+  el usuario antes de tocar nada: "Parque Salta" es el nombre del
+  despliegue/sistema, no un parque distinto. La base es de Güemes.
+- **Normalización aplicada al importar** (único trabajo de transformación de
+  esta sesión; el resto ya venía limpio de la base del usuario): la columna
+  `estado` de `lotes` tenía mayúsculas y variantes inconsistentes
+  (`Activa`/`activa`, `Alquilada`/`alquilada`/`Alquila`, `Sin actividad`/
+  `Sin Actividad`/`sin actividad`, `Construccion`/`En construccion`) —
+  colapsadas a 4 valores: `Activa`, `Sin actividad`, `Alquilada`,
+  `En construcción`. Un valor `"No"` en el lote `L048` quedó en `null`: no
+  es una categoría real, coincide con el valor de `escritura` de esa misma
+  fila (parece un desplazamiento de columna en el origen, no un dato
+  válido) — no se inventó un significado para no repetir el error de
+  Resoluciones de clasificar a ojo.
+- **`disponible` ya resuelve lo que en las planillas de Drive era
+  `"LIBRE: BUSQUIN"` / `"LIBRE: FORTE"` / etc.** en la columna de empresa
+  (lotes desadjudicados que vuelven a la cartera comercial, ver
+  "Comercial Güemes" en las planillas originales). La base SQLite ya trae
+  esto resuelto como `id_empresa: null` + `disponible: 1/0`, así que esa
+  normalización no se reimplementó a mano — se importó tal cual.
+- **Protocolo simple, no el de Proyectos.** `/api/sync-parques` es
+  GET/POST última-escritura-gana, igual que Seguimiento/Resoluciones. Esto
+  es inventario de baja frecuencia de edición (altas/bajas de empresas y
+  lotes, no un flujo diario con dos dispositivos pisándose), así que no
+  justifica el sondeo de versión + concurrencia optimista de Proyectos. Si
+  algún día hace falta, es generalizar `manejarSyncCartas`, como ya dice la
+  sección de arquitectura arriba.
+- **UI**: pestañas Lotes (filtro por estado/manzana/disponible + búsqueda,
+  ficha con la empresa titular y, si corresponde, la empresa que sublocó el
+  lote vía `ocupaciones`), Empresas (directorio con contacto, lista de
+  lotes de cada una) y Dashboard (totales, superficie, lotes por estado).
+  Mismo patrón de modal/esc()/tabs por hash que las otras tres apps.
+- **`ocupaciones` y `reservas` son de solo lectura en esta primera versión.**
+  La ficha de un lote sublocado muestra quién lo ocupa, pero no hay UI
+  todavía para crear o cerrar una ocupación, ni para `reservas` (la tabla
+  existe en el schema, llega vacía). Agregar cuando el usuario lo pida.
+- **Test**: `testParques()` en `tests/ui.test.mjs` corre contra los 138
+  lotes y 55 empresas reales (no son datos de ejemplo, igual que
+  Resoluciones) — filtros, búsqueda cruzando a la empresa, ficha con
+  titularidad y sublocación, edición con UTF-8 intacto, y dashboard. Los
+  conteos (138, 55) están hardcodeados a propósito: es el archivo de
+  referencia real, no una cifra que cambie por una regla de negocio como el
+  archivado de Proyectos.
 
 ## Formato del número de expediente
 
