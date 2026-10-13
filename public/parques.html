@@ -553,7 +553,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
       return;
     }
     cont.innerHTML = filtradas.map(function(e){
-      var nLotes = lotesDeEmpresa(e.id_empresa).length;
       var totalM2 = empresaTotalM2(e.id_empresa);
       var sub = [e.rubro, e.contacto_nombre].filter(Boolean).join(" · ");
       return '<button class="tarjeta" data-open-empresa="'+esc(e.id_empresa)+'">'+
@@ -565,7 +564,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
             (sub?'<div class="tarjeta-sub">'+esc(sub)+'</div>':'')+
           '</div>'+
         '</div>'+
-        '<div class="tarjeta-aside"><span class="badge" style="background:var(--c1-bg);color:var(--c1)">'+nLotes+' lote'+(nLotes===1?'':'s')+'</span></div>'+
         '</button>';
     }).join("");
     cont.querySelectorAll("[data-open-empresa]").forEach(function(btn){
