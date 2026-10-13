@@ -26,6 +26,7 @@
   --bg:#f9fafb; --surface:#ffffff; --surface-2:#f3f4f6; --border:#e5e7eb;
   --fg:#1f2937; --muted:#6b7280; --accent:#667eea; --accent-fg:#ffffff;
   --danger:#a1392c; --danger-bg:#f7e2dd;
+  --warn:#a8650f; --warn-bg:#fbead0;
   --c1:#667eea; --c1-bg:#e7e9fb;
   --c2:#2f7a3c; --c2-bg:#e4f3e5;
   --c3:#a8650f; --c3-bg:#fbead0;
@@ -40,6 +41,7 @@
   --bg:#141414; --surface:#1d1d1d; --surface-2:#262625; --border:#38372f;
   --fg:#efece2; --muted:#a39d87; --accent:#667eea; --accent-fg:#ffffff;
   --danger:#d26a5c; --danger-bg:#301e1b;
+  --warn:#e8a33d; --warn-bg:#2d2311;
   --c1:#8f9ff2; --c1-bg:#242a4d;
   --c2:#5fae6b; --c2-bg:#1b2a1c;
   --c3:#e8a33d; --c3-bg:#2d2311;
@@ -85,7 +87,21 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .lista{display:flex;flex-direction:column;gap:8px}
 .tarjeta{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;cursor:pointer;text-align:left;width:100%}
 .tarjeta:hover{border-color:var(--accent)}
+.tarjeta-row{display:flex;align-items:center;gap:10px;min-width:0}
 .tarjeta-main{min-width:0}
+
+/* Avatar con iniciales: no hay logos reales cargados, así que es texto,
+   no una imagen. Mismo color de acento que el resto de la suite. */
+.avatar{flex:0 0 auto;width:36px;height:36px;border-radius:50%;background:var(--c1-bg);color:var(--c1);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:var(--font-display)}
+.avatar.lg{width:44px;height:44px;font-size:15px}
+
+/* Bloque "a revisar": inconsistencia conocida del dato de origen (Excel de
+   Güemes), no un error de la app — ámbar, no rojo. */
+.view-section.revisar{background:var(--warn-bg);border:1px solid var(--warn);border-radius:10px;padding:11px 12px;margin-top:14px}
+.view-section.revisar h3{color:var(--warn)}
+.view-section.revisar p{font-size:12.5px;line-height:1.5;margin:0 0 6px}
+.view-section.revisar p:last-child{margin-bottom:0}
+.view-section.revisar a{color:inherit;font-weight:600}
 .tarjeta-title{font-size:15px;font-weight:700}
 .tarjeta-sub{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.4}
 .tarjeta-count{font-size:12px;color:var(--muted);margin-bottom:12px;font-variant-numeric:tabular-nums}
@@ -208,6 +224,18 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     <h3>Lotes por estado</h3>
     <div id="dashEstados"></div>
   </div>
+  <div class="dash-section">
+    <h3>Escrituración</h3>
+    <div id="dashEscrituracion"></div>
+  </div>
+  <div class="dash-section">
+    <h3>Empresas por superficie ocupada</h3>
+    <div id="dashRankingEmpresas"></div>
+  </div>
+  <div class="dash-section">
+    <h3>Por rubro</h3>
+    <div id="dashRubros"></div>
+  </div>
 </section>
 
 <div class="veil" id="veil" hidden><div class="modal" id="modal"></div></div>
@@ -236,6 +264,49 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   function fmtM2(n){
     if(n==null || n==="") return "—";
     return Number(n).toLocaleString("es-AR")+" m²";
+  }
+
+  // Iniciales para el avatar: no hay logos cargados. Toma la primera letra
+  // de hasta 2 palabras significativas (ignora S.A./S.R.L./LTDA y artículos).
+  var PALABRAS_IGNORADAS = /^(s\.?a\.?|s\.?r\.?l\.?|ltda\.?|de|del|la|el|los|las|y)$/i;
+  function iniciales(nombre){
+    var palabras = String(nombre||"").trim().split(/\s+/).filter(function(w){
+      return w && !PALABRAS_IGNORADAS.test(w);
+    });
+    if(!palabras.length) return "—";
+    if(palabras.length===1) return palabras[0].slice(0,2).toUpperCase();
+    return (palabras[0].charAt(0)+palabras[1].charAt(0)).toUpperCase();
+  }
+
+  // Normaliza un nombre de empresa para detectar posibles duplicados: sin
+  // acentos, sin razón social (S.A./S.R.L.), sin puntuación.
+  function normEmpresa(s){
+    return String(s||"")
+      .toUpperCase()
+      .normalize("NFD").replace(/[̀-ͯ]/g,"")
+      .replace(/\b(S\.?\s?A\.?|S\.?\s?R\.?\s?L\.?|LTDA\.?)\b/g,"")
+      .replace(/[^A-Z0-9 ]/g,"")
+      .replace(/\s+/g," ")
+      .trim();
+  }
+  function empresasSimilares(e){
+    var n = normEmpresa(e.nombre_empresa);
+    if(!n) return [];
+    return state.empresas.filter(function(o){
+      if(o.id_empresa===e.id_empresa) return false;
+      var on = normEmpresa(o.nombre_empresa);
+      return !!on && (on===n || on.indexOf(n+" ")===0 || n.indexOf(on+" ")===0);
+    });
+  }
+
+  // Lotes con la misma matrícula pero distinto titular: no necesariamente un
+  // error de carga (puede ser un caso que `ocupaciones` ya explica), pero
+  // vale la pena marcarlo para revisar antes de asumir cualquier cosa.
+  function lotesConMatriculaCompartida(lote){
+    if(!lote.matricula) return [];
+    return state.lotes.filter(function(o){
+      return o.id_lote!==lote.id_lote && o.matricula && o.matricula===lote.matricula && o.id_empresa!==lote.id_empresa;
+    });
   }
 
   // IDs nuevos siguen el esquema del dato real (E001, L001…) en vez de un
@@ -458,9 +529,12 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
       var nLotes = lotesDeEmpresa(e.id_empresa).length;
       var sub = [e.rubro, e.contacto_nombre].filter(Boolean).join(" · ");
       return '<button class="tarjeta" data-open-empresa="'+esc(e.id_empresa)+'">'+
-        '<div class="tarjeta-main">'+
-          '<div class="tarjeta-title">'+esc(e.nombre_empresa)+'</div>'+
-          (sub?'<div class="tarjeta-sub">'+esc(sub)+'</div>':'')+
+        '<div class="tarjeta-row">'+
+          '<div class="avatar">'+esc(iniciales(e.nombre_empresa))+'</div>'+
+          '<div class="tarjeta-main">'+
+            '<div class="tarjeta-title">'+esc(e.nombre_empresa)+'</div>'+
+            (sub?'<div class="tarjeta-sub">'+esc(sub)+'</div>':'')+
+          '</div>'+
         '</div>'+
         '<div class="tarjeta-aside"><span class="badge" style="background:var(--c1-bg);color:var(--c1)">'+nLotes+' lote'+(nLotes===1?'':'s')+'</span></div>'+
         '</button>';
@@ -505,6 +579,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     var titular = empresaPorId(l.id_empresa);
     var ocup = ocupacionDeLote(l.id_lote);
     var ocupante = ocup ? empresaPorId(ocup.id_empresa_ocupante) : null;
+    var compartida = lotesConMatriculaCompartida(l);
 
     modal.innerHTML =
       '<div class="modal-head"><button class="x-close" id="xCloseViewLote">&times;</button></div>'+
@@ -539,6 +614,17 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
           '</div></div>'
         : '')+
 
+      (compartida.length
+        ? '<div class="view-section revisar"><h3>A revisar</h3>'+
+            '<p>La matrícula '+esc(l.matricula)+' también aparece en '+
+            compartida.map(function(o){
+              var ot = empresaPorId(o.id_empresa);
+              return '<a href="#" data-goto-lote="'+esc(o.id_lote)+'">'+esc(o.id_lote)+'</a>'+(ot?' ('+esc(ot.nombre_empresa)+')':'');
+            }).join(", ")+
+            ' con otro titular. Puede ser que `ocupaciones` ya lo explique (titular de la matrícula ≠ empresa que ocupa el lote) — revisar antes de asumir que es un error de carga.</p>'+
+          '</div>'
+        : '')+
+
       '<div class="view-actions">'+
         '<button type="button" class="btn-view-action" id="btnEditLote">'+ICON_EDIT+'Editar</button>'+
         '<button type="button" class="btn-view-action" id="btnDeleteViewLote">'+ICON_TRASH+'Eliminar</button>'+
@@ -549,6 +635,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     document.getElementById("btnDeleteViewLote").addEventListener("click", onDeleteLote);
     modal.querySelectorAll("[data-goto-empresa]").forEach(function(a){
       a.addEventListener("click", function(ev){ ev.preventDefault(); openModal("empresa", a.getAttribute("data-goto-empresa")); });
+    });
+    modal.querySelectorAll("[data-goto-lote]").forEach(function(a){
+      a.addEventListener("click", function(ev){ ev.preventDefault(); openModal("lote", a.getAttribute("data-goto-lote")); });
     });
   }
 
@@ -625,10 +714,22 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   function renderEmpresaView(e){
     var lotes = lotesDeEmpresa(e.id_empresa);
     var contactoLinea = [e.contacto_nombre, e.cargo].filter(Boolean).join(" · ");
+    var similares = empresasSimilares(e);
     modal.innerHTML =
       '<div class="modal-head"><button class="x-close" id="xCloseViewEmp">&times;</button></div>'+
-      '<div class="view-head"><div><div class="view-title">'+esc(e.nombre_empresa)+'</div>'+
-        (e.cuit?'<div class="view-sub">CUIT '+esc(e.cuit)+'</div>':'')+'</div></div>'+
+      '<div class="view-head"><div class="tarjeta-row">'+
+        '<div class="avatar lg">'+esc(iniciales(e.nombre_empresa))+'</div>'+
+        '<div><div class="view-title">'+esc(e.nombre_empresa)+'</div>'+
+        (e.cuit?'<div class="view-sub">CUIT '+esc(e.cuit)+'</div>':'')+'</div>'+
+      '</div></div>'+
+
+      (similares.length
+        ? '<div class="view-section revisar"><h3>A revisar</h3>'+
+            '<p>Puede ser la misma razón social cargada dos veces: '+
+            similares.map(function(s){ return '<a href="#" data-goto-empresa="'+esc(s.id_empresa)+'">'+esc(s.nombre_empresa)+'</a>'; }).join(", ")+
+            '. Confirmá si corresponde fusionarlas antes de seguir cargando lotes a cualquiera de las dos.</p>'+
+          '</div>'
+        : '')+
 
       '<div class="view-section"><h3>Actividad</h3>'+
         '<div class="view-grid">'+
@@ -672,6 +773,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     document.getElementById("btnDeleteViewEmp").addEventListener("click", onDeleteEmpresa);
     modal.querySelectorAll("[data-goto-lote]").forEach(function(a){
       a.addEventListener("click", function(ev){ ev.preventDefault(); openModal("lote", a.getAttribute("data-goto-lote")); });
+    });
+    modal.querySelectorAll("[data-goto-empresa]").forEach(function(a){
+      a.addEventListener("click", function(ev){ ev.preventDefault(); openModal("empresa", a.getAttribute("data-goto-empresa")); });
     });
   }
 
@@ -765,16 +869,55 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
       return '<div class="kpi-card"><div class="n">'+kv[1]+'</div><div class="l">'+esc(kv[0])+'</div></div>';
     }).join("");
 
+    renderBarras("dashEstados", lotesPorEstado(lotes), function(k){
+      return k==="Sin dato" ? "var(--muted)" : "var(--"+claseEstado(k)+")";
+    });
+
+    renderBarras("dashEscrituracion", lotesPorEscritura(lotes), function(k){
+      return k==="Escriturada" ? "var(--c2)" : k==="No escriturada" ? "var(--warn)" : "var(--muted)";
+    });
+
+    var ranking = state.empresas.map(function(e){
+      var sup = lotesDeEmpresa(e.id_empresa).reduce(function(s,l){ return s+(Number(l.superficie_m2)||0); }, 0);
+      return { label: e.nombre_empresa, n: sup };
+    }).filter(function(r){ return r.n>0; }).sort(function(a,b){ return b.n-a.n; }).slice(0,8);
+    renderBarras("dashRankingEmpresas", ranking, function(){ return "var(--c1)"; }, fmtM2);
+
+    var porRubro = {};
+    state.empresas.forEach(function(e){ var k=e.rubro||"Sin rubro"; porRubro[k]=(porRubro[k]||0)+1; });
+    renderBarras("dashRubros", Object.keys(porRubro).map(function(k){ return {label:k, n:porRubro[k]}; }), function(k){
+      return k==="Sin rubro" ? "var(--muted)" : "var(--c4)";
+    });
+  }
+
+  // {label,n} -> fila con barra proporcional al máximo del propio grupo.
+  // fmt formatea el valor mostrado (por defecto el número tal cual); color
+  // recibe la etiqueta y devuelve el color de la barra.
+  function lotesPorEstado(lotes){
     var porEstado = {};
     lotes.forEach(function(l){ var k=l.estado||"Sin dato"; porEstado[k]=(porEstado[k]||0)+1; });
-    var max = Math.max.apply(null, Object.values(porEstado).concat([1]));
-    document.getElementById("dashEstados").innerHTML = Object.keys(porEstado).sort(function(a,b){return porEstado[b]-porEstado[a];}).map(function(k){
-      var n = porEstado[k];
-      var color = k==="Sin dato" ? "var(--muted)" : "var(--"+claseEstado(k)+")";
-      return '<div class="barra-row"><div class="barra-label">'+esc(k)+'</div>'+
-        '<div class="barra-track"><div class="barra-fill" style="width:'+Math.round(n/max*100)+'%;background:'+color+'"></div></div>'+
-        '<div class="barra-val">'+n+'</div></div>';
-    }).join("");
+    return Object.keys(porEstado).map(function(k){ return {label:k, n:porEstado[k]}; });
+  }
+  function claseEscritura(v){
+    var s = String(v||"").trim().toLowerCase();
+    if(!s) return "Sin dato";
+    if(s.charAt(0)==="s") return "Escriturada";
+    if(s.charAt(0)==="n") return "No escriturada";
+    return "Sin dato";
+  }
+  function lotesPorEscritura(lotes){
+    var porEsc = {};
+    lotes.forEach(function(l){ var k=claseEscritura(l.escritura); porEsc[k]=(porEsc[k]||0)+1; });
+    return Object.keys(porEsc).map(function(k){ return {label:k, n:porEsc[k]}; });
+  }
+  function renderBarras(elId, filas, colorFn, fmtFn){
+    filas = filas.slice().sort(function(a,b){ return b.n-a.n; });
+    var max = Math.max.apply(null, filas.map(function(f){return f.n;}).concat([1]));
+    document.getElementById(elId).innerHTML = filas.length ? filas.map(function(f){
+      return '<div class="barra-row"><div class="barra-label">'+esc(f.label)+'</div>'+
+        '<div class="barra-track"><div class="barra-fill" style="width:'+Math.round(f.n/max*100)+'%;background:'+colorFn(f.label)+'"></div></div>'+
+        '<div class="barra-val">'+esc(fmtFn ? fmtFn(f.n) : f.n)+'</div></div>';
+    }).join("") : '<div class="view-empty">Sin datos.</div>';
   }
 
   // ---- Tabs / routing ----
