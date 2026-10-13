@@ -270,16 +270,20 @@
       "representante_nombre": "Jorge Ernesto Cein",
       "contacto_tel": "38708032014",
       "contacto_mail": "jorge.cein@ceybasrl.com.ar",
-      "fecha_ultimo_movimiento": "17/03/2026",
+      "fecha_ultimo_movimiento": "12/10/2026 21:02",
       "intervenciones": [
         {
           "hora": "12/10/2026 20:54",
           "texto": "Archivado automáticamente: superó los 6 meses hábiles sin tratamiento.",
           "tipo": "sistema"
+        },
+        {
+          "hora": "12/10/2026 21:02",
+          "texto": "Rescatado del archivo: corrección de la regla — En tratamiento no debe archivarse automáticamente por falta de nota, solo Sin tratamiento.",
+          "tipo": "sistema"
         }
       ],
-      "archivado": true,
-      "fecha_archivado": "12/10/2026 20:54"
+      "archivado": false
     },
     {
       "id": "exp_imp016",
@@ -345,7 +349,7 @@
       "representante_nombre": "Pablo Ernersto Fernando García / Silvia. C García",
       "contacto_tel": "387852-5309",
       "contacto_mail": "Profesilviagarcia@gmail.com - GarciaHonos.comercial@gmail.com",
-      "fecha_ultimo_movimiento": "09/02/2026",
+      "fecha_ultimo_movimiento": "12/10/2026 21:02",
       "intervenciones": [
         {
           "hora": "09/02/2026",
@@ -356,10 +360,14 @@
           "hora": "12/10/2026 20:54",
           "texto": "Archivado automáticamente: superó los 6 meses hábiles sin tratamiento.",
           "tipo": "sistema"
+        },
+        {
+          "hora": "12/10/2026 21:02",
+          "texto": "Rescatado del archivo: corrección de la regla — En tratamiento no debe archivarse automáticamente por falta de nota, solo Sin tratamiento.",
+          "tipo": "sistema"
         }
       ],
-      "archivado": true,
-      "fecha_archivado": "12/10/2026 20:54"
+      "archivado": false
     },
     {
       "id": "exp_imp019",
@@ -375,16 +383,20 @@
       "representante_nombre": "Eduardo Lagname",
       "contacto_tel": "",
       "contacto_mail": "",
-      "fecha_ultimo_movimiento": "30/12/2025",
+      "fecha_ultimo_movimiento": "12/10/2026 21:02",
       "intervenciones": [
         {
           "hora": "12/10/2026 20:54",
           "texto": "Archivado automáticamente: superó los 6 meses hábiles sin tratamiento.",
           "tipo": "sistema"
+        },
+        {
+          "hora": "12/10/2026 21:02",
+          "texto": "Rescatado del archivo: corrección de la regla — En tratamiento no debe archivarse automáticamente por falta de nota, solo Sin tratamiento.",
+          "tipo": "sistema"
         }
       ],
-      "archivado": true,
-      "fecha_archivado": "12/10/2026 20:54"
+      "archivado": false
     },
     {
       "id": "exp_imp020",
@@ -475,7 +487,7 @@
       "representante_nombre": "Ramón Ruiz Díaz",
       "contacto_tel": "",
       "contacto_mail": "",
-      "fecha_ultimo_movimiento": "04/08/2025",
+      "fecha_ultimo_movimiento": "12/10/2026 21:02",
       "intervenciones": [
         {
           "hora": "04/08/2025",
@@ -486,10 +498,14 @@
           "hora": "12/10/2026 20:54",
           "texto": "Archivado automáticamente: superó los 6 meses hábiles sin tratamiento.",
           "tipo": "sistema"
+        },
+        {
+          "hora": "12/10/2026 21:02",
+          "texto": "Rescatado del archivo: corrección de la regla — En tratamiento no debe archivarse automáticamente por falta de nota, solo Sin tratamiento.",
+          "tipo": "sistema"
         }
       ],
-      "archivado": true,
-      "fecha_archivado": "12/10/2026 20:54"
+      "archivado": false
     },
     {
       "id": "exp_imp024",
@@ -530,16 +546,20 @@
       "representante_nombre": "Emilio Marras",
       "contacto_tel": "",
       "contacto_mail": "",
-      "fecha_ultimo_movimiento": "07/07/2025",
+      "fecha_ultimo_movimiento": "12/10/2026 21:02",
       "intervenciones": [
         {
           "hora": "12/10/2026 20:54",
           "texto": "Archivado automáticamente: superó los 6 meses hábiles sin tratamiento.",
           "tipo": "sistema"
+        },
+        {
+          "hora": "12/10/2026 21:02",
+          "texto": "Rescatado del archivo: corrección de la regla — En tratamiento no debe archivarse automáticamente por falta de nota, solo Sin tratamiento.",
+          "tipo": "sistema"
         }
       ],
-      "archivado": true,
-      "fecha_archivado": "12/10/2026 20:54"
+      "archivado": false
     },
     {
       "id": "exp_imp026",
@@ -555,16 +575,20 @@
       "representante_nombre": "",
       "contacto_tel": "",
       "contacto_mail": "",
-      "fecha_ultimo_movimiento": "04/07/2025",
+      "fecha_ultimo_movimiento": "12/10/2026 21:02",
       "intervenciones": [
         {
           "hora": "12/10/2026 20:54",
           "texto": "Archivado automáticamente: superó los 6 meses hábiles sin tratamiento.",
           "tipo": "sistema"
+        },
+        {
+          "hora": "12/10/2026 21:02",
+          "texto": "Rescatado del archivo: corrección de la regla — En tratamiento no debe archivarse automáticamente por falta de nota, solo Sin tratamiento.",
+          "tipo": "sistema"
         }
       ],
-      "archivado": true,
-      "fecha_archivado": "12/10/2026 20:54"
+      "archivado": false
     },
     {
       "id": "exp_imp027",
@@ -605,16 +629,20 @@
       "representante_nombre": "",
       "contacto_tel": "",
       "contacto_mail": "",
-      "fecha_ultimo_movimiento": "25/06/2025",
+      "fecha_ultimo_movimiento": "12/10/2026 21:02",
       "intervenciones": [
         {
           "hora": "12/10/2026 20:54",
           "texto": "Archivado automáticamente: superó los 6 meses hábiles sin tratamiento.",
           "tipo": "sistema"
+        },
+        {
+          "hora": "12/10/2026 21:02",
+          "texto": "Rescatado del archivo: corrección de la regla — En tratamiento no debe archivarse automáticamente por falta de nota, solo Sin tratamiento.",
+          "tipo": "sistema"
         }
       ],
-      "archivado": true,
-      "fecha_archivado": "12/10/2026 20:54"
+      "archivado": false
     },
     {
       "id": "exp_imp029",
@@ -630,16 +658,20 @@
       "representante_nombre": "",
       "contacto_tel": "",
       "contacto_mail": "",
-      "fecha_ultimo_movimiento": "12/06/2025",
+      "fecha_ultimo_movimiento": "12/10/2026 21:02",
       "intervenciones": [
         {
           "hora": "12/10/2026 20:54",
           "texto": "Archivado automáticamente: superó los 6 meses hábiles sin tratamiento.",
           "tipo": "sistema"
+        },
+        {
+          "hora": "12/10/2026 21:02",
+          "texto": "Rescatado del archivo: corrección de la regla — En tratamiento no debe archivarse automáticamente por falta de nota, solo Sin tratamiento.",
+          "tipo": "sistema"
         }
       ],
-      "archivado": true,
-      "fecha_archivado": "12/10/2026 20:54"
+      "archivado": false
     },
     {
       "id": "exp_imp030",

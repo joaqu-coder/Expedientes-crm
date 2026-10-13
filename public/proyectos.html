@@ -346,9 +346,9 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 </section>
 
 <!-- ===== VISTA ARCHIVO ===== -->
-<!-- Sin tratamiento/En tratamiento que pasaron 6 meses hábiles sin ningún
-     movimiento caen acá solos (aplicarArchivadoAutomatico). "Rescatar" los
-     devuelve al listado normal. -->
+<!-- Sin tratamiento que pasó 6 meses hábiles sin ningún movimiento cae acá
+     solo (aplicarArchivadoAutomatico). "Rescatar" lo devuelve al listado
+     normal. En_tratamiento nunca se archiva solo. -->
 <section class="view" id="viewArchivo" role="tabpanel" aria-labelledby="tabArchivo" hidden>
   <div class="list-count" id="archivoCount" role="status" aria-live="polite"></div>
   <div class="exp-list" id="archivoList"></div>
@@ -405,11 +405,15 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   // Son configurables desde el dashboard (sección Urgencias) y viajan en
   // datos.json: nada de esto está hardcodeado en el cálculo.
   var UMBRAL_DEFAULT = {alerta:30, critico:15};
-  // Archivado automático: Sin tratamiento/En tratamiento sin ningún movimiento
-  // (nota, edición o cambio de situación) en 6 meses hábiles se archivan
-  // solos, para que dejen de inflar el semáforo de Urgencias con expedientes
-  // que de hecho nadie va a tratar. 6 meses hábiles ≈ 22 días hábiles/mes × 6.
-  // Adjudicada/Desestimada no entran: ya están resueltas y no corren plazo.
+  // Archivado automático: Sin tratamiento sin ningún movimiento (nota, edición
+  // o cambio de situación) en 6 meses hábiles se archiva solo, para que deje
+  // de inflar el semáforo de Urgencias con expedientes que de hecho nadie va
+  // a tratar. 6 meses hábiles ≈ 22 días hábiles/mes × 6.
+  // En_tratamiento NO entra, aunque pase el umbral: significa que alguien lo
+  // está trabajando activamente (puede ser por teléfono o en persona, sin que
+  // quede una nota en la app), y archivarlo solo por falta de nota sería
+  // sacarle de encima algo que sigue en curso. Adjudicada/Desestimada tampoco:
+  // ya están resueltas y no corren plazo.
   // Se puede "Rescatar" desde la pestaña Archivo (o editando el expediente):
   // vuelve al flujo normal y el reloj arranca de nuevo desde ese momento.
   var UMBRAL_ARCHIVO_DIAS_HABILES = 132;
@@ -605,17 +609,20 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
             plazo:plazo, estimado:plazo.estimado, aviso:avisoEstimado(plazo)};
   }
 
-  // Sin tratamiento / En tratamiento sin movimiento hace UMBRAL_ARCHIVO_DIAS_HABILES
-  // días hábiles se archivan solos. Se corre al cargar y cada vez que llegan
-  // datos nuevos del servidor (no solo al guardar): si nadie abre la app en
-  // meses, el archivado igual se aplica la próxima vez que alguien entre,
-  // contado contra la fecha de ese momento — no hace falta un cron en el Worker.
+  // Sin tratamiento sin movimiento hace UMBRAL_ARCHIVO_DIAS_HABILES días
+  // hábiles se archiva solo. En_tratamiento queda afuera a propósito: "en
+  // tratamiento" significa que alguien lo está trabajando, aunque no haya
+  // quedado una nota nueva en la app. Se corre al cargar y cada vez que
+  // llegan datos nuevos del servidor (no solo al guardar): si nadie abre la
+  // app en meses, el archivado igual se aplica la próxima vez que alguien
+  // entre, contado contra la fecha de ese momento — no hace falta un cron en
+  // el Worker.
   function aplicarArchivadoAutomatico(){
     var hoy = hoyLocal();
     var huboCambios = false;
     state.expedientes.forEach(function(e){
       if(e.archivado) return;
-      if(e.situacion!=="Sin_tratamiento" && e.situacion!=="En_tratamiento") return;
+      if(e.situacion!=="Sin_tratamiento") return;
       var mov = parseFechaLocal((e.fecha_ultimo_movimiento||"").split(" ")[0]);
       if(!mov) return;
       if(diasHabilesEntre(mov, hoy) < UMBRAL_ARCHIVO_DIAS_HABILES) return;
@@ -1196,9 +1203,9 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     cont.innerHTML = filtrados.map(function(x){ return expCardHtml(x.e, x.urg); }).join("");
   }
 
-  // ---- Archivo: Sin tratamiento/En tratamiento sin movimiento en 6 meses
-  // hábiles (aplicarArchivadoAutomatico). Ordenado por fecha de archivado,
-  // más reciente primero — igual criterio que "Archivados" en Seguimiento.
+  // ---- Archivo: Sin tratamiento sin movimiento en 6 meses hábiles
+  // (aplicarArchivadoAutomatico). Ordenado por fecha de archivado, más
+  // reciente primero — igual criterio que "Archivados" en Seguimiento.
   function renderArchivo(){
     var cont = document.getElementById("archivoList");
     var lista = state.expedientes.filter(function(e){ return e.archivado; });
@@ -1212,7 +1219,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     }
     if(!lista.length){
       cont.innerHTML = '<div class="empty-state">No hay expedientes archivados. '+
-        'Sin tratamiento / En tratamiento se archivan solos a los 6 meses hábiles sin ningún movimiento.</div>';
+        'Sin tratamiento se archiva solo a los 6 meses hábiles sin ningún movimiento.</div>';
       return;
     }
     cont.innerHTML = lista.map(function(e){

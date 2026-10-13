@@ -153,12 +153,20 @@ quedaba saturado de rojo — no priorizaba nada. La salida que ese documento
 proponía y el usuario pidió: una clasificación de archivo que saque del
 semáforo lo que de hecho ya nadie va a tratar.
 
-- **Qué archiva**: solo `Sin_tratamiento` / `En_tratamiento` sin ningún
-  movimiento (nota, edición o cambio de situación — `fecha_ultimo_movimiento`)
-  en `UMBRAL_ARCHIVO_DIAS_HABILES` (132, ≈ 6 meses hábiles) días hábiles.
-  `Adjudicada`/`Desestimada` nunca entran: ya están resueltas y
-  `urgenciaDe()` ya las excluye del semáforo, archivarlas no cambiaría nada
-  visible.
+- **Qué archiva**: solo `Sin_tratamiento` sin ningún movimiento (nota,
+  edición o cambio de situación — `fecha_ultimo_movimiento`) en
+  `UMBRAL_ARCHIVO_DIAS_HABILES` (132, ≈ 6 meses hábiles) días hábiles.
+  `En_tratamiento` **no entra, aunque pase el umbral** — corrección pedida
+  por el usuario el 2026-10-13: "en tratamiento" significa que alguien lo
+  está trabajando activamente (puede ser por teléfono o en persona, sin que
+  quede una nota en la app), y archivarlo solo por falta de nota sería
+  sacarle de encima algo que sigue en curso.
+  `Adjudicada`/`Desestimada` tampoco: ya están resueltas y `urgenciaDe()` ya
+  las excluye del semáforo, archivarlas no cambiaría nada visible.
+  > El primer deploy (2026-10-12) sí incluía `En_tratamiento` y archivó 8 por
+  > error. Se corrigieron a mano en `cartas-intencion.json` (desarchivados,
+  > con nota de sistema explicando el porqué) el 2026-10-13, junto con el fix
+  > de código — no quedó ninguno mal archivado.
 - **Cuándo corre**: `aplicarArchivadoAutomatico()` se llama al cargar la app
   y cada vez que `bajarCambiosIniciales()` trae datos nuevos del servidor
   (carga inicial, sondeo de versión, volver a la pestaña). No hay cron en el
@@ -177,16 +185,20 @@ semáforo lo que de hecho ya nadie va a tratar.
   campos de expediente como cualquier otro; `validarCartas()` no restringe
   qué campos puede tener un expediente, así que no hizo falta tocar el
   Worker.
-- **Primer deploy**: con la base real (157 expedientes), ~95 caen en Archivo
-  de entrada — más de la mitad. Es el resultado esperado, no un bug: es
-  justamente la acumulación de años que motivó el pedido. Verificado con
-  Playwright contra los datos reales antes de confirmar con el usuario.
-- **Test**: `testProyectos()` en `tests/ui.test.mjs` inyecta un expediente
-  sintético con `fecha_ultimo_movimiento` de 2020 (bien por encima del
-  umbral, sin depender de la fecha de hoy) y verifica archivado automático +
-  Rescatar de punta a punta. No asume un conteo fijo de cuántos de los 157
-  reales se archivan — esa cifra cambia día a día a propósito; solo verifica
-  conservación (listado + archivo = total servido).
+- **Primer deploy**: con la base real (157 expedientes), ~87 quedan en
+  Archivo (todos `Sin_tratamiento`, tras la corrección del 2026-10-13) — más
+  de la mitad. Es el resultado esperado, no un bug: es justamente la
+  acumulación de años que motivó el pedido. Verificado con Playwright contra
+  los datos reales antes de confirmar con el usuario.
+- **Test**: `testProyectos()` en `tests/ui.test.mjs` inyecta dos expedientes
+  sintéticos con `fecha_ultimo_movimiento` de 2020 (bien por encima del
+  umbral, sin depender de la fecha de hoy): uno `Sin_tratamiento` (debe
+  archivarse) y uno `En_tratamiento` con la misma fecha vieja (NO debe
+  archivarse — es justamente la regresión que motivó la corrección del
+  2026-10-13). Verifica archivado automático + Rescatar de punta a punta. No
+  asume un conteo fijo de cuántos de los 157 reales se archivan — esa cifra
+  cambia día a día a propósito; solo verifica conservación (listado +
+  archivo = total servido).
 
 ---
 
