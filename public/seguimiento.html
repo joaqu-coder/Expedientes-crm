@@ -22,10 +22,15 @@
   <style>
     :root {
       --primary: #667eea;
-      --red: #7f0000;
+      --accent: var(--primary);
+      --accent-fg: #ffffff;
+      /* Mismos --danger/--ok del sistema de diseño compartido (antes --red/--green
+         eran valores propios de este archivo y no se aclaraban en oscuro, perdiendo
+         contraste contra el fondo casi-negro). */
+      --red: #a1392c;
       --orange: #f97316;
       --yellow: #d5be00;
-      --green: #336d0e;
+      --green: #2f7a3c;
       --gray-50: #f9fafb;
       --gray-100: #f3f4f6;
       --gray-200: #e5e7eb;
@@ -48,12 +53,17 @@
 
     @media (prefers-color-scheme: dark) {
       :root:not([data-theme="light"]) {
-        --gray-50: #111827;
-        --gray-100: #1f2937;
-        --gray-200: #374151;
-        --gray-300: #4b5563;
-        --text: #f3f4f6;
-        --text-muted: #d1d5db;
+        /* Mismo casi-negro cálido que proyectos.html/resoluciones.html/parques.html —
+           antes era un gris azulado propio de este archivo, visible como una paleta
+           distinta al cambiar de app en modo oscuro. */
+        --gray-50: #141414;
+        --gray-100: #1d1d1d;
+        --gray-200: #38372f;
+        --gray-300: #4a493f;
+        --text: #efece2;
+        --text-muted: #a39d87;
+        --red: #d26a5c;
+        --green: #5fae6b;
       --badge-naranja: #fdba74;
       --badge-amarillo: #fde047;
       --badge-verde: #86efac;
@@ -69,12 +79,14 @@
     }
 
     :root[data-theme="dark"] {
-      --gray-50: #111827;
-      --gray-100: #1f2937;
-      --gray-200: #374151;
-      --gray-300: #4b5563;
-      --text: #f3f4f6;
-      --text-muted: #d1d5db;
+      --gray-50: #141414;
+      --gray-100: #1d1d1d;
+      --gray-200: #38372f;
+      --gray-300: #4a493f;
+      --text: #efece2;
+      --text-muted: #a39d87;
+      --red: #d26a5c;
+      --green: #5fae6b;
       --badge-naranja: #fdba74;
       --badge-amarillo: #fde047;
       --badge-verde: #86efac;
@@ -524,7 +536,7 @@
     /* NUEVO DISEÑO: Expediente Card Expandible */
     .expediente-card-new {
       background: var(--surface-card, white);
-      border-radius: 8px;
+      border-radius: 10px;
       margin-bottom: 12px;
       overflow: hidden;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
@@ -950,20 +962,21 @@
       font-size: 11px;
     }
 
-    /* Botones */
+    /* Botones — mismo radio/tipografía que proyectos.html/resoluciones.html/parques.html
+       (antes 6px/12px, un poco más chico y cuadrado que el resto de la suite). */
     .btn {
-      padding: 8px 16px;
+      padding: 10px 16px;
       border: none;
-      border-radius: 6px;
-      font-size: 12px;
+      border-radius: 8px;
+      font-size: 14px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
     }
 
     .btn-primary {
-      background: var(--primary);
-      color: white;
+      background: var(--accent);
+      color: var(--accent-fg);
     }
 
     .btn-primary:hover {

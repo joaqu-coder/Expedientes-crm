@@ -27,22 +27,28 @@
       --gray-200: #e5e7eb;
       --text: #1f2937;
       --text-muted: #6b7280;
+      /* Tarjetas blancas, como en el resto de la suite — antes la landing
+         era la única que las pintaba con --gray-100 (gris claro). */
+      --surface: #ffffff;
     }
     @media (prefers-color-scheme: dark) {
       :root:not([data-theme="light"]) {
-        --gray-50: #111827;
-        --gray-100: #1f2937;
-        --gray-200: #374151;
-        --text: #f3f4f6;
-        --text-muted: #d1d5db;
+        /* Mismo casi-negro cálido que proyectos.html/resoluciones.html/parques.html */
+        --gray-50: #141414;
+        --gray-100: #1d1d1d;
+        --gray-200: #38372f;
+        --text: #efece2;
+        --text-muted: #a39d87;
+        --surface: #1d1d1d;
       }
     }
     :root[data-theme="dark"] {
-      --gray-50: #111827;
-      --gray-100: #1f2937;
-      --gray-200: #374151;
-      --text: #f3f4f6;
-      --text-muted: #d1d5db;
+      --gray-50: #141414;
+      --gray-100: #1d1d1d;
+      --gray-200: #38372f;
+      --text: #efece2;
+      --text-muted: #a39d87;
+      --surface: #1d1d1d;
     }
     * { box-sizing: border-box; }
     body {
@@ -100,7 +106,7 @@
       outline-offset: 2px;
     }
     .card {
-      background: var(--gray-100);
+      background: var(--surface);
       border: 1px solid var(--gray-200);
       border-radius: 16px;
       padding: 32px 28px;

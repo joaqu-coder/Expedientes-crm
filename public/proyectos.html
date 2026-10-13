@@ -30,8 +30,12 @@
    Dashboard (5 secciones con navegación propia) — con tabs arriba y ruteo por
    #hash. Mobile-first: todo el ancho es de una columna hasta 860px. */
 :root{
-  --bg:#f3f1ea; --surface:#ffffff; --surface-2:#eceadf; --border:#d8d4c4;
-  --fg:#211f17; --muted:#6b6652; --accent:#a8650f; --accent-fg:#fff8ec;
+  /* Base neutra idéntica al resto de la suite (index/seguimiento/resoluciones/parques):
+     antes esta app tenía su propio fondo crema (#f3f1ea), que era la inconsistencia
+     visible real entre pantallas. Accent/accent-fg siguen siendo ámbar — esa es la
+     identidad de marca deliberada de este módulo, no un error a corregir. */
+  --bg:#f9fafb; --surface:#ffffff; --surface-2:#f3f4f6; --border:#e5e7eb;
+  --fg:#1f2937; --muted:#6b7280; --accent:#a8650f; --accent-fg:#fff8ec;
   --ok:#2f7a3c; --ok-bg:#e4f3e5; --warn:#a8650f; --warn-bg:#fbead0; --idle:#746d57; --idle-bg:#e8e5d9;
   --danger:#a1392c; --danger-bg:#f7e2dd; --orange:#b05a1a; --orange-bg:#fbe9d8;
   color-scheme: light;
