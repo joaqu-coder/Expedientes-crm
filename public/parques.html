@@ -148,6 +148,30 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .btn-view-action{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;background:none;border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:11px;font-weight:600;font-size:14px;min-height:44px}
 .btn-view-action:hover{border-color:var(--muted)}
 
+/* ---- Ficha de empresa: sub-tabs Empresa / Lotes / Contacto ----
+   Mismo patrón visual que .tabs/.tab de arriba, pero escalado para vivir
+   dentro del modal (más chico, sin sticky, con scroll horizontal en mobile
+   si hace falta). */
+.emp-m2-hero{font-family:var(--font-display);font-size:19px;font-weight:700;color:var(--accent)}
+.subtabs{display:flex;gap:16px;border-bottom:1px solid var(--border);margin:12px 0 14px;overflow-x:auto}
+.subtab{background:none;border:none;color:var(--muted);font-weight:600;font-size:13px;padding:8px 2px;margin:0;border-bottom:2px solid transparent;white-space:nowrap;min-height:40px}
+.subtab.active{color:var(--fg);border-bottom-color:var(--accent)}
+
+/* ---- Ficha de empresa: lista de lotes/matrículas (una empresa puede tener
+   muchas: ALIMENTOS SOFIA, E007, tiene 22) — por eso lista scrolleable con
+   fila por matrícula, no campos sueltos que no escalan. */
+.lot-list{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:10px;overflow:hidden;max-height:380px;overflow-y:auto}
+.lot-row{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px}
+.lot-row:last-child{border-bottom:none}
+.lot-row:nth-child(even){background:var(--surface-2)}
+.lot-row-main{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.lot-row-main a{color:inherit;text-decoration:none;font-weight:600}
+.lot-row-main a:hover{color:var(--accent)}
+.lot-m2{flex:0 0 auto;font-weight:600;font-variant-numeric:tabular-nums}
+.lot-row-sub{display:flex;justify-content:space-between;gap:10px;color:var(--muted);font-size:12px;margin-top:3px}
+.lot-si{color:var(--c2);font-weight:600}
+.lot-no{color:var(--warn);font-weight:600}
+
 /* ---- Dashboard ---- */
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:22px}
 .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px}
@@ -427,6 +451,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
   function empresaPorId(id){ return state.empresas.find(function(e){return e.id_empresa===id;}); }
   function lotesDeEmpresa(id){ return state.lotes.filter(function(l){return l.id_empresa===id;}); }
+  function empresaTotalM2(id){
+    return lotesDeEmpresa(id).reduce(function(acc,l){ return acc + (Number(l.superficie_m2)||0); }, 0);
+  }
   function ocupacionDeLote(idLote){ return state.ocupaciones.find(function(o){return o.id_lote===idLote && o.vigente;}); }
   function nombreEmpresa(id){ var e=empresaPorId(id); return e ? e.nombre_empresa : null; }
 
@@ -527,12 +554,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     }
     cont.innerHTML = filtradas.map(function(e){
       var nLotes = lotesDeEmpresa(e.id_empresa).length;
+      var totalM2 = empresaTotalM2(e.id_empresa);
       var sub = [e.rubro, e.contacto_nombre].filter(Boolean).join(" · ");
       return '<button class="tarjeta" data-open-empresa="'+esc(e.id_empresa)+'">'+
         '<div class="tarjeta-row">'+
           '<div class="avatar">'+esc(iniciales(e.nombre_empresa))+'</div>'+
           '<div class="tarjeta-main">'+
             '<div class="tarjeta-title">'+esc(e.nombre_empresa)+'</div>'+
+            '<div class="tarjeta-sub emp-m2-hero">'+fmtM2(totalM2)+' totales</div>'+
             (sub?'<div class="tarjeta-sub">'+esc(sub)+'</div>':'')+
           '</div>'+
         '</div>'+
@@ -553,6 +582,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     state.editingTipo = tipo;
     state.editingId = id;
     state.modalMode = id ? "view" : "edit";
+    if(tipo==="empresa") state.empresaSubTab = "empresa";
     veil.hidden = false;
     renderModal();
   }
@@ -711,58 +741,90 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   }
 
   // ---- Ficha de empresa ----
+  // Tres sub-tabs (Empresa / Lotes / Contacto) en vez de un solo scroll
+  // largo: una empresa como ALIMENTOS SOFIA (E007) tiene 22 matrículas, y
+  // meter eso junto con actividad, contacto y web en una sola vista vuelve
+  // difícil encontrar un dato puntual. Mismo patrón que el mockup acordado
+  // con el usuario (2026-10-13).
+  function tituloYTitularDeLote(l, empresa){
+    // "A nombre de quién está la propiedad": o es de EGPAIS (ente), o ya
+    // está escriturada a la empresa. `escritura` viene del origen con
+    // mayúsculas/espacios inconsistentes ("Si","si","No","no ","NO") y a
+    // veces null — un null no se asume "No": sería inventar un dato que el
+    // origen no tiene (ver nota de L048 en CLAUDE.md).
+    var e = String(l.escritura||"").trim();
+    if(!e) return { siNo:"Sin dato", clase:"", titular: l.propietario_matricula || "—" };
+    if(/^s/i.test(e)) return { siNo:"Sí", clase:"lot-si", titular: l.propietario_matricula || (empresa&&empresa.nombre_empresa) || "—" };
+    return { siNo:"No", clase:"lot-no", titular:"EGPAIS (Ente General de Parques y Áreas Industriales de Salta)" };
+  }
+
   function renderEmpresaView(e){
     var lotes = lotesDeEmpresa(e.id_empresa);
-    var contactoLinea = [e.contacto_nombre, e.cargo].filter(Boolean).join(" · ");
+    var totalM2 = empresaTotalM2(e.id_empresa);
     var similares = empresasSimilares(e);
+    var tab = state.empresaSubTab || "empresa";
+
+    var tabsHtml = '<div class="subtabs" role="tablist" aria-label="Detalle de la empresa">'+
+      ["empresa","lote","contacto"].map(function(t){
+        var etiqueta = t==="empresa" ? "Empresa" : (t==="lote" ? "Lotes ("+lotes.length+")" : "Contacto");
+        var activa = t===tab;
+        return '<button type="button" class="subtab'+(activa?" active":"")+'" role="tab" aria-selected="'+activa+'" data-subtab="'+t+'">'+etiqueta+'</button>';
+      }).join("")+
+      '</div>';
+
+    var panelHtml;
+    if(tab==="lote"){
+      panelHtml = lotes.length
+        ? '<div class="lot-list">'+lotes.map(function(l){
+            var info = tituloYTitularDeLote(l, e);
+            return '<div class="lot-row">'+
+              '<div class="lot-row-main">'+
+                '<a href="#" class="mono" data-goto-lote="'+esc(l.id_lote)+'">Mz '+esc(l.manzana||"—")+' · Parc. '+esc(l.parcela||"—")+' · '+esc(l.matricula||"—")+'</a>'+
+                '<span class="lot-m2">'+fmtM2(l.superficie_m2)+'</span>'+
+              '</div>'+
+              '<div class="lot-row-sub">'+
+                '<span>Titular: '+esc(info.titular)+'</span>'+
+                '<span class="'+info.clase+'">Escriturado: '+esc(info.siNo)+'</span>'+
+              '</div>'+
+            '</div>';
+          }).join("")+'</div>'
+        : '<p class="view-empty">Sin lotes asignados.</p>';
+    } else if(tab==="contacto"){
+      panelHtml = '<div class="view-grid">'+
+          viewItem("Email", e.mail?esc(e.mail):null)+
+          viewItem("Web", e.pagweb?'<a href="'+esc(e.pagweb)+'" target="_blank" rel="noopener">'+esc(e.pagweb)+'</a>':null)+
+          viewItem("Domicilio", e.ubicacion?esc(e.ubicacion):null)+
+          viewItem("Instagram", e.instagram?'<a href="'+esc(e.instagram)+'" target="_blank" rel="noopener">'+esc(e.instagram)+'</a>':null)+
+          viewItem("Teléfono", e.telefono?esc(e.telefono):null)+
+        '</div>';
+    } else {
+      var representante = [e.contacto_nombre, e.cargo].filter(Boolean).join(" · ");
+      panelHtml =
+        (similares.length
+          ? '<div class="view-section revisar" style="margin-top:0;padding-top:0;border-top:none"><h3>A revisar</h3>'+
+              '<p>Puede ser la misma razón social cargada dos veces: '+
+              similares.map(function(s){ return '<a href="#" data-goto-empresa="'+esc(s.id_empresa)+'">'+esc(s.nombre_empresa)+'</a>'; }).join(", ")+
+              '. Confirmá si corresponde fusionarlas antes de seguir cargando lotes a cualquiera de las dos.</p>'+
+            '</div>'
+          : '')+
+        '<div class="view-grid">'+
+          viewItem("CUIT", e.cuit?esc(e.cuit):null)+
+          viewItem("Rubro", e.rubro?esc(e.rubro):null)+
+          viewItem("Actividad declarada", e.actividad?esc(e.actividad):null)+
+          viewItem("Representante", representante?esc(representante):null)+
+        '</div>'+
+        (e.observacion ? '<div class="view-section"><h3>Observación</h3><p class="view-texto">'+esc(e.observacion)+'</p></div>' : '');
+    }
+
     modal.innerHTML =
       '<div class="modal-head"><button class="x-close" id="xCloseViewEmp">&times;</button></div>'+
       '<div class="view-head"><div class="tarjeta-row">'+
         '<div class="avatar lg">'+esc(iniciales(e.nombre_empresa))+'</div>'+
         '<div><div class="view-title">'+esc(e.nombre_empresa)+'</div>'+
-        (e.cuit?'<div class="view-sub">CUIT '+esc(e.cuit)+'</div>':'')+'</div>'+
+        '<div class="emp-m2-hero">'+fmtM2(totalM2)+' totales</div></div>'+
       '</div></div>'+
-
-      (similares.length
-        ? '<div class="view-section revisar"><h3>A revisar</h3>'+
-            '<p>Puede ser la misma razón social cargada dos veces: '+
-            similares.map(function(s){ return '<a href="#" data-goto-empresa="'+esc(s.id_empresa)+'">'+esc(s.nombre_empresa)+'</a>'; }).join(", ")+
-            '. Confirmá si corresponde fusionarlas antes de seguir cargando lotes a cualquiera de las dos.</p>'+
-          '</div>'
-        : '')+
-
-      '<div class="view-section"><h3>Actividad</h3>'+
-        '<div class="view-grid">'+
-          viewItem("Rubro", e.rubro?esc(e.rubro):null)+
-          viewItem("Actividad", e.actividad?esc(e.actividad):null)+
-        '</div>'+
-      '</div>'+
-
-      '<div class="view-section"><h3>Contacto</h3>'+
-        '<div class="view-grid">'+
-          viewItem("Nombre y cargo", contactoLinea?esc(contactoLinea):null)+
-          viewItem("Teléfono", e.telefono?esc(e.telefono):null)+
-          viewItem("Mail", e.mail?esc(e.mail):null)+
-          viewItem("Ubicación", e.ubicacion?esc(e.ubicacion):null)+
-        '</div>'+
-      '</div>'+
-
-      (e.pagweb||e.instagram||e.linkedin
-        ? '<div class="view-section"><h3>Web</h3><div class="view-grid">'+
-            viewItem("Página web", e.pagweb?'<a href="'+esc(e.pagweb)+'" target="_blank" rel="noopener">'+esc(e.pagweb)+'</a>':null)+
-            viewItem("Instagram", e.instagram?'<a href="'+esc(e.instagram)+'" target="_blank" rel="noopener">'+esc(e.instagram)+'</a>':null)+
-            viewItem("LinkedIn", e.linkedin?'<a href="'+esc(e.linkedin)+'" target="_blank" rel="noopener">'+esc(e.linkedin)+'</a>':null)+
-          '</div></div>'
-        : '')+
-
-      (e.observacion ? '<div class="view-section"><h3>Observación</h3><p class="view-texto">'+esc(e.observacion)+'</p></div>' : '')+
-
-      '<div class="view-section"><h3>Lotes ('+lotes.length+')</h3>'+
-        (lotes.length
-          ? lotes.map(function(l){ return '<div class="view-item" style="margin-bottom:8px"><a href="#" data-goto-lote="'+esc(l.id_lote)+'">'+esc(l.id_lote)+' — Mz '+esc(l.manzana||"—")+', Parcela '+esc(l.parcela||"—")+'</a></div>'; }).join("")
-          : '<p class="view-empty">Sin lotes asignados.</p>')+
-      '</div>'+
-
+      tabsHtml+
+      '<div id="empSubpanel">'+panelHtml+'</div>'+
       '<div class="view-actions">'+
         '<button type="button" class="btn-view-action" id="btnEditEmp">'+ICON_EDIT+'Editar</button>'+
         '<button type="button" class="btn-view-action" id="btnDeleteViewEmp">'+ICON_TRASH+'Eliminar</button>'+
@@ -771,6 +833,12 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     document.getElementById("xCloseViewEmp").addEventListener("click", closeModal);
     document.getElementById("btnEditEmp").addEventListener("click", function(){ state.modalMode="edit"; renderModal(); });
     document.getElementById("btnDeleteViewEmp").addEventListener("click", onDeleteEmpresa);
+    modal.querySelectorAll("[data-subtab]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        state.empresaSubTab = btn.getAttribute("data-subtab");
+        renderEmpresaView(e);
+      });
+    });
     modal.querySelectorAll("[data-goto-lote]").forEach(function(a){
       a.addEventListener("click", function(ev){ ev.preventDefault(); openModal("lote", a.getAttribute("data-goto-lote")); });
     });
