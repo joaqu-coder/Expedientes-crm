@@ -897,6 +897,141 @@ async function testProyectos(viewport, puerto) {
   server.close();
 }
 
+/*
+ * Parques: lotes y empresas de Güemes, importados de la base SQLite
+ * normalizada que pasó el usuario (no de las planillas de Drive). Protocolo
+ * simple, como Resoluciones. Existe porque los tests estáticos no ven el
+ * cruce lote<->empresa (titularidad, sublocación vía ocupaciones) ni el
+ * guardado por el modal.
+ */
+async function testParques(viewport, puerto) {
+  console.log(`\n=== PARQUES (${viewport.width}x${viewport.height}) ===`);
+  const html = fs.readFileSync(path.join(RAIZ, 'public/parques.html'), 'utf8');
+  const datos = JSON.parse(fs.readFileSync(path.join(RAIZ, 'parques.json'), 'utf8'));
+  let ultimoPost = null;
+
+  const server = http.createServer((req, res) => {
+    if (req.url.startsWith('/api/')) {
+      if (req.method === 'POST') {
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', () => {
+          ultimoPost = JSON.parse(body);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true }));
+        });
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(ultimoPost || datos));
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(html);
+  });
+  await new Promise((r) => server.listen(puerto, r));
+
+  const problemas = [];
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const page = await browser.newPage({ viewport });
+  page.on('pageerror', (e) => problemas.push('pageerror: ' + e.message));
+  page.on('dialog', async (d) => { problemas.push('alert: ' + d.message()); await d.dismiss(); });
+  await page.goto(`http://localhost:${puerto}/`, { waitUntil: 'networkidle' });
+  await page.waitForFunction(() => document.querySelectorAll('#lotesList .tarjeta').length > 0);
+
+  const totalLotes = datos.lotes.length;
+  const totalEmpresas = datos.empresas.length;
+  ok(totalLotes === 138, `el archivo trae los ${totalLotes} lotes reales de Güemes`);
+  ok(totalEmpresas === 55, `el archivo trae las ${totalEmpresas} empresas reales`);
+  ok((await page.locator('#lotesCount').textContent()).includes(String(totalLotes)),
+     'el contador de lotes muestra el total');
+
+  // Filtro por estado
+  await page.selectOption('#filterEstado', 'Activa');
+  await page.waitForTimeout(150);
+  const esperadoActiva = datos.lotes.filter((l) => l.estado === 'Activa').length;
+  ok((await page.locator('#lotesCount').textContent()).startsWith(esperadoActiva + ' de '),
+     `el filtro por estado deja ${esperadoActiva} lotes Activa`);
+  await page.selectOption('#filterEstado', '');
+
+  // Disponibles: los que de hecho están en venta, el caso que motivó la
+  // tarjeta (antes "LIBRE: BUSQUIN"/"LIBRE: FORTE"/etc. en las planillas).
+  await page.click('#filterDisponible');
+  await page.waitForTimeout(150);
+  const esperadoDisponible = datos.lotes.filter((l) => l.disponible).length;
+  ok((await page.locator('#lotesCount').textContent()).startsWith(esperadoDisponible + ' de '),
+     `"Solo disponibles" deja ${esperadoDisponible} lotes`);
+  await page.click('#filterDisponible');
+
+  // Búsqueda por nombre de empresa
+  await page.fill('#searchLotes', 'AGSOF');
+  await page.waitForTimeout(150);
+  const esperadoAgsof = datos.lotes.filter((l) => {
+    const e = datos.empresas.find((x) => x.id_empresa === l.id_empresa);
+    return e && e.nombre_empresa.toUpperCase().includes('AGSOF');
+  }).length;
+  ok((await page.locator('#lotesList .tarjeta').count()) === esperadoAgsof,
+     `la búsqueda por empresa encuentra los ${esperadoAgsof} lotes de AGSOF`);
+  await page.fill('#searchLotes', '');
+  await page.waitForTimeout(150);
+
+  // Ficha de lote: muestra la empresa titular, no un id pelado.
+  await page.locator('#lotesList .tarjeta', { hasText: 'L001' }).first().click();
+  await page.waitForSelector('#btnEditLote');
+  const fichaLote = await page.locator('#modal').textContent();
+  ok(fichaLote.includes('V8 PRODUCTOS DE HORMIGÓN'), 'la ficha del lote L001 muestra su empresa titular');
+  ok(fichaLote.includes('Titularidad'), 'la ficha tiene sección Titularidad');
+
+  // Sublocación: L038 tiene una ocupación vigente (titular E008, ocupante E028).
+  await page.click('#xCloseViewLote');
+  await page.fill('#searchLotes', 'L038');
+  await page.waitForTimeout(150);
+  await page.locator('#lotesList .tarjeta', { hasText: 'L038' }).first().click();
+  await page.waitForSelector('#btnEditLote');
+  ok((await page.locator('#modal').textContent()).includes('Sublocación'),
+     'la ficha de un lote sublocado muestra la sección Sublocación');
+  await page.click('#xCloseViewLote');
+  await page.fill('#searchLotes', '');
+  await page.waitForTimeout(150);
+
+  // Editar lote: el cambio tiene que llegar al servidor con tildes intactas.
+  await page.locator('#lotesList .tarjeta', { hasText: 'L001' }).first().click();
+  await page.waitForSelector('#btnEditLote');
+  await page.click('#btnEditLote');
+  await page.waitForSelector('#f_matricula');
+  await page.fill('#f_matricula', 'Editado — ñandú ☕');
+  await page.click('#loteForm button[type=submit]');
+  await page.waitForTimeout(300);
+  ok(ultimoPost?.lotes?.length === totalLotes, `el POST sube los ${totalLotes} lotes`);
+  ok(ultimoPost.lotes.some((l) => l.matricula === 'Editado — ñandú ☕'),
+     'la matrícula editada llega al servidor con tildes, ñ y emoji intactos');
+
+  // Empresas: directorio con el contacto de la empresa instalada.
+  await page.click('#tabEmpresas');
+  await page.waitForSelector('#empresasList .tarjeta');
+  ok((await page.locator('#empresasCount').textContent()).includes(String(totalEmpresas)),
+     'el contador de empresas muestra el total');
+  await page.locator('#empresasList .tarjeta', { hasText: 'AGSOF S.A' }).first().click();
+  await page.waitForSelector('#btnEditEmp');
+  const fichaEmpresa = await page.locator('#modal').textContent();
+  ok(fichaEmpresa.includes('Guillermo Frisch'), 'la ficha de la empresa muestra su contacto');
+  ok(fichaEmpresa.includes('Lotes'), 'la ficha de la empresa lista sus lotes');
+  await page.click('#xCloseViewEmp');
+
+  // Dashboard: KPIs básicos.
+  await page.click('#tabDash');
+  await page.waitForSelector('.kpi-card');
+  const kpis = await page.locator('.kpi-card .n').allTextContents();
+  ok(kpis.some((n) => n.trim() === String(totalLotes)), 'el dashboard muestra el total de lotes');
+  ok(kpis.some((n) => n.trim() === String(totalEmpresas)), 'el dashboard muestra el total de empresas');
+  await page.click('#tabLotes');
+  await page.waitForSelector('#lotesList .tarjeta');
+
+  ok(problemas.length === 0, 'sin errores de JS ni diálogos nativos' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
+  await browser.close();
+  server.close();
+}
+
 await recorrido('DESKTOP', { width: 1440, height: 900 }, 8799);
 await recorrido('MOBILE', { width: 390, height: 844 }, 8798);
 await testFechas();
@@ -911,6 +1046,8 @@ await testResoluciones({ width: 1440, height: 900 }, 8797);
 await testResoluciones({ width: 390, height: 844 }, 8796);
 await testProyectos({ width: 1440, height: 900 }, 8795);
 await testProyectos({ width: 390, height: 844 }, 8794);
+await testParques({ width: 1440, height: 900 }, 8793);
+await testParques({ width: 390, height: 844 }, 8792);
 
 console.log(fallas === 0 ? '\nUI OK en desktop y mobile' : `\n${fallas} fallas`);
 process.exit(fallas === 0 ? 0 : 1);

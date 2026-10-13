@@ -60,6 +60,7 @@ chequearArchivo('public/index.html');
 const htmlSeguimiento = chequearArchivo('public/seguimiento.html');
 chequearArchivo('public/proyectos.html');
 chequearArchivo('public/resoluciones.html');
+chequearArchivo('public/parques.html');
 
 // Una sola fuente de verdad para el formato del número de expediente: si el
 // guardado vuelve a traer su propia regex, se repite el bug que hacía

@@ -224,6 +224,72 @@ async function testSyncYCartasNoSeMezclan() {
   assert(archivosConsultados.some((u) => u.includes('/cartas-intencion.json')), '/api/sync-cartas consultó cartas-intencion.json');
 }
 
+// ===== /api/sync-parques (Parques — lotes/empresas de Güemes) =====
+// Protocolo simple, igual que /api/sync y /api/sync-resoluciones.
+
+async function testParquesGetSinArchivoTodavia() {
+  llamadas = [];
+  mockFetch(async () => new Response('Not Found', { status: 404 }));
+
+  const req = new Request('https://x.workers.dev/api/sync-parques', { method: 'GET' });
+  const env = { GITHUB_TOKEN: 'fake-token', ASSETS: { fetch: async () => new Response('debe-usar-assets') } };
+
+  const resp = await worker.fetch(req, env);
+  const data = await resp.json();
+
+  assert(resp.status === 200, 'GET /api/sync-parques sin archivo devuelve 200');
+  assert(data.parque === 'Güemes', "el default trae parque:'Güemes'");
+  assert(Array.isArray(data.lotes) && data.lotes.length === 0, 'lotes vacío por defecto');
+  assert(Array.isArray(data.empresas) && data.empresas.length === 0, 'empresas vacío por defecto');
+}
+
+async function testParquesPostEscribeArchivoPropio() {
+  llamadas = [];
+  mockFetch(async (url, opts) => {
+    if (!opts || opts.method === undefined || opts.method === 'GET') {
+      assert(String(url).includes('parques.json'), 'el GET previo apunta a parques.json');
+      return new Response('Not Found', { status: 404 });
+    }
+    if (opts.method === 'PUT') {
+      assert(String(url).includes('parques.json'), 'el PUT escribe en parques.json');
+      const body = JSON.parse(opts.body);
+      const contenidoDecodificado = Buffer.from(body.content, 'base64').toString('utf8');
+      const datos = JSON.parse(contenidoDecodificado);
+      assert(datos.empresas[0].nombre_empresa === 'V8 PRODUCTOS DE HORMIGÓN', 'UTF-8 (Ó) se preserva en el PUT');
+      return new Response(JSON.stringify({ content: { sha: 'nuevo-sha' } }), { status: 201 });
+    }
+    throw new Error('metodo inesperado: ' + opts.method);
+  });
+
+  const payload = {
+    parque: 'Güemes',
+    empresas: [{ id_empresa: 'E001', nombre_empresa: 'V8 PRODUCTOS DE HORMIGÓN' }],
+    lotes: [{ id_lote: 'L001', id_empresa: 'E001' }],
+    ocupaciones: [],
+    reservas: []
+  };
+  const req = new Request('https://x.workers.dev/api/sync-parques', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+  const env = { GITHUB_TOKEN: 'fake-token', ASSETS: { fetch: async () => new Response('no debería llamarse') } };
+
+  const resp = await worker.fetch(req, env);
+  const data = await resp.json();
+  assert(resp.status === 200 && data.ok === true, 'POST /api/sync-parques responde ok:true');
+}
+
+async function testParquesNoSeMezclaConOtrasApps() {
+  llamadas = [];
+  mockFetch(async () => new Response('Not Found', { status: 404 }));
+
+  const envSinToken = { GITHUB_TOKEN: 'fake-token', ASSETS: { fetch: async () => new Response('x') } };
+  await worker.fetch(new Request('https://x.workers.dev/api/sync-parques', { method: 'GET' }), envSinToken);
+
+  const archivosConsultados = llamadas.map((l) => String(l.url));
+  assert(archivosConsultados.some((u) => u.includes('/parques.json')), '/api/sync-parques consultó parques.json, no otro archivo');
+}
+
 async function main() {
   await testGetSinArchivoTodavia();
   await testPostCreaArchivoNuevo();
@@ -236,6 +302,9 @@ async function main() {
   await testCartasValidacionRechazaDatosRotos();
   await testCartasVersion();
   await testSyncYCartasNoSeMezclan();
+  await testParquesGetSinArchivoTodavia();
+  await testParquesPostEscribeArchivoPropio();
+  await testParquesNoSeMezclaConOtrasApps();
   console.log('\n✅ TODOS LOS TESTS PASARON');
 }
 

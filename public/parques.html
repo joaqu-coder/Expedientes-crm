@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="Parques — EGPAIS">
+<meta name="theme-color" content="#667eea">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Parques">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="apple-touch-icon" href="/icon.svg">
+<title>Parques — EGPAIS</title>
+<script>
+// Aplicado antes del primer paint para no parpadear a oscuro si el usuario ya lo eligió.
+(function(){
+  var saved = localStorage.getItem("parques_crm_theme_v1");
+  if(saved==="dark") document.documentElement.setAttribute("data-theme","dark");
+})();
+</script>
+<style>
+/* Misma paleta/tipografía que las otras tres apps: mismo acento índigo,
+   misma escala de grises, fuente del sistema en toda la app. */
+:root{
+  --bg:#f9fafb; --surface:#ffffff; --surface-2:#f3f4f6; --border:#e5e7eb;
+  --fg:#1f2937; --muted:#6b7280; --accent:#667eea; --accent-fg:#ffffff;
+  --danger:#a1392c; --danger-bg:#f7e2dd;
+  --c1:#667eea; --c1-bg:#e7e9fb;
+  --c2:#2f7a3c; --c2-bg:#e4f3e5;
+  --c3:#a8650f; --c3-bg:#fbead0;
+  --c4:#b05a1a; --c4-bg:#fbe9d8;
+  --c5:#746d57; --c5-bg:#e8e5d9;
+  color-scheme: light;
+  --font-display:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --font-body:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --font-mono:ui-monospace,"SF Mono","Cascadia Code","Roboto Mono","Courier New",monospace;
+}
+:root[data-theme="dark"]{
+  --bg:#141414; --surface:#1d1d1d; --surface-2:#262625; --border:#38372f;
+  --fg:#efece2; --muted:#a39d87; --accent:#667eea; --accent-fg:#ffffff;
+  --danger:#d26a5c; --danger-bg:#301e1b;
+  --c1:#8f9ff2; --c1-bg:#242a4d;
+  --c2:#5fae6b; --c2-bg:#1b2a1c;
+  --c3:#e8a33d; --c3-bg:#2d2311;
+  --c4:#e3833f; --c4-bg:#2c2111;
+  --c5:#8d8674; --c5-bg:#262520;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);margin:0;padding-inline:16px;padding-block:20px;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+button{font-family:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.volver{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;color:var(--muted);text-decoration:none;margin-bottom:12px}
+.volver:hover{color:var(--fg)}
+
+.sticky-top{position:sticky;top:0;background:var(--bg);z-index:10;padding-top:2px;margin-bottom:4px}
+
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+.page-header .eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.page-header h1{font-size:21px;font-weight:700;margin-top:4px}
+.page-header-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.btn-new{background:var(--accent);color:var(--accent-fg);border:none;border-radius:8px;padding:10px 16px;font-weight:600;font-size:14px;white-space:nowrap}
+.btn-new:hover{filter:brightness(1.08)}
+.btn-theme{background:var(--surface);border:1px solid var(--border);color:var(--fg);border-radius:8px;width:38px;height:38px;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.btn-theme:hover{border-color:var(--accent)}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:18px}
+.tab{background:none;border:none;color:var(--muted);font-size:13.5px;font-weight:600;padding:9px 4px;margin-right:18px;border-bottom:2px solid transparent;position:relative;top:1px;min-height:44px}
+.tab.active{color:var(--fg);border-bottom-color:var(--accent)}
+.view[hidden]{display:none}
+
+/* ---- Toolbar ---- */
+.toolbar-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:20px;display:flex;flex-direction:column;gap:12px}
+.toolbar-card select,.toolbar-card input[type=search]{background:var(--surface-2);border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:8px 10px;font-size:13px}
+.toolbar-search input[type=search]{width:100%}
+.toolbar-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.toolbar-filters select{flex:1 1 150px}
+.toolbar-check{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);white-space:nowrap}
+
+/* ---- Listado de tarjetas ---- */
+.lista{display:flex;flex-direction:column;gap:8px}
+.tarjeta{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;cursor:pointer;text-align:left;width:100%}
+.tarjeta:hover{border-color:var(--accent)}
+.tarjeta-main{min-width:0}
+.tarjeta-title{font-size:15px;font-weight:700}
+.tarjeta-sub{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.4}
+.tarjeta-count{font-size:12px;color:var(--muted);margin-bottom:12px;font-variant-numeric:tabular-nums}
+.tarjeta-aside{flex:0 0 auto;display:flex;align-items:center;gap:6px;flex-direction:column;align-items:flex-end}
+.empty-state{padding:30px 14px;text-align:center;color:var(--muted);font-size:13px;background:var(--surface);border:1px solid var(--border);border-radius:10px}
+
+.badge{display:inline-flex;align-items:center;font-size:11.5px;font-weight:600;border-radius:6px;padding:3px 8px;white-space:nowrap}
+
+/* ---- Modal ---- */
+.veil{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;z-index:20;padding-top:40px}
+@media (min-width:640px){.veil{align-items:center}}
+.veil[hidden]{display:none}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:14px 14px 0 0;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;padding:18px}
+@media (min-width:640px){.modal{border-radius:14px}}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px}
+.modal-head h2{font-size:17px}
+.x-close{background:none;border:none;color:var(--muted);font-size:20px;line-height:1;padding:4px;min-width:44px;min-height:44px}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.field label{font-size:12px;color:var(--muted)}
+.field input,.field select,.field textarea{background:var(--surface-2);border:1px solid var(--border);color:var(--fg);border-radius:7px;padding:9px 10px;font-size:16px;font-family:inherit;width:100%}
+.field textarea{resize:vertical;min-height:70px}
+.field-check{display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:14px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:420px){.row2{grid-template-columns:1fr}}
+
+.modal-actions{display:flex;gap:8px;margin-top:16px}
+.btn-primary{flex:1;background:var(--accent);color:var(--accent-fg);border:none;border-radius:8px;padding:11px;font-weight:600;font-size:14px;min-height:44px}
+.btn-ghost{background:none;border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:11px 14px;font-size:14px;min-height:44px}
+.btn-danger{background:none;border:1px solid var(--danger);color:var(--danger);border-radius:8px;padding:11px 14px;font-size:13px;min-height:44px}
+.btn-edit{background:none;border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:11px 14px;font-size:14px;min-height:44px}
+
+/* ---- Modal: vista de lectura ---- */
+.view-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.view-title{font-size:16px;font-weight:700}
+.view-sub{font-family:var(--font-mono);font-size:11.5px;color:var(--muted);margin-top:2px}
+.view-section{margin-top:14px;padding-top:13px;border-top:1px solid var(--border)}
+.view-section h3{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:9px;font-weight:700}
+.view-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px 12px}
+.view-item label{display:block;color:var(--muted);font-size:12px}
+.view-item .v{margin-top:1px;font-size:13.5px;font-weight:600}
+.view-item .v a{color:inherit}
+.view-empty{font-size:12.5px;color:var(--muted)}
+.view-actions{display:flex;gap:8px;margin-top:16px}
+.btn-view-action{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;background:none;border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:11px;font-weight:600;font-size:14px;min-height:44px}
+.btn-view-action:hover{border-color:var(--muted)}
+
+/* ---- Dashboard ---- */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:22px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px}
+.kpi-card .n{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.kpi-card .l{font-size:12px;color:var(--muted);margin-top:2px}
+.dash-section{margin-bottom:22px}
+.dash-section h3{font-size:13px;font-weight:700;margin-bottom:10px}
+.barra-row{display:flex;align-items:center;gap:10px;margin-bottom:7px;font-size:12.5px}
+.barra-label{flex:0 0 120px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.barra-track{flex:1;height:8px;background:var(--surface-2);border-radius:4px;overflow:hidden}
+.barra-fill{height:100%;border-radius:4px}
+.barra-val{flex:0 0 auto;font-variant-numeric:tabular-nums;color:var(--muted)}
+
+/* ---- Indicador de sincronización ---- */
+.sync-status{font-size:11.5px;color:var(--muted);white-space:nowrap}
+.sync-status.offline{color:var(--danger)}
+</style>
+</head>
+<body>
+
+<div class="sticky-top">
+<a class="volver" href="/index.html">&larr; Inicio</a>
+
+<div class="page-header">
+  <div>
+    <div class="eyebrow">EGPAIS · Parques · Güemes</div>
+    <h1>Parques</h1>
+  </div>
+  <div class="page-header-actions">
+    <span class="sync-status" id="syncStatus">☁️ Sincronizado</span>
+    <button class="btn-theme" id="btnTheme" aria-label="Cambiar a modo oscuro">🌙</button>
+    <button class="btn-new" id="btnNew">+ Nuevo lote</button>
+  </div>
+</div>
+
+<div class="tabs" role="tablist" aria-label="Vistas">
+  <button class="tab" id="tabLotes" role="tab" aria-selected="true" aria-controls="viewLotes">Lotes</button>
+  <button class="tab" id="tabEmpresas" role="tab" aria-selected="false" aria-controls="viewEmpresas">Empresas</button>
+  <button class="tab" id="tabDash" role="tab" aria-selected="false" aria-controls="viewDash">Dashboard</button>
+</div>
+</div>
+
+<!-- ===== VISTA LOTES ===== -->
+<section class="view" id="viewLotes" role="tabpanel" aria-labelledby="tabLotes">
+  <div class="toolbar-card">
+    <div class="toolbar-search">
+      <input type="search" id="searchLotes" placeholder="Buscar por lote, manzana, parcela, matrícula o empresa…">
+    </div>
+    <div class="toolbar-filters">
+      <select id="filterEstado"><option value="">Todos los estados</option></select>
+      <select id="filterManzana"><option value="">Todas las manzanas</option></select>
+      <label class="toolbar-check"><input type="checkbox" id="filterDisponible"> Solo disponibles</label>
+    </div>
+  </div>
+  <div class="tarjeta-count" id="lotesCount"></div>
+  <div class="lista" id="lotesList"></div>
+</section>
+
+<!-- ===== VISTA EMPRESAS ===== -->
+<section class="view" id="viewEmpresas" role="tabpanel" aria-labelledby="tabEmpresas" hidden>
+  <div class="toolbar-card">
+    <div class="toolbar-search">
+      <input type="search" id="searchEmpresas" placeholder="Buscar por empresa, rubro o contacto…">
+    </div>
+  </div>
+  <div class="tarjeta-count" id="empresasCount"></div>
+  <div class="lista" id="empresasList"></div>
+</section>
+
+<!-- ===== VISTA DASHBOARD ===== -->
+<section class="view" id="viewDash" role="tabpanel" aria-labelledby="tabDash" hidden>
+  <div class="kpi-grid" id="kpiGrid"></div>
+  <div class="dash-section">
+    <h3>Lotes por estado</h3>
+    <div id="dashEstados"></div>
+  </div>
+</section>
+
+<div class="veil" id="veil" hidden><div class="modal" id="modal"></div></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var ESTADOS = ["Activa","Sin actividad","Alquilada","En construcción"];
+  function claseEstado(estado){
+    var i = ESTADOS.indexOf(estado);
+    var n = (i===-1 ? 4 : i) % 5 + 1;
+    return "c"+n;
+  }
+
+  var ICON_EDIT = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"></path></svg>';
+  var ICON_TRASH = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>';
+
+  var STORAGE_KEY = "parques_crm_v1";
+
+  function esc(s){
+    return String(s==null?"":s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+  function fmtM2(n){
+    if(n==null || n==="") return "—";
+    return Number(n).toLocaleString("es-AR")+" m²";
+  }
+
+  // IDs nuevos siguen el esquema del dato real (E001, L001…) en vez de un
+  // uid random, para no mezclar dos estilos de id en la misma colección.
+  function siguienteId(lista, campo, prefijo){
+    var max = 0;
+    lista.forEach(function(x){
+      var m = /^[A-Za-z]+(\d+)/.exec(x[campo]||"");
+      if(m) max = Math.max(max, parseInt(m[1],10));
+    });
+    var n = max+1;
+    return prefijo + String(n).padStart(3,"0");
+  }
+
+  function vacio(){ return { parque:"Güemes", empresas:[], lotes:[], ocupaciones:[], reservas:[] }; }
+
+  function load(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return vacio();
+      var data = JSON.parse(raw);
+      if(!data || typeof data!=="object") return vacio();
+      return {
+        parque: data.parque || "Güemes",
+        empresas: Array.isArray(data.empresas) ? data.empresas : [],
+        lotes: Array.isArray(data.lotes) ? data.lotes : [],
+        ocupaciones: Array.isArray(data.ocupaciones) ? data.ocupaciones : [],
+        reservas: Array.isArray(data.reservas) ? data.reservas : []
+      };
+    }catch(e){ return vacio(); }
+  }
+  function save(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+    marcarPendiente();
+  }
+
+  // ---- Sync: GitHub-como-base-de-datos detrás del Worker (/api/sync-parques) ----
+  var SYNC_ENDPOINT = "/api/sync-parques";
+  var SYNC_PENDING_KEY = "parques_crm_sync_pendiente_v1";
+  var syncTimer = null, syncEnProgreso = false;
+
+  function marcarPendiente(){
+    try{ localStorage.setItem(SYNC_PENDING_KEY, "1"); }catch(e){}
+    setSyncStatus("pendiente");
+    if(syncTimer) clearTimeout(syncTimer);
+    syncTimer = setTimeout(subirCambios, 100);
+  }
+  function haySyncPendiente(){
+    try{ return localStorage.getItem(SYNC_PENDING_KEY) === "1"; }catch(e){ return false; }
+  }
+  function setSyncStatus(s){
+    var el = document.getElementById("syncStatus");
+    if(!el) return;
+    var map = {
+      sincronizado: ["☁️ Sincronizado", ""],
+      cargando: ["⏳ Cargando…", ""],
+      pendiente: ["⏳ Sincronizando…", ""],
+      subiendo: ["⏳ Sincronizando…", ""],
+      offline: ["⚠️ Sin conexión", "offline"]
+    };
+    var m = map[s] || map.sincronizado;
+    el.textContent = m[0];
+    el.className = "sync-status "+m[1];
+  }
+
+  async function subirCambios(){
+    if(syncEnProgreso || !haySyncPendiente()) return;
+    syncEnProgreso = true;
+    setSyncStatus("subiendo");
+    try{
+      var resp = await fetch(SYNC_ENDPOINT, {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify(state)
+      });
+      if(!resp.ok) throw new Error("POST falló: "+resp.status);
+      try{ localStorage.removeItem(SYNC_PENDING_KEY); }catch(e){}
+      setSyncStatus("sincronizado");
+    }catch(e){
+      setSyncStatus("offline");
+    }
+    syncEnProgreso = false;
+    if(haySyncPendiente()) subirCambios();
+  }
+
+  async function bajarCambiosIniciales(){
+    if(haySyncPendiente()){
+      subirCambios(); // no pisar trabajo local sin subir
+      return;
+    }
+    setSyncStatus("cargando");
+    try{
+      var resp = await fetch(SYNC_ENDPOINT);
+      if(!resp.ok) throw new Error("GET falló: "+resp.status);
+      var datos = await resp.json();
+      if(datos && (Array.isArray(datos.lotes) || Array.isArray(datos.empresas))){
+        state.parque = datos.parque || "Güemes";
+        state.empresas = Array.isArray(datos.empresas) ? datos.empresas : [];
+        state.lotes = Array.isArray(datos.lotes) ? datos.lotes : [];
+        state.ocupaciones = Array.isArray(datos.ocupaciones) ? datos.ocupaciones : [];
+        state.reservas = Array.isArray(datos.reservas) ? datos.reservas : [];
+        try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+        renderFiltros();
+        renderLotes();
+        renderEmpresas();
+      }
+      setSyncStatus("sincronizado");
+    }catch(e){
+      setSyncStatus("offline");
+    }
+  }
+
+  var inicial = load();
+  var state = Object.assign({
+    editingTipo:null, editingId:null, modalMode:null,
+    filterEstado:"", filterManzana:"", filterDisponible:false, searchLotes:"", searchEmpresas:""
+  }, inicial);
+
+  function empresaPorId(id){ return state.empresas.find(function(e){return e.id_empresa===id;}); }
+  function lotesDeEmpresa(id){ return state.lotes.filter(function(l){return l.id_empresa===id;}); }
+  function ocupacionDeLote(idLote){ return state.ocupaciones.find(function(o){return o.id_lote===idLote && o.vigente;}); }
+  function nombreEmpresa(id){ var e=empresaPorId(id); return e ? e.nombre_empresa : null; }
+
+  // ---- Filtros ----
+  var selEstado = document.getElementById("filterEstado");
+  var selManzana = document.getElementById("filterManzana");
+  var chkDisponible = document.getElementById("filterDisponible");
+  function renderFiltros(){
+    var estadoActual = selEstado.value, manzanaActual = selManzana.value;
+    selEstado.innerHTML = '<option value="">Todos los estados</option>'+
+      ESTADOS.map(function(e){ return '<option value="'+esc(e)+'">'+esc(e)+'</option>'; }).join("");
+    var manzanas = Array.from(new Set(state.lotes.map(function(l){return l.manzana;}).filter(Boolean)))
+      .sort(function(a,b){ return Number(a)-Number(b) || String(a).localeCompare(String(b)); });
+    selManzana.innerHTML = '<option value="">Todas las manzanas</option>'+
+      manzanas.map(function(m){ return '<option value="'+esc(m)+'">Manzana '+esc(m)+'</option>'; }).join("");
+    selEstado.value = estadoActual; selManzana.value = manzanaActual;
+  }
+  selEstado.addEventListener("change", function(){ state.filterEstado=this.value; renderLotes(); });
+  selManzana.addEventListener("change", function(){ state.filterManzana=this.value; renderLotes(); });
+  chkDisponible.addEventListener("change", function(){ state.filterDisponible=this.checked; renderLotes(); });
+  document.getElementById("searchLotes").addEventListener("input", function(){ state.searchLotes=this.value.toLowerCase(); renderLotes(); });
+  document.getElementById("searchEmpresas").addEventListener("input", function(){ state.searchEmpresas=this.value.toLowerCase(); renderEmpresas(); });
+
+  function lotesFiltrados(){
+    return state.lotes.filter(function(l){
+      if(state.filterEstado && l.estado!==state.filterEstado) return false;
+      if(state.filterManzana && l.manzana!==state.filterManzana) return false;
+      if(state.filterDisponible && !l.disponible) return false;
+      if(state.searchLotes){
+        var blob = [l.id_lote,l.manzana,l.parcela,l.matricula,nombreEmpresa(l.id_empresa)].join(" ").toLowerCase();
+        if(blob.indexOf(state.searchLotes)===-1) return false;
+      }
+      return true;
+    });
+  }
+  function empresasFiltradas(){
+    return state.empresas.filter(function(e){
+      if(state.searchEmpresas){
+        var blob = [e.nombre_empresa,e.rubro,e.actividad,e.contacto_nombre].join(" ").toLowerCase();
+        if(blob.indexOf(state.searchEmpresas)===-1) return false;
+      }
+      return true;
+    });
+  }
+
+  // ---- Listado: Lotes ----
+  function renderLotes(){
+    var cont = document.getElementById("lotesList");
+    var cuenta = document.getElementById("lotesCount");
+    var filtrados = lotesFiltrados().slice().sort(function(a,b){
+      return (Number(a.manzana)||0)-(Number(b.manzana)||0) || String(a.id_lote).localeCompare(String(b.id_lote));
+    });
+    var total = state.lotes.length;
+    cuenta.textContent = !total ? ""
+      : (filtrados.length===total ? total+" lotes" : filtrados.length+" de "+total+" lotes");
+    if(!filtrados.length){
+      cont.innerHTML = '<div class="empty-state">'+
+        (total ? 'Sin lotes que coincidan con el filtro.' : 'Todavía no hay lotes cargados. Usá “+ Nuevo lote”.')+
+        '</div>';
+      return;
+    }
+    cont.innerHTML = filtrados.map(function(l){
+      var titular = nombreEmpresa(l.id_empresa);
+      var ocup = ocupacionDeLote(l.id_lote);
+      var sub = "Mz "+esc(l.manzana||"—")+" · Parcela "+esc(l.parcela||"—")+" · "+fmtM2(l.superficie_m2);
+      var nombre = titular || (l.disponible ? "Disponible para la venta" : "Libre / pendiente de revisión");
+      return '<button class="tarjeta" data-open-lote="'+esc(l.id_lote)+'">'+
+        '<div class="tarjeta-main">'+
+          '<div class="tarjeta-title">'+esc(l.id_lote)+' · '+esc(nombre)+(ocup?' <span class="badge" style="background:var(--c3-bg);color:var(--c3)">sublocado</span>':'')+'</div>'+
+          '<div class="tarjeta-sub">'+sub+'</div>'+
+        '</div>'+
+        '<div class="tarjeta-aside">'+
+          (l.estado?'<span class="badge" style="background:var(--'+claseEstado(l.estado)+'-bg);color:var(--'+claseEstado(l.estado)+')">'+esc(l.estado)+'</span>':'')+
+          (l.disponible?'<span class="badge" style="background:var(--c2-bg);color:var(--c2)">en venta</span>':'')+
+        '</div>'+
+        '</button>';
+    }).join("");
+    cont.querySelectorAll("[data-open-lote]").forEach(function(btn){
+      btn.addEventListener("click", function(){ openModal("lote", btn.getAttribute("data-open-lote")); });
+    });
+  }
+
+  // ---- Listado: Empresas ----
+  function renderEmpresas(){
+    var cont = document.getElementById("empresasList");
+    var cuenta = document.getElementById("empresasCount");
+    var filtradas = empresasFiltradas().slice().sort(function(a,b){
+      return String(a.nombre_empresa||"").localeCompare(String(b.nombre_empresa||""));
+    });
+    var total = state.empresas.length;
+    cuenta.textContent = !total ? ""
+      : (filtradas.length===total ? total+" empresas" : filtradas.length+" de "+total+" empresas");
+    if(!filtradas.length){
+      cont.innerHTML = '<div class="empty-state">'+
+        (total ? 'Sin empresas que coincidan con el filtro.' : 'Todavía no hay empresas cargadas.')+
+        '</div>';
+      return;
+    }
+    cont.innerHTML = filtradas.map(function(e){
+      var nLotes = lotesDeEmpresa(e.id_empresa).length;
+      var sub = [e.rubro, e.contacto_nombre].filter(Boolean).join(" · ");
+      return '<button class="tarjeta" data-open-empresa="'+esc(e.id_empresa)+'">'+
+        '<div class="tarjeta-main">'+
+          '<div class="tarjeta-title">'+esc(e.nombre_empresa)+'</div>'+
+          (sub?'<div class="tarjeta-sub">'+esc(sub)+'</div>':'')+
+        '</div>'+
+        '<div class="tarjeta-aside"><span class="badge" style="background:var(--c1-bg);color:var(--c1)">'+nLotes+' lote'+(nLotes===1?'':'s')+'</span></div>'+
+        '</button>';
+    }).join("");
+    cont.querySelectorAll("[data-open-empresa]").forEach(function(btn){
+      btn.addEventListener("click", function(){ openModal("empresa", btn.getAttribute("data-open-empresa")); });
+    });
+  }
+
+  // ---- Modal ----
+  var veil = document.getElementById("veil"), modal = document.getElementById("modal");
+  document.getElementById("btnNew").addEventListener("click", function(){ openModal("lote", null); });
+  veil.addEventListener("click", function(ev){ if(ev.target===veil) closeModal(); });
+
+  function openModal(tipo, id){
+    state.editingTipo = tipo;
+    state.editingId = id;
+    state.modalMode = id ? "view" : "edit";
+    veil.hidden = false;
+    renderModal();
+  }
+  function closeModal(){ veil.hidden = true; state.editingTipo=null; state.editingId = null; state.modalMode = null; }
+
+  function renderModal(){
+    if(state.editingTipo==="empresa"){
+      var emp = state.editingId ? empresaPorId(state.editingId) : null;
+      if(!emp || state.modalMode==="edit") renderEmpresaEdit(emp);
+      else renderEmpresaView(emp);
+    } else {
+      var lote = state.editingId ? state.lotes.find(function(x){return x.id_lote===state.editingId;}) : null;
+      if(!lote || state.modalMode==="edit") renderLoteEdit(lote);
+      else renderLoteView(lote);
+    }
+  }
+
+  function viewItem(label, html){
+    return '<div class="view-item"><label>'+esc(label)+'</label><div class="v">'+(html || '<span class="view-empty">—</span>')+'</div></div>';
+  }
+
+  // ---- Ficha de lote ----
+  function renderLoteView(l){
+    var titular = empresaPorId(l.id_empresa);
+    var ocup = ocupacionDeLote(l.id_lote);
+    var ocupante = ocup ? empresaPorId(ocup.id_empresa_ocupante) : null;
+
+    modal.innerHTML =
+      '<div class="modal-head"><button class="x-close" id="xCloseViewLote">&times;</button></div>'+
+      '<div class="view-head">'+
+        '<div><div class="view-title">'+esc(l.id_lote)+'</div>'+
+          '<div class="view-sub">Matrícula '+esc(l.matricula||"—")+'</div></div>'+
+        (l.estado?'<span class="badge" style="background:var(--'+claseEstado(l.estado)+'-bg);color:var(--'+claseEstado(l.estado)+')">'+esc(l.estado)+'</span>':'')+
+      '</div>'+
+
+      '<div class="view-section"><h3>Ubicación</h3>'+
+        '<div class="view-grid">'+
+          viewItem("Manzana", l.manzana?esc(l.manzana):null)+
+          viewItem("Parcela", l.parcela?esc(l.parcela):null)+
+          viewItem("Superficie", esc(fmtM2(l.superficie_m2)))+
+          viewItem("Escritura", l.escritura?esc(l.escritura):null)+
+        '</div>'+
+      '</div>'+
+
+      '<div class="view-section"><h3>Titularidad</h3>'+
+        (titular
+          ? '<div class="view-grid">'+
+              viewItem("Empresa", '<a href="#" data-goto-empresa="'+esc(titular.id_empresa)+'">'+esc(titular.nombre_empresa)+'</a>')+
+              viewItem("Propietario de la matrícula", l.propietario_matricula?esc(l.propietario_matricula):null)+
+            '</div>'
+          : '<p class="view-empty">'+(l.disponible ? 'Sin empresa — disponible para la venta.' : 'Sin empresa asignada (pendiente de revisión).')+'</p>')+
+      '</div>'+
+
+      (ocup
+        ? '<div class="view-section"><h3>Sublocación</h3><div class="view-grid">'+
+            viewItem("Ocupante", ocupante ? '<a href="#" data-goto-empresa="'+esc(ocupante.id_empresa)+'">'+esc(ocupante.nombre_empresa)+'</a>' : null)+
+            viewItem("Observación", ocup.observacion?esc(ocup.observacion):null)+
+          '</div></div>'
+        : '')+
+
+      '<div class="view-actions">'+
+        '<button type="button" class="btn-view-action" id="btnEditLote">'+ICON_EDIT+'Editar</button>'+
+        '<button type="button" class="btn-view-action" id="btnDeleteViewLote">'+ICON_TRASH+'Eliminar</button>'+
+      '</div>';
+
+    document.getElementById("xCloseViewLote").addEventListener("click", closeModal);
+    document.getElementById("btnEditLote").addEventListener("click", function(){ state.modalMode="edit"; renderModal(); });
+    document.getElementById("btnDeleteViewLote").addEventListener("click", onDeleteLote);
+    modal.querySelectorAll("[data-goto-empresa]").forEach(function(a){
+      a.addEventListener("click", function(ev){ ev.preventDefault(); openModal("empresa", a.getAttribute("data-goto-empresa")); });
+    });
+  }
+
+  function renderLoteEdit(l){
+    var isNew = !l;
+    var empresasOpts = '<option value="">— Libre / sin empresa —</option>'+
+      state.empresas.slice().sort(function(a,b){return String(a.nombre_empresa).localeCompare(String(b.nombre_empresa));}).map(function(e){
+        return '<option value="'+esc(e.id_empresa)+'" '+(l&&l.id_empresa===e.id_empresa?"selected":"")+'>'+esc(e.nombre_empresa)+'</option>';
+      }).join("");
+    var estadoOpts = '<option value="">Sin dato</option>'+ESTADOS.map(function(est){
+      return '<option value="'+esc(est)+'" '+(l&&l.estado===est?"selected":"")+'>'+esc(est)+'</option>';
+    }).join("");
+
+    modal.innerHTML =
+      '<div class="modal-head"><h2>'+(isNew?"Nuevo lote":"Editar lote")+'</h2><button class="x-close" id="xCloseLote">&times;</button></div>'+
+      '<form id="loteForm">'+
+        '<div class="row2">'+field("manzana","Manzana","text",l,"9")+field("parcela","Parcela","text",l,"11")+'</div>'+
+        '<div class="row2">'+field("superficie_m2","Superficie (m²)","number",l,"3000")+field("matricula","Matrícula","text",l,"12041")+'</div>'+
+        '<div class="field"><label for="f_id_empresa">Empresa titular</label><select id="f_id_empresa" name="id_empresa">'+empresasOpts+'</select></div>'+
+        field("propietario_matricula","Propietario de la matrícula","text",l,"Ente General de Parques...")+
+        '<div class="row2">'+
+          '<div class="field"><label for="f_estado">Estado</label><select id="f_estado" name="estado">'+estadoOpts+'</select></div>'+
+          field("escritura","Escritura","text",l,"Si / No")+
+        '</div>'+
+        '<label class="field-check"><input type="checkbox" id="f_disponible" '+(l&&l.disponible?"checked":"")+'> Disponible para la venta (cartera comercial)</label>'+
+        '<div class="modal-actions"><button type="submit" class="btn-primary">Guardar</button>'+
+        (isNew?'':'<button type="button" class="btn-edit" id="btnCancelEditLote">Cancelar</button><button type="button" class="btn-danger" id="btnDeleteLote">Eliminar</button>')+'</div>'+
+      '</form>';
+
+    veil.hidden = false;
+    document.getElementById("xCloseLote").addEventListener("click", closeModal);
+    document.getElementById("loteForm").addEventListener("submit", onSaveLote);
+    var delBtn = document.getElementById("btnDeleteLote");
+    if(delBtn) delBtn.addEventListener("click", onDeleteLote);
+    var cancelBtn = document.getElementById("btnCancelEditLote");
+    if(cancelBtn) cancelBtn.addEventListener("click", function(){
+      if(isNew){ closeModal(); } else { state.modalMode="view"; renderModal(); }
+    });
+  }
+
+  function onSaveLote(ev){
+    ev.preventDefault();
+    var id = state.editingTipo==="lote" ? state.editingId : null;
+    var existing = id ? state.lotes.find(function(x){return x.id_lote===id;}) : null;
+    var isNew = !existing;
+    var g = function(name){ var el=document.getElementById("f_"+name); return el?el.value:""; };
+
+    var l = existing || {id_lote: siguienteId(state.lotes,"id_lote","L")};
+    l.manzana = g("manzana").trim();
+    l.parcela = g("parcela").trim();
+    l.superficie_m2 = g("superficie_m2") ? Number(g("superficie_m2")) : null;
+    l.matricula = g("matricula").trim();
+    l.id_empresa = g("id_empresa") || null;
+    l.propietario_matricula = g("propietario_matricula").trim();
+    l.estado = g("estado") || null;
+    l.escritura = g("escritura").trim();
+    l.disponible = document.getElementById("f_disponible").checked;
+
+    if(isNew) state.lotes.push(l);
+    state.editingTipo = "lote"; state.editingId = l.id_lote;
+    save();
+    closeModal();
+    renderFiltros();
+    renderLotes();
+    renderEmpresas();
+  }
+  function onDeleteLote(){
+    if(!state.editingId || state.editingTipo!=="lote") return;
+    state.lotes = state.lotes.filter(function(x){return x.id_lote!==state.editingId;});
+    save(); closeModal(); renderFiltros(); renderLotes();
+  }
+
+  // ---- Ficha de empresa ----
+  function renderEmpresaView(e){
+    var lotes = lotesDeEmpresa(e.id_empresa);
+    var contactoLinea = [e.contacto_nombre, e.cargo].filter(Boolean).join(" · ");
+    modal.innerHTML =
+      '<div class="modal-head"><button class="x-close" id="xCloseViewEmp">&times;</button></div>'+
+      '<div class="view-head"><div><div class="view-title">'+esc(e.nombre_empresa)+'</div>'+
+        (e.cuit?'<div class="view-sub">CUIT '+esc(e.cuit)+'</div>':'')+'</div></div>'+
+
+      '<div class="view-section"><h3>Actividad</h3>'+
+        '<div class="view-grid">'+
+          viewItem("Rubro", e.rubro?esc(e.rubro):null)+
+          viewItem("Actividad", e.actividad?esc(e.actividad):null)+
+        '</div>'+
+      '</div>'+
+
+      '<div class="view-section"><h3>Contacto</h3>'+
+        '<div class="view-grid">'+
+          viewItem("Nombre y cargo", contactoLinea?esc(contactoLinea):null)+
+          viewItem("Teléfono", e.telefono?esc(e.telefono):null)+
+          viewItem("Mail", e.mail?esc(e.mail):null)+
+          viewItem("Ubicación", e.ubicacion?esc(e.ubicacion):null)+
+        '</div>'+
+      '</div>'+
+
+      (e.pagweb||e.instagram||e.linkedin
+        ? '<div class="view-section"><h3>Web</h3><div class="view-grid">'+
+            viewItem("Página web", e.pagweb?'<a href="'+esc(e.pagweb)+'" target="_blank" rel="noopener">'+esc(e.pagweb)+'</a>':null)+
+            viewItem("Instagram", e.instagram?'<a href="'+esc(e.instagram)+'" target="_blank" rel="noopener">'+esc(e.instagram)+'</a>':null)+
+            viewItem("LinkedIn", e.linkedin?'<a href="'+esc(e.linkedin)+'" target="_blank" rel="noopener">'+esc(e.linkedin)+'</a>':null)+
+          '</div></div>'
+        : '')+
+
+      (e.observacion ? '<div class="view-section"><h3>Observación</h3><p class="view-texto">'+esc(e.observacion)+'</p></div>' : '')+
+
+      '<div class="view-section"><h3>Lotes ('+lotes.length+')</h3>'+
+        (lotes.length
+          ? lotes.map(function(l){ return '<div class="view-item" style="margin-bottom:8px"><a href="#" data-goto-lote="'+esc(l.id_lote)+'">'+esc(l.id_lote)+' — Mz '+esc(l.manzana||"—")+', Parcela '+esc(l.parcela||"—")+'</a></div>'; }).join("")
+          : '<p class="view-empty">Sin lotes asignados.</p>')+
+      '</div>'+
+
+      '<div class="view-actions">'+
+        '<button type="button" class="btn-view-action" id="btnEditEmp">'+ICON_EDIT+'Editar</button>'+
+        '<button type="button" class="btn-view-action" id="btnDeleteViewEmp">'+ICON_TRASH+'Eliminar</button>'+
+      '</div>';
+
+    document.getElementById("xCloseViewEmp").addEventListener("click", closeModal);
+    document.getElementById("btnEditEmp").addEventListener("click", function(){ state.modalMode="edit"; renderModal(); });
+    document.getElementById("btnDeleteViewEmp").addEventListener("click", onDeleteEmpresa);
+    modal.querySelectorAll("[data-goto-lote]").forEach(function(a){
+      a.addEventListener("click", function(ev){ ev.preventDefault(); openModal("lote", a.getAttribute("data-goto-lote")); });
+    });
+  }
+
+  function renderEmpresaEdit(e){
+    var isNew = !e;
+    modal.innerHTML =
+      '<div class="modal-head"><h2>'+(isNew?"Nueva empresa":"Editar empresa")+'</h2><button class="x-close" id="xCloseEmp">&times;</button></div>'+
+      '<form id="empresaForm">'+
+        field("nombre_empresa","Nombre","text",e,"Razón social")+
+        '<div class="row2">'+field("rubro","Rubro","text",e)+field("actividad","Actividad","text",e)+'</div>'+
+        '<div class="row2">'+field("cuit","CUIT","text",e)+field("telefono","Teléfono","text",e)+'</div>'+
+        '<div class="row2">'+field("contacto_nombre","Contacto","text",e)+field("cargo","Cargo","text",e)+'</div>'+
+        field("mail","Mail","text",e)+
+        field("ubicacion","Ubicación","text",e)+
+        '<div class="row2">'+field("pagweb","Página web","text",e)+field("instagram","Instagram","text",e)+'</div>'+
+        field("linkedin","LinkedIn","text",e)+
+        '<div class="field"><label for="f_observacion">Observación</label><textarea id="f_observacion" name="observacion">'+esc(e?e.observacion:"")+'</textarea></div>'+
+        '<div class="modal-actions"><button type="submit" class="btn-primary">Guardar</button>'+
+        (isNew?'':'<button type="button" class="btn-edit" id="btnCancelEditEmp">Cancelar</button><button type="button" class="btn-danger" id="btnDeleteEmp">Eliminar</button>')+'</div>'+
+      '</form>';
+
+    veil.hidden = false;
+    document.getElementById("xCloseEmp").addEventListener("click", closeModal);
+    document.getElementById("empresaForm").addEventListener("submit", onSaveEmpresa);
+    var delBtn = document.getElementById("btnDeleteEmp");
+    if(delBtn) delBtn.addEventListener("click", onDeleteEmpresa);
+    var cancelBtn = document.getElementById("btnCancelEditEmp");
+    if(cancelBtn) cancelBtn.addEventListener("click", function(){
+      if(isNew){ closeModal(); } else { state.modalMode="view"; renderModal(); }
+    });
+  }
+
+  function onSaveEmpresa(ev){
+    ev.preventDefault();
+    var id = state.editingTipo==="empresa" ? state.editingId : null;
+    var existing = id ? empresaPorId(id) : null;
+    var isNew = !existing;
+    var g = function(name){ var el=document.getElementById("f_"+name); return el?el.value:""; };
+
+    var e = existing || {id_empresa: siguienteId(state.empresas,"id_empresa","E")};
+    e.nombre_empresa = g("nombre_empresa").trim();
+    e.rubro = g("rubro").trim();
+    e.actividad = g("actividad").trim();
+    e.cuit = g("cuit").trim();
+    e.telefono = g("telefono").trim();
+    e.contacto_nombre = g("contacto_nombre").trim();
+    e.cargo = g("cargo").trim();
+    e.mail = g("mail").trim();
+    e.ubicacion = g("ubicacion").trim();
+    e.pagweb = g("pagweb").trim();
+    e.instagram = g("instagram").trim();
+    e.linkedin = g("linkedin").trim();
+    e.observacion = g("observacion").trim();
+
+    if(isNew) state.empresas.push(e);
+    state.editingTipo = "empresa"; state.editingId = e.id_empresa;
+    save();
+    closeModal();
+    renderEmpresas();
+    renderLotes();
+  }
+  function onDeleteEmpresa(){
+    if(!state.editingId || state.editingTipo!=="empresa") return;
+    var id = state.editingId;
+    state.empresas = state.empresas.filter(function(x){return x.id_empresa!==id;});
+    // Un lote cuya empresa se borró queda libre, nunca con una referencia colgada.
+    state.lotes.forEach(function(l){ if(l.id_empresa===id) l.id_empresa=null; });
+    save(); closeModal(); renderEmpresas(); renderLotes();
+  }
+
+  function field(name,label,type,obj,placeholder){
+    var val = obj ? (obj[name]==null?"":obj[name]) : "";
+    return '<div class="field"><label for="f_'+name+'">'+esc(label)+'</label>'+
+      '<input id="f_'+name+'" name="'+name+'" type="'+type+'" value="'+esc(val)+'" placeholder="'+esc(placeholder||"")+'"></div>';
+  }
+
+  // ---- Dashboard ----
+  function renderDashboard(){
+    var lotes = state.lotes;
+    var totalSup = lotes.reduce(function(s,l){ return s + (Number(l.superficie_m2)||0); }, 0);
+    var disponibles = lotes.filter(function(l){return l.disponible;});
+    var supDisponible = disponibles.reduce(function(s,l){ return s + (Number(l.superficie_m2)||0); }, 0);
+
+    document.getElementById("kpiGrid").innerHTML = [
+      ["Lotes", lotes.length],
+      ["Empresas", state.empresas.length],
+      ["Superficie total", fmtM2(totalSup)],
+      ["Disponibles", disponibles.length+" ("+fmtM2(supDisponible)+")"],
+      ["Sublocados", state.ocupaciones.filter(function(o){return o.vigente;}).length]
+    ].map(function(kv){
+      return '<div class="kpi-card"><div class="n">'+kv[1]+'</div><div class="l">'+esc(kv[0])+'</div></div>';
+    }).join("");
+
+    var porEstado = {};
+    lotes.forEach(function(l){ var k=l.estado||"Sin dato"; porEstado[k]=(porEstado[k]||0)+1; });
+    var max = Math.max.apply(null, Object.values(porEstado).concat([1]));
+    document.getElementById("dashEstados").innerHTML = Object.keys(porEstado).sort(function(a,b){return porEstado[b]-porEstado[a];}).map(function(k){
+      var n = porEstado[k];
+      var color = k==="Sin dato" ? "var(--muted)" : "var(--"+claseEstado(k)+")";
+      return '<div class="barra-row"><div class="barra-label">'+esc(k)+'</div>'+
+        '<div class="barra-track"><div class="barra-fill" style="width:'+Math.round(n/max*100)+'%;background:'+color+'"></div></div>'+
+        '<div class="barra-val">'+n+'</div></div>';
+    }).join("");
+  }
+
+  // ---- Tabs / routing ----
+  var tabLotes = document.getElementById("tabLotes"), tabEmpresas = document.getElementById("tabEmpresas"), tabDash = document.getElementById("tabDash");
+  var viewLotes = document.getElementById("viewLotes"), viewEmpresas = document.getElementById("viewEmpresas"), viewDash = document.getElementById("viewDash");
+  function showView(name, desdeHash){
+    var isEmpresas = name==="empresas", isDash = name==="dashboard";
+    viewLotes.hidden = isEmpresas || isDash;
+    viewEmpresas.hidden = !isEmpresas;
+    viewDash.hidden = !isDash;
+    tabLotes.classList.toggle("active", !isEmpresas && !isDash);
+    tabEmpresas.classList.toggle("active", isEmpresas);
+    tabDash.classList.toggle("active", isDash);
+    tabLotes.setAttribute("aria-selected", String(!isEmpresas && !isDash));
+    tabEmpresas.setAttribute("aria-selected", String(isEmpresas));
+    tabDash.setAttribute("aria-selected", String(isDash));
+    if(isDash) renderDashboard();
+    if(desdeHash) return;
+    var destino = isEmpresas ? "#empresas" : isDash ? "#dashboard" : "#lotes";
+    if(location.hash !== destino) location.hash = destino;
+  }
+  tabLotes.addEventListener("click", function(){ showView("lotes"); });
+  tabEmpresas.addEventListener("click", function(){ showView("empresas"); });
+  tabDash.addEventListener("click", function(){ showView("dashboard"); });
+  window.addEventListener("hashchange", function(){
+    var h = location.hash;
+    showView(h==="#empresas" ? "empresas" : h==="#dashboard" ? "dashboard" : "lotes", true);
+  });
+
+  // ---- Tema claro/oscuro ----
+  var THEME_KEY = "parques_crm_theme_v1";
+  var btnTheme = document.getElementById("btnTheme");
+  function applyThemeButton(){
+    var dark = document.documentElement.getAttribute("data-theme")==="dark";
+    btnTheme.textContent = dark ? "☀️" : "🌙";
+    btnTheme.setAttribute("aria-label", dark ? "Cambiar a modo claro" : "Cambiar a modo oscuro");
+  }
+  btnTheme.addEventListener("click", function(){
+    var dark = document.documentElement.getAttribute("data-theme")==="dark";
+    if(dark){ document.documentElement.removeAttribute("data-theme"); localStorage.setItem(THEME_KEY,"light"); }
+    else { document.documentElement.setAttribute("data-theme","dark"); localStorage.setItem(THEME_KEY,"dark"); }
+    applyThemeButton();
+  });
+  applyThemeButton();
+
+  renderFiltros();
+  renderLotes();
+  renderEmpresas();
+  showView(location.hash==="#empresas" ? "empresas" : location.hash==="#dashboard" ? "dashboard" : "lotes", true);
+  bajarCambiosIniciales();
+
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  }
+})();
+</script>
+</body>
+</html>
