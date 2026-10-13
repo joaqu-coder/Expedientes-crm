@@ -9,13 +9,14 @@
       "parque_industrial": "Salta",
       "rubro": "Manufactura",
       "superficie_solicitada_m2": 15000,
-      "actividad_empresa": "Ampliiación de corte plegado y pintura industrial",
+      "actividad_empresa": "Ampliación de corte plegado y pintura industrial",
       "situacion": "En_tratamiento",
       "representante_nombre": "Victor Funes",
       "contacto_tel": "3875411112",
       "contacto_mail": "",
       "fecha_ultimo_movimiento": "01/09/2026",
-      "intervenciones": []
+      "intervenciones": [],
+      "actualizado_en": "2026-10-13T00:39:58.155Z"
     },
     {
       "id": "exp_imp002",
