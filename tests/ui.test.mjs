@@ -937,66 +937,77 @@ async function testParques(viewport, puerto) {
   page.on('pageerror', (e) => problemas.push('pageerror: ' + e.message));
   page.on('dialog', async (d) => { problemas.push('alert: ' + d.message()); await d.dismiss(); });
   await page.goto(`http://localhost:${puerto}/`, { waitUntil: 'networkidle' });
-  await page.waitForFunction(() => document.querySelectorAll('#lotesList .tarjeta').length > 0);
+  // Empresas es la vista por defecto — ya no hay una pestaña "Lotes" suelta.
+  await page.waitForFunction(() => document.querySelectorAll('#empresasList .tarjeta').length > 0);
 
   const totalLotes = datos.lotes.length;
   const totalEmpresas = datos.empresas.length;
+  const sinEmpresa = datos.lotes.filter((l) => !l.id_empresa);
   ok(totalLotes === 138, `el archivo trae los ${totalLotes} lotes reales de Güemes`);
   ok(totalEmpresas === 55, `el archivo trae las ${totalEmpresas} empresas reales`);
-  ok((await page.locator('#lotesCount').textContent()).includes(String(totalLotes)),
-     'el contador de lotes muestra el total');
+  ok((await page.locator('#empresasCount').textContent()).includes(String(totalEmpresas)),
+     'el contador de empresas muestra el total, por default');
+  ok(await page.locator('#filterEstadoEmpresas option', { hasText: 'Todos los estados' }).count() === 1,
+     'el listado de Empresas tiene el filtro "Todos los estados"');
 
-  // Filtro por estado
-  await page.selectOption('#filterEstado', 'Activa');
+  // Búsqueda por empresa
+  await page.fill('#searchEmpresas', 'AGSOF');
   await page.waitForTimeout(150);
-  const esperadoActiva = datos.lotes.filter((l) => l.estado === 'Activa').length;
-  ok((await page.locator('#lotesCount').textContent()).startsWith(esperadoActiva + ' de '),
-     `el filtro por estado deja ${esperadoActiva} lotes Activa`);
-  await page.selectOption('#filterEstado', '');
-
-  // Disponibles: los que de hecho están en venta, el caso que motivó la
-  // tarjeta (antes "LIBRE: BUSQUIN"/"LIBRE: FORTE"/etc. en las planillas).
-  await page.click('#filterDisponible');
-  await page.waitForTimeout(150);
-  const esperadoDisponible = datos.lotes.filter((l) => l.disponible).length;
-  ok((await page.locator('#lotesCount').textContent()).startsWith(esperadoDisponible + ' de '),
-     `"Solo disponibles" deja ${esperadoDisponible} lotes`);
-  await page.click('#filterDisponible');
-
-  // Búsqueda por nombre de empresa
-  await page.fill('#searchLotes', 'AGSOF');
-  await page.waitForTimeout(150);
-  const esperadoAgsof = datos.lotes.filter((l) => {
-    const e = datos.empresas.find((x) => x.id_empresa === l.id_empresa);
-    return e && e.nombre_empresa.toUpperCase().includes('AGSOF');
-  }).length;
-  ok((await page.locator('#lotesList .tarjeta').count()) === esperadoAgsof,
-     `la búsqueda por empresa encuentra los ${esperadoAgsof} lotes de AGSOF`);
-  await page.fill('#searchLotes', '');
+  const esperadoAgsof = datos.empresas.filter((e) => e.nombre_empresa.toUpperCase().includes('AGSOF')).length;
+  ok((await page.locator('#empresasList .tarjeta').count()) === esperadoAgsof,
+     `la búsqueda encuentra las ${esperadoAgsof} empresas AGSOF`);
+  await page.fill('#searchEmpresas', '');
   await page.waitForTimeout(150);
 
-  // Ficha de lote: muestra la empresa titular, no un id pelado.
-  await page.locator('#lotesList .tarjeta', { hasText: 'L001' }).first().click();
-  await page.waitForSelector('#btnEditLote');
-  const fichaLote = await page.locator('#modal').textContent();
-  ok(fichaLote.includes('V8 PRODUCTOS DE HORMIGÓN'), 'la ficha del lote L001 muestra su empresa titular');
-  ok(fichaLote.includes('Titularidad'), 'la ficha tiene sección Titularidad');
+  // Ficha de empresa: tab Empresa — Representante, Cargo, Rubro, Actividad,
+  // CUIT, en ese orden, con el contacto real de la empresa instalada.
+  await page.locator('#empresasList .tarjeta', { hasText: 'AGSOF S.A' }).first().click();
+  await page.waitForSelector('#btnEditEmp');
+  const fichaEmpresa = await page.locator('#modal').textContent();
+  ok(fichaEmpresa.includes('Guillermo Frisch'), 'la ficha de la empresa muestra su contacto (Representante)');
+  ok(fichaEmpresa.includes('Encargado'), 'la ficha de la empresa muestra el Cargo');
+  const ordenCampos = ['Representante', 'Cargo', 'Rubro', 'Actividad', 'CUIT']
+    .map((campo) => fichaEmpresa.indexOf(campo));
+  ok(ordenCampos.every((i, idx) => idx === 0 || i > ordenCampos[idx - 1]),
+     'el tab Empresa respeta el orden Representante/Cargo/Rubro/Actividad/CUIT');
+  ok(fichaEmpresa.includes('Lotes'), 'la ficha de la empresa lista sus lotes');
 
-  // Sublocación: L038 tiene una ocupación vigente (titular E008, ocupante E028).
-  await page.click('#xCloseViewLote');
-  await page.fill('#searchLotes', 'L038');
+  // Tab Contacto: Web e Instagram deben ser links reales (con esquema), no
+  // el valor crudo como texto — si no navegan, no cumplen "no debe perder
+  // la funcionalidad".
+  await page.click('[data-subtab="contacto"]');
+  const hrefWeb = await page.locator('#empSubpanel a', { hasText: 'agsofsa.com.ar' }).getAttribute('href');
+  ok(/^https?:\/\//.test(hrefWeb || ''), 'el link de Web navega a una URL real');
+  const hrefIg = await page.locator('#empSubpanel a', { hasText: 'instagram.com/agsof' }).getAttribute('href');
+  ok(/^https?:\/\/.*instagram\.com/.test(hrefIg || ''), 'el link de Instagram navega a una URL real');
+  const hrefMail = await page.locator('#empSubpanel a', { hasText: 'guillermo@grupomm.com.ar' }).getAttribute('href');
+  ok((hrefMail || '').startsWith('mailto:'), 'el email abre el cliente de mail (mailto:)');
+
+  // Tab Lotes de la ficha: solo Mza/Superficie/Parcela/Matrícula/Propiedad/
+  // Escritura — nada de "Titular" (viejo nombre) ni badge de estado/color.
+  await page.click('[data-subtab="lote"]');
+  const panelLotes = await page.locator('#empSubpanel').innerHTML();
+  ok(panelLotes.includes('Propiedad:'), 'el tab Lotes usa la etiqueta "Propiedad" (no "Titular")');
+  ok(!panelLotes.includes('Titular:'), 'el tab Lotes ya no muestra "Titular"');
+  ok(!/class="lot-si"|class="lot-no"/.test(panelLotes), 'el tab Lotes no colorea Escritura (sobrio, sin color)');
+  await page.click('#xCloseViewEmp');
+
+  // Sublocación: L038 tiene una ocupación vigente (titular E008/ALISAN,
+  // ocupante E028) — se revisa entrando por la ficha de la empresa titular,
+  // ya que el lote en sí no tiene una pestaña propia fuera de "Comercial".
+  const alisan = datos.empresas.find((e) => e.id_empresa === 'E008');
+  await page.fill('#searchEmpresas', alisan.nombre_empresa);
   await page.waitForTimeout(150);
-  await page.locator('#lotesList .tarjeta', { hasText: 'L038' }).first().click();
+  await page.locator('#empresasList .tarjeta', { hasText: alisan.nombre_empresa }).first().click();
+  await page.waitForSelector('#btnEditEmp');
+  await page.click('[data-subtab="lote"]');
+  await page.click('[data-goto-lote="L038"]');
   await page.waitForSelector('#btnEditLote');
   ok((await page.locator('#modal').textContent()).includes('Sublocación'),
      'la ficha de un lote sublocado muestra la sección Sublocación');
-  await page.click('#xCloseViewLote');
-  await page.fill('#searchLotes', '');
-  await page.waitForTimeout(150);
 
-  // Editar lote: el cambio tiene que llegar al servidor con tildes intactas.
-  await page.locator('#lotesList .tarjeta', { hasText: 'L001' }).first().click();
-  await page.waitForSelector('#btnEditLote');
+  // Editar lote (desde la ficha de empresa): el cambio llega al servidor
+  // con tildes, ñ y emoji intactos.
   await page.click('#btnEditLote');
   await page.waitForSelector('#f_matricula');
   await page.fill('#f_matricula', 'Editado — ñandú ☕');
@@ -1005,18 +1016,31 @@ async function testParques(viewport, puerto) {
   ok(ultimoPost?.lotes?.length === totalLotes, `el POST sube los ${totalLotes} lotes`);
   ok(ultimoPost.lotes.some((l) => l.matricula === 'Editado — ñandú ☕'),
      'la matrícula editada llega al servidor con tildes, ñ y emoji intactos');
+  // onSaveLote ya cierra el modal al guardar.
+  await page.fill('#searchEmpresas', '');
+  await page.waitForTimeout(150);
 
-  // Empresas: directorio con el contacto de la empresa instalada.
-  await page.click('#tabEmpresas');
-  await page.waitForSelector('#empresasList .tarjeta');
-  ok((await page.locator('#empresasCount').textContent()).includes(String(totalEmpresas)),
-     'el contador de empresas muestra el total');
-  await page.locator('#empresasList .tarjeta', { hasText: 'AGSOF S.A' }).first().click();
-  await page.waitForSelector('#btnEditEmp');
-  const fichaEmpresa = await page.locator('#modal').textContent();
-  ok(fichaEmpresa.includes('Guillermo Frisch'), 'la ficha de la empresa muestra su contacto');
-  ok(fichaEmpresa.includes('Lotes'), 'la ficha de la empresa lista sus lotes');
-  await page.click('#xCloseViewEmp');
+  // Comercial: lotes sin empresa (disponibles para la venta + pendientes de
+  // revisión) — ya no hay una pestaña "Lotes" general, esto reemplaza lo
+  // que ahí se podía hacer con los lotes libres.
+  await page.click('#tabComercial');
+  await page.waitForSelector('#comercialList .tarjeta');
+  ok((await page.locator('#comercialCount').textContent()).includes(String(sinEmpresa.length)),
+     `el contador de Comercial muestra los ${sinEmpresa.length} lotes sin empresa`);
+  await page.click('#filterDisponibleComercial');
+  await page.waitForTimeout(150);
+  const esperadoDisponible = sinEmpresa.filter((l) => l.disponible).length;
+  ok((await page.locator('#comercialCount').textContent()).startsWith(esperadoDisponible + ' de '),
+     `"Solo disponibles para la venta" deja ${esperadoDisponible} lotes`);
+  await page.click('#filterDisponibleComercial');
+
+  // Abrir un lote comercial también entra a la ficha estándar de lote
+  // (view/edit) — no se perdió esa funcionalidad al sacar la pestaña Lotes.
+  await page.locator('#comercialList .tarjeta').first().click();
+  await page.waitForSelector('#btnEditLote');
+  ok((await page.locator('#modal').textContent()).includes('Titularidad'),
+     'un lote comercial abre la misma ficha de lote (con su sección Titularidad)');
+  await page.click('#xCloseViewLote');
 
   // Dashboard: KPIs básicos.
   await page.click('#tabDash');
@@ -1024,8 +1048,8 @@ async function testParques(viewport, puerto) {
   const kpis = await page.locator('.kpi-card .n').allTextContents();
   ok(kpis.some((n) => n.trim() === String(totalLotes)), 'el dashboard muestra el total de lotes');
   ok(kpis.some((n) => n.trim() === String(totalEmpresas)), 'el dashboard muestra el total de empresas');
-  await page.click('#tabLotes');
-  await page.waitForSelector('#lotesList .tarjeta');
+  await page.click('#tabEmpresas');
+  await page.waitForSelector('#empresasList .tarjeta');
 
   ok(problemas.length === 0, 'sin errores de JS ni diálogos nativos' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
   await browser.close();

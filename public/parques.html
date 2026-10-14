@@ -169,8 +169,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .lot-row-main a:hover{color:var(--accent)}
 .lot-m2{flex:0 0 auto;font-weight:600;font-variant-numeric:tabular-nums}
 .lot-row-sub{display:flex;justify-content:space-between;gap:10px;color:var(--muted);font-size:12px;margin-top:3px}
-.lot-si{color:var(--c2);font-weight:600}
-.lot-no{color:var(--warn);font-weight:600}
+/* ---- Ficha de empresa: sub-tab Empresa — etiqueta en negrita, dato en
+   gris (al revés del .view-item de arriba), en el orden pedido:
+   Representante, Cargo, Rubro, Actividad, CUIT. */
+.info-list{display:flex;flex-direction:column}
+.info-row{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13.5px}
+.info-row:last-child{border-bottom:none}
+.info-row dt{font-weight:700;color:var(--fg);flex-shrink:0;margin:0}
+.info-row dd{margin:0;font-weight:400;color:var(--muted);text-align:right}
 
 /* ---- Dashboard ---- */
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:22px}
@@ -208,37 +214,47 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 </div>
 
 <div class="tabs" role="tablist" aria-label="Vistas">
-  <button class="tab" id="tabLotes" role="tab" aria-selected="true" aria-controls="viewLotes">Lotes</button>
-  <button class="tab" id="tabEmpresas" role="tab" aria-selected="false" aria-controls="viewEmpresas">Empresas</button>
+  <button class="tab" id="tabEmpresas" role="tab" aria-selected="true" aria-controls="viewEmpresas">Empresas</button>
+  <button class="tab" id="tabComercial" role="tab" aria-selected="false" aria-controls="viewComercial">Comercial</button>
   <button class="tab" id="tabDash" role="tab" aria-selected="false" aria-controls="viewDash">Dashboard</button>
 </div>
 </div>
 
-<!-- ===== VISTA LOTES ===== -->
-<section class="view" id="viewLotes" role="tabpanel" aria-labelledby="tabLotes">
-  <div class="toolbar-card">
-    <div class="toolbar-search">
-      <input type="search" id="searchLotes" placeholder="Buscar por lote, manzana, parcela, matrícula o empresa…">
-    </div>
-    <div class="toolbar-filters">
-      <select id="filterEstado"><option value="">Todos los estados</option></select>
-      <select id="filterManzana"><option value="">Todas las manzanas</option></select>
-      <label class="toolbar-check"><input type="checkbox" id="filterDisponible"> Solo disponibles</label>
-    </div>
-  </div>
-  <div class="tarjeta-count" id="lotesCount"></div>
-  <div class="lista" id="lotesList"></div>
-</section>
-
 <!-- ===== VISTA EMPRESAS ===== -->
-<section class="view" id="viewEmpresas" role="tabpanel" aria-labelledby="tabEmpresas" hidden>
+<!-- Lo operativo por lote (estado, filtros de manzana, etc.) vive dentro
+     de la ficha de cada empresa, en su sub-tab Lotes — ya no hay una
+     pestaña "Lotes" suelta a este nivel. -->
+<section class="view" id="viewEmpresas" role="tabpanel" aria-labelledby="tabEmpresas">
   <div class="toolbar-card">
     <div class="toolbar-search">
       <input type="search" id="searchEmpresas" placeholder="Buscar por empresa, rubro o contacto…">
     </div>
+    <div class="toolbar-filters">
+      <!-- En pausa a nivel de negocio hasta que haya una definición de
+           estados de empresa (ver CLAUDE.md) — el control ya está, sin
+           lógica todavía. -->
+      <select id="filterEstadoEmpresas"><option value="">Todos los estados</option></select>
+    </div>
   </div>
   <div class="tarjeta-count" id="empresasCount"></div>
   <div class="lista" id="empresasList"></div>
+</section>
+
+<!-- ===== VISTA COMERCIAL: lotes sin empresa — disponibles para la venta
+     (ex "LIBRE: ...") y los pendientes de revisión ===== -->
+<section class="view" id="viewComercial" role="tabpanel" aria-labelledby="tabComercial" hidden>
+  <div class="toolbar-card">
+    <div class="toolbar-search">
+      <input type="search" id="searchComercial" placeholder="Buscar por lote, manzana, parcela o matrícula…">
+    </div>
+    <div class="toolbar-filters">
+      <select id="filterEstadoComercial"><option value="">Todos los estados</option></select>
+      <select id="filterManzanaComercial"><option value="">Todas las manzanas</option></select>
+      <label class="toolbar-check"><input type="checkbox" id="filterDisponibleComercial"> Solo disponibles para la venta</label>
+    </div>
+  </div>
+  <div class="tarjeta-count" id="comercialCount"></div>
+  <div class="lista" id="comercialList"></div>
 </section>
 
 <!-- ===== VISTA DASHBOARD ===== -->
@@ -289,6 +305,22 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     if(n==null || n==="") return "—";
     return Number(n).toLocaleString("es-AR")+" m²";
   }
+
+  // Links reales para la pestaña Contacto de la ficha de empresa: el dato
+  // llega tal como lo tipeó alguien ("www.algo.com.ar", "@usuario"), así
+  // que para que el click navegue de verdad hay que completar el esquema,
+  // no usar el valor crudo como href.
+  function webHref(v){
+    if(!v) return "";
+    return /^https?:\/\//i.test(v) ? v : "https://"+v;
+  }
+  function instagramHref(v){
+    if(!v) return "";
+    if(/^https?:\/\//i.test(v)) return v;
+    return "https://instagram.com/"+v.replace(/^@/,"");
+  }
+  function mailtoHref(v){ return "mailto:"+v; }
+  function telHref(v){ return "tel:"+v.replace(/[^+\d]/g,""); }
 
   // Iniciales para el avatar: no hay logos cargados. Toma la primera letra
   // de hasta 2 palabras significativas (ignora S.A./S.R.L./LTDA y artículos).
@@ -434,7 +466,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
         state.reservas = Array.isArray(datos.reservas) ? datos.reservas : [];
         try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
         renderFiltros();
-        renderLotes();
+        renderComercial();
         renderEmpresas();
       }
       setSyncStatus("sincronizado");
@@ -446,7 +478,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   var inicial = load();
   var state = Object.assign({
     editingTipo:null, editingId:null, modalMode:null,
-    filterEstado:"", filterManzana:"", filterDisponible:false, searchLotes:"", searchEmpresas:""
+    filterEstadoComercial:"", filterManzanaComercial:"", filterDisponibleComercial:false,
+    searchComercial:"", searchEmpresas:""
   }, inicial);
 
   function empresaPorId(id){ return state.empresas.find(function(e){return e.id_empresa===id;}); }
@@ -458,33 +491,40 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   function nombreEmpresa(id){ var e=empresaPorId(id); return e ? e.nombre_empresa : null; }
 
   // ---- Filtros ----
-  var selEstado = document.getElementById("filterEstado");
-  var selManzana = document.getElementById("filterManzana");
-  var chkDisponible = document.getElementById("filterDisponible");
+  // "Comercial" = lotes sin empresa (disponibles para la venta + los pocos
+  // pendientes de revisión); los filtros de estado/manzana se calculan solo
+  // sobre ese universo, no sobre los 138 lotes totales.
+  function lotesSinEmpresa(){ return state.lotes.filter(function(l){ return !l.id_empresa; }); }
+
+  var selEstadoComercial = document.getElementById("filterEstadoComercial");
+  var selManzanaComercial = document.getElementById("filterManzanaComercial");
+  var chkDisponibleComercial = document.getElementById("filterDisponibleComercial");
   function renderFiltros(){
-    var estadoActual = selEstado.value, manzanaActual = selManzana.value;
-    selEstado.innerHTML = '<option value="">Todos los estados</option>'+
-      ESTADOS.map(function(e){ return '<option value="'+esc(e)+'">'+esc(e)+'</option>'; }).join("");
-    var manzanas = Array.from(new Set(state.lotes.map(function(l){return l.manzana;}).filter(Boolean)))
+    var estadoActual = selEstadoComercial.value, manzanaActual = selManzanaComercial.value;
+    var universo = lotesSinEmpresa();
+    var estados = Array.from(new Set(universo.map(function(l){return l.estado;}).filter(Boolean)));
+    selEstadoComercial.innerHTML = '<option value="">Todos los estados</option>'+
+      estados.map(function(e){ return '<option value="'+esc(e)+'">'+esc(e)+'</option>'; }).join("");
+    var manzanas = Array.from(new Set(universo.map(function(l){return l.manzana;}).filter(Boolean)))
       .sort(function(a,b){ return Number(a)-Number(b) || String(a).localeCompare(String(b)); });
-    selManzana.innerHTML = '<option value="">Todas las manzanas</option>'+
+    selManzanaComercial.innerHTML = '<option value="">Todas las manzanas</option>'+
       manzanas.map(function(m){ return '<option value="'+esc(m)+'">Manzana '+esc(m)+'</option>'; }).join("");
-    selEstado.value = estadoActual; selManzana.value = manzanaActual;
+    selEstadoComercial.value = estadoActual; selManzanaComercial.value = manzanaActual;
   }
-  selEstado.addEventListener("change", function(){ state.filterEstado=this.value; renderLotes(); });
-  selManzana.addEventListener("change", function(){ state.filterManzana=this.value; renderLotes(); });
-  chkDisponible.addEventListener("change", function(){ state.filterDisponible=this.checked; renderLotes(); });
-  document.getElementById("searchLotes").addEventListener("input", function(){ state.searchLotes=this.value.toLowerCase(); renderLotes(); });
+  selEstadoComercial.addEventListener("change", function(){ state.filterEstadoComercial=this.value; renderComercial(); });
+  selManzanaComercial.addEventListener("change", function(){ state.filterManzanaComercial=this.value; renderComercial(); });
+  chkDisponibleComercial.addEventListener("change", function(){ state.filterDisponibleComercial=this.checked; renderComercial(); });
+  document.getElementById("searchComercial").addEventListener("input", function(){ state.searchComercial=this.value.toLowerCase(); renderComercial(); });
   document.getElementById("searchEmpresas").addEventListener("input", function(){ state.searchEmpresas=this.value.toLowerCase(); renderEmpresas(); });
 
-  function lotesFiltrados(){
-    return state.lotes.filter(function(l){
-      if(state.filterEstado && l.estado!==state.filterEstado) return false;
-      if(state.filterManzana && l.manzana!==state.filterManzana) return false;
-      if(state.filterDisponible && !l.disponible) return false;
-      if(state.searchLotes){
-        var blob = [l.id_lote,l.manzana,l.parcela,l.matricula,nombreEmpresa(l.id_empresa)].join(" ").toLowerCase();
-        if(blob.indexOf(state.searchLotes)===-1) return false;
+  function comercialFiltrados(){
+    return lotesSinEmpresa().filter(function(l){
+      if(state.filterEstadoComercial && l.estado!==state.filterEstadoComercial) return false;
+      if(state.filterManzanaComercial && l.manzana!==state.filterManzanaComercial) return false;
+      if(state.filterDisponibleComercial && !l.disponible) return false;
+      if(state.searchComercial){
+        var blob = [l.id_lote,l.manzana,l.parcela,l.matricula].join(" ").toLowerCase();
+        if(blob.indexOf(state.searchComercial)===-1) return false;
       }
       return true;
     });
@@ -499,30 +539,28 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     });
   }
 
-  // ---- Listado: Lotes ----
-  function renderLotes(){
-    var cont = document.getElementById("lotesList");
-    var cuenta = document.getElementById("lotesCount");
-    var filtrados = lotesFiltrados().slice().sort(function(a,b){
+  // ---- Listado: Comercial (lotes sin empresa) ----
+  function renderComercial(){
+    var cont = document.getElementById("comercialList");
+    var cuenta = document.getElementById("comercialCount");
+    var filtrados = comercialFiltrados().slice().sort(function(a,b){
       return (Number(a.manzana)||0)-(Number(b.manzana)||0) || String(a.id_lote).localeCompare(String(b.id_lote));
     });
-    var total = state.lotes.length;
+    var total = lotesSinEmpresa().length;
     cuenta.textContent = !total ? ""
       : (filtrados.length===total ? total+" lotes" : filtrados.length+" de "+total+" lotes");
     if(!filtrados.length){
       cont.innerHTML = '<div class="empty-state">'+
-        (total ? 'Sin lotes que coincidan con el filtro.' : 'Todavía no hay lotes cargados. Usá “+ Nuevo lote”.')+
+        (total ? 'Sin lotes que coincidan con el filtro.' : 'No hay lotes sin empresa asignada.')+
         '</div>';
       return;
     }
     cont.innerHTML = filtrados.map(function(l){
-      var titular = nombreEmpresa(l.id_empresa);
-      var ocup = ocupacionDeLote(l.id_lote);
       var sub = "Mz "+esc(l.manzana||"—")+" · Parcela "+esc(l.parcela||"—")+" · "+fmtM2(l.superficie_m2);
-      var nombre = titular || (l.disponible ? "Disponible para la venta" : "Libre / pendiente de revisión");
+      var nombre = l.disponible ? "Disponible para la venta" : "Libre / pendiente de revisión";
       return '<button class="tarjeta" data-open-lote="'+esc(l.id_lote)+'">'+
         '<div class="tarjeta-main">'+
-          '<div class="tarjeta-title">'+esc(l.id_lote)+' · '+esc(nombre)+(ocup?' <span class="badge" style="background:var(--c3-bg);color:var(--c3)">sublocado</span>':'')+'</div>'+
+          '<div class="tarjeta-title">'+esc(l.id_lote)+' · '+esc(nombre)+'</div>'+
           '<div class="tarjeta-sub">'+sub+'</div>'+
         '</div>'+
         '<div class="tarjeta-aside">'+
@@ -600,6 +638,13 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
   function viewItem(label, html){
     return '<div class="view-item"><label>'+esc(label)+'</label><div class="v">'+(html || '<span class="view-empty">—</span>')+'</div></div>';
+  }
+
+  // Fila título-en-negrita/dato-en-gris para la pestaña Empresa de la
+  // ficha (al revés de viewItem, que usa label chico arriba y valor en
+  // negrita abajo) — pedido explícito del usuario 2026-10-13.
+  function infoRow(label, valor){
+    return '<div class="info-row"><dt>'+esc(label)+'</dt><dd>'+(valor?esc(valor):'<span class="view-empty">—</span>')+'</dd></div>';
   }
 
   // ---- Ficha de lote ----
@@ -729,13 +774,13 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     save();
     closeModal();
     renderFiltros();
-    renderLotes();
+    renderComercial();
     renderEmpresas();
   }
   function onDeleteLote(){
     if(!state.editingId || state.editingTipo!=="lote") return;
     state.lotes = state.lotes.filter(function(x){return x.id_lote!==state.editingId;});
-    save(); closeModal(); renderFiltros(); renderLotes();
+    save(); closeModal(); renderFiltros(); renderComercial(); renderEmpresas();
   }
 
   // ---- Ficha de empresa ----
@@ -749,11 +794,12 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     // está escriturada a la empresa. `escritura` viene del origen con
     // mayúsculas/espacios inconsistentes ("Si","si","No","no ","NO") y a
     // veces null — un null no se asume "No": sería inventar un dato que el
-    // origen no tiene (ver nota de L048 en CLAUDE.md).
+    // origen no tiene (ver nota de L048 en CLAUDE.md). Sin color (pedido
+    // del usuario 2026-10-13): acá solo se devuelve el texto.
     var e = String(l.escritura||"").trim();
-    if(!e) return { siNo:"Sin dato", clase:"", titular: l.propietario_matricula || "—" };
-    if(/^s/i.test(e)) return { siNo:"Sí", clase:"lot-si", titular: l.propietario_matricula || (empresa&&empresa.nombre_empresa) || "—" };
-    return { siNo:"No", clase:"lot-no", titular:"EGPAIS (Ente General de Parques y Áreas Industriales de Salta)" };
+    if(!e) return { siNo:"Sin dato", propiedad: l.propietario_matricula || "—" };
+    if(/^s/i.test(e)) return { siNo:"Sí", propiedad: l.propietario_matricula || (empresa&&empresa.nombre_empresa) || "—" };
+    return { siNo:"No", propiedad:"EGPAIS (Ente General de Parques y Áreas Industriales de Salta)" };
   }
 
   function renderEmpresaView(e){
@@ -772,6 +818,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
     var panelHtml;
     if(tab==="lote"){
+      // Solo Mza / Superficie / Parcela / Matrícula / Propiedad / Escritura
+      // — sobria, sin badge de estado ni color (pedido del usuario 2026-10-13).
       panelHtml = lotes.length
         ? '<div class="lot-list">'+lotes.map(function(l){
             var info = tituloYTitularDeLote(l, e);
@@ -781,22 +829,25 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
                 '<span class="lot-m2">'+fmtM2(l.superficie_m2)+'</span>'+
               '</div>'+
               '<div class="lot-row-sub">'+
-                '<span>Titular: '+esc(info.titular)+'</span>'+
-                '<span class="'+info.clase+'">Escriturado: '+esc(info.siNo)+'</span>'+
+                '<span>Propiedad: '+esc(info.propiedad)+'</span>'+
+                '<span>Escritura: '+esc(info.siNo)+'</span>'+
               '</div>'+
             '</div>';
           }).join("")+'</div>'
         : '<p class="view-empty">Sin lotes asignados.</p>';
     } else if(tab==="contacto"){
+      // Cada ícono/fila navega de verdad (mailto:/tel:/https:) — no debe
+      // perder funcionalidad por mostrar el dato tal cual vino cargado.
       panelHtml = '<div class="view-grid">'+
-          viewItem("Email", e.mail?esc(e.mail):null)+
-          viewItem("Web", e.pagweb?'<a href="'+esc(e.pagweb)+'" target="_blank" rel="noopener">'+esc(e.pagweb)+'</a>':null)+
+          viewItem("Email", e.mail?'<a href="'+esc(mailtoHref(e.mail))+'">'+esc(e.mail)+'</a>':null)+
+          viewItem("Web", e.pagweb?'<a href="'+esc(webHref(e.pagweb))+'" target="_blank" rel="noopener">'+esc(e.pagweb)+'</a>':null)+
           viewItem("Domicilio", e.ubicacion?esc(e.ubicacion):null)+
-          viewItem("Instagram", e.instagram?'<a href="'+esc(e.instagram)+'" target="_blank" rel="noopener">'+esc(e.instagram)+'</a>':null)+
-          viewItem("Teléfono", e.telefono?esc(e.telefono):null)+
+          viewItem("Instagram", e.instagram?'<a href="'+esc(instagramHref(e.instagram))+'" target="_blank" rel="noopener">'+esc(e.instagram)+'</a>':null)+
+          viewItem("Teléfono", e.telefono?'<a href="'+esc(telHref(e.telefono))+'">'+esc(e.telefono)+'</a>':null)+
         '</div>';
     } else {
-      var representante = [e.contacto_nombre, e.cargo].filter(Boolean).join(" · ");
+      // Representante, Cargo, Rubro, Actividad, CUIT, en ese orden — título
+      // en negrita y dato en gris (al revés de las demás pestañas).
       panelHtml =
         (similares.length
           ? '<div class="view-section revisar" style="margin-top:0;padding-top:0;border-top:none"><h3>A revisar</h3>'+
@@ -805,12 +856,13 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
               '. Confirmá si corresponde fusionarlas antes de seguir cargando lotes a cualquiera de las dos.</p>'+
             '</div>'
           : '')+
-        '<div class="view-grid">'+
-          viewItem("CUIT", e.cuit?esc(e.cuit):null)+
-          viewItem("Rubro", e.rubro?esc(e.rubro):null)+
-          viewItem("Actividad declarada", e.actividad?esc(e.actividad):null)+
-          viewItem("Representante", representante?esc(representante):null)+
-        '</div>'+
+        '<dl class="info-list">'+
+          infoRow("Representante", e.contacto_nombre)+
+          infoRow("Cargo", e.cargo)+
+          infoRow("Rubro", e.rubro)+
+          infoRow("Actividad", e.actividad)+
+          infoRow("CUIT", e.cuit)+
+        '</dl>'+
         (e.observacion ? '<div class="view-section"><h3>Observación</h3><p class="view-texto">'+esc(e.observacion)+'</p></div>' : '');
     }
 
@@ -901,7 +953,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     save();
     closeModal();
     renderEmpresas();
-    renderLotes();
+    renderFiltros();
+    renderComercial();
   }
   function onDeleteEmpresa(){
     if(!state.editingId || state.editingTipo!=="empresa") return;
@@ -909,7 +962,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     state.empresas = state.empresas.filter(function(x){return x.id_empresa!==id;});
     // Un lote cuya empresa se borró queda libre, nunca con una referencia colgada.
     state.lotes.forEach(function(l){ if(l.id_empresa===id) l.id_empresa=null; });
-    save(); closeModal(); renderEmpresas(); renderLotes();
+    save(); closeModal(); renderEmpresas(); renderFiltros(); renderComercial();
   }
 
   function field(name,label,type,obj,placeholder){
@@ -987,30 +1040,32 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   }
 
   // ---- Tabs / routing ----
-  var tabLotes = document.getElementById("tabLotes"), tabEmpresas = document.getElementById("tabEmpresas"), tabDash = document.getElementById("tabDash");
-  var viewLotes = document.getElementById("viewLotes"), viewEmpresas = document.getElementById("viewEmpresas"), viewDash = document.getElementById("viewDash");
+  // Default = Empresas (ya no hay una pestaña "Lotes" suelta).
+  var tabEmpresas = document.getElementById("tabEmpresas"), tabComercial = document.getElementById("tabComercial"), tabDash = document.getElementById("tabDash");
+  var viewEmpresas = document.getElementById("viewEmpresas"), viewComercial = document.getElementById("viewComercial"), viewDash = document.getElementById("viewDash");
   function showView(name, desdeHash){
-    var isEmpresas = name==="empresas", isDash = name==="dashboard";
-    viewLotes.hidden = isEmpresas || isDash;
+    var isComercial = name==="comercial", isDash = name==="dashboard";
+    var isEmpresas = !isComercial && !isDash;
     viewEmpresas.hidden = !isEmpresas;
+    viewComercial.hidden = !isComercial;
     viewDash.hidden = !isDash;
-    tabLotes.classList.toggle("active", !isEmpresas && !isDash);
     tabEmpresas.classList.toggle("active", isEmpresas);
+    tabComercial.classList.toggle("active", isComercial);
     tabDash.classList.toggle("active", isDash);
-    tabLotes.setAttribute("aria-selected", String(!isEmpresas && !isDash));
     tabEmpresas.setAttribute("aria-selected", String(isEmpresas));
+    tabComercial.setAttribute("aria-selected", String(isComercial));
     tabDash.setAttribute("aria-selected", String(isDash));
     if(isDash) renderDashboard();
     if(desdeHash) return;
-    var destino = isEmpresas ? "#empresas" : isDash ? "#dashboard" : "#lotes";
+    var destino = isComercial ? "#comercial" : isDash ? "#dashboard" : "#empresas";
     if(location.hash !== destino) location.hash = destino;
   }
-  tabLotes.addEventListener("click", function(){ showView("lotes"); });
   tabEmpresas.addEventListener("click", function(){ showView("empresas"); });
+  tabComercial.addEventListener("click", function(){ showView("comercial"); });
   tabDash.addEventListener("click", function(){ showView("dashboard"); });
   window.addEventListener("hashchange", function(){
     var h = location.hash;
-    showView(h==="#empresas" ? "empresas" : h==="#dashboard" ? "dashboard" : "lotes", true);
+    showView(h==="#comercial" ? "comercial" : h==="#dashboard" ? "dashboard" : "empresas", true);
   });
 
   // ---- Tema claro/oscuro ----
@@ -1030,9 +1085,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   applyThemeButton();
 
   renderFiltros();
-  renderLotes();
+  renderComercial();
   renderEmpresas();
-  showView(location.hash==="#empresas" ? "empresas" : location.hash==="#dashboard" ? "dashboard" : "lotes", true);
+  showView(location.hash==="#comercial" ? "comercial" : location.hash==="#dashboard" ? "dashboard" : "empresas", true);
   bajarCambiosIniciales();
 
   if('serviceWorker' in navigator){
