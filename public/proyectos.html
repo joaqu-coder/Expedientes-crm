@@ -15,17 +15,7 @@
   <link rel="icon" type="image/svg+xml" href="/icon.svg">
   <link rel="apple-touch-icon" href="/icon.svg">
   <title>Cartas de Intención — Parques Industriales</title>
-<script>
-(function(){
-  try{
-    var saved = localStorage.getItem("cartas_intencion_theme_v1");
-    if(saved==="dark") document.documentElement.setAttribute("data-theme","dark");
-  }catch(e){ /* storage bloqueado: queda el tema claro por defecto */ }
-})();
-</script>
 <style>
-.volver{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;color:var(--muted);text-decoration:none;margin-bottom:12px}
-.volver:hover{color:var(--fg)}
 
 /* Barra de navegación inferior fija, presente en las 5 páginas del hub —
    mismo concepto que la barra de pestañas de WhatsApp (ícono + etiqueta,
@@ -60,15 +50,6 @@
   --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300;
   --s7:#8c5ccc; --s8:#0aa2b0;
 }
-:root[data-theme="dark"]{
-  --bg:#141414; --surface:#1d1d1d; --surface-2:#262625; --border:#38372f;
-  --fg:#efece2; --muted:#a39d87; --accent:#e8a33d; --accent-fg:#1a1203;
-  --ok:#5fae6b; --ok-bg:#1b2a1c; --warn:#e8a33d; --warn-bg:#2d2311; --idle:#8d8674; --idle-bg:#262520;
-  --danger:#d26a5c; --danger-bg:#301e1b; --orange:#e3833f; --orange-bg:#2c2111;
-  color-scheme: dark;
-  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#54c254;
-  --s7:#9d6fe0; --s8:#0f94a2;
-}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--fg);font-family:var(--font-body);margin:0;padding-inline:16px;padding-top:20px;padding-bottom:calc(84px + env(safe-area-inset-bottom, 0px));-webkit-font-smoothing:antialiased}
 h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
@@ -76,15 +57,6 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 button{font-family:inherit;cursor:pointer}
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 svg text{font-family:var(--font-body)}
-
-/* ---- Header & tabs ---- */
-.topbar{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
-.topbar .eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.topbar h1{font-size:21px;font-weight:700}
-.btn-new{background:var(--accent);color:var(--accent-fg);border:none;border-radius:8px;padding:10px 16px;font-weight:600;font-size:14px;white-space:nowrap}
-.btn-new:hover{filter:brightness(1.08)}
-.btn-theme{background:var(--surface);border:1px solid var(--border);color:var(--fg);border-radius:8px;width:38px;height:38px;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
-.btn-theme:hover{border-color:var(--accent)}
 
 /* Barra de filtros superior, mismo lenguaje que la barra inferior: chips
    redondeados en vez del subrayado de antes, scroll horizontal si no
@@ -305,11 +277,6 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 .settings-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin-bottom:16px;flex-wrap:wrap}
 .settings-row input{width:64px;background:var(--surface);border:1px solid var(--border);color:var(--fg);border-radius:6px;padding:5px 7px;font-family:var(--font-mono)}
 
-/* ---- Indicador de sincronización ---- */
-.sync-status{font-size:11.5px;color:var(--muted);white-space:nowrap}
-.sync-status.offline{color:var(--danger)}
-.sync-status.error{color:var(--danger);font-weight:600}
-
 /* Un error de sincronización tiene que verse, no esconderse en un texto de
    11px. Esto es lo que faltaba: el sync estuvo roto y la app decía
    "Sincronizado". */
@@ -326,19 +293,8 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 </head>
 <body>
 
-<a class="volver" href="/index.html">&larr; Inicio</a>
-
-<div class="topbar">
-  <div>
-    <div class="eyebrow">EGPAIS · Seguimiento</div>
-    <h1>Cartas de Intención — Parques Industriales</h1>
-  </div>
-  <div style="display:flex;align-items:center;gap:12px">
-    <span class="sync-status" id="syncStatus" role="status" aria-live="polite">⏳ Cargando…</span>
-    <button class="btn-theme" id="btnTheme" aria-label="Cambiar a modo oscuro">🌙</button>
-    <button class="btn-new" id="btnNew">+ Nuevo expediente</button>
-  </div>
-</div>
+<!-- El header (título + ⋮) lo monta header.js, común a las 4 apps.
+     El alta vive ahora en el botón flotante (+), como en Seguimiento. -->
 
 <div class="alerta" id="alertaSync" hidden>
   <div class="alerta-cuerpo">
@@ -419,6 +375,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 
 <div class="veil" id="veil" hidden><div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="Ficha de expediente"></div></div>
 
+<script src="/header.js"></script>
 <script>
 (function(){
   "use strict";
@@ -833,21 +790,17 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   var alertaDetalle = document.getElementById("alertaDetalle");
 
   function setSyncStatus(s, detalle){
-    var el = document.getElementById("syncStatus");
     var map = {
-      sincronizado: ["☁️ Sincronizado", ""],
-      cargando:     ["⏳ Cargando…", ""],
-      pendiente:    ["⏳ Sin sincronizar", ""],
-      subiendo:     ["⏳ Sincronizando…", ""],
-      offline:      ["⚠️ Sin conexión", "offline"],
-      error:        ["⛔ Error de sincronización", "error"]
+      sincronizado: "Al día",
+      cargando:     "Cargando…",
+      pendiente:    "Hay cambios sin subir",
+      subiendo:     "Subiendo cambios…",
+      offline:      "Sin conexión",
+      error:        "Error de sincronización"
     };
-    var m = map[s] || map.sincronizado;
-    if(el){
-      el.textContent = m[0];
-      el.className = "sync-status "+m[1];
-      el.title = detalle || "";
-    }
+    // Siempre "ok" para el header: esta app ya muestra su propia alerta
+    // detallada cuando algo falla, y dos avisos del mismo problema sobran.
+    if(window.HeaderGlobal) HeaderGlobal.setSync(map[s] || map.sincronizado, "ok");
     if(s === "error" || s === "offline"){ mostrarAlerta(s, detalle); }
     else { ocultarAlerta(); }
     actualizarSyncBar(); // la fecha de última sync vive arriba del dashboard
@@ -2039,7 +1992,6 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 
   // ---- Modal: nuevo / editar ----
   var veil = document.getElementById("veil"), modal = document.getElementById("modal");
-  document.getElementById("btnNew").addEventListener("click", function(){ openModal(null); });
   veil.addEventListener("click", function(ev){ if(ev.target===veil) closeModal(); });
 
   var focoPrevio = null;
@@ -2363,21 +2315,15 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     if(!viewArchivo.hidden) renderArchivo();
   }
 
-  // ---- Tema claro/oscuro ----
-  var THEME_KEY = "cartas_intencion_theme_v1";
-  var btnTheme = document.getElementById("btnTheme");
-  function applyThemeButton(){
-    var dark = document.documentElement.getAttribute("data-theme")==="dark";
-    btnTheme.textContent = dark ? "☀️" : "🌙";
-    btnTheme.setAttribute("aria-label", dark ? "Cambiar a modo claro" : "Cambiar a modo oscuro");
-  }
-  btnTheme.addEventListener("click", function(){
-    var dark = document.documentElement.getAttribute("data-theme")==="dark";
-    if(dark){ document.documentElement.removeAttribute("data-theme"); localStorage.setItem(THEME_KEY,"light"); }
-    else { document.documentElement.setAttribute("data-theme","dark"); localStorage.setItem(THEME_KEY,"dark"); }
-    applyThemeButton();
+
+  // Header común a las 4 apps (título + ⋮) y botón flotante de alta.
+  HeaderGlobal.init({
+    titulo: "Proyectos",
+    accion: { etiqueta: "Nuevo expediente", onClick: function(){ openModal(null); } },
+    menu: [
+      { etiqueta: "Actualizar datos", onClick: function(){ bajarCambiosIniciales(); } }
+    ]
   });
-  applyThemeButton();
 
   aplicarArchivadoAutomatico();
   renderList();

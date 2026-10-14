@@ -12,13 +12,6 @@
   <link rel="icon" type="image/svg+xml" href="/icon.svg">
   <link rel="apple-touch-icon" href="/icon.svg">
   <title>Expedientes CRM</title>
-  <script>
-  // Aplicado antes del primer paint para no parpadear a oscuro si el usuario ya lo eligió.
-  (function(){
-    var saved = localStorage.getItem("landing_crm_theme_v1");
-    if(saved==="dark") document.documentElement.setAttribute("data-theme","dark");
-  })();
-  </script>
   <style>
     :root {
       --primary: #667eea;
@@ -30,25 +23,6 @@
       /* Tarjetas blancas, como en el resto de la suite — antes la landing
          era la única que las pintaba con --gray-100 (gris claro). */
       --surface: #ffffff;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root:not([data-theme="light"]) {
-        /* Mismo casi-negro cálido que proyectos.html/resoluciones.html/parques.html */
-        --gray-50: #141414;
-        --gray-100: #1d1d1d;
-        --gray-200: #38372f;
-        --text: #efece2;
-        --text-muted: #a39d87;
-        --surface: #1d1d1d;
-      }
-    }
-    :root[data-theme="dark"] {
-      --gray-50: #141414;
-      --gray-100: #1d1d1d;
-      --gray-200: #38372f;
-      --text: #efece2;
-      --text-muted: #a39d87;
-      --surface: #1d1d1d;
     }
     * { box-sizing: border-box; }
     body {
@@ -142,28 +116,9 @@
          del line-height que herede cada una. */
       line-height: 1.2;
     }
-    .btn-theme {
-      position: fixed;
-      top: max(16px, env(safe-area-inset-top, 0px));
-      right: 16px;
-      background: var(--gray-100);
-      border: 1px solid var(--gray-200);
-      color: var(--text);
-      border-radius: 8px;
-      width: 38px;
-      height: 38px;
-      font-size: 16px;
-      line-height: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-    }
-    .btn-theme:hover { border-color: var(--primary); }
   </style>
 </head>
 <body>
-  <button class="btn-theme" id="btnTheme" aria-label="Cambiar a modo oscuro">🌙</button>
   <div class="landing">
     <div class="landing-inner">
       <div style="text-align: center;">
@@ -227,23 +182,6 @@
       navigator.serviceWorker.register('sw.js').catch(() => {});
     }
 
-    // ---- Tema claro/oscuro ----
-    (function(){
-      var THEME_KEY = "landing_crm_theme_v1";
-      var btnTheme = document.getElementById("btnTheme");
-      function applyThemeButton(){
-        var dark = document.documentElement.getAttribute("data-theme")==="dark";
-        btnTheme.textContent = dark ? "☀️" : "🌙";
-        btnTheme.setAttribute("aria-label", dark ? "Cambiar a modo claro" : "Cambiar a modo oscuro");
-      }
-      btnTheme.addEventListener("click", function(){
-        var dark = document.documentElement.getAttribute("data-theme")==="dark";
-        if(dark){ document.documentElement.removeAttribute("data-theme"); localStorage.setItem(THEME_KEY,"light"); }
-        else { document.documentElement.setAttribute("data-theme","dark"); localStorage.setItem(THEME_KEY,"dark"); }
-        applyThemeButton();
-      });
-      applyThemeButton();
-    })();
   </script>
 </body>
 </html>

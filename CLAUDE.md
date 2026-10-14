@@ -23,6 +23,7 @@ public/seguimiento.html  ← la app de expedientes (la de siempre; antes era ind
 public/proyectos.html    ← cartas de intención de parques industriales (EGPAIS)
 public/resoluciones.html ← resoluciones del Directorio (archivo histórico 2012-2025)
 public/parques.html      ← lotes y empresas instaladas en los parques (hoy: solo Güemes)
+public/header.js         ← ÚNICO código compartido entre apps: el header (título + ⋮) y el FAB
 
 Navegador (seguimiento)   Navegador (proyectos)      Navegador (resoluciones)  Navegador (parques)
     │  /api/sync              │  /api/sync-cartas         │  /api/sync-resoluciones  │  /api/sync-parques
@@ -354,9 +355,10 @@ El sidebar se eliminó por completo. Reglas que quedan:
   desktop también. Antes se bifurcaba por `window.innerWidth >= 1024` y dibujaba
   el form en el sidebar, pero Guardar/Cancelar viven en el footer del modal.
 - **El FAB (`#fabNuevo`) es visible en todos los anchos.** Tenía `display: none`
-  arriba de 1024px, dejando desktop sin forma de crear un expediente.
-- **Una sola barra fija** (`.sticky-top`: header + pestañas). No volver a fijar
-  paneles con `top: NNpx` hardcodeado: se desalinean apenas cambia un alto.
+  arriba de 1024px, dejando desktop sin forma de crear un expediente. Desde el
+  2026-10-14 lo crea `header.js` y es el alta de las CUATRO apps.
+- **No fijes paneles con `top: NNpx` hardcodeado**: se desalinean apenas cambia
+  un alto.
 - **Modales:** abrir/cerrar con `abrirOverlay()`/`cerrarOverlay()` (foco inicial,
   trampa de Tab, Escape, retorno del foco). Inputs a 16px (iOS hace zoom con menos)
   y objetivos táctiles de 44px.
@@ -364,6 +366,50 @@ El sidebar se eliminó por completo. Reglas que quedan:
   popup bloqueante. Un área/responsable en uso por algún expediente no se borra.
 - **Antes de agregar cualquier bloque de UI, verificá que no dupliques un `id`.**
   `npm run test:ids` lo chequea.
+
+---
+
+## Header global: el único código compartido entre apps
+
+Pedido del usuario (2026-10-14), con especificación propia: título de la sección
+a la izquierda, menú ⋮ a la derecha, misma estructura y posición en las cuatro
+pantallas, y **que no se reconstruya por separado en cada una**.
+
+`public/header.js` es, por eso, la única excepción a "cada app es un documento
+autónomo": todo lo demás sigue inline en su HTML. Vale la pena solo para lo que
+tiene que verse idéntico en las cuatro — hoy el header y el FAB.
+
+```js
+HeaderGlobal.init({
+  titulo: "Parques",
+  accion: { etiqueta: "Nuevo lote", onClick: abrirAlta },   // crea el FAB
+  menu:   [{ etiqueta: "Actualizar datos", onClick: bajar }]
+});
+HeaderGlobal.setSync("Al día", "ok");          // ok | pendiente | error
+```
+
+- **La alineación la resuelve el componente, no cada página.** `init()` lee el
+  padding del contenedor donde se monta y lo compensa con margen negativo:
+  seguimiento.html no tiene padding en el body y las otras tres sí, y sin eso el
+  ⋮ quedaba pegado al borde en una pantalla y a 16px en las demás.
+- **El menú ⋮ reemplazó a los botones sueltos del header viejo**: configuración
+  (era un engranaje), "Actualizar datos" y el estado de sincronización.
+- **El estado de sync ya no es un cartel permanente.** Cuando está al día vive
+  dentro del menú; si falla, `setSync(..., "error")` muestra `#syncAviso` sobre
+  el contenido. Proyectos es la excepción: tiene su propia alerta detallada, así
+  que ahí el header solo informa en el menú (si no, aparecían dos avisos).
+- **`testUniformidad()` verifica el criterio de aceptación del usuario**: que al
+  cambiar de pantalla cambie el título pero el ⋮ conserve exactamente la misma
+  posición (y=20, 16px del borde derecho, 48x48).
+
+### No hay modo oscuro
+
+Se eliminó entero el 2026-10-14 a pedido del usuario ("no sé qué hace,
+insignificante la función"): el botón, el script pre-paint, el `localStorage`
+del tema y **228 líneas** de CSS (`@media (prefers-color-scheme: dark)` y los
+bloques `data-theme`). La app es siempre clara, sin importar el tema del
+teléfono. Si alguna vez se repone, es un trabajo de cero, no de reactivar algo
+que quedó comentado.
 
 ---
 

@@ -12,13 +12,6 @@
   <link rel="icon" type="image/svg+xml" href="/icon.svg">
   <link rel="apple-touch-icon" href="/icon.svg">
   <title>Expedientes CRM</title>
-  <script>
-  // Aplicado antes del primer paint para no parpadear a oscuro si el usuario ya lo eligió.
-  (function(){
-    var saved = localStorage.getItem("seguimiento_crm_theme_v1");
-    if(saved==="dark") document.documentElement.setAttribute("data-theme","dark");
-  })();
-  </script>
   <style>
     :root {
       --primary: #667eea;
@@ -51,55 +44,6 @@
       --urgencia-verde-text: #2f5c2a;
     }
 
-    @media (prefers-color-scheme: dark) {
-      :root:not([data-theme="light"]) {
-        /* Mismo casi-negro cálido que proyectos.html/resoluciones.html/parques.html —
-           antes era un gris azulado propio de este archivo, visible como una paleta
-           distinta al cambiar de app en modo oscuro. */
-        --gray-50: #141414;
-        --gray-100: #1d1d1d;
-        --gray-200: #38372f;
-        --gray-300: #4a493f;
-        --text: #efece2;
-        --text-muted: #a39d87;
-        --red: #d26a5c;
-        --green: #5fae6b;
-      --badge-naranja: #fdba74;
-      --badge-amarillo: #fde047;
-      --badge-verde: #86efac;
-      --urgencia-rojo-bg: #4a2c2c;
-      --urgencia-rojo-text: #f3c9c9;
-      --urgencia-naranja-bg: #4a3823;
-      --urgencia-naranja-text: #f4d9b8;
-      --urgencia-amarillo-bg: #46401f;
-      --urgencia-amarillo-text: #f0e6a8;
-      --urgencia-verde-bg: #2c3f2a;
-      --urgencia-verde-text: #c3e0bd;
-      }
-    }
-
-    :root[data-theme="dark"] {
-      --gray-50: #141414;
-      --gray-100: #1d1d1d;
-      --gray-200: #38372f;
-      --gray-300: #4a493f;
-      --text: #efece2;
-      --text-muted: #a39d87;
-      --red: #d26a5c;
-      --green: #5fae6b;
-      --badge-naranja: #fdba74;
-      --badge-amarillo: #fde047;
-      --badge-verde: #86efac;
-      --urgencia-rojo-bg: #4a2c2c;
-      --urgencia-rojo-text: #f3c9c9;
-      --urgencia-naranja-bg: #4a3823;
-      --urgencia-naranja-text: #f4d9b8;
-      --urgencia-amarillo-bg: #46401f;
-      --urgencia-amarillo-text: #f0e6a8;
-      --urgencia-verde-bg: #2c3f2a;
-      --urgencia-verde-text: #c3e0bd;
-    }
-
     * {
       margin: 0;
       padding: 0;
@@ -122,17 +66,6 @@
       flex-direction: column;
     }
 
-    .volver {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 12.5px;
-      color: var(--text-muted);
-      text-decoration: none;
-      padding: 10px 16px 0;
-    }
-    .volver:hover { color: var(--text); }
-
     /* Barra de navegación inferior fija, presente en las 5 páginas del hub —
        mismo concepto que la barra de pestañas de WhatsApp (ícono + etiqueta,
        plana, sin cajas ni sombra), con la app actual marcada con color y un
@@ -148,7 +81,6 @@
       padding-bottom: env(safe-area-inset-bottom, 0px);
       z-index: 15;
     }
-    :where([data-theme="dark"]) .bottom-nav { background: var(--gray-100); }
     .nav-item {
       flex: 1 1 0;
       display: flex;
@@ -185,12 +117,6 @@
       z-index: 50;
     }
 
-    /* El contenido se centra en pantallas anchas; en móvil ocupa todo el ancho */
-    .header,
-    .pestanas {
-      --gutter: max(16px, calc((100% - 960px) / 2));
-    }
-
     .main-content {
       width: 100%;
       max-width: 960px;
@@ -200,80 +126,7 @@
       flex-direction: column;
     }
 
-    /* Header */
-    .header {
-      height: 44px;
-      padding: 0 var(--gutter);
-      border-bottom: 1px solid var(--gray-300);
-      display: flex;
-      align-items: center;
-      background: white;
-      gap: 12px;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      .header {
-        background: var(--gray-100);
-      }
-    }
-    :where([data-theme="dark"]) .header {
-        background: var(--gray-100);
-      }
-
-
-    .header-title {
-      font-size: 18px;
-      font-weight: 600;
-      flex: 1;
-    }
-
-    button.sync-indicator {
-      border: none;
-      font-family: inherit;
-      cursor: pointer;
-    }
-
-    .sync-indicator {
-      font-size: 11px;
-      font-weight: 500;
-      padding: 4px 10px;
-      border-radius: 999px;
-      white-space: nowrap;
-      transition: all 0.3s ease;
-    }
-
-    .sync-indicator.sync-ok {
-      background: rgba(51, 109, 14, 0.12);
-      color: var(--green);
-    }
-
-    .sync-indicator.sync-pending {
-      background: rgba(107, 114, 128, 0.12);
-      color: var(--text-muted);
-    }
-
-    .sync-indicator.sync-error {
-      background: rgba(249, 115, 22, 0.12);
-      color: var(--orange);
-    }
-
     @media (max-width: 480px) {
-      .sync-indicator {
-        font-size: 0;
-        padding: 6px;
-        width: 28px;
-        height: 28px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-      }
-      .sync-indicator::before {
-        font-size: 14px;
-      }
-      .sync-indicator.sync-ok::before { content: '☁️'; }
-      .sync-indicator.sync-pending::before { content: '⏳'; }
-      .sync-indicator.sync-error::before { content: '⚠️'; }
     }
 
     /* Pestañas */
@@ -286,6 +139,9 @@
        texto 14px peso normal, contador seminegrita (ver .count). El activo
        es un fondo SUAVE (tinte del acento), no el color sólido. */
     .pestanas {
+      /* El contenido se centra en pantallas anchas; en móvil ocupa todo el
+         ancho. Antes esta variable se declaraba junto con el header viejo. */
+      --gutter: max(16px, calc((100% - 960px) / 2));
       background: white;
       padding: 10px var(--gutter);
       border-bottom: 1px solid var(--gray-300);
@@ -295,16 +151,6 @@
       scrollbar-width: none;
     }
     .pestanas::-webkit-scrollbar { display: none; }
-
-    @media (prefers-color-scheme: dark) {
-      .pestanas {
-        background: var(--gray-100);
-      }
-    }
-    :where([data-theme="dark"]) .pestanas {
-        background: var(--gray-100);
-      }
-
 
     .pestana-btn {
       flex: 0 0 auto;
@@ -369,16 +215,6 @@
       border-bottom: 1px solid var(--gray-300);
     }
 
-    @media (prefers-color-scheme: dark) {
-      .panel-areas {
-        background: var(--gray-100);
-      }
-    }
-    :where([data-theme="dark"]) .panel-areas {
-        background: var(--gray-100);
-      }
-
-
     .panel-areas-title {
       font-size: 11px;
       font-weight: 600;
@@ -422,16 +258,6 @@
       flex-shrink: 0;
     }
 
-    @media (prefers-color-scheme: dark) {
-      .area-btn {
-        background: var(--gray-200);
-      }
-    }
-    :where([data-theme="dark"]) .area-btn {
-        background: var(--gray-200);
-      }
-
-
     .area-btn:hover {
       background: color-mix(in srgb, var(--primary) 8%, var(--gray-100));
     }
@@ -449,16 +275,6 @@
       border-bottom: 1px solid var(--gray-300);
     }
 
-    @media (prefers-color-scheme: dark) {
-      .search-box {
-        background: var(--gray-100);
-      }
-    }
-    :where([data-theme="dark"]) .search-box {
-        background: var(--gray-100);
-      }
-
-
     .search-input {
       width: 100%;
       padding: 10px 12px;
@@ -469,18 +285,6 @@
       color: var(--text);
       background: white;
     }
-
-    @media (prefers-color-scheme: dark) {
-      .search-input {
-        background: var(--gray-200);
-        border-color: var(--gray-300);
-      }
-    }
-    :where([data-theme="dark"]) .search-input {
-        background: var(--gray-200);
-        border-color: var(--gray-300);
-      }
-
 
     .search-input:focus {
       outline: none;
@@ -509,16 +313,6 @@
       cursor: pointer;
       transition: box-shadow 0.2s;
     }
-
-    @media (prefers-color-scheme: dark) {
-      .expediente-card {
-        background: var(--gray-100);
-      }
-    }
-    :where([data-theme="dark"]) .expediente-card {
-        background: var(--gray-100);
-      }
-
 
     .expediente-card:hover {
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -639,16 +433,6 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
       transition: box-shadow 0.2s;
     }
-
-    @media (prefers-color-scheme: dark) {
-      .expediente-card-new {
-        background: var(--gray-100);
-      }
-    }
-    :where([data-theme="dark"]) .expediente-card-new {
-        background: var(--gray-100);
-      }
-
 
     .expediente-card-new:hover {
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
@@ -829,16 +613,6 @@
       font-size: 12px;
     }
 
-    @media (prefers-color-scheme: dark) {
-      .nota-item {
-        background: var(--gray-200);
-      }
-    }
-    :where([data-theme="dark"]) .nota-item {
-        background: var(--gray-200);
-      }
-
-
     .nota-hora {
       font-size: 10px;
       font-weight: 600;
@@ -875,32 +649,6 @@
       margin: 0 !important;
     }
 
-    /* FAB */
-    .fab {
-      position: fixed;
-      /* Por encima de la barra de navegación inferior fija. */
-      bottom: calc(76px + env(safe-area-inset-bottom, 0px));
-      right: 16px;
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      background: var(--primary);
-      color: white;
-      border: none;
-      font-size: 24px;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-      z-index: 100;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: box-shadow 0.2s;
-    }
-
-    .fab:hover {
-      box-shadow: 0 8px 18px rgba(102, 126, 234, 0.45);
-    }
-
     /* Modal */
     .modal-overlay {
       display: none;
@@ -929,17 +677,6 @@
       flex-direction: column;
       box-shadow: 0 8px 20px -8px rgba(0,0,0,0.3);
     }
-    /* Techo del sistema de diseño: nada en la app debería pasar de esta magnitud (shadow-md) */
-
-    @media (prefers-color-scheme: dark) {
-      .modal {
-        background: var(--gray-100);
-      }
-    }
-    :where([data-theme="dark"]) .modal {
-        background: var(--gray-100);
-      }
-
 
     .modal-header {
       padding: 16px;
@@ -1006,20 +743,6 @@
       color: var(--text);
       background: white;
     }
-
-    @media (prefers-color-scheme: dark) {
-      .form-input,
-      .form-select,
-      .form-textarea {
-        background: var(--gray-200);
-        border-color: var(--gray-300);
-      }
-    }
-    :where([data-theme="dark"]) .form-input, :where([data-theme="dark"]) .form-select, :where([data-theme="dark"]) .form-textarea {
-        background: var(--gray-200);
-        border-color: var(--gray-300);
-      }
-
 
     .form-input:focus,
     .form-select:focus,
@@ -1177,14 +900,6 @@
       text-transform: uppercase;
     }
 
-    @media (prefers-color-scheme: dark) {
-      .toast { background: #f3f4f6; color: #111827; }
-      .toast-accion { color: #4338ca; }
-    }
-    :where([data-theme="dark"]) .toast { background: #f3f4f6; color: #111827; }
-    :where([data-theme="dark"]) .toast-accion { color: #4338ca; }
-
-
     :focus-visible {
       outline: 2px solid var(--primary);
       outline-offset: 2px;
@@ -1202,16 +917,18 @@
        el área táctil a 44px con un pseudo-elemento (ver más abajo), que es
        como lo resuelven las apps nativas: el objetivo táctil es más grande
        que el píxel pintado. */
+    /* Pantallas táctiles: objetivos de al menos 44px.
+       Los chips de filtro (.pestana-btn/.area-btn) quedan fuera a propósito:
+       mantienen 38px a la vista para ser iguales a los de Parques/Proyectos y
+       extienden solo su área de toque (ver el ::after de más arriba). */
     @media (pointer: coarse) {
       .btn,
-      .header-btn,
       .modal-close,
       .config-close,
       .config-item button,
       .config-input-group button {
         min-height: 44px;
       }
-      .header-btn,
       .modal-close,
       .config-close,
       .config-item button {
@@ -1261,16 +978,6 @@
       flex-direction: column;
       box-shadow: 0 8px 20px -8px rgba(0,0,0,0.3);
     }
-
-    @media (prefers-color-scheme: dark) {
-      .config-modal {
-        background: var(--gray-100);
-      }
-    }
-    :where([data-theme="dark"]) .config-modal {
-        background: var(--gray-100);
-      }
-
 
     .config-header {
       padding: 24px;
@@ -1370,16 +1077,6 @@
       border: 1px solid var(--gray-300);
     }
 
-    @media (prefers-color-scheme: dark) {
-      .config-item {
-        background: var(--gray-200);
-      }
-    }
-    :where([data-theme="dark"]) .config-item {
-        background: var(--gray-200);
-      }
-
-
     .config-item span {
       flex: 1;
       word-break: break-word;
@@ -1418,18 +1115,6 @@
       color: var(--text);
     }
 
-    @media (prefers-color-scheme: dark) {
-      .config-input-group input {
-        background: var(--gray-200);
-        border-color: var(--gray-300);
-      }
-    }
-    :where([data-theme="dark"]) .config-input-group input {
-        background: var(--gray-200);
-        border-color: var(--gray-300);
-      }
-
-
     .config-input-group button {
       padding: 10px 16px;
       background: var(--green);
@@ -1447,46 +1132,13 @@
       transform: translateY(-2px);
     }
 
-    /* Botón config en header */
-    .header-btn {
-      background: none;
-      border: none;
-      font-size: 18px;
-      cursor: pointer;
-      color: var(--text);
-      padding: 8px;
-      margin: 0 4px;
-      transition: all 0.2s;
-      border-radius: 6px;
-    }
-
-    .header-btn:hover {
-      background: var(--gray-200);
-    }
-
-    /* Breadcrumb EGPAIS — mismo patrón que proyectos.html/resoluciones.html/parques.html */
-    .eyebrow-bar {
-      font-size: 11px;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      font-weight: 600;
-      padding: 2px 16px 8px;
-    }
   </style>
 </head>
 <body>
-  <a class="volver" href="/index.html">&larr; Inicio</a>
-  <div class="eyebrow-bar">EGPAIS · Seguimiento</div>
+  <!-- El header (título + ⋮) lo monta header.js, común a las 4 apps. La
+       configuración y el estado de sincronización viven ahora en ese menú. -->
   <div class="app">
     <div class="sticky-top">
-      <header class="header">
-        <h1 class="header-title">📋 Expedientes</h1>
-        <span role="status" aria-live="polite"><button type="button" class="sync-indicator sync-pending" id="syncIndicator" title="Tocar para sincronizar ahora">⏳ Sincronizando...</button></span>
-        <button class="header-btn" id="btnTheme" title="Cambiar a modo oscuro" aria-label="Cambiar a modo oscuro">🌙</button>
-        <button class="header-btn" id="btnConfig" title="Configuración" aria-label="Configuración">⚙️</button>
-      </header>
-
       <div class="pestanas" role="tablist" aria-label="Estado de los expedientes">
         <button class="pestana-btn active" role="tab" aria-selected="true" data-pestana="activos" onclick="cambiarPestana('activos')">Activos</button>
         <button class="pestana-btn" role="tab" aria-selected="false" data-pestana="archivados" onclick="cambiarPestana('archivados')">Archivados</button>
@@ -1508,7 +1160,6 @@
     </main>
   </div>
 
-  <button class="fab" id="fabNuevo" title="Nuevo expediente" aria-label="Nuevo expediente">+</button>
 
   <!-- Modal Config -->
   <div class="config-overlay" id="configOverlay">
@@ -1580,6 +1231,7 @@
     </div>
   </div>
 
+  <script src="/header.js"></script>
   <script>
     // ===== CONFIGURACIÓN =====
     // Iconos de las acciones de la tarjeta expandida (mismo trazo que Proyectos).
@@ -1882,19 +1534,20 @@
     let sincronizando = false;
     let ultimoSyncOk = null; // true/false/null (null = todavía no se intentó)
 
+    // El estado de sincronización ya no ocupa un lugar fijo en el header:
+    // cuando todo anda bien vive en el menú ⋮, y solo sale a la vista si falló,
+    // que es cuando el dato le sirve a alguien (hay cambios sin subir).
     function actualizarIndicadorSync(estado) {
       ultimoSyncOk = estado;
-      const el = document.getElementById('syncIndicator');
-      if (!el) return;
+      if (!window.HeaderGlobal) return;
       if (estado === true) {
-        el.textContent = '☁️ Sincronizado';
-        el.className = 'sync-indicator sync-ok';
+        HeaderGlobal.setSync('Al día', 'ok', reintentarSync);
       } else if (estado === false) {
-        el.textContent = '⚠️ Sin conexión (guardado local)';
-        el.className = 'sync-indicator sync-error';
+        HeaderGlobal.setSync(
+          'Sin conexión. Tus cambios están guardados en este dispositivo y se suben solos al volver la señal. Tocá para reintentar.',
+          'error', reintentarSync);
       } else {
-        el.textContent = '⏳ Sincronizando...';
-        el.className = 'sync-indicator sync-pending';
+        HeaderGlobal.setSync('Sincronizando…', 'ok', reintentarSync);
       }
     }
 
@@ -2601,7 +2254,6 @@
     }
 
     // ===== EVENTOS =====
-    document.getElementById('fabNuevo').addEventListener('click', abrirNuevo);
     document.getElementById('modalClose').addEventListener('click', cerrarModal);
     document.getElementById('btnCancelar').addEventListener('click', cerrarModal);
     document.getElementById('btnGuardar').addEventListener('click', guardarExpediente);
@@ -2613,28 +2265,8 @@
       }
     });
 
-    // ---- Tema claro/oscuro ----
-    (function(){
-      var THEME_KEY = "seguimiento_crm_theme_v1";
-      var btnTheme = document.getElementById("btnTheme");
-      function applyThemeButton(){
-        var dark = document.documentElement.getAttribute("data-theme")==="dark";
-        btnTheme.textContent = dark ? "☀️" : "🌙";
-        var label = dark ? "Cambiar a modo claro" : "Cambiar a modo oscuro";
-        btnTheme.title = label;
-        btnTheme.setAttribute("aria-label", label);
-      }
-      btnTheme.addEventListener("click", function(){
-        var dark = document.documentElement.getAttribute("data-theme")==="dark";
-        if(dark){ document.documentElement.removeAttribute("data-theme"); localStorage.setItem(THEME_KEY,"light"); }
-        else { document.documentElement.setAttribute("data-theme","dark"); localStorage.setItem(THEME_KEY,"dark"); }
-        applyThemeButton();
-      });
-      applyThemeButton();
-    })();
 
-    // Config Modal Events
-    document.getElementById('btnConfig').addEventListener('click', abrirConfigModal);
+    // Config Modal Events (se abre desde el menú ⋮ del header común)
     document.getElementById('configClose').addEventListener('click', cerrarConfigModal);
 
     document.getElementById('configOverlay').addEventListener('click', (e) => {
@@ -2678,11 +2310,11 @@
     });
 
     // Tocar el indicador fuerza una sincronización (útil si quedó en "Sin conexión").
-    document.getElementById('syncIndicator').addEventListener('click', async () => {
+    async function reintentarSync() {
       ultimaDescarga = Date.now();
       if (hayPendiente() && !(await sincronizarAhora())) return;
       await descargarDesdeGitHub();
-    });
+    }
 
     document.getElementById('toastAccion').addEventListener('click', () => {
       const accion = toastAccionActual;
@@ -2695,6 +2327,18 @@
       if (e.target === document.getElementById('alertOverlay')) {
         cerrarAlert();
       }
+    });
+
+    // Header común a las 4 apps (título + ⋮) y botón flotante de alta.
+    // La configuración, que antes era un engranaje suelto en el header, vive
+    // ahora en el menú ⋮ junto con el estado de sincronización.
+    HeaderGlobal.init({
+      titulo: 'Seguimiento',
+      accion: { etiqueta: 'Nuevo expediente', onClick: abrirNuevo },
+      menu: [
+        { etiqueta: 'Áreas y responsables', onClick: abrirConfigModal },
+        { etiqueta: 'Actualizar datos', onClick: reintentarSync }
+      ]
     });
 
     // PWA

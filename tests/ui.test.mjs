@@ -30,9 +30,27 @@ try {
 }
 
 const HTML = fs.readFileSync(path.join(RAIZ, 'public/seguimiento.html'), 'utf8');
+// Las 4 apps cargan el header común con <script src="/header.js">, así que los
+// servidores de prueba tienen que servirlo o la página queda sin cabecera.
+const HEADER_JS = fs.readFileSync(path.join(RAIZ, 'public/header.js'), 'utf8');
+function servirHeaderJs(req, res) {
+  if (!req.url.startsWith('/header.js')) return false;
+  res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8' });
+  res.end(HEADER_JS);
+  return true;
+}
 const NUMERO = '363 – 1254/2026-01'; // guión medio a propósito: la app debe normalizarlo
 
 let fallas = 0;
+// La configuración y "Actualizar datos" viven ahora en el menú ⋮ del header
+// común (header.js), no en botones sueltos de cada pantalla.
+async function abrirDesdeMenu(page, etiqueta) {
+  await page.click('#btnMenu');
+  await page.waitForTimeout(150);
+  await page.locator('.app-menu__item', { hasText: etiqueta }).click();
+  await page.waitForTimeout(250);
+}
+
 const ok = (cond, msg) => {
   if (!cond) fallas++;
   console.log((cond ? '  OK   ' : '  FALLA') + ': ' + msg);
@@ -65,6 +83,7 @@ function levantarServer(puerto) {
       res.end(JSON.stringify(ctl.datos || ultimoPost || { expedientes: [], areas: [], responsables: [] }));
       return;
     }
+    if (servirHeaderJs(req, res)) return;
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     res.end(HTML);
   });
@@ -90,8 +109,7 @@ async function recorrido(nombre, viewport, puerto) {
   ok((await page.locator('text=Configuración').count()) === 1, 'hay un solo bloque "Configuración"');
   ok(!(await page.locator('#configOverlay').isVisible()), 'el popup arranca cerrado');
 
-  await page.click('#btnConfig');
-  await page.waitForTimeout(300);
+  await abrirDesdeMenu(page, 'Áreas y responsables');
   ok(await page.locator('#configOverlay').isVisible(), 'el popup abre con el engranaje');
 
   const areasAntes = await page.locator('#areasConfigList .config-item').count();
@@ -143,8 +161,14 @@ async function recorrido(nombre, viewport, puerto) {
     ok(post.areas?.includes('Área de Prueba'), 'el área agregada también se sincroniza');
   }
 
-  ok(/Sincronizado/i.test(await page.locator('#syncIndicator').textContent()),
-     'el indicador muestra estado sincronizado');
+  // Con todo en orden el estado NO ocupa lugar en pantalla: el aviso está
+  // oculto y el detalle se consulta en el menú ⋮.
+  ok(await page.locator('#syncAviso').isHidden(), 'con la sync al día no hay cartel ocupando pantalla');
+  await page.click('#btnMenu');
+  await page.waitForTimeout(150);
+  ok(/Al día/.test(await page.locator('.app-menu__estado').textContent()),
+     'el menú ⋮ informa que la sincronización está al día');
+  await page.keyboard.press('Escape');
 
   // El MIME del sw.js es ruido del server de prueba, no un bug de la app.
   const reales = problemas.filter((p) => !p.includes('MIME'));
@@ -198,11 +222,14 @@ async function testSyncYEscape() {
   page.on('pageerror', (e) => problemas.push('pageerror: ' + e.message));
   page.on('dialog', async (d) => { problemas.push('dialog: ' + d.message()); await d.dismiss(); });
   await page.goto('http://localhost:8796/', { waitUntil: 'networkidle' });
-  const indicador = async () => (await page.locator('#syncIndicator').textContent()).trim();
+  // El estado de sync ya no es un cartel permanente: el aviso aparece solo si
+  // algo falla. "visible" es, entonces, la señal de problema.
+  const avisoVisible = async () => await page.locator('#syncAviso').isVisible();
+  const avisoTexto = async () => (await page.locator('#syncAviso').textContent()).trim();
 
   // --- XSS / comillas ---
   const tema = `<img src=x onerror="window.__xss=1"> "comillas" & 'simples'`;
-  await page.click('#btnConfig');
+  await abrirDesdeMenu(page, 'Áreas y responsables');
   await page.fill('#inputArea', "D'Angelo <b>");
   await page.locator('#areasConfigList + .config-input-group button').click();
   await page.click('#configClose');
@@ -221,7 +248,7 @@ async function testSyncYEscape() {
   ok((await page.inputValue('#tema')) === tema, 'al editar, el tema con comillas vuelve intacto');
   ok((await page.inputValue('#area')) === "D'Angelo <b>", 'al editar, el área con apóstrofe queda seleccionada');
   await page.click('#btnCancelar');
-  await page.click('#btnConfig');
+  await abrirDesdeMenu(page, 'Áreas y responsables');
   // Un área en uso no se puede borrar: se avisa en vez de dejar expedientes huérfanos.
   await page.locator('#areasConfigList .config-item', { hasText: "D'Angelo" }).locator('button').click();
   ok(await page.locator('#alertOverlay').isVisible() && /1 expediente/.test(await page.locator('#alertMessage').textContent()),
@@ -242,14 +269,15 @@ async function testSyncYEscape() {
   ctx.ctl.fallar = true;
   await page.evaluate(() => { expedientes[0].tema = 'cambio con red caída'; guardarEnLS(); });
   await page.waitForTimeout(600);
-  ok(!/Sincronizado/i.test(await indicador()), `si el POST falla el indicador NO dice "Sincronizado" ("${await indicador()}")`);
+  ok(await avisoVisible(), 'si el POST falla, el aviso de sincronización se hace visible');
+  ok(/Sin conexión/i.test(await avisoTexto()), `el aviso explica qué pasó ("${(await avisoTexto()).slice(0, 40)}…")`);
   ok(await page.evaluate(() => hayPendiente()), 'el cambio queda marcado como pendiente');
 
   // --- reintento al volver la red ---
   ctx.ctl.fallar = false;
   await page.evaluate(() => window.dispatchEvent(new Event('online')));
   await page.waitForTimeout(600);
-  ok(/Sincronizado/i.test(await indicador()), 'al volver la red se reintenta y queda Sincronizado');
+  ok(!(await avisoVisible()), 'al volver la red se reintenta y el aviso desaparece solo');
   ok(ctx.getUltimoPost()?.expedientes?.[0]?.tema === 'cambio con red caída', 'el cambio pendiente llegó al servidor');
   ok(!(await page.evaluate(() => hayPendiente())), 'ya no queda pendiente');
 
@@ -438,7 +466,7 @@ async function testMovilTactil() {
   // Objetivos táctiles de 44px.
   await page.locator('.expediente-header-urgencia').first().click();
   const alto = async (sel) => (await page.locator(sel).first().boundingBox()).height;
-  for (const [sel, nombre] of [['.expediente-actions .btn', 'Resolver'], ['#btnConfig', 'engranaje']]) {
+  for (const [sel, nombre] of [['.expediente-actions .btn', 'Resolver'], ['#btnMenu', 'menú ⋮']]) {
     const h = await alto(sel);
     ok(h >= 44, `${nombre} mide ≥44px de alto (${Math.round(h)}px)`);
   }
@@ -522,7 +550,7 @@ async function testTecladoYFoco() {
   await page.locator('.pestana-btn').nth(1).click();
   ok(/Archivados/.test(await page.locator('[role="tab"][aria-selected="true"]').textContent()), 'aria-selected sigue a la pestaña activa');
   await page.locator('.pestana-btn').nth(0).click();
-  for (const sel of ['#btnConfig', '#fabNuevo', '#modalClose', '#configClose']) {
+  for (const sel of ['#btnMenu', '#fabNuevo', '#modalClose', '#configClose']) {
     ok(!!(await page.locator(sel).getAttribute('aria-label')), `${sel} tiene aria-label`);
   }
   ok((await page.locator('[role="dialog"], [role="alertdialog"]').count()) === 3, 'los 3 modales tienen role dialog/alertdialog');
@@ -577,11 +605,11 @@ async function testTecladoYFoco() {
   ok((await page.locator('#expedientesList').textContent()).includes('363-1254/2026-01'), 'el expediente guardado con Enter aparece en la lista');
 
   // Configuración: Escape cierra y devuelve el foco al engranaje
-  await page.click('#btnConfig');
+  await abrirDesdeMenu(page, 'Áreas y responsables');
   ok(await page.evaluate(() => document.activeElement.id === 'inputArea'), 'al abrir configuración el foco va al campo de área');
   await page.keyboard.press('Escape');
   ok(!(await page.locator('#configOverlay').isVisible()), 'Escape cierra configuración');
-  ok(await page.evaluate(() => document.activeElement.id === 'btnConfig'), 'el foco vuelve al engranaje');
+  ok(await page.evaluate(() => document.activeElement.id === 'btnMenu'), 'el foco vuelve al botón ⋮ que abrió la configuración');
 
   ok(problemas.length === 0, 'sin errores de JS ni dialogs' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
   await browser.close();
@@ -634,7 +662,7 @@ async function testFlujo() {
   ok(await page.evaluate(() => expedientes.map(e => e.id).join() === 'a,b'), 'Deshacer restaura el expediente en su posición original');
 
   // Área sin uso: se borra con Deshacer
-  await page.click('#btnConfig');
+  await abrirDesdeMenu(page, 'Áreas y responsables');
   await page.fill('#inputArea', 'Temporal');
   await page.locator('#areasConfigList + .config-input-group button').click();
   await page.locator('#areasConfigList .config-item', { hasText: 'Temporal' }).locator('button').click();
@@ -652,16 +680,17 @@ async function testFlujo() {
   await page.waitForTimeout(500);
   ok((await page.locator('#expedientesList').textContent()).includes('Creado en el celular'), 'al volver a la app se traen los cambios del otro dispositivo');
 
-  // Reintento manual tocando el indicador
+  // Reintento manual tocando el aviso de sincronización
   ctx.ctl.datos = null;
   ctx.ctl.fallar = true;
   await page.evaluate(() => { expedientes[0].tema = 'editado sin red'; guardarEnLS(); });
   await page.waitForTimeout(500);
-  ok(/Sin conexión/.test(await page.locator('#syncIndicator').textContent()), 'sin red el indicador lo dice');
+  ok(await page.locator('#syncAviso').isVisible(), 'sin red aparece el aviso de sincronización');
+  ok(/Sin conexión/.test(await page.locator('#syncAviso').textContent()), 'el aviso explica que no hay conexión');
   ctx.ctl.fallar = false;
-  await page.click('#syncIndicator');
+  await page.click('#syncAviso');
   await page.waitForTimeout(600);
-  ok(/Sincronizado/.test(await page.locator('#syncIndicator').textContent()), 'tocar el indicador reintenta y sincroniza');
+  ok(await page.locator('#syncAviso').isHidden(), 'tocar el aviso reintenta, sincroniza y el aviso se va');
   ok(ctx.getUltimoPost()?.expedientes?.[0]?.tema === 'editado sin red', 'el cambio pendiente llegó al servidor');
 
   ok(problemas.length === 0, 'sin errores de JS ni diálogos nativos' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
@@ -697,6 +726,7 @@ async function testResoluciones(viewport, puerto) {
       res.end(JSON.stringify(datos));
       return;
     }
+    if (servirHeaderJs(req, res)) return;
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     res.end(html);
   });
@@ -833,6 +863,7 @@ async function testProyectos(viewport, puerto) {
       res.end(JSON.stringify(Object.assign({}, ultimoPost || datosConViejo, { _meta: { existe: true, sha: SHA } })));
       return;
     }
+    if (servirHeaderJs(req, res)) return;
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     res.end(html);
   });
@@ -948,6 +979,7 @@ async function testParques(viewport, puerto) {
       res.end(JSON.stringify(ultimoPost || datos));
       return;
     }
+    if (servirHeaderJs(req, res)) return;
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     res.end(html);
   });
@@ -1113,6 +1145,7 @@ async function testUniformidad(puerto) {
       res.end('{}');
       return;
     }
+    if (servirHeaderJs(req, res)) return;
     const cual = paginas.find((p) => req.url.startsWith('/' + p)) || 'seguimiento';
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     res.end(htmls[cual]);
@@ -1174,6 +1207,72 @@ async function testUniformidad(puerto) {
   for (const [p, m] of refs) {
     ok(m.tactil, `en ${p} el chip responde al toque en los 44px completos, aunque mida ${m.alto}px`);
   }
+
+  // --- Header global: mismo componente en las 4 apps ---
+  // El criterio de aceptación que pidió el usuario es literal: al cambiar de
+  // pantalla el título cambia, pero el ⋮ conserva exactamente la misma
+  // alineación horizontal y vertical.
+  const encabezados = {};
+  for (const p of paginas) {
+    if (p === 'index') continue;
+    await page.goto(`http://localhost:${puerto}/${p}.html`, { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(250);
+    encabezados[p] = await page.evaluate(() => {
+      const h = document.querySelector('.app-header');
+      const t = document.querySelector('.app-header__titulo');
+      const b = document.querySelector('.app-header__menu');
+      const rb = b.getBoundingClientRect();
+      const rt = t.getBoundingClientRect();
+      const cs = getComputedStyle(t);
+      return {
+        titulo: t.textContent.trim(),
+        altoHeader: Math.round(h.getBoundingClientRect().height),
+        menuTop: Math.round(rb.top),
+        menuDerecha: Math.round(window.innerWidth - rb.right),
+        menuAncho: Math.round(rb.width),
+        menuAlto: Math.round(rb.height),
+        tituloIzquierda: Math.round(rt.left),
+        tituloFuente: cs.fontSize,
+        // Un título largo no debe empujar ni tapar el botón.
+        seSolapan: rt.right > rb.left,
+        viejos: document.querySelectorAll('.volver, #btnTheme, #btnNew, .sync-status, .sync-indicator, .header-title').length,
+      };
+    });
+  }
+  const esperados = { seguimiento: 'Seguimiento', proyectos: 'Proyectos', resoluciones: 'Resoluciones', parques: 'Parques' };
+  const apps = Object.keys(encabezados);
+  const refHdr = encabezados[apps[0]];
+  for (const p of apps) {
+    const e = encabezados[p];
+    ok(e.titulo === esperados[p], `el header de ${p} se titula "${esperados[p]}" (dice "${e.titulo}")`);
+    ok(e.menuAncho >= 48 && e.menuAlto >= 48, `el ⋮ de ${p} tiene área táctil de al menos 48x48 (${e.menuAncho}x${e.menuAlto})`);
+    ok(!e.seSolapan, `en ${p} el título no se superpone con el ⋮`);
+    ok(e.viejos === 0, `en ${p} no quedó nada del header viejo (Inicio, tema, botón nuevo, cartel de sync)`);
+  }
+  for (const p of apps.slice(1)) {
+    const e = encabezados[p];
+    ok(e.menuTop === refHdr.menuTop && e.menuDerecha === refHdr.menuDerecha,
+       `el ⋮ de ${p} está en la misma posición que en ${apps[0]} (y=${e.menuTop}/${refHdr.menuTop}, der=${e.menuDerecha}/${refHdr.menuDerecha})`);
+    ok(e.altoHeader === refHdr.altoHeader && e.tituloIzquierda === refHdr.tituloIzquierda && e.tituloFuente === refHdr.tituloFuente,
+       `el header de ${p} tiene mismo alto, margen y tipografía que el de ${apps[0]}`);
+  }
+
+  // El menú abre, es navegable y cierra con Escape.
+  await page.goto(`http://localhost:${puerto}/seguimiento.html`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(250);
+  await page.click('#btnMenu');
+  await page.waitForTimeout(150);
+  ok(await page.locator('.app-menu').isVisible(), 'el ⋮ abre el menú contextual');
+  ok((await page.locator('.app-menu__item').count()) > 0, 'el menú trae opciones de la sección');
+  const dentro = await page.evaluate(() => {
+    const m = document.querySelector('.app-menu').getBoundingClientRect();
+    return m.right <= window.innerWidth && m.left >= 0 && m.bottom <= window.innerHeight;
+  });
+  ok(dentro, 'el menú queda dentro de la pantalla, sin cortarse por el borde');
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(150);
+  ok(await page.locator('.app-menu').isHidden(), 'Escape cierra el menú');
+  ok(await page.evaluate(() => document.activeElement.id === 'btnMenu'), 'al cerrar, el foco vuelve al ⋮');
 
   const barraRef = barras[paginas[0]];
   for (const p of paginas.slice(1)) {
