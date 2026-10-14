@@ -275,13 +275,20 @@
     }
 
     /* Pestañas */
+    /* Barra de filtros superior, mismo lenguaje que la barra inferior: chips
+       redondeados con fondo sólido en el activo (antes era un subrayado),
+       con scroll horizontal si no entran todos — mismo concepto que los
+       chips de "Todos/No leídos" de WhatsApp. */
     .pestanas {
       background: white;
-      padding: 0 var(--gutter);
+      padding: 10px var(--gutter);
       border-bottom: 1px solid var(--gray-300);
       display: flex;
-      gap: 0;
+      gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
     }
+    .pestanas::-webkit-scrollbar { display: none; }
 
     @media (prefers-color-scheme: dark) {
       .pestanas {
@@ -294,17 +301,17 @@
 
 
     .pestana-btn {
-      flex: 1;
-      padding: 12px 16px;
-      background: none;
-      border: none;
-      border-bottom: 3px solid transparent;
+      flex: 0 0 auto;
+      padding: 8px 14px;
+      background: var(--gray-200);
+      border: 1px solid var(--gray-300);
+      border-radius: 999px;
       cursor: pointer;
       font-weight: 600;
       font-size: 13px;
       color: var(--text-muted);
-      transition: all 0.2s;
-      text-align: center;
+      transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+      white-space: nowrap;
     }
 
     .pestana-btn:hover {
@@ -312,8 +319,9 @@
     }
 
     .pestana-btn.active {
-      color: var(--primary);
-      border-bottom-color: var(--primary);
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
     }
 
     /* Panel de Áreas */
@@ -360,7 +368,7 @@
       font-size: 12px;
       background: var(--gray-100);
       border: 1px solid var(--gray-300);
-      border-radius: 6px;
+      border-radius: 999px;
       cursor: pointer;
       transition: all 0.2s;
       color: var(--text);

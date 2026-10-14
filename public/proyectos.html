@@ -86,9 +86,15 @@ svg text{font-family:var(--font-body)}
 .btn-theme{background:var(--surface);border:1px solid var(--border);color:var(--fg);border-radius:8px;width:38px;height:38px;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
 .btn-theme:hover{border-color:var(--accent)}
 
-.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:18px}
-.tab{background:none;border:none;color:var(--muted);font-size:13.5px;font-weight:600;padding:9px 4px;margin-right:18px;border-bottom:2px solid transparent;position:relative;top:1px}
-.tab.active{color:var(--fg);border-bottom-color:var(--accent)}
+/* Barra de filtros superior, mismo lenguaje que la barra inferior: chips
+   redondeados en vez del subrayado de antes, filtro activo con fondo de
+   color (no solo un borde), scroll horizontal si no entran todos — mismo
+   concepto que los chips de "Todos/No leídos" de WhatsApp. */
+.tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;margin-bottom:18px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;background:var(--surface-2);border:none;color:var(--muted);font-size:13px;font-weight:600;padding:8px 14px;border-radius:999px;white-space:nowrap;min-height:36px;transition:background-color .15s ease,color .15s ease}
+.tab:hover{color:var(--fg)}
+.tab.active{background:var(--accent);color:var(--accent-fg)}
 .view[hidden]{display:none}
 
 /* ---- Dashboard: barra de sincronización ---- */
@@ -327,7 +333,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 <div class="tabs" role="tablist" aria-label="Vistas">
   <button class="tab" id="tabList" role="tab" aria-selected="true" aria-controls="viewList">Listado</button>
   <button class="tab" id="tabArchivo" role="tab" aria-selected="false" aria-controls="viewArchivo">Archivo</button>
-  <button class="tab" id="tabDash" role="tab" aria-selected="false" aria-controls="viewDash">Dashboard</button>
+  <button class="tab" id="tabDash" role="tab" aria-selected="false" aria-controls="viewDash">Análisis</button>
 </div>
 
 <!-- ===== VISTA LISTADO ===== -->
