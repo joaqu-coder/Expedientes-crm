@@ -3871,29 +3871,6 @@
       "actualizado_en": "2026-10-14T13:49:34.952Z"
     },
     {
-      "id": "exp_mv87aopxytgsf",
-      "intervenciones": [
-        {
-          "hora": "14/10/2026 11:24",
-          "texto": "No cuenta con (tel) de contacto. No con (mail)",
-          "tipo": "manual"
-        }
-      ],
-      "nro_expediente": "363-185099/2026-0",
-      "nombre_empresa": "DON JUAN CATERING - Comercial",
-      "fecha_inicio": "17/09/2026",
-      "parque_industrial": "Güemes",
-      "rubro": "Servicios",
-      "superficie_solicitada_m2": 1000,
-      "actividad_empresa": "Servicio de Catering",
-      "situacion": "En_tratamiento",
-      "representante_nombre": "Lucia Rivadeo",
-      "contacto_tel": "387 - 231023",
-      "contacto_mail": "",
-      "fecha_ultimo_movimiento": "14/10/2026 11:24",
-      "actualizado_en": "2026-10-14T14:24:07.847Z"
-    },
-    {
       "id": "exp_mv8af1n8i80m0",
       "intervenciones": [],
       "nro_expediente": "363 -185099/2026-0",
@@ -3916,5 +3893,10 @@
     "alerta": 30,
     "critico": 15
   },
-  "eliminados": []
+  "eliminados": [
+    {
+      "id": "exp_mv87aopxytgsf",
+      "en": "2026-10-14T15:52:18.620Z"
+    }
+  ]
 }
