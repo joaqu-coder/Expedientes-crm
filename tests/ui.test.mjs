@@ -944,18 +944,19 @@ async function testParques(viewport, puerto) {
   const totalEmpresas = datos.empresas.length;
   const sinEmpresa = datos.lotes.filter((l) => !l.id_empresa);
   ok(totalLotes === 138, `el archivo trae los ${totalLotes} lotes reales de Güemes`);
-  ok(totalEmpresas === 55, `el archivo trae las ${totalEmpresas} empresas reales`);
+  ok(totalEmpresas === 54, `el archivo trae las ${totalEmpresas} empresas reales (AGSOF S.A. fusionada: 55 -> 54)`);
   ok((await page.locator('#empresasCount').textContent()).includes(String(totalEmpresas)),
      'el contador de empresas muestra el total, por default');
   ok(await page.locator('#filterEstadoEmpresas option', { hasText: 'Todos los estados' }).count() === 1,
      'el listado de Empresas tiene el filtro "Todos los estados"');
 
-  // Búsqueda por empresa
+  // Búsqueda por empresa — AGSOF S.A. ya no debe aparecer duplicada.
   await page.fill('#searchEmpresas', 'AGSOF');
   await page.waitForTimeout(150);
   const esperadoAgsof = datos.empresas.filter((e) => e.nombre_empresa.toUpperCase().includes('AGSOF')).length;
+  ok(esperadoAgsof === 1, 'AGSOF S.A. quedó fusionada en un solo registro en los datos');
   ok((await page.locator('#empresasList .tarjeta').count()) === esperadoAgsof,
-     `la búsqueda encuentra las ${esperadoAgsof} empresas AGSOF`);
+     `la búsqueda encuentra ${esperadoAgsof} tarjeta de AGSOF (sin duplicado)`);
   await page.fill('#searchEmpresas', '');
   await page.waitForTimeout(150);
 
@@ -970,11 +971,12 @@ async function testParques(viewport, puerto) {
     .map((campo) => fichaEmpresa.indexOf(campo));
   ok(ordenCampos.every((i, idx) => idx === 0 || i > ordenCampos[idx - 1]),
      'el tab Empresa respeta el orden Representante/Cargo/Rubro/Actividad/CUIT');
-  ok(fichaEmpresa.includes('Lotes'), 'la ficha de la empresa lista sus lotes');
+  ok(fichaEmpresa.includes('Lotes (3)'), 'la ficha fusionada de AGSOF lista sus 3 lotes (L005+L006+L007)');
+  ok(fichaEmpresa.includes('20.394'), 'el total de superficie suma los m² de los 3 lotes fusionados');
 
-  // Tab Contacto: Web e Instagram deben ser links reales (con esquema), no
-  // el valor crudo como texto — si no navegan, no cumplen "no debe perder
-  // la funcionalidad".
+  // Tab Contacto: Web, Instagram y LinkedIn deben ser links reales (con
+  // esquema), no el valor crudo como texto — si no navegan, no cumplen "no
+  // debe perder la funcionalidad". Título en negrita, valor en gris.
   await page.click('[data-subtab="contacto"]');
   const hrefWeb = await page.locator('#empSubpanel a', { hasText: 'agsofsa.com.ar' }).getAttribute('href');
   ok(/^https?:\/\//.test(hrefWeb || ''), 'el link de Web navega a una URL real');
@@ -982,14 +984,21 @@ async function testParques(viewport, puerto) {
   ok(/^https?:\/\/.*instagram\.com/.test(hrefIg || ''), 'el link de Instagram navega a una URL real');
   const hrefMail = await page.locator('#empSubpanel a', { hasText: 'guillermo@grupomm.com.ar' }).getAttribute('href');
   ok((hrefMail || '').startsWith('mailto:'), 'el email abre el cliente de mail (mailto:)');
+  const hrefLinkedin = await page.locator('#empSubpanel a', { hasText: 'linkedin.com/in/elianacabrera88' }).getAttribute('href');
+  ok(/^https?:\/\/.*linkedin\.com/.test(hrefLinkedin || ''), 'LinkedIn se renderiza y navega a una URL real (antes no aparecía)');
+  const contactoHTML = await page.locator('#empSubpanel').innerHTML();
+  ok(/class="contact-label"[^>]*>Email/.test(contactoHTML) || contactoHTML.includes('contact-label">Email'),
+     'en Contacto el título va con la clase que lo pone en negrita');
 
   // Tab Lotes de la ficha: solo Mza/Superficie/Parcela/Matrícula/Propiedad/
-  // Escritura — nada de "Titular" (viejo nombre) ni badge de estado/color.
+  // Escritura — nada de "Titular" (viejo nombre) ni badge de estado/color,
+  // con la etiqueta en negrita y el dato en gris.
   await page.click('[data-subtab="lote"]');
   const panelLotes = await page.locator('#empSubpanel').innerHTML();
-  ok(panelLotes.includes('Propiedad:'), 'el tab Lotes usa la etiqueta "Propiedad" (no "Titular")');
+  ok(panelLotes.includes('Propiedad: '), 'el tab Lotes usa la etiqueta "Propiedad" (no "Titular")');
   ok(!panelLotes.includes('Titular:'), 'el tab Lotes ya no muestra "Titular"');
   ok(!/class="lot-si"|class="lot-no"/.test(panelLotes), 'el tab Lotes no colorea Escritura (sobrio, sin color)');
+  ok(panelLotes.includes('lot-field-label'), 'el tab Lotes marca Propiedad/Escritura en negrita (lot-field-label)');
   await page.click('#xCloseViewEmp');
 
   // Sublocación: L038 tiene una ocupación vigente (titular E008/ALISAN,
