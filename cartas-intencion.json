@@ -3584,25 +3584,31 @@
     {
       "id": "exp_imp148",
       "nro_expediente": "363_3137/2023",
-      "fecha_inicio": "",
+      "fecha_inicio": "12/09/2023",
       "anio_inicio_expediente": "2023",
       "nombre_empresa": "LITICA RESOURCES S.A",
       "parque_industrial": "Salta",
       "rubro": "Servicios",
       "superficie_solicitada_m2": 100000,
       "actividad_empresa": "Centro de investigación y desarrollo",
-      "situacion": "Sin_tratamiento",
+      "situacion": "Desestimada",
       "representante_nombre": "Ricardo Daniel Piethe",
       "contacto_tel": "Alquiler",
       "contacto_mail": "",
-      "fecha_ultimo_movimiento": "",
+      "fecha_ultimo_movimiento": "14/10/2026 12:56",
       "intervenciones": [
         {
           "hora": "01/01/2023",
           "texto": "ACUERDO ENTRE PRIVADOS",
           "tipo": "manual"
+        },
+        {
+          "hora": "14/10/2026 12:56",
+          "texto": "Cambio de situación: Sin tratamiento → Desestimada",
+          "tipo": "sistema"
         }
-      ]
+      ],
+      "actualizado_en": "2026-10-14T15:56:32.852Z"
     },
     {
       "id": "exp_imp149",
