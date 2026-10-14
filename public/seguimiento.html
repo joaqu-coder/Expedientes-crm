@@ -171,7 +171,9 @@
       border-radius: 10px;
       transition: background-color .15s ease;
     }
-    .nav-label { font-size: 11px; font-weight: 600; letter-spacing: .01em; }
+    /* line-height explícito: sin esto hereda el 1.5 del body de esta página y
+       la barra queda 3px más alta que la de las otras cuatro. */
+    .nav-label { font-size: 11px; font-weight: 600; letter-spacing: .01em; line-height: 1.2; }
     .nav-item.active { color: var(--accent); }
     .nav-item.active .nav-icon { background: color-mix(in srgb, var(--accent) 16%, transparent); }
 
@@ -330,11 +332,34 @@
       color: var(--primary);
     }
 
-    /* Contador integrado junto al nombre del filtro ("Activos 0"), en
-       seminegrita para distinguirlo del texto del filtro (peso normal). */
+    /* Contador integrado junto al nombre del filtro ("Activos 3"), en
+       seminegrita para distinguirlo del texto del filtro (peso normal).
+       El margen NO es decorativo: dentro de un contenedor inline-flex el
+       espacio de texto que queda pegado al borde de un hijo se colapsa, así
+       que sin esto se lee "Activos3". Mismo criterio que .tab .count en
+       parques.html y proyectos.html. */
     .pestana-btn .count,
     .area-btn .count {
       font-weight: 600;
+      margin-left: 4px;
+    }
+
+    /* El chip mide 38px (igual que en Parques y Proyectos), pero en pantalla
+       táctil su objetivo de toque se extiende a los 44px que piden las guías
+       de iOS/Android sin agrandar lo que se ve. */
+    @media (pointer: coarse) {
+      .pestana-btn,
+      .area-btn { position: relative; }
+      .pestana-btn::after,
+      .area-btn::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        height: 44px;
+      }
     }
 
     /* Panel de Áreas */
@@ -359,16 +384,20 @@
       font-weight: 600;
       text-transform: uppercase;
       color: var(--text-muted);
-      margin-bottom: 8px;
+      /* 4px: los otros 4 los pone el padding-top de .area-buttons */
+      margin-bottom: 4px;
     }
 
-    /* En móvil los chips van en UNA fila con scroll horizontal (antes envolvían en 4 filas) */
+    /* En móvil los chips van en UNA fila con scroll horizontal (antes envolvían en 4 filas).
+       El padding va arriba Y abajo: overflow-x:auto también recorta en vertical,
+       y sin los 4px de arriba el área táctil extendida del chip (.area-btn::after)
+       quedaba cortada justo de ese lado. */
     .area-buttons {
       display: flex;
       flex-wrap: nowrap;
       gap: 8px;
       overflow-x: auto;
-      padding-bottom: 4px;
+      padding: 4px 0;
       scrollbar-width: thin;
     }
 
@@ -1165,11 +1194,16 @@
       * { transition: none !important; }
     }
 
-    /* Pantallas táctiles: objetivos de al menos 44px */
+    /* Pantallas táctiles: objetivos de al menos 44px.
+       Los chips de filtro (.pestana-btn/.area-btn) quedaron FUERA de esta
+       lista a propósito: estirarlos a 44px los hacía más altos que los
+       chips de Parques/Proyectos (38px) y rompía la uniformidad entre
+       pantallas. En su lugar mantienen los 38px visibles y extienden solo
+       el área táctil a 44px con un pseudo-elemento (ver más abajo), que es
+       como lo resuelven las apps nativas: el objetivo táctil es más grande
+       que el píxel pintado. */
     @media (pointer: coarse) {
       .btn,
-      .area-btn,
-      .pestana-btn,
       .header-btn,
       .modal-close,
       .config-close,
@@ -2178,11 +2212,11 @@
 
       const html = `
         <button class="area-btn ${filtroArea === null ? 'active' : ''}" data-area="" onclick="filtrarArea(this.dataset.area || null)">
-          Total (<span class="count">${enPestana.length}</span>)
+          Total<span class="count">${enPestana.length}</span>
         </button>
         ${AREAS.map(area => `
           <button class="area-btn ${filtroArea === area ? 'active' : ''}" data-area="${esc(area)}" onclick="filtrarArea(this.dataset.area || null)">
-            ${esc(area)} (<span class="count">${enPestana.filter(e => e.area === area).length}</span>)
+            ${esc(area)}<span class="count">${enPestana.filter(e => e.area === area).length}</span>
           </button>
         `).join('')}
       `;
@@ -2205,7 +2239,7 @@
       document.querySelectorAll('.pestana-btn').forEach(btn => {
         const p = btn.dataset.pestana;
         const cantidad = expedientes.filter(e => estadoDe(e) === p).length;
-        btn.innerHTML = `${nombres[p]} (<span class="count">${cantidad}</span>)`;
+        btn.innerHTML = `${nombres[p]}<span class="count">${cantidad}</span>`;
         btn.classList.toggle('active', p === pestanaActiva);
         btn.setAttribute('aria-selected', String(p === pestanaActiva));
       });

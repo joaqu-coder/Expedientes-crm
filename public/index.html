@@ -111,8 +111,10 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 4px;
-      padding: 10px 4px 8px;
+      /* gap/padding/tamaño de ícono iguales a las otras 4 páginas: si acá
+         difieren, la barra cambia de alto al entrar a una app. */
+      gap: 3px;
+      padding: 9px 4px 8px;
       text-decoration: none;
       color: var(--text-muted);
       transition: color .15s ease;
@@ -126,8 +128,8 @@
       color: var(--primary);
     }
     .nav-icon {
-      width: 24px;
-      height: 24px;
+      width: 26px;
+      height: 22px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -136,6 +138,9 @@
       font-size: 11px;
       font-weight: 600;
       letter-spacing: .01em;
+      /* Explícito para que la barra mida igual en las 5 páginas, sin depender
+         del line-height que herede cada una. */
+      line-height: 1.2;
     }
     .btn-theme {
       position: fixed;

@@ -371,10 +371,14 @@ async function testPlazosYTarjetas() {
   ok(/Vencido hace \d+ d háb\./.test(await cards.first().locator('.expediente-urgencia-dias').textContent()), 'el badge del vencido lleva texto, no solo color');
   ok(await cards.first().locator('.expediente-header-urgencia.rojo').count() === 1, 'el vencido es rojo');
   ok(/Vence:\s*\w+ \d\d\/\d\d\/2099/.test(await cards.nth(1).textContent()), 'la tarjeta muestra la fecha de vencimiento');
-  ok(/^Total \(3\)/.test((await page.locator('.area-btn').first().textContent()).trim()), 'Total cuenta solo los activos (3), no el archivado');
-  ok(/Jurídica \(2\)/.test(await page.locator('#areaBotones').textContent()), 'el contador de área respeta la pestaña (Jurídica = 2)');
-  ok(/Activos \(3\)/.test(await page.locator('.pestana-btn.active').textContent()), 'la pestaña Activos muestra su cantidad');
-  ok(/Archivados \(1\)/.test(await page.locator('.pestana-btn').nth(1).textContent()), 'la pestaña Archivados muestra su cantidad');
+  // El contador va pegado al nombre y SIN paréntesis ("Total 3"), igual que
+  // en Parques y Proyectos — el paréntesis se sacó a pedido del usuario.
+  ok(/^Total\s*3$/.test((await page.locator('.area-btn').first().textContent()).trim()), 'Total cuenta solo los activos (3), no el archivado, y sin paréntesis');
+  ok(/Jurídica\s*2/.test(await page.locator('#areaBotones').textContent()), 'el contador de área respeta la pestaña (Jurídica = 2)');
+  ok(/^Activos\s*3$/.test((await page.locator('.pestana-btn.active').textContent()).trim()), 'la pestaña Activos muestra su cantidad, sin paréntesis');
+  ok(/^Archivados\s*1$/.test((await page.locator('.pestana-btn').nth(1).textContent()).trim()), 'la pestaña Archivados muestra su cantidad, sin paréntesis');
+  ok(await page.locator('.pestana-btn.active .count').count() === 1, 'el contador de la pestaña va en su propio <span class="count"> (seminegrita)');
+  ok(await page.locator('.area-btn .count').first().evaluate((el) => getComputedStyle(el).fontWeight) === '600', 'el contador se pinta en seminegrita');
 
   await page.locator('.pestana-btn', { hasText: 'Archivados' }).click();
   ok((await cards.count()) === 1, 'la pestaña Archivados lista 1');
@@ -384,7 +388,7 @@ async function testPlazosYTarjetas() {
   const fondo = await arch.locator('.expediente-header-urgencia').evaluate((el) => getComputedStyle(el).backgroundColor);
   const [cr, cg, cb] = fondo.match(/\d+/g).map(Number);
   ok(Math.max(cr, cg, cb) - Math.min(cr, cg, cb) < 20, `el encabezado de la archivada es gris neutro (${fondo})`);
-  ok(/^Total \(1\)/.test((await page.locator('.area-btn').first().textContent()).trim()), 'en Archivados, Total = 1');
+  ok(/^Total\s*1$/.test((await page.locator('.area-btn').first().textContent()).trim()), 'en Archivados, Total = 1');
   ok(/Archivados/.test(await page.locator('.pestana-btn.active').textContent()), 'la pestaña activa se marca sin depender del evento global');
 
   await page.fill('#searchInput', 'zzz');
@@ -434,9 +438,27 @@ async function testMovilTactil() {
   // Objetivos táctiles de 44px.
   await page.locator('.expediente-header-urgencia').first().click();
   const alto = async (sel) => (await page.locator(sel).first().boundingBox()).height;
-  for (const [sel, nombre] of [['.expediente-actions .btn', 'Resolver'], ['.area-btn', 'chip de área'], ['.pestana-btn', 'pestaña'], ['#btnConfig', 'engranaje']]) {
+  for (const [sel, nombre] of [['.expediente-actions .btn', 'Resolver'], ['#btnConfig', 'engranaje']]) {
     const h = await alto(sel);
     ok(h >= 44, `${nombre} mide ≥44px de alto (${Math.round(h)}px)`);
+  }
+  // Los chips de filtro son la excepción: miden 38px a la vista (para quedar
+  // iguales a los de Parques/Proyectos) y extienden el objetivo táctil a 44px
+  // con un pseudo-elemento. Por eso no se mide el alto del rect sino lo que
+  // importa de verdad: que un dedo que cae en esa franja active el chip.
+  for (const [sel, nombre] of [['.area-btn', 'chip de área'], ['.pestana-btn', 'pestaña']]) {
+    const r = await page.evaluate((s) => {
+      const el = document.querySelector(s);
+      const b = el.getBoundingClientRect();
+      const x = b.left + b.width / 2;
+      const centro = b.top + b.height / 2;
+      // Borde del objetivo de 44px: 22px arriba y abajo del centro (1px adentro).
+      const arriba = document.elementFromPoint(x, centro - 21);
+      const abajo = document.elementFromPoint(x, centro + 21);
+      return { alto: b.height, arriba: el.contains(arriba), abajo: el.contains(abajo) };
+    }, sel);
+    ok(Math.round(r.alto) === 38, `${nombre} mide 38px a la vista, igual que en Parques/Proyectos (${Math.round(r.alto)}px)`);
+    ok(r.arriba && r.abajo, `${nombre} responde al toque en los 44px completos (arriba=${r.arriba}, abajo=${r.abajo})`);
   }
 
   // Los chips de área van en una sola fila con scroll horizontal.
@@ -1025,6 +1047,13 @@ async function testParques(viewport, puerto) {
   ok(ultimoPost?.lotes?.length === totalLotes, `el POST sube los ${totalLotes} lotes`);
   ok(ultimoPost.lotes.some((l) => l.matricula === 'Editado — ñandú ☕'),
      'la matrícula editada llega al servidor con tildes, ñ y emoji intactos');
+  // Lo que se publica en el repo son datos, no el estado de la pantalla: el
+  // POST mandaba `state` entero y dejó commiteado en parques.json hasta lo que
+  // había tipeado alguien en el buscador (searchEmpresas: "b").
+  const camposPermitidos = ['parque', 'empresas', 'lotes', 'ocupaciones', 'reservas'];
+  const colados = Object.keys(ultimoPost).filter((k) => !camposPermitidos.includes(k));
+  ok(colados.length === 0,
+     `el POST manda solo datos, sin estado de UI (filtros, búsqueda, modal abierto)${colados.length ? ': se colaron ' + colados.join(', ') : ''}`);
   // onSaveLote ya cierra el modal al guardar.
   await page.fill('#searchEmpresas', '');
   await page.waitForTimeout(150);
@@ -1065,6 +1094,105 @@ async function testParques(viewport, puerto) {
   server.close();
 }
 
+// Las 4 apps comparten un mismo lenguaje de chips de filtro. Esta prueba es
+// transversal a propósito: los tests de cada app miran su propia pantalla y no
+// detectan que una quedó con chips de otro tamaño (fue exactamente lo que pasó
+// con los 44px de @media(pointer:coarse) en Seguimiento contra los 38px del
+// resto). También cubre la barra de navegación inferior, que vive duplicada en
+// las 5 páginas y por eso es fácil que se desincronice.
+async function testUniformidad(puerto) {
+  console.log('\n=== UNIFORMIDAD ENTRE PANTALLAS (390x844, táctil) ===');
+  // index entra por la barra inferior: es la quinta copia y se desincroniza igual.
+  const paginas = ['seguimiento', 'proyectos', 'resoluciones', 'parques', 'index'];
+  const htmls = {};
+  for (const p of paginas) htmls[p] = fs.readFileSync(path.join(RAIZ, `public/${p}.html`), 'utf8');
+
+  const server = http.createServer((req, res) => {
+    if (req.url.startsWith('/api/')) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end('{}');
+      return;
+    }
+    const cual = paginas.find((p) => req.url.startsWith('/' + p)) || 'seguimiento';
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(htmls[cual]);
+  });
+  await new Promise((r) => server.listen(puerto, r));
+
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const page = await context.newPage();
+
+  // Resoluciones no tiene chips de sección (es una sola vista con filtros por
+  // desplegable), así que solo entra en la comparación de la barra inferior.
+  const chipDe = { seguimiento: '.pestana-btn', proyectos: '.tab', parques: '.tab' };
+  const medidas = {};
+  const barras = {};
+
+  for (const p of paginas) {
+    await page.goto(`http://localhost:${puerto}/${p}.html`, { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(150);
+
+    barras[p] = await page.evaluate(() => {
+      const item = document.querySelector('.bottom-nav .nav-item');
+      const nav = document.querySelector('.bottom-nav');
+      return {
+        items: document.querySelectorAll('.bottom-nav .nav-item').length,
+        altoBarra: Math.round(nav.getBoundingClientRect().height),
+        altoItem: Math.round(item.getBoundingClientRect().height),
+        activos: document.querySelectorAll('.bottom-nav .nav-item.active').length,
+      };
+    });
+
+    if (!chipDe[p]) continue;
+    medidas[p] = await page.evaluate((sel) => {
+      const el = document.querySelector(sel);
+      const cs = getComputedStyle(el);
+      const b = el.getBoundingClientRect();
+      const x = b.left + b.width / 2;
+      const centro = b.top + b.height / 2;
+      return {
+        alto: Math.round(b.height),
+        fuente: cs.fontSize,
+        peso: cs.fontWeight,
+        padL: cs.paddingLeft,
+        gap: getComputedStyle(el.parentElement).gap,
+        tactil: el.contains(document.elementFromPoint(x, centro - 21)) &&
+                el.contains(document.elementFromPoint(x, centro + 21)),
+      };
+    }, chipDe[p]);
+  }
+
+  const refs = Object.entries(medidas);
+  const [nombreRef, ref] = refs[0];
+  for (const [p, m] of refs.slice(1)) {
+    ok(m.alto === ref.alto, `los chips de ${p} miden igual que los de ${nombreRef} (${m.alto}px vs ${ref.alto}px)`);
+    ok(m.fuente === ref.fuente && m.peso === ref.peso, `la tipografía del chip de ${p} coincide (${m.fuente}/${m.peso} vs ${ref.fuente}/${ref.peso})`);
+    ok(m.padL === ref.padL && m.gap === ref.gap, `padding y separación del chip de ${p} coinciden (${m.padL}/${m.gap} vs ${ref.padL}/${ref.gap})`);
+  }
+  ok(ref.alto >= 36 && ref.alto <= 40, `el chip respeta los 36-40px de alto de la especificación (${ref.alto}px)`);
+  for (const [p, m] of refs) {
+    ok(m.tactil, `en ${p} el chip responde al toque en los 44px completos, aunque mida ${m.alto}px`);
+  }
+
+  const barraRef = barras[paginas[0]];
+  for (const p of paginas.slice(1)) {
+    ok(barras[p].altoBarra === barraRef.altoBarra,
+       `la barra inferior de ${p} tiene el mismo alto que la de ${paginas[0]} (${barras[p].altoBarra}px vs ${barraRef.altoBarra}px)`);
+  }
+  for (const p of paginas) {
+    ok(barras[p].items === 4, `la barra inferior de ${p} tiene las 4 apps`);
+    // index es el selector de entrada: no está "dentro" de ninguna app, así que
+    // correctamente no marca ninguna como activa.
+    const esperado = p === 'index' ? 0 : 1;
+    ok(barras[p].activos === esperado,
+       `en ${p} hay ${esperado} app${esperado === 1 ? '' : 's'} marcada${esperado === 1 ? '' : 's'} como activa en la barra inferior`);
+  }
+
+  await browser.close();
+  server.close();
+}
+
 await recorrido('DESKTOP', { width: 1440, height: 900 }, 8799);
 await recorrido('MOBILE', { width: 390, height: 844 }, 8798);
 await testFechas();
@@ -1081,6 +1209,7 @@ await testProyectos({ width: 1440, height: 900 }, 8795);
 await testProyectos({ width: 390, height: 844 }, 8794);
 await testParques({ width: 1440, height: 900 }, 8793);
 await testParques({ width: 390, height: 844 }, 8792);
+await testUniformidad(8791);
 
 console.log(fallas === 0 ? '\nUI OK en desktop y mobile' : `\n${fallas} fallas`);
 process.exit(fallas === 0 ? 0 : 1);

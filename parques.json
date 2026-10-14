@@ -1,12 +1,4 @@
 {
-  "editingTipo": null,
-  "editingId": null,
-  "modalMode": null,
-  "filterEstadoComercial": "",
-  "filterManzanaComercial": "",
-  "filterDisponibleComercial": false,
-  "searchComercial": "",
-  "searchEmpresas": "b",
   "parque": "Güemes",
   "empresas": [
     {
@@ -2844,6 +2836,5 @@
       "observacion": "Alquiler confirmado por usuario (dato nuevo)"
     }
   ],
-  "reservas": [],
-  "empresaSubTab": "contacto"
+  "reservas": []
 }
