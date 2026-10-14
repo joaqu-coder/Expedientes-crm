@@ -50,7 +50,7 @@
   color-scheme: dark;
 }
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--fg);font-family:var(--font-body);margin:0;padding-inline:16px;padding-block:20px;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);margin:0;padding-inline:16px;padding-top:20px;padding-bottom:calc(84px + env(safe-area-inset-bottom, 0px));-webkit-font-smoothing:antialiased}
 h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 .mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
 button{font-family:inherit;cursor:pointer}
@@ -58,6 +58,20 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 .volver{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;color:var(--muted);text-decoration:none;margin-bottom:12px}
 .volver:hover{color:var(--fg)}
+
+/* Barra de navegación inferior fija, presente en las 5 páginas del hub —
+   mismo concepto que la barra de pestañas de WhatsApp (ícono + etiqueta,
+   plana, sin cajas ni sombra), con la app actual marcada con color y un
+   fondo sutil detrás del ícono. Queda siempre visible al cambiar de
+   sección o hacer scroll (position:fixed), por eso el body le deja
+   84px de aire abajo. */
+.bottom-nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--surface);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom,0px);z-index:15}
+.nav-item{flex:1 1 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:9px 4px 8px;text-decoration:none;color:var(--muted);transition:color .15s ease}
+.nav-item:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.nav-icon{width:26px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:10px;transition:background-color .15s ease}
+.nav-label{font-size:11px;font-weight:600;letter-spacing:.01em}
+.nav-item.active{color:var(--accent)}
+.nav-item.active .nav-icon{background:color-mix(in srgb, var(--accent) 16%, transparent)}
 
 .page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
 .page-header .eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
@@ -551,5 +565,50 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   }
 })();
 </script>
+
+<nav class="bottom-nav" aria-label="Aplicaciones">
+  <a href="/seguimiento.html" class="nav-item">
+    <span class="nav-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4" y="3" width="16" height="18" rx="2"></rect>
+        <path d="M9 3v2h6V3"></path>
+        <path d="M8 11l2.5 2.5L16 8"></path>
+      </svg>
+    </span>
+    <span class="nav-label">Seguimiento</span>
+  </a>
+  <a href="/proyectos.html" class="nav-item">
+    <span class="nav-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 21V8l9-5 9 5v13"></path>
+        <path d="M9 21v-7h6v7"></path>
+        <path d="M9 11h.01M15 11h.01M9 15h.01M15 15h.01"></path>
+      </svg>
+    </span>
+    <span class="nav-label">Proyectos</span>
+  </a>
+  <a href="/resoluciones.html" class="nav-item active" aria-current="page">
+    <span class="nav-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <path d="M14 2v6h6"></path>
+        <path d="M9 13h6M9 17h6"></path>
+        <circle cx="9" cy="9.5" r="1"></circle>
+      </svg>
+    </span>
+    <span class="nav-label">Resoluciones</span>
+  </a>
+  <a href="/parques.html" class="nav-item">
+    <span class="nav-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+        <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+        <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+        <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+      </svg>
+    </span>
+    <span class="nav-label">Parques</span>
+  </a>
+</nav>
 </body>
 </html>
