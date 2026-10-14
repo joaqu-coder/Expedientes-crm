@@ -178,6 +178,20 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .info-row dt{font-weight:700;color:var(--fg);flex-shrink:0;margin:0}
 .info-row dd{margin:0;font-weight:400;color:var(--muted);text-align:right}
 
+/* ---- Ficha de empresa: sub-tab Contacto — fila con ícono + label + valor.
+   Íconos SVG inline, todos en el mismo gris neutro (pedido explícito del
+   usuario: "sin tanto color, todo gris", sin un color por red social). */
+.contact-list{display:flex;flex-direction:column;gap:2px}
+.contact-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);color:inherit;text-decoration:none}
+.contact-row:last-child{border-bottom:none}
+.contact-row:hover .contact-value{color:var(--accent)}
+.contact-icon{flex:0 0 auto;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--surface-2);color:var(--muted)}
+.contact-icon svg{width:18px;height:18px}
+.contact-body{min-width:0;display:flex;flex-direction:column;gap:1px}
+.contact-label{font-size:11px;color:var(--muted)}
+.contact-value{font-size:14px;font-weight:600;color:var(--fg);overflow-wrap:anywhere}
+.contact-value.empty{font-weight:400;color:var(--muted)}
+
 /* ---- Dashboard ---- */
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:22px}
 .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px}
@@ -293,6 +307,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
   var ICON_EDIT = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"></path></svg>';
   var ICON_TRASH = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>';
+
+  // Íconos de la pestaña Contacto — mismo trazo gris neutro para los
+  // cinco, sin un color propio por red (pedido explícito del usuario).
+  var ICON_MAIL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 7-10 5L2 7"></path></svg>';
+  var ICON_PHONE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92Z"></path></svg>';
+  var ICON_PIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>';
+  var ICON_WEB = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10Z"></path></svg>';
+  var ICON_IG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"></rect><circle cx="12" cy="12" r="4"></circle><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"></circle></svg>';
 
   var STORAGE_KEY = "parques_crm_v1";
 
@@ -647,6 +669,20 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     return '<div class="info-row"><dt>'+esc(label)+'</dt><dd>'+(valor?esc(valor):'<span class="view-empty">—</span>')+'</dd></div>';
   }
 
+  // Fila ícono + label + valor para la pestaña Contacto. Si hay href, toda
+  // la fila es un <a> real (mailto:/tel:/https:) — si no hay dato, la fila
+  // ni se dibuja (nada que mostrar ni a dónde ir).
+  function contactRow(icon, label, valor, href, targetBlank){
+    if(!valor) return "";
+    var tag = href ? 'a href="'+esc(href)+'"'+(targetBlank?' target="_blank" rel="noopener"':'') : 'div';
+    var cierre = href ? 'a' : 'div';
+    return '<'+tag+' class="contact-row">'+
+      '<span class="contact-icon" aria-hidden="true">'+icon+'</span>'+
+      '<div class="contact-body"><span class="contact-label">'+esc(label)+'</span>'+
+      '<span class="contact-value">'+esc(valor)+'</span></div>'+
+      '</'+cierre+'>';
+  }
+
   // ---- Ficha de lote ----
   function renderLoteView(l){
     var titular = empresaPorId(l.id_empresa);
@@ -836,15 +872,18 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
           }).join("")+'</div>'
         : '<p class="view-empty">Sin lotes asignados.</p>';
     } else if(tab==="contacto"){
-      // Cada ícono/fila navega de verdad (mailto:/tel:/https:) — no debe
-      // perder funcionalidad por mostrar el dato tal cual vino cargado.
-      panelHtml = '<div class="view-grid">'+
-          viewItem("Email", e.mail?'<a href="'+esc(mailtoHref(e.mail))+'">'+esc(e.mail)+'</a>':null)+
-          viewItem("Web", e.pagweb?'<a href="'+esc(webHref(e.pagweb))+'" target="_blank" rel="noopener">'+esc(e.pagweb)+'</a>':null)+
-          viewItem("Domicilio", e.ubicacion?esc(e.ubicacion):null)+
-          viewItem("Instagram", e.instagram?'<a href="'+esc(instagramHref(e.instagram))+'" target="_blank" rel="noopener">'+esc(e.instagram)+'</a>':null)+
-          viewItem("Teléfono", e.telefono?'<a href="'+esc(telHref(e.telefono))+'">'+esc(e.telefono)+'</a>':null)+
-        '</div>';
+      // Ícono + label + valor por fila, mismo gris neutro en los cinco
+      // íconos; cada fila con dato navega de verdad (mailto:/tel:/https:).
+      var sinContacto = !e.mail && !e.telefono && !e.ubicacion && !e.pagweb && !e.instagram;
+      panelHtml = sinContacto
+        ? '<p class="view-empty">Sin datos de contacto cargados.</p>'
+        : '<div class="contact-list">'+
+            contactRow(ICON_MAIL, "Email", e.mail, e.mail?mailtoHref(e.mail):null)+
+            contactRow(ICON_PHONE, "Teléfono", e.telefono, e.telefono?telHref(e.telefono):null)+
+            contactRow(ICON_PIN, "Domicilio", e.ubicacion, null)+
+            contactRow(ICON_WEB, "Página web", e.pagweb, e.pagweb?webHref(e.pagweb):null, true)+
+            contactRow(ICON_IG, "Instagram", e.instagram, e.instagram?instagramHref(e.instagram):null, true)+
+          '</div>';
     } else {
       // Representante, Cargo, Rubro, Actividad, CUIT, en ese orden — título
       // en negrita y dato en gris (al revés de las demás pestañas).
