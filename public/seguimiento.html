@@ -276,9 +276,13 @@
 
     /* Pestañas */
     /* Barra de filtros superior, mismo lenguaje que la barra inferior: chips
-       redondeados con fondo sólido en el activo (antes era un subrayado),
-       con scroll horizontal si no entran todos — mismo concepto que los
-       chips de "Todos/No leídos" de WhatsApp. */
+       redondeados (antes era un subrayado), con scroll horizontal si no
+       entran todos — mismo concepto que los chips de "Todos/No leídos" de
+       WhatsApp. Medidas ajustadas a la referencia que pasó el usuario (Meta
+       no publica las suyas, son valores de implementación razonables):
+       38px de alto, radio a pastilla, 14px horizontal, 8px entre chips,
+       texto 14px peso normal, contador seminegrita (ver .count). El activo
+       es un fondo SUAVE (tinte del acento), no el color sólido. */
     .pestanas {
       background: white;
       padding: 10px var(--gutter);
@@ -302,26 +306,35 @@
 
     .pestana-btn {
       flex: 0 0 auto;
-      padding: 8px 14px;
+      display: inline-flex;
+      align-items: center;
+      height: 38px;
+      padding: 0 14px;
       background: var(--gray-200);
-      border: 1px solid var(--gray-300);
+      border: none;
       border-radius: 999px;
       cursor: pointer;
-      font-weight: 600;
-      font-size: 13px;
-      color: var(--text-muted);
-      transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+      font-weight: 400;
+      font-size: 14px;
+      color: var(--text);
+      transition: background-color 0.15s ease, color 0.15s ease;
       white-space: nowrap;
     }
 
     .pestana-btn:hover {
-      color: var(--text);
+      background: color-mix(in srgb, var(--primary) 8%, var(--gray-200));
     }
 
     .pestana-btn.active {
-      background: var(--primary);
-      border-color: var(--primary);
-      color: #fff;
+      background: color-mix(in srgb, var(--primary) 16%, transparent);
+      color: var(--primary);
+    }
+
+    /* Contador integrado junto al nombre del filtro ("Activos 0"), en
+       seminegrita para distinguirlo del texto del filtro (peso normal). */
+    .pestana-btn .count,
+    .area-btn .count {
+      font-weight: 600;
     }
 
     /* Panel de Áreas */
@@ -364,13 +377,17 @@
     }
 
     .area-btn {
-      padding: 8px 12px;
-      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      height: 38px;
+      padding: 0 14px;
+      font-size: 14px;
+      font-weight: 400;
       background: var(--gray-100);
-      border: 1px solid var(--gray-300);
+      border: none;
       border-radius: 999px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: background-color 0.15s ease, color 0.15s ease;
       color: var(--text);
       white-space: nowrap;
       flex-shrink: 0;
@@ -379,23 +396,21 @@
     @media (prefers-color-scheme: dark) {
       .area-btn {
         background: var(--gray-200);
-        border-color: var(--gray-300);
       }
     }
     :where([data-theme="dark"]) .area-btn {
         background: var(--gray-200);
-        border-color: var(--gray-300);
       }
 
 
     .area-btn:hover {
-      border-color: var(--primary);
+      background: color-mix(in srgb, var(--primary) 8%, var(--gray-100));
     }
 
     .area-btn.active {
-      background: var(--primary);
-      color: white;
-      border-color: var(--primary);
+      background: color-mix(in srgb, var(--primary) 16%, transparent);
+      color: var(--primary);
+      border: none;
     }
 
     /* Búsqueda */
@@ -2163,11 +2178,11 @@
 
       const html = `
         <button class="area-btn ${filtroArea === null ? 'active' : ''}" data-area="" onclick="filtrarArea(this.dataset.area || null)">
-          Total (${enPestana.length})
+          Total (<span class="count">${enPestana.length}</span>)
         </button>
         ${AREAS.map(area => `
           <button class="area-btn ${filtroArea === area ? 'active' : ''}" data-area="${esc(area)}" onclick="filtrarArea(this.dataset.area || null)">
-            ${esc(area)} (${enPestana.filter(e => e.area === area).length})
+            ${esc(area)} (<span class="count">${enPestana.filter(e => e.area === area).length}</span>)
           </button>
         `).join('')}
       `;
@@ -2190,7 +2205,7 @@
       document.querySelectorAll('.pestana-btn').forEach(btn => {
         const p = btn.dataset.pestana;
         const cantidad = expedientes.filter(e => estadoDe(e) === p).length;
-        btn.textContent = `${nombres[p]} (${cantidad})`;
+        btn.innerHTML = `${nombres[p]} (<span class="count">${cantidad}</span>)`;
         btn.classList.toggle('active', p === pestanaActiva);
         btn.setAttribute('aria-selected', String(p === pestanaActiva));
       });

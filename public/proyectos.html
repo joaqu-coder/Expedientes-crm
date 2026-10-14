@@ -87,14 +87,19 @@ svg text{font-family:var(--font-body)}
 .btn-theme:hover{border-color:var(--accent)}
 
 /* Barra de filtros superior, mismo lenguaje que la barra inferior: chips
-   redondeados en vez del subrayado de antes, filtro activo con fondo de
-   color (no solo un borde), scroll horizontal si no entran todos — mismo
-   concepto que los chips de "Todos/No leídos" de WhatsApp. */
+   redondeados en vez del subrayado de antes, scroll horizontal si no
+   entran todos — mismo concepto que los chips de "Todos/No leídos" de
+   WhatsApp. Medidas ajustadas a la referencia que pasó el usuario (Meta no
+   publica las suyas, son valores de implementación razonables): 38px de
+   alto, radio a pastilla (resuelve ~19px con este alto), 14px horizontal,
+   8px entre chips, texto 14px peso normal. El activo es un fondo SUAVE
+   (tinte del acento, no el color sólido) con texto en el color de acento —
+   no texto blanco sobre un bloque de color. */
 .tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;margin-bottom:18px;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
-.tab{flex:0 0 auto;background:var(--surface-2);border:none;color:var(--muted);font-size:13px;font-weight:600;padding:8px 14px;border-radius:999px;white-space:nowrap;min-height:36px;transition:background-color .15s ease,color .15s ease}
-.tab:hover{color:var(--fg)}
-.tab.active{background:var(--accent);color:var(--accent-fg)}
+.tab{flex:0 0 auto;display:inline-flex;align-items:center;height:38px;background:var(--surface-2);border:none;color:var(--fg);font-size:14px;font-weight:400;padding:0 14px;border-radius:999px;white-space:nowrap;transition:background-color .15s ease,color .15s ease}
+.tab:hover{background:color-mix(in srgb, var(--accent) 8%, var(--surface-2))}
+.tab.active{background:color-mix(in srgb, var(--accent) 16%, transparent);color:var(--accent)}
 .view[hidden]{display:none}
 
 /* ---- Dashboard: barra de sincronización ---- */
@@ -107,12 +112,12 @@ svg text{font-family:var(--font-body)}
 .sync-bar .ultmov{font-size:11px;color:var(--muted);margin-top:4px}
 
 /* ---- Dashboard: navegación de secciones (pestañas compactas, scroll en celular) ---- */
-.dash-nav{display:flex;gap:6px;overflow-x:auto;margin-bottom:16px;padding-bottom:3px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.dash-nav{display:flex;gap:8px;overflow-x:auto;margin-bottom:16px;padding-bottom:3px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .dash-nav::-webkit-scrollbar{display:none}
-.dash-nav button{flex:0 0 auto;background:var(--surface);border:1px solid var(--border);color:var(--muted);border-radius:999px;padding:7px 13px;font-size:12.5px;font-weight:600;white-space:nowrap}
-.dash-nav button:hover{border-color:var(--accent)}
-.dash-nav button.active{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
-.dash-nav .pill-n{font-family:var(--font-mono);font-size:10.5px;margin-left:5px;background:var(--danger);color:#fff;border-radius:999px;padding:1px 5px;vertical-align:1px}
+.dash-nav button{flex:0 0 auto;display:inline-flex;align-items:center;height:38px;background:var(--surface-2);border:none;color:var(--fg);border-radius:999px;padding:0 14px;font-size:14px;font-weight:400;white-space:nowrap;transition:background-color .15s ease,color .15s ease}
+.dash-nav button:hover{background:color-mix(in srgb, var(--accent) 8%, var(--surface-2))}
+.dash-nav button.active{background:color-mix(in srgb, var(--accent) 16%, transparent);color:var(--accent)}
+.dash-nav .pill-n{font-family:var(--font-mono);font-size:10.5px;margin-left:5px;background:var(--danger);color:#fff;border-radius:999px;padding:1px 5px;vertical-align:1px;font-weight:600}
 .dash-nav button.active .pill-n{background:var(--accent-fg);color:var(--danger)}
 
 /* ---- Dashboard stat tiles ---- */

@@ -85,14 +85,19 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .btn-theme:hover{border-color:var(--accent)}
 
 /* Barra de filtros superior, mismo lenguaje que la barra inferior: chips
-   redondeados en vez del subrayado de antes, filtro activo con fondo de
-   color (no solo un borde), scroll horizontal si no entran todos — mismo
-   concepto que los chips de "Todos/No leídos" de WhatsApp. */
+   redondeados en vez del subrayado de antes, scroll horizontal si no
+   entran todos — mismo concepto que los chips de "Todos/No leídos" de
+   WhatsApp. Medidas ajustadas a la referencia que pasó el usuario (Meta no
+   publica las suyas, son valores de implementación razonables): 38px de
+   alto, radio a pastilla (resuelve ~19px con este alto), 14px horizontal,
+   8px entre chips, texto 14px peso normal. El activo es un fondo SUAVE
+   (tinte del acento, no el color sólido) con texto en el color de acento —
+   no texto blanco sobre un bloque de color. */
 .tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;margin-bottom:18px;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
-.tab{flex:0 0 auto;background:var(--surface-2);border:none;color:var(--muted);font-size:13px;font-weight:600;padding:8px 14px;border-radius:999px;white-space:nowrap;min-height:36px;transition:background-color .15s ease,color .15s ease}
-.tab:hover{color:var(--fg)}
-.tab.active{background:var(--accent);color:var(--accent-fg)}
+.tab{flex:0 0 auto;display:inline-flex;align-items:center;height:38px;background:var(--surface-2);border:none;color:var(--fg);font-size:14px;font-weight:400;padding:0 14px;border-radius:999px;white-space:nowrap;transition:background-color .15s ease,color .15s ease}
+.tab:hover{background:color-mix(in srgb, var(--accent) 8%, var(--surface-2))}
+.tab.active{background:color-mix(in srgb, var(--accent) 16%, transparent);color:var(--accent)}
 .view[hidden]{display:none}
 
 /* ---- Toolbar ---- */
