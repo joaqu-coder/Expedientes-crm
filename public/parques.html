@@ -98,6 +98,10 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .tab{flex:0 0 auto;display:inline-flex;align-items:center;height:38px;background:var(--surface-2);border:none;color:var(--fg);font-size:14px;font-weight:400;padding:0 14px;border-radius:999px;white-space:nowrap;transition:background-color .15s ease,color .15s ease}
 .tab:hover{background:color-mix(in srgb, var(--accent) 8%, var(--surface-2))}
 .tab.active{background:color-mix(in srgb, var(--accent) 16%, transparent);color:var(--accent)}
+/* Contador integrado junto al nombre del filtro ("Empresas 55"), en
+   seminegrita para distinguirlo del texto del filtro (peso normal). No va
+   en "Análisis": no es un listado, no tiene una cantidad que mostrar. */
+.tab .count{font-weight:600;margin-left:4px}
 .view[hidden]{display:none}
 
 /* ---- Toolbar ---- */
@@ -613,6 +617,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     var total = lotesSinEmpresa().length;
     cuenta.textContent = !total ? ""
       : (filtrados.length===total ? total+" lotes" : filtrados.length+" de "+total+" lotes");
+    // Contador en el chip de la pestaña (no en "Análisis": no es un listado,
+    // no tiene una cantidad de ítems que mostrar).
+    tabComercial.innerHTML = 'Comercial <span class="count">'+total+'</span>';
     if(!filtrados.length){
       cont.innerHTML = '<div class="empty-state">'+
         (total ? 'Sin lotes que coincidan con el filtro.' : 'No hay lotes sin empresa asignada.')+
@@ -648,6 +655,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     var total = state.empresas.length;
     cuenta.textContent = !total ? ""
       : (filtradas.length===total ? total+" empresas" : filtradas.length+" de "+total+" empresas");
+    // Contador en el chip de la pestaña (no en "Análisis": no es un listado,
+    // no tiene una cantidad de ítems que mostrar).
+    tabEmpresas.innerHTML = 'Empresas <span class="count">'+total+'</span>';
     if(!filtradas.length){
       cont.innerHTML = '<div class="empty-state">'+
         (total ? 'Sin empresas que coincidan con el filtro.' : 'Todavía no hay empresas cargadas.')+

@@ -100,6 +100,10 @@ svg text{font-family:var(--font-body)}
 .tab{flex:0 0 auto;display:inline-flex;align-items:center;height:38px;background:var(--surface-2);border:none;color:var(--fg);font-size:14px;font-weight:400;padding:0 14px;border-radius:999px;white-space:nowrap;transition:background-color .15s ease,color .15s ease}
 .tab:hover{background:color-mix(in srgb, var(--accent) 8%, var(--surface-2))}
 .tab.active{background:color-mix(in srgb, var(--accent) 16%, transparent);color:var(--accent)}
+/* Contador integrado junto al nombre del filtro ("Listado 70"), en
+   seminegrita para distinguirlo del texto del filtro (peso normal). No va
+   en "Análisis": no es un listado, no tiene una cantidad que mostrar. */
+.tab .count{font-weight:600;margin-left:4px}
 .view[hidden]{display:none}
 
 /* ---- Dashboard: barra de sincronización ---- */
@@ -1218,6 +1222,14 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
         : hayFiltro ? (filtrados.length + " de " + totalActivos + " expediente" + (totalActivos===1?"":"s"))
                     : (totalActivos + " expediente" + (totalActivos===1?"":"s"));
     }
+    // Contador en el chip de cada pestaña (no en "Análisis": no es un
+    // listado, no tiene una cantidad de ítems que mostrar). El de Archivo
+    // se actualiza acá, no en renderArchivo(), porque esa función solo
+    // corre cuando la pestaña está visible (listado grande, render diferido)
+    // y el chip tiene que reflejar el total aunque no se haya visitado.
+    tabList.innerHTML = 'Listado <span class="count">'+totalActivos+'</span>';
+    var totalArchivados = state.expedientes.filter(function(e){ return e.archivado; }).length;
+    tabArchivo.innerHTML = 'Archivo <span class="count">'+totalArchivados+'</span>';
     filtrados.sort(function(a,b){
       var oa = a.urg ? a.urg.orden : 9, ob = b.urg ? b.urg.orden : 9;
       return oa - ob;
