@@ -7,7 +7,7 @@
  *
  * Cambiar CACHE_VERSION cuando hay cambios incompatibles.
  */
-const CACHE_VERSION = 'expedientes-crm-v5';
+const CACHE_VERSION = 'expedientes-crm-v6';
 const ASSETS = ['/manifest.json'];
 
 self.addEventListener('install', (event) => {
@@ -45,7 +45,14 @@ self.addEventListener('fetch', (event) => {
     url.pathname === '/' ||
     url.pathname === '';
 
-  if (isHTML) {
+  // header.js va con la misma estrategia que el HTML, no con la de los assets:
+  // es el header, el menú y el botón de alta de las cuatro apps, así que una
+  // copia vieja servida desde el cache deja la pantalla sin cabecera ni forma
+  // de cargar nada. Network-first = siempre la última si hay red, y la
+  // cacheada solo cuando no la hay.
+  const esCritico = isHTML || url.pathname === '/header.js';
+
+  if (esCritico) {
     // Network-first: intenta red, si falla usa cache
     event.respondWith(
       (async () => {
