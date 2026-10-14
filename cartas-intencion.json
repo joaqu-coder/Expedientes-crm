@@ -3846,6 +3846,29 @@
       ],
       "archivado": true,
       "fecha_archivado": "12/10/2026 20:54"
+    },
+    {
+      "id": "exp_mv86299j4q70g",
+      "intervenciones": [
+        {
+          "hora": "14/10/2026 10:49",
+          "texto": "Presentan documentacion el 30/07/2026 solicitando q se ceda en comodato. El 02/10/2026, solicitan la compra",
+          "tipo": "manual"
+        }
+      ],
+      "nro_expediente": "363-151065/2026-0",
+      "nombre_empresa": "ADOBE21",
+      "fecha_inicio": "30/07/2026",
+      "parque_industrial": "Salta",
+      "rubro": "Manufactura",
+      "superficie_solicitada_m2": 600,
+      "actividad_empresa": "Fábrica de ladrillos encastrables y ecológicos",
+      "situacion": "En_tratamiento",
+      "representante_nombre": "Juan Carlos Osedo",
+      "contacto_tel": "387-5056656",
+      "contacto_mail": "Juanosedo.08@gmail.com",
+      "fecha_ultimo_movimiento": "14/10/2026 10:49",
+      "actualizado_en": "2026-10-14T13:49:34.952Z"
     }
   ],
   "plazoDias": 2,
