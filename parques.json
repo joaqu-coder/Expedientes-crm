@@ -758,27 +758,6 @@
       "metodo_match_contacto": "CUIT exacto"
     },
     {
-      "id_empresa": "E052",
-      "id_empresa_original": null,
-      "nombre_empresa": "AGROCONSTRUCCIONES LA POSTA S.R.L",
-      "rubro": "Planta de producción de pre - tensados",
-      "actividad": null,
-      "cuit": "30709046426",
-      "cuit_valido_11dig": true,
-      "propietario_matricula": "Ente General de Parques y Areas Industriales de Salta",
-      "mail": "fygpremoldeados@outlook.com",
-      "telefono": "388-5837437 /0388 491-1600",
-      "contacto_nombre": "Francisco Ferrero",
-      "cargo": "Socio - Gerente",
-      "pagweb": null,
-      "instagram": null,
-      "linkedin": null,
-      "ubicacion": null,
-      "observacion": null,
-      "observacion_contactos_2024": "Confirmado por usuario (lote + contacto 2024)",
-      "metodo_match_contacto": "Confirmado manual (dato nuevo)"
-    },
-    {
       "id_empresa": "E053",
       "id_empresa_original": null,
       "nombre_empresa": "PRONTO PACK",
@@ -2507,7 +2486,7 @@
     },
     {
       "id_lote": "L115",
-      "id_empresa": "E052",
+      "id_empresa": null,
       "manzana": "9",
       "superficie_m2": 3000,
       "parcela": "8",
@@ -2519,7 +2498,7 @@
     },
     {
       "id_lote": "L116",
-      "id_empresa": "E052",
+      "id_empresa": null,
       "manzana": "9",
       "superficie_m2": 2994,
       "parcela": "9",
