@@ -367,16 +367,21 @@ también.
   muestra el bloque "Ocupación por alquiler" leído **entero** del registro del
   ocupante (representante, cargo, rubro, mail, web, Instagram, Facebook), sin
   copiar nada sobre el titular ni sobre el lote.
-- **Qué se movió al importar, y con qué evidencia.** En 6 de las 16 filas
+- **Qué se movió al importar, y con qué evidencia.** En 4 de las 16 filas
   alquiladas los datos institucionales cargados eran del ocupante, no del
-  titular (mails `@tradelog.com.ar` en la fila de LABORATORIO TECNIMETER,
-  `@logis-car.com.ar` en la de FECOOVITA, etc.). Se reasignaron **solo cuando
+  titular (TRADELOG sobre LABORATORIO TECNIMETER —mail, web, Instagram y
+  representante—, LOGISCAR sobre FECOOVITA, WILKA TURISMO sobre ALEFCO y
+  MANITO Snacks sobre AUTO ELEVADORES BELLO, los tres por el mail). Se
+  reasignaron **solo cuando
   el propio valor nombra al ocupante** — dominio del mail, URL, usuario de
   Instagram: eso es evidencia del origen, no una suposición. El resto quedó
   donde estaba. Cada ocupante dice en su `observacion` qué se le reasignó y
   desde qué titular. Los 15 ocupantes creados desde la columna llevan
   `es_ocupante_sin_registro: true`; el origen no trae más que su nombre y no
-  se les inventó nada.
+  se les inventó nada — salvo `situacion: "Activa"`, que no sale del export
+  sino de la definición del propio usuario ("la empresa que lo ocupa y
+  desarrolla actividad productiva"). Es la única inferencia de la importación;
+  si alguna no está operando, se corrige desde la ficha.
 - **Alquilados sin ocupante declarado**: 34 lotes de Salta figuran `Alquilada`
   y solo 16 nombran al inquilino (en Güemes, 7 contra 4). No se completó a
   ojo: la ficha lo señala en "A revisar" y el análisis lo cuenta aparte
