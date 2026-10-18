@@ -22,7 +22,7 @@ public/index.html        ← landing: cuatro tarjetas, Seguimiento / Proyectos /
 public/seguimiento.html  ← la app de expedientes (la de siempre; antes era index.html)
 public/proyectos.html    ← cartas de intención de parques industriales (EGPAIS)
 public/resoluciones.html ← resoluciones del Directorio (archivo histórico 2012-2025)
-public/parques.html      ← lotes y empresas instaladas en los parques (hoy: solo Güemes)
+public/parques.html      ← lotes y empresas instaladas en los parques (Güemes + Salta)
 public/header.js         ← ÚNICO código compartido entre apps: el header (título + ⋮) y el FAB
 
 Navegador (seguimiento)   Navegador (proyectos)      Navegador (resoluciones)  Navegador (parques)
@@ -253,13 +253,14 @@ prueba: es el registro, y se muestra tal como vino.
 
 ---
 
-## Parques: lotes y empresas de Güemes
+## Parques: lotes y empresas (Güemes y Parque Industrial Salta)
 
 Pedido del usuario (2026-10-13): una cuarta tarjeta para gestionar lotes y
-contactos de las empresas instaladas en los parques industriales. **Alcance
-explícito de esta sesión: solo Güemes.** Rosario de la Frontera y los demás
-parques quedaron afuera a pedido del usuario ("Solo güemes") — no asumir que
-lo que sigue generaliza a otro parque sin volver a normalizar con él primero.
+contactos de las empresas instaladas en los parques industriales. Arrancó
+**solo con Güemes** ("Solo güemes", 2026-10-13) y el 2026-10-18 se sumó Parque
+Industrial Salta. Rosario de la Frontera, Mosconi y los demás siguen afuera:
+cada parque llega con su propio export y su propia normalización, así que no
+asumir que lo que sigue generaliza a uno nuevo sin revisarlo con el usuario.
 
 - **El dato no vino de las planillas de Google Drive.** Se exploraron
   ("Sistema güemes", "Contactos PI Salta", " Lotes ") y resultaron
@@ -307,17 +308,89 @@ lo que sigue generaliza a otro parque sin volver a normalizar con él primero.
   lote vía `ocupaciones`), Empresas (directorio con contacto, lista de
   lotes de cada una) y Dashboard (totales, superficie, lotes por estado).
   Mismo patrón de modal/esc()/tabs por hash que las otras tres apps.
-- **`ocupaciones` y `reservas` son de solo lectura en esta primera versión.**
-  La ficha de un lote sublocado muestra quién lo ocupa, pero no hay UI
-  todavía para crear o cerrar una ocupación, ni para `reservas` (la tabla
-  existe en el schema, llega vacía). Agregar cuando el usuario lo pida.
-- **Test**: `testParques()` en `tests/ui.test.mjs` corre contra los 138
-  lotes y 55 empresas reales (no son datos de ejemplo, igual que
-  Resoluciones) — filtros, búsqueda cruzando a la empresa, ficha con
-  titularidad y sublocación, edición con UTF-8 intacto, y dashboard. Los
-  conteos (138, 55) están hardcodeados a propósito: es el archivo de
-  referencia real, no una cifra que cambie por una regla de negocio como el
-  archivado de Proyectos.
+- **`reservas` sigue siendo de solo lectura** (la tabla existe en el schema y
+  llega vacía). `ocupaciones` dejó de serlo el 2026-10-18: ver más abajo.
+- **Test**: `testParques()` en `tests/ui.test.mjs` corre contra los datos
+  reales (no son de ejemplo, igual que Resoluciones) — filtros, búsqueda
+  cruzando a la empresa, ficha con titularidad y ocupación, edición con UTF-8
+  intacto, y dashboard. Los conteos por parque (138/54 en Güemes, 135/151 en
+  Salta) están hardcodeados a propósito: es el archivo de referencia real, no
+  una cifra que cambie por una regla de negocio como el archivado de
+  Proyectos.
+
+### Dos parques en el mismo archivo (2026-10-18)
+
+Se sumó **Parque Industrial Salta** desde un export propio del usuario
+(`Sistema_Salta.json`, 195 filas → 135 lotes y 136 empresas, más 15 ocupantes;
+ver abajo). Güemes dejó de ser el único parque:
+
+- `parques.json` pasó de `parque: "Güemes"` (un string) a `parques: [{id,
+  nombre}]` + `id_parque` en cada lote y cada empresa. `migrarParques()` corre
+  **al leer**, no una sola vez: un celular con la versión vieja en
+  `localStorage`, o un GET que todavía devuelva el formato anterior, entran
+  igual y quedan atribuidos a Güemes en vez de aparecer sin parque.
+- **Los ids llevan el prefijo del parque**: Güemes `E001`/`L001`, Salta
+  `SE001`/`SL001`, y `siguienteId()` calcula el máximo **solo dentro del
+  prefijo** — si no, un lote nuevo de Güemes arrancaría en L136 porque Salta
+  ya llegó a SL135.
+- **Nada se lista desde `state.lotes`/`state.empresas` directo**: todo pasa por
+  `lotesDelParque()`/`empresasDelParque()`. Saltearse el filtro mezcla los 138
+  de Güemes con los 135 de Salta y el total queda plausible, así que el bug no
+  se nota. Lo mismo vale para detectar duplicados y matrículas compartidas:
+  "PETIT PLAST" y "SALTA POR" existen en los dos parques y son empresas
+  distintas, no una carga repetida.
+- El selector de parque (`#parqueSwitch`) va arriba de las pestañas, no entre
+  ellas: cambia el alcance de toda la pantalla. Al cambiar se limpian los
+  filtros y se cierra la ficha abierta (las manzanas y los estados de un
+  parque no existen en el otro). Con un solo parque cargado, la fila no se
+  dibuja.
+- `parqueActivo` es estado de pantalla: se guarda en `localStorage` para
+  sobrevivir a un refresh, pero **no viaja en `datosParaSync()`**.
+
+### «Alquilada»: titularidad y ocupación son dos vínculos distintos
+
+Especificación del usuario (2026-10-18). El origen trae una fila por lote con
+todo mezclado: datos registrales del lote, datos del titular y —en la columna
+` Alquilada`— el nombre de quien lo ocupa. El modelo los separa y la UI
+también.
+
+- **El lote y su titularidad no se tocan nunca por un cambio de ocupante**:
+  `id_lote`, `id_empresa` (titular), `matricula`, `propietario_matricula`,
+  `escritura`, `superficie_m2` y la ubicación viven en el lote. La ocupación
+  vive **solo** en `ocupaciones` (`id_lote`, `id_empresa_titular`,
+  `id_empresa_ocupante`, `fecha_desde`, `fecha_hasta`, `vigente`). Cambiar de
+  ocupante cierra la ocupación anterior (`vigente:false` + `fecha_hasta`, no
+  se borra) y abre una nueva: el lote no se duplica y la titularidad queda
+  igual. Está en `aplicarOcupante()`, y `testParques()` lo verifica campo por
+  campo contra el POST.
+- **Cada empresa conserva sus datos institucionales.** La ficha del lote
+  muestra el bloque "Ocupación por alquiler" leído **entero** del registro del
+  ocupante (representante, cargo, rubro, mail, web, Instagram, Facebook), sin
+  copiar nada sobre el titular ni sobre el lote.
+- **Qué se movió al importar, y con qué evidencia.** En 6 de las 16 filas
+  alquiladas los datos institucionales cargados eran del ocupante, no del
+  titular (mails `@tradelog.com.ar` en la fila de LABORATORIO TECNIMETER,
+  `@logis-car.com.ar` en la de FECOOVITA, etc.). Se reasignaron **solo cuando
+  el propio valor nombra al ocupante** — dominio del mail, URL, usuario de
+  Instagram: eso es evidencia del origen, no una suposición. El resto quedó
+  donde estaba. Cada ocupante dice en su `observacion` qué se le reasignó y
+  desde qué titular. Los 15 ocupantes creados desde la columna llevan
+  `es_ocupante_sin_registro: true`; el origen no trae más que su nombre y no
+  se les inventó nada.
+- **Alquilados sin ocupante declarado**: 34 lotes de Salta figuran `Alquilada`
+  y solo 16 nombran al inquilino (en Güemes, 7 contra 4). No se completó a
+  ojo: la ficha lo señala en "A revisar" y el análisis lo cuenta aparte
+  ("Alquilados sin ocupante cargado"), para que el total de alquilados no
+  parezca un dato completo.
+- **`situacion` es de la EMPRESA, `estado` es del LOTE.** El origen mezclaba
+  las dos cosas en una columna: "Alquila" describe al lote (pasó a
+  `estado: "Alquilada"`), mientras que Activa/Sin actividad/En construcción
+  describen a la empresa. Por eso `SITUACIONES` no incluye "Alquilada": que un
+  lote esté alquilado no dice si su titular sigue operando, y titular y
+  ocupante pueden estar activos los dos a la vez. El desplegable "Todos los
+  estados" del listado de Empresas —que estuvo inerte desde el 2026-10-13
+  esperando justamente esta definición— filtra por `situacion` desde ahora, y
+  se deshabilita en el parque donde el dato no existe (Güemes).
 
 ## Formato del número de expediente
 
@@ -401,6 +474,13 @@ HeaderGlobal.setSync("Al día", "ok");          // ok | pendiente | error
 - **`testUniformidad()` verifica el criterio de aceptación del usuario**: que al
   cambiar de pantalla cambie el título pero el ⋮ conserve exactamente la misma
   posición (y=20, 16px del borde derecho, 48x48).
+- **El FAB va en `z-index:14`, por debajo del overlay de los modales.** Nació
+  con 40 y eso lo dejaba flotando SOBRE la ficha abierta en parques,
+  proyectos y resoluciones (que ponen su overlay en 20; seguimiento usa 200 y
+  por eso se salvó), tapando contenido y abriendo un alta nueva encima de lo
+  que se estaba mirando si alguien lo tocaba. `testUniformidad()` lo prueba
+  por comportamiento —abre el modal y pregunta qué recibe el toque en el
+  centro del botón—, no comparando z-index entre archivos.
 
 ### No hay modo oscuro
 

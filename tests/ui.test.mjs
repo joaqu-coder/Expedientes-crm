@@ -996,11 +996,29 @@ async function testParques(viewport, puerto) {
 
   const totalLotes = datos.lotes.length;
   const totalEmpresas = datos.empresas.length;
-  const sinEmpresa = datos.lotes.filter((l) => !l.id_empresa);
-  ok(totalLotes === 138, `el archivo trae los ${totalLotes} lotes reales de Güemes`);
-  ok(totalEmpresas === 54, `el archivo trae las ${totalEmpresas} empresas reales (AGSOF S.A. fusionada: 55 -> 54)`);
-  ok((await page.locator('#empresasCount').textContent()).includes(String(totalEmpresas)),
-     'el contador de empresas muestra el total, por default');
+  // Hay dos parques en el mismo archivo y la pantalla muestra uno a la vez
+  // (Güemes por default, que es parques[0]). Los conteos de pantalla son del
+  // parque activo; los del POST, de todo el archivo. Confundirlos es el bug
+  // que buscan estas aserciones: los totales mezclados quedan plausibles.
+  const delParque = (x, p) => (x.id_parque || 'guemes') === p;
+  const lotesGuemes = datos.lotes.filter((l) => delParque(l, 'guemes'));
+  const empresasGuemes = datos.empresas.filter((e) => delParque(e, 'guemes'));
+  const lotesSalta = datos.lotes.filter((l) => delParque(l, 'salta'));
+  const empresasSalta = datos.empresas.filter((e) => delParque(e, 'salta'));
+  const sinEmpresa = lotesGuemes.filter((l) => !l.id_empresa);
+  ok(lotesGuemes.length === 138, `el archivo trae los ${lotesGuemes.length} lotes reales de Güemes`);
+  ok(empresasGuemes.length === 54, `el archivo trae las ${empresasGuemes.length} empresas reales de Güemes (AGSOF S.A. fusionada: 55 -> 54)`);
+  ok(lotesSalta.length === 135, `el archivo trae los ${lotesSalta.length} lotes reales del Parque Industrial Salta`);
+  ok(empresasSalta.length === 151,
+     `el archivo trae las ${empresasSalta.length} empresas de Salta (136 del origen + 15 ocupantes de la columna «Alquilada»)`);
+  ok(totalLotes === lotesGuemes.length + lotesSalta.length && totalEmpresas === empresasGuemes.length + empresasSalta.length,
+     'todos los lotes y empresas están atribuidos a uno de los dos parques (ninguno quedó sin id_parque)');
+  ok((await page.locator('#empresasCount').textContent()).includes(String(empresasGuemes.length)),
+     'el contador de empresas muestra el total del parque activo, no la suma de los dos');
+  ok((await page.locator('#parqueSwitch .parque-chip').count()) === 2,
+     'el selector de parque ofrece los dos parques');
+  ok((await page.locator('#parqueSwitch .parque-chip.active').textContent()).includes('Güemes'),
+     'arranca en Güemes, con el chip activo marcado');
   ok(await page.locator('#filterEstadoEmpresas option', { hasText: 'Todos los estados' }).count() === 1,
      'el listado de Empresas tiene el filtro "Todos los estados"');
 
@@ -1066,8 +1084,8 @@ async function testParques(viewport, puerto) {
   await page.click('[data-subtab="lote"]');
   await page.click('[data-goto-lote="L038"]');
   await page.waitForSelector('#btnEditLote');
-  ok((await page.locator('#modal').textContent()).includes('Sublocación'),
-     'la ficha de un lote sublocado muestra la sección Sublocación');
+  ok((await page.locator('#modal').textContent()).includes('Ocupación por alquiler'),
+     'la ficha de un lote alquilado muestra la sección Ocupación por alquiler');
 
   // Editar lote (desde la ficha de empresa): el cambio llega al servidor
   // con tildes, ñ y emoji intactos.
@@ -1082,7 +1100,7 @@ async function testParques(viewport, puerto) {
   // Lo que se publica en el repo son datos, no el estado de la pantalla: el
   // POST mandaba `state` entero y dejó commiteado en parques.json hasta lo que
   // había tipeado alguien en el buscador (searchEmpresas: "b").
-  const camposPermitidos = ['parque', 'empresas', 'lotes', 'ocupaciones', 'reservas'];
+  const camposPermitidos = ['parques', 'empresas', 'lotes', 'ocupaciones', 'reservas'];
   const colados = Object.keys(ultimoPost).filter((k) => !camposPermitidos.includes(k));
   ok(colados.length === 0,
      `el POST manda solo datos, sin estado de UI (filtros, búsqueda, modal abierto)${colados.length ? ': se colaron ' + colados.join(', ') : ''}`);
@@ -1116,10 +1134,120 @@ async function testParques(viewport, puerto) {
   await page.click('#tabDash');
   await page.waitForSelector('.kpi-card');
   const kpis = await page.locator('.kpi-card .n').allTextContents();
-  ok(kpis.some((n) => n.trim() === String(totalLotes)), 'el dashboard muestra el total de lotes');
-  ok(kpis.some((n) => n.trim() === String(totalEmpresas)), 'el dashboard muestra el total de empresas');
+  ok(kpis.some((n) => n.trim() === String(lotesGuemes.length)), 'el dashboard muestra el total de lotes del parque activo');
+  ok(kpis.some((n) => n.trim() === String(empresasGuemes.length)), 'el dashboard muestra el total de empresas del parque activo');
   await page.click('#tabEmpresas');
   await page.waitForSelector('#empresasList .tarjeta');
+
+  // ======================================================================
+  // Columna «Alquilada»: titularidad y ocupación son dos vínculos distintos
+  // ======================================================================
+  // El caso de referencia es SL010: el lote es de LABORATORIO TECNIMETER
+  // (matrícula 100312, escriturada) y lo ocupa TRADELOG. En la planilla de
+  // origen los mails de tradelog.com.ar estaban cargados sobre la fila del
+  // titular, que es exactamente la confusión que hay que no repetir.
+  await page.locator('#parqueSwitch [data-parque="salta"]').click();
+  await page.waitForFunction(() => document.querySelectorAll('#empresasList .tarjeta').length > 0);
+  ok((await page.locator('#empresasCount').textContent()).includes(String(empresasSalta.length)),
+     'al cambiar de parque el listado pasa a las empresas de Salta');
+
+  const ocupSL010 = datos.ocupaciones.find((o) => o.id_lote === 'SL010');
+  const titularSL010 = datos.empresas.find((e) => e.id_empresa === ocupSL010.id_empresa_titular);
+  const ocupanteSL010 = datos.empresas.find((e) => e.id_empresa === ocupSL010.id_empresa_ocupante);
+  ok(ocupanteSL010.nombre_empresa === 'TRADELOG' && /tradelog/.test(ocupanteSL010.mail || ''),
+     'los datos institucionales de tradelog.com.ar quedaron en el registro de TRADELOG');
+  ok(!/tradelog/.test(titularSL010.mail || '') && !/tradelog/i.test(titularSL010.pagweb || ''),
+     'el registro del titular no quedó con los datos institucionales del ocupante');
+
+  await page.fill('#searchEmpresas', titularSL010.nombre_empresa);
+  await page.waitForTimeout(150);
+  await page.locator('#empresasList .tarjeta', { hasText: titularSL010.nombre_empresa }).first().click();
+  await page.waitForSelector('#btnEditEmp');
+  await page.click('[data-subtab="lote"]');
+  ok((await page.locator('#empSubpanel').textContent()).includes('Alquilado a TRADELOG'),
+     'en la ficha del titular, su lote aparece marcado como alquilado y a quién');
+  await page.click('[data-goto-lote="SL010"]');
+  await page.waitForSelector('#btnEditLote');
+
+  const fichaSL010 = await page.locator('#modal').textContent();
+  ok(fichaSL010.includes('100312') && fichaSL010.includes(titularSL010.nombre_empresa),
+     'la ficha del lote conserva la matrícula y el titular registral');
+  ok(fichaSL010.includes('Ocupación por alquiler') && fichaSL010.includes('TRADELOG'),
+     'la ficha identifica por separado a la empresa ocupante');
+  ok(fichaSL010.includes('lorena.ralle@tradelog.com.ar'),
+     'la ficha muestra los datos institucionales del ocupante, leídos de SU registro');
+  const bloqueOcupacion = await page.locator('#modal .view-section.ocupacion').innerHTML();
+  ok(!bloqueOcupacion.includes('100312') && !bloqueOcupacion.includes(titularSL010.nombre_empresa),
+     'lo registral del lote no se repite dentro del bloque del ocupante (no se confunde titularidad con ocupación)');
+
+  // Una empresa que solo ocupa por alquiler no es un registro vacío. Se mira
+  // antes de cambiar el ocupante: después, TRADELOG ya no ocupa nada.
+  await page.click('#xCloseViewLote');
+  await page.fill('#searchEmpresas', 'TRADELOG');
+  await page.waitForTimeout(150);
+  ok((await page.locator('#empresasList .tarjeta', { hasText: 'TRADELOG' }).first().textContent())
+       .includes('Ocupa 1 lote por alquiler'),
+     'la tarjeta de una empresa sin lotes propios dice qué ocupa, en vez de "0 m² totales"');
+  await page.locator('#empresasList .tarjeta', { hasText: 'TRADELOG' }).first().click();
+  await page.waitForSelector('#btnEditEmp');
+  ok((await page.locator('#modal .subtabs').textContent()).includes('Lotes (1)'),
+     'el contador de la pestaña Lotes cuenta también el lote que ocupa por alquiler');
+  await page.click('[data-subtab="lote"]');
+  const panelTradelog = await page.locator('#empSubpanel').textContent();
+  ok(panelTradelog.includes('Ocupa por alquiler') && panelTradelog.includes('Titular:'),
+     'la ficha del ocupante separa "a su nombre" de "ocupa por alquiler", nombrando al titular');
+  ok(panelTradelog.includes('A su nombre (0)'),
+     'el bloque de lotes propios se rotula, no queda como si la empresa no tuviera nada');
+  ok(!panelTradelog.includes('LABORATORIO TECNIMETER SOCIEDAD ANONIMA  ') ||
+     panelTradelog.includes('Titular: LABORATORIO TECNIMETER'),
+     'en la ficha del ocupante la propiedad del lote sigue siendo del titular');
+
+  // Criterio de aceptación: cambiar el ocupante no toca nada registral.
+  const antesLote = datos.lotes.find((l) => l.id_lote === 'SL010');
+  const nuevoOcupante = datos.empresas.find(
+    (e) => delParque(e, 'salta') && e.id_empresa !== titularSL010.id_empresa && e.id_empresa !== ocupanteSL010.id_empresa
+  );
+  await page.click('[data-goto-lote="SL010"]');
+  await page.waitForSelector('#btnEditLote');
+  await page.click('#btnEditLote');
+  await page.waitForSelector('#f_ocupante');
+  ok((await page.locator('#f_ocupante option', { hasText: titularSL010.nombre_empresa }).count()) === 0,
+     'el titular no se ofrece como ocupante de su propio lote');
+  await page.selectOption('#f_ocupante', nuevoOcupante.id_empresa);
+  await page.click('#loteForm button[type=submit]');
+  await page.waitForTimeout(300);
+
+  const loteDespues = ultimoPost.lotes.find((l) => l.id_lote === 'SL010');
+  ok(ultimoPost.lotes.filter((l) => l.id_lote === 'SL010').length === 1,
+     'cambiar de ocupante no duplica el lote');
+  ok(loteDespues.id_empresa === antesLote.id_empresa &&
+     loteDespues.matricula === antesLote.matricula &&
+     loteDespues.superficie_m2 === antesLote.superficie_m2 &&
+     loteDespues.escritura === antesLote.escritura &&
+     loteDespues.propietario_matricula === antesLote.propietario_matricula,
+     'los datos registrales del lote y su titularidad quedan idénticos');
+  const vigentes = ultimoPost.ocupaciones.filter((o) => o.id_lote === 'SL010' && o.vigente);
+  ok(vigentes.length === 1 && vigentes[0].id_empresa_ocupante === nuevoOcupante.id_empresa,
+     'queda una sola ocupación vigente, con el ocupante nuevo');
+  const cerrada = ultimoPost.ocupaciones.find((o) => o.id_lote === 'SL010' && !o.vigente);
+  ok(cerrada && cerrada.id_empresa_ocupante === ocupanteSL010.id_empresa && !!cerrada.fecha_hasta,
+     'la ocupación anterior queda cerrada con fecha, no borrada');
+  const tradelogDespues = ultimoPost.empresas.find((e) => e.id_empresa === ocupanteSL010.id_empresa);
+  const titularDespues = ultimoPost.empresas.find((e) => e.id_empresa === titularSL010.id_empresa);
+  ok(JSON.stringify(tradelogDespues) === JSON.stringify(ocupanteSL010) &&
+     JSON.stringify(titularDespues) === JSON.stringify(titularSL010),
+     'los registros institucionales de las dos empresas quedan intactos');
+  ok(tradelogDespues.situacion === 'Activa' && (titularDespues.situacion || null) !== 'Sin actividad',
+     'las dos empresas pueden quedar activas a la vez (el estado es de cada una)');
+
+  await page.fill('#searchEmpresas', '');
+  await page.waitForTimeout(150);
+
+  // Vuelta a Güemes: el cambio de parque no deja estado del otro colgado.
+  await page.locator('#parqueSwitch [data-parque="guemes"]').click();
+  await page.waitForFunction(() => document.querySelectorAll('#empresasList .tarjeta').length > 0);
+  ok((await page.locator('#empresasCount').textContent()).includes(String(empresasGuemes.length)),
+     'al volver a Güemes el listado vuelve a sus empresas');
 
   ok(problemas.length === 0, 'sin errores de JS ni diálogos nativos' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
   await browser.close();
@@ -1176,6 +1304,24 @@ async function testUniformidad(puerto) {
         activos: document.querySelectorAll('.bottom-nav .nav-item.active').length,
       };
     });
+
+    // El + es fijo y lo pone header.js; el overlay del modal lo define cada
+    // app en su propio CSS. Con el + por encima quedaba flotando sobre la
+    // ficha abierta y además clickeable. Se prueba por comportamiento (quién
+    // recibe el toque), no comparando z-index entre archivos.
+    if (await page.locator('#fabNuevo').count()) {
+      await page.locator('#fabNuevo').click();
+      await page.waitForTimeout(250);
+      const tapado = await page.evaluate(() => {
+        const f = document.getElementById('fabNuevo');
+        const r = f.getBoundingClientRect();
+        const el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        return el === f || f.contains(el);
+      });
+      ok(!tapado, `en ${p} el botón + no queda por encima del modal abierto`);
+      await page.goto(`http://localhost:${puerto}/${p}.html`, { waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(150);
+    }
 
     if (!chipDe[p]) continue;
     medidas[p] = await page.evaluate((sel) => {

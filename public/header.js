@@ -89,9 +89,18 @@
        que tiene que verse y ubicarse EXACTAMENTE igual en las cuatro apps:
        es la acción principal de cada una y antes era un botón con texto
        dentro de cada cabecera, distinto en cada pantalla. Va por encima de
-       la barra de navegación inferior (56px + el área segura del teléfono). */
+       la barra de navegación inferior (56px + el área segura del teléfono).
+
+       z-index 14 y no más: por debajo del overlay de los modales, que cada
+       app define en su propio CSS (20 en parques/proyectos/resoluciones,
+       200 en seguimiento). Con 40 el + quedaba FLOTANDO SOBRE el modal
+       abierto en tres de las cuatro apps, tapando contenido y, peor, siendo
+       clickeable: abría un alta nueva encima de la ficha que se estaba
+       mirando. Si alguna vez una app baja su overlay de 14, se rompe de
+       nuevo — `testUniformidad` lo verifica por comportamiento, abriendo el
+       modal y preguntando quién recibe el toque en el centro del botón. */
     ".app-fab{position:fixed;right:16px;bottom:calc(76px + env(safe-area-inset-bottom,0px));" +
-      "width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;z-index:40;" +
+      "width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;z-index:14;" +
       "display:flex;align-items:center;justify-content:center;" +
       "background:var(--accent,#667eea);color:var(--accent-fg,#fff);" +
       "box-shadow:0 4px 12px rgba(0,0,0,.22);transition:box-shadow .2s ease}",
