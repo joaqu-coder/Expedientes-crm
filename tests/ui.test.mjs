@@ -1007,7 +1007,10 @@ async function testParques(viewport, puerto) {
   const empresasSalta = datos.empresas.filter((e) => delParque(e, 'salta'));
   const sinEmpresa = lotesGuemes.filter((l) => !l.id_empresa);
   ok(lotesGuemes.length === 138, `el archivo trae los ${lotesGuemes.length} lotes reales de Güemes`);
-  ok(empresasGuemes.length === 54, `el archivo trae las ${empresasGuemes.length} empresas reales de Güemes (AGSOF S.A. fusionada: 55 -> 54)`);
+  // 55 originales - AGSOF S.A. fusionada (2026-10-13) - AGROCONSTRUCCIONES LA
+  // POSTA, que el usuario borró desde la app el 2026-10-17 (L115 y L116
+  // quedaron libres).
+  ok(empresasGuemes.length === 53, `el archivo trae las ${empresasGuemes.length} empresas reales de Güemes`);
   ok(lotesSalta.length === 135, `el archivo trae los ${lotesSalta.length} lotes reales del Parque Industrial Salta`);
   ok(empresasSalta.length === 151,
      `el archivo trae las ${empresasSalta.length} empresas de Salta (136 del origen + 15 ocupantes de la columna «Alquilada»)`);

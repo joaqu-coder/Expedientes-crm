@@ -8,15 +8,14 @@
       "nombre_empresa": "INDUSTRIAS FUNES",
       "parque_industrial": "Salta",
       "rubro": "Manufactura",
-      "superficie_solicitada_m2": 1500,
-      "actividad_empresa": "Ampliación de corte plegado y pintura industrial",
+      "superficie_solicitada_m2": 15000,
+      "actividad_empresa": "Ampliiación de corte plegado y pintura industrial",
       "situacion": "En_tratamiento",
       "representante_nombre": "Victor Funes",
       "contacto_tel": "3875411112",
       "contacto_mail": "",
       "fecha_ultimo_movimiento": "01/09/2026",
-      "intervenciones": [],
-      "actualizado_en": "2026-10-14T02:56:35.341Z"
+      "intervenciones": []
     },
     {
       "id": "exp_imp002",
@@ -254,21 +253,16 @@
       "representante_nombre": "Marco Mascietti Antonio",
       "contacto_tel": "",
       "contacto_mail": "",
-      "fecha_ultimo_movimiento": "13/10/2026 23:57",
+      "fecha_ultimo_movimiento": "31/03/2026",
       "intervenciones": [
         {
-          "hora": "13/10/2026 09:08",
+          "hora": "16/10/2026 21:18",
           "texto": "Archivado automáticamente: superó los 6 meses hábiles sin tratamiento.",
-          "tipo": "sistema"
-        },
-        {
-          "hora": "13/10/2026 23:57",
-          "texto": "Rescatado del archivo.",
           "tipo": "sistema"
         }
       ],
-      "archivado": false,
-      "actualizado_en": "2026-10-14T02:57:19.594Z"
+      "archivado": true,
+      "fecha_archivado": "16/10/2026 21:18"
     },
     {
       "id": "exp_imp015",
@@ -3848,7 +3842,7 @@
       "fecha_archivado": "12/10/2026 20:54"
     }
   ],
-  "plazoDias": 2,
+  "plazoDias": 90,
   "umbrales": {
     "alerta": 30,
     "critico": 15
