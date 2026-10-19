@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="description" content="Parques — EGPAIS">
-<meta name="theme-color" content="#667eea">
+<meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Parques">
@@ -17,11 +17,15 @@
      acá es la base común y lo de abajo, lo propio de esta pantalla. -->
 <link rel="stylesheet" href="/ui-kit.css">
 <style>
-/* Misma paleta/tipografía que las otras tres apps: mismo acento índigo,
-   misma escala de grises, fuente del sistema en toda la app. */
+/* Misma paleta/tipografía que las otras tres apps: mismo acento, misma
+   escala de grises, fuente del sistema en toda la app. */
+/* Acento neutro, no índigo: el #667eea se eliminó el 2026-10-19 a pedido del
+   usuario (ni índigo ni ámbar en ninguna pantalla). El acento es ahora la
+   misma tinta del texto, así que lo "de color" se reduce a los estados
+   semánticos (--danger, --c1..--c6) y la pantalla queda blanca entera. */
 :root{
-  --bg:#f9fafb; --surface:#ffffff; --surface-2:#f3f4f6; --border:#e5e7eb;
-  --fg:#1f2937; --muted:#6b7280; --accent:#667eea; --accent-fg:#ffffff;
+  --bg:#ffffff; --surface:#ffffff; --surface-2:#f3f4f6; --border:#e5e7eb;
+  --fg:#1f2937; --muted:#6b7280; --accent:#1f2937; --accent-fg:#ffffff;
   --danger:#a1392c; --danger-bg:#f7e2dd;
   --warn:#a8650f; --warn-bg:#fbead0;
   --c1:#667eea; --c1-bg:#e7e9fb;
@@ -1113,7 +1117,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
           '<p class="field-nota">La titularidad, la matrícula, la superficie y la escritura no cambian: '+
           'quedan como están arriba. Esto solo registra quién ocupa el lote.</p></div>')+
         '<div class="modal-actions"><button type="submit" class="btn btn-primary btn-grow">'+HeaderGlobal.icono("guardar")+'Guardar</button>'+
-        (isNew?'':'<button type="button" class="btn btn-secondary" id="btnCancelEditLote">'+HeaderGlobal.icono("cancelar")+'Cancelar</button><button type="button" class="btn btn-danger" id="btnDeleteLote">'+HeaderGlobal.icono("eliminar")+'Eliminar</button>')+'</div>'+
+        (isNew?'':'<button type="button" class="btn btn-secondary btn-grow" id="btnCancelEditLote">'+HeaderGlobal.icono("cancelar")+'Cancelar</button><button type="button" class="btn btn-danger btn-grow" id="btnDeleteLote">'+HeaderGlobal.icono("eliminar")+'Eliminar</button>')+'</div>'+
       '</form>';
 
     veil.hidden = false;
@@ -1337,7 +1341,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
         '<div class="row2">'+field("facebook","Facebook","text",e)+field("linkedin","LinkedIn","text",e)+'</div>'+
         '<div class="field"><label for="f_observacion">Observación</label><textarea id="f_observacion" name="observacion">'+esc(e?e.observacion:"")+'</textarea></div>'+
         '<div class="modal-actions"><button type="submit" class="btn btn-primary btn-grow">'+HeaderGlobal.icono("guardar")+'Guardar</button>'+
-        (isNew?'':'<button type="button" class="btn btn-secondary" id="btnCancelEditEmp">'+HeaderGlobal.icono("cancelar")+'Cancelar</button><button type="button" class="btn btn-danger" id="btnDeleteEmp">'+HeaderGlobal.icono("eliminar")+'Eliminar</button>')+'</div>'+
+        (isNew?'':'<button type="button" class="btn btn-secondary btn-grow" id="btnCancelEditEmp">'+HeaderGlobal.icono("cancelar")+'Cancelar</button><button type="button" class="btn btn-danger btn-grow" id="btnDeleteEmp">'+HeaderGlobal.icono("eliminar")+'Eliminar</button>')+'</div>'+
       '</form>';
 
     veil.hidden = false;

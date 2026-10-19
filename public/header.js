@@ -52,7 +52,7 @@
       "justify-content:center;background:none;border:none;padding:0;cursor:pointer;" +
       "border-radius:999px;color:var(--fg,#1f2937);transition:background-color .15s ease}",
     ".app-header__menu:hover{background:var(--surface-2,#f3f4f6)}",
-    ".app-header__menu:focus-visible{outline:2px solid var(--accent,#667eea);outline-offset:-2px}",
+    ".app-header__menu:focus-visible{outline:2px solid var(--accent,#1f2937);outline-offset:-2px}",
     ".app-header__menu svg{width:24px;height:24px;display:block}",
 
     /* Menú contextual: se ancla al botón y nunca se sale de la pantalla. */
@@ -64,7 +64,7 @@
       "padding:0 12px;background:none;border:none;border-radius:8px;cursor:pointer;" +
       "font-family:inherit;font-size:14px;color:var(--fg,#1f2937);text-align:left}",
     ".app-menu__item:hover{background:var(--surface-2,#f3f4f6)}",
-    ".app-menu__item:focus-visible{outline:2px solid var(--accent,#667eea);outline-offset:-2px}",
+    ".app-menu__item:focus-visible{outline:2px solid var(--accent,#1f2937);outline-offset:-2px}",
 
     /* Estado de sincronización: vive acá adentro en vez de ocupar un lugar fijo
        arriba. Cuando algo falla sí sale a la vista (ver .app-sync-aviso). */
@@ -102,10 +102,10 @@
     ".app-fab{position:fixed;right:16px;bottom:calc(76px + env(safe-area-inset-bottom,0px));" +
       "width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;z-index:14;" +
       "display:flex;align-items:center;justify-content:center;" +
-      "background:var(--accent,#667eea);color:var(--accent-fg,#fff);" +
+      "background:var(--accent,#1f2937);color:var(--accent-fg,#fff);" +
       "box-shadow:0 4px 12px rgba(0,0,0,.22);transition:box-shadow .2s ease}",
     ".app-fab:hover{box-shadow:0 8px 18px rgba(0,0,0,.28)}",
-    ".app-fab:focus-visible{outline:2px solid var(--accent,#667eea);outline-offset:3px}",
+    ".app-fab:focus-visible{outline:2px solid var(--accent,#1f2937);outline-offset:3px}",
     ".app-fab svg{width:26px;height:26px;display:block}"
   ].join("\n");
 

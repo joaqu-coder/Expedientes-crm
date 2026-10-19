@@ -1381,8 +1381,19 @@ async function testUniformidad(puerto) {
         const visibles = [...document.querySelectorAll('.btn')].filter((b) => b.offsetParent !== null);
         if (!visibles.length) return null;
         const cs = getComputedStyle(visibles[0]);
+        // Ancho: se compara DENTRO de cada fila, no entre filas — dos filas
+        // distintas pueden tener dos y tres botones, y ahí el ancho correcto
+        // es distinto. Lo que el usuario pidió es que en una misma fila
+        // Guardar, Cancelar y Eliminar midan lo mismo.
+        const filas = [...new Set(visibles.map((b) => b.parentElement))].map((fila) => {
+          const anchos = [...fila.querySelectorAll(':scope > .btn')]
+            .filter((b) => b.offsetParent !== null)
+            .map((b) => Math.round(b.getBoundingClientRect().width));
+          return { clase: fila.className, anchos: [...new Set(anchos)], cuantos: anchos.length };
+        }).filter((f) => f.cuantos > 1);
         return {
           cuantos: visibles.length,
+          filas,
           alto: Math.round(visibles[0].getBoundingClientRect().height),
           altos: [...new Set(visibles.map((b) => Math.round(b.getBoundingClientRect().height)))],
           radio: cs.borderTopLeftRadius,
@@ -1526,6 +1537,16 @@ async function testUniformidad(puerto) {
        `el botón de ${p} comparte radio, tipografía y alineación con el de ${conBotones[0]} (${b.radio}, ${b.fuente})`);
     ok(b.iconos > 0 && b.tamIcono === 18,
        `en ${p} los botones llevan icono del juego compartido, a 18px (${b.iconos} con icono, ${b.tamIcono}px)`);
+    // Pastilla, como la pestaña "Análisis" de Proyectos: el usuario lo pidió
+    // explícitamente (2026-10-19) y es lo que hace que los cinco botones se
+    // lean como un solo componente.
+    ok(b.radio === '999px' || parseFloat(b.radio) >= 20,
+       `el botón de ${p} tiene el radio de pastilla de la pestaña Análisis (${b.radio})`);
+    // Mismo ancho dentro de cada fila de acciones.
+    for (const fila of b.filas) {
+      ok(fila.anchos.length === 1,
+         `en ${p} los ${fila.cuantos} botones de .${fila.clase.trim().split(/\s+/).join('.')} miden todos lo mismo de ancho (${fila.anchos.join('/')}px)`);
+    }
   }
 
   // ---- Una sola barra de búsqueda ----

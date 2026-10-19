@@ -7,7 +7,7 @@
        la UI mobile-first no se usaba nunca. -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="description" content="Seguimiento de cartas de intención de los parques industriales de Salta.">
-  <meta name="theme-color" content="#a8650f">
+  <meta name="theme-color" content="#ffffff">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Proyectos">
@@ -38,12 +38,13 @@
    Dashboard (5 secciones con navegación propia) — con tabs arriba y ruteo por
    #hash. Mobile-first: todo el ancho es de una columna hasta 860px. */
 :root{
-  /* Base neutra idéntica al resto de la suite (index/seguimiento/resoluciones/parques):
-     antes esta app tenía su propio fondo crema (#f3f1ea), que era la inconsistencia
-     visible real entre pantallas. Accent/accent-fg siguen siendo ámbar — esa es la
-     identidad de marca deliberada de este módulo, no un error a corregir. */
-  --bg:#f9fafb; --surface:#ffffff; --surface-2:#f3f4f6; --border:#e5e7eb;
-  --fg:#1f2937; --muted:#6b7280; --accent:#a8650f; --accent-fg:#fff8ec;
+  /* Base neutra idéntica al resto de la suite (index/seguimiento/resoluciones/parques).
+     El ámbar que esta app usaba como acento (#a8650f) se eliminó el 2026-10-19 a
+     pedido del usuario: ya no hay color de marca por módulo — las cuatro apps
+     comparten el mismo acento neutro y la pantalla es blanca entera. El ámbar
+     sobrevive solo como --warn/--orange, que son estados, no identidad. */
+  --bg:#ffffff; --surface:#ffffff; --surface-2:#f3f4f6; --border:#e5e7eb;
+  --fg:#1f2937; --muted:#6b7280; --accent:#1f2937; --accent-fg:#ffffff;
   --ok:#2f7a3c; --ok-bg:#e4f3e5; --warn:#a8650f; --warn-bg:#fbead0; --idle:#746d57; --idle-bg:#e8e5d9;
   --danger:#a1392c; --danger-bg:#f7e2dd; --orange:#b05a1a; --orange-bg:#fbe9d8;
   color-scheme: light;
@@ -2096,10 +2097,13 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 
       '<div class="view-actions">'+
         (e.archivado?'<button type="button" class="btn btn-primary btn-grow" id="btnRescatar">'+HeaderGlobal.icono("reabrir")+'Rescatar</button>':'')+
-        // Editar es la acción principal de un expediente vivo y la secundaria
-        // de uno archivado, donde la principal es Rescatar: cambia la
-        // variante de color, no el tamaño ni el icono.
-        '<button type="button" class="btn btn-grow '+(e.archivado?"btn-outline":"btn-primary")+'" id="btnEdit">'+HeaderGlobal.icono("editar")+'Editar</button>'+
+        // Siempre la variante "outline", igual que en Resoluciones y Parques.
+        // Antes alternaba btn-primary/btn-outline según el expediente
+        // estuviera archivado: el mismo botón con dos pesos visuales dentro
+        // de la misma app, y un tercero respecto de las otras pantallas. El
+        // que destaca en un expediente archivado es Rescatar, que ya es el
+        // primario de esa fila.
+        '<button type="button" class="btn btn-outline btn-grow" id="btnEdit">'+HeaderGlobal.icono("editar")+'Editar</button>'+
         '<button type="button" class="btn btn-danger btn-grow" id="btnDeleteView">'+HeaderGlobal.icono("eliminar")+'Eliminar</button>'+
       '</div>';
 
@@ -2130,7 +2134,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
         '<div class="field"><label for="f_nota">Nueva nota (se agrega al historial)</label><textarea id="f_nota" placeholder="Observación, llamado, documentación recibida…"></textarea></div>'+
         historialHtml(e)+
         '<div class="modal-actions"><button type="submit" class="btn btn-primary btn-grow">'+HeaderGlobal.icono("guardar")+'Guardar</button>'+
-        (isNew?'':'<button type="button" class="btn btn-secondary" id="btnCancelEdit">'+HeaderGlobal.icono("cancelar")+'Cancelar</button><button type="button" class="btn btn-danger" id="btnDelete">'+HeaderGlobal.icono("eliminar")+'Eliminar</button>')+'</div>'+
+        (isNew?'':'<button type="button" class="btn btn-secondary btn-grow" id="btnCancelEdit">'+HeaderGlobal.icono("cancelar")+'Cancelar</button><button type="button" class="btn btn-danger btn-grow" id="btnDelete">'+HeaderGlobal.icono("eliminar")+'Eliminar</button>')+'</div>'+
       '</form>';
 
     veil.hidden = false;

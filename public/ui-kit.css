@@ -16,12 +16,18 @@
  */
 
 :root {
-  /* Los colores NO se redefinen acá. Cada app ya trae su acento (indigo en
-     Seguimiento/Resoluciones/Parques, ámbar en Proyectos, decisión del
-     2026-10-09) y el kit lo toma como está: estos tokens solo le ponen un
-     nombre común a lo que la página ya define. El valor de respaldo es para
-     una página que no declare el token, no para pisar al que sí lo hace. */
-  --ui-accent: var(--accent, #667eea);
+  /* Los colores NO se redefinen acá. Cada app declara su acento y el kit lo
+     toma como está: estos tokens solo le ponen un nombre común a lo que la
+     página ya define. El valor de respaldo es para una página que no declare
+     el token, no para pisar al que sí lo hace.
+
+     Desde el 2026-10-19 ese acento es el MISMO en las cuatro apps y es un
+     neutro (la tinta del texto, #1f2937): se eliminaron el índigo de
+     Seguimiento/Resoluciones/Parques y el ámbar de Proyectos a pedido del
+     usuario — pantalla blanca entera, sin color de marca. El respaldo de acá
+     acompaña ese cambio; si vuelve a decir #667eea, quedó desincronizado con
+     las páginas. */
+  --ui-accent: var(--accent, #1f2937);
   --ui-accent-fg: var(--accent-fg, #ffffff);
   --ui-accent-soft: color-mix(in srgb, var(--ui-accent) 16%, transparent);
   --ui-accent-hover: color-mix(in srgb, var(--ui-accent) 86%, #000);
@@ -40,7 +46,10 @@
   --ui-control-height: 40px;
   --ui-icon-size: 18px;
   --ui-radius-pill: 999px;
-  --ui-radius-button: 8px;
+  /* Pastilla, no 8px: el usuario pidió (2026-10-19) que los cinco botones de
+     acción tengan el radio de la pestaña "Análisis" de Proyectos, que ya era
+     999px. Un solo valor para botón y pastilla, así no se pueden separar. */
+  --ui-radius-button: var(--ui-radius-pill);
   --ui-radius-nav: 10px;
   --ui-gap: 8px;
   --ui-padding-x: 14px;
@@ -156,9 +165,15 @@
 .btn-success { background: var(--ui-accent); color: var(--ui-accent-fg); }
 .btn-success:hover { background: var(--ui-accent-hover); }
 
-/* Modificadores de ancho: el tamaño del botón no cambia, solo cómo se reparte
-   el espacio de la fila que lo contiene. */
-.btn-grow { flex: 1 1 auto; }
+/* Modificadores de ancho.
+ *
+ * `flex: 1 1 0` y no `1 1 auto`: con base `auto` el reparto arranca del ancho
+ * del texto, así que "Eliminar" terminaba más ancho que "Editar" en la misma
+ * fila. Con base 0 los botones de una fila miden todos lo mismo, que es lo que
+ * pidió el usuario (2026-10-19: "mismo radius, ancho, alto e icono").
+ * `min-width: 0` evita que una etiqueta larga rompa el reparto.
+ */
+.btn-grow { flex: 1 1 0; min-width: 0; }
 .btn-full { width: 100%; }
 
 @media (prefers-reduced-motion: reduce) {

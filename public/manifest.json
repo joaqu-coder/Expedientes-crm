@@ -7,11 +7,11 @@
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#ffffff",
-  "theme_color": "#667eea",
+  "theme_color": "#ffffff",
   "categories": ["business", "productivity"],
   "screenshots": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 540 720'><rect fill='%23667eea' width='540' height='720'/><text x='270' y='360' font-size='120' text-anchor='middle' fill='white'>📋</text></svg>",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 540 720'><rect fill='%231f2937' width='540' height='720'/><text x='270' y='360' font-size='120' text-anchor='middle' fill='white'>📋</text></svg>",
       "sizes": "540x720",
       "type": "image/svg+xml",
       "form_factor": "narrow"
