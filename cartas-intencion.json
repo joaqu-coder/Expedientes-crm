@@ -31,8 +31,15 @@
       "representante_nombre": "Noemí A. Castro / Panuzzio",
       "contacto_tel": "3876319634",
       "contacto_mail": "info@manclean.com.ar",
-      "fecha_ultimo_movimiento": "01/09/2026",
-      "intervenciones": []
+      "fecha_ultimo_movimiento": "19/10/2026 09:58",
+      "intervenciones": [
+        {
+          "hora": "19/10/2026 09:58",
+          "texto": "Converso con Marcelo René Gutierres para solicitar uns Cesión de Derechos. 15/10/2026",
+          "tipo": "manual"
+        }
+      ],
+      "actualizado_en": "2026-10-19T12:58:39.182Z"
     },
     {
       "id": "exp_imp003",
@@ -147,7 +154,7 @@
       "contacto_mail": "",
       "fecha_ultimo_movimiento": "03/06/2026",
       "intervenciones": [],
-      "actualizado_en": "2026-10-19T03:51:46.860Z"
+      "actualizado_en": "2026-10-19T12:21:32.643Z"
     },
     {
       "id": "exp_imp009",
