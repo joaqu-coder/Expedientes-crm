@@ -15,9 +15,11 @@
   <link rel="icon" type="image/svg+xml" href="/icon.svg">
   <link rel="apple-touch-icon" href="/icon.svg">
   <title>Cartas de Intención — Parques Industriales</title>
-<!-- Sistema visual compartido por las 5 páginas (botones, búsqueda y los
-     estados de la barra inferior). Va ANTES del <style> de la página: lo de
-     acá es la base común y lo de abajo, lo propio de esta pantalla. -->
+<!-- Sistema de diseño compartido por las 5 páginas. El orden importa:
+     design-system.css son los valores (colores, radios, medidas) y
+     ui-kit.css los componentes que los usan. El <style> de abajo es lo
+     propio de esta pantalla y va último, para poder pisar algo puntual. -->
+<link rel="stylesheet" href="/design-system.css">
 <link rel="stylesheet" href="/ui-kit.css">
 <style>
 
@@ -37,30 +39,14 @@
 /* Layout concept: dos vistas — Listado (tarjetas filtrables + ficha modal) y
    Dashboard (5 secciones con navegación propia) — con tabs arriba y ruteo por
    #hash. Mobile-first: todo el ancho es de una columna hasta 860px. */
-:root{
-  /* Base neutra idéntica al resto de la suite (index/seguimiento/resoluciones/parques).
-     El ámbar que esta app usaba como acento (#a8650f) se eliminó el 2026-10-19 a
-     pedido del usuario: ya no hay color de marca por módulo — las cuatro apps
-     comparten el mismo acento neutro y la pantalla es blanca entera. El ámbar
-     sobrevive solo como --warn/--orange, que son estados, no identidad. */
-  --bg:#ffffff; --surface:#ffffff; --surface-2:#f3f4f6; --border:#e5e7eb;
-  --fg:#1f2937; --muted:#6b7280; --accent:#1f2937; --accent-fg:#ffffff;
-  --ok:#2f7a3c; --ok-bg:#e4f3e5; --warn:#a8650f; --warn-bg:#fbead0; --idle:#746d57; --idle-bg:#e8e5d9;
-  --danger:#a1392c; --danger-bg:#f7e2dd; --orange:#b05a1a; --orange-bg:#fbe9d8;
-  color-scheme: light;
-  --font-display:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-  --font-body:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-  --font-mono:ui-monospace,"SF Mono","Cascadia Code","Roboto Mono","Courier New",monospace;
-  /* paleta categórica (parques) — orden fijo, no ciclar */
-  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300;
-  --s7:#8c5ccc; --s8:#0aa2b0;
-}
-*{box-sizing:border-box}
-body{background:var(--bg);color:var(--fg);font-family:var(--font-body);margin:0;padding-inline:16px;padding-top:20px;padding-bottom:calc(84px + env(safe-area-inset-bottom, 0px));-webkit-font-smoothing:antialiased}
+/* Sin :root propio. Los colores, la tipografía y la paleta categórica
+   (--s1..--s8) viven en design-system.css: esta pantalla los hereda. Si algo
+   de acá necesita desviarse, se redeclara ESE token y se explica por qué —
+   no se vuelve a copiar la paleta entera, que es lo que costó cinco ediciones
+   cuando hubo que sacar el ámbar. */
+body{margin:0;padding-inline:16px;padding-top:20px;padding-bottom:calc(84px + env(safe-area-inset-bottom, 0px))}
 h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 .mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
-button{font-family:inherit;cursor:pointer}
-button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 svg text{font-family:var(--font-body)}
 
 /* Barra de filtros superior, mismo lenguaje que la barra inferior: chips

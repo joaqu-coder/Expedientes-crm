@@ -12,44 +12,26 @@
   <link rel="icon" type="image/svg+xml" href="/icon.svg">
   <link rel="apple-touch-icon" href="/icon.svg">
   <title>Expedientes CRM</title>
-  <!-- Sistema visual compartido por las 5 páginas (botones, búsqueda y los
-       estados de la barra inferior). Va ANTES del <style> de la página: lo de
-       acá es la base común y lo de abajo, lo propio de esta pantalla. -->
+  <!-- Sistema de diseño compartido por las 5 páginas. El orden importa:
+       design-system.css son los valores (colores, radios, medidas) y
+       ui-kit.css los componentes que los usan. El <style> de abajo es lo
+       propio de esta pantalla y va último, para poder pisar algo puntual. -->
+  <link rel="stylesheet" href="/design-system.css">
   <link rel="stylesheet" href="/ui-kit.css">
   <style>
     :root {
-      /* Acento neutro (la tinta del texto), no el índigo #667eea: se eliminó
-         el 2026-10-19 a pedido del usuario — ni índigo ni ámbar en ninguna
-         pantalla, y la pantalla va blanca entera. --primary se conserva como
-         nombre porque esta página lo usa en una docena de reglas; lo que
-         cambió es su valor, no el vocabulario. */
-      --primary: #1f2937;
-      --accent: var(--primary);
-      --accent-fg: #ffffff;
-      /* Mismos --danger/--ok del sistema de diseño compartido (antes --red/--green
-         eran valores propios de este archivo y no se aclaraban en oscuro, perdiendo
-         contraste contra el fondo casi-negro). */
-      --red: #a1392c;
+      /* El acento, los grises, --text/--text-muted, --red y --green los hereda
+         de design-system.css, que también define los alias del vocabulario
+         viejo de esta pantalla (--primary, --gray-*). Acá quedan SOLO los
+         colores que son propios de Seguimiento y de ninguna otra app.
+
+         --orange y --yellow son la desviación controlada del sistema: este
+         naranja (#f97316) es el del semáforo de urgencia, más saturado que el
+         --orange de categorías (#b05a1a) que usan Proyectos y Parques. Se
+         redeclaran los dos tokens puntuales, no la paleta entera; el <style>
+         de la página va después del <link>, así que ganan por cascada. */
       --orange: #f97316;
       --yellow: #d5be00;
-      --green: #2f7a3c;
-      --gray-50: #f9fafb;
-      --gray-100: #f3f4f6;
-      --gray-200: #e5e7eb;
-      --gray-300: #d1d5db;
-      --text: #1f2937;
-      --text-muted: #6b7280;
-      /* Nombres comunes del ui-kit. Esta pantalla llama a sus colores
-         --text/--gray-*, y las otras tres --fg/--border/--surface: los alias
-         hacen que ui-kit.css lea EXACTAMENTE los mismos colores que ya usa
-         esta página, en vez de caer en sus valores de respaldo. */
-      --fg: var(--text);
-      --muted: var(--text-muted);
-      --surface: #ffffff;
-      --surface-2: var(--gray-100);
-      --border: var(--gray-200);
-      --danger: var(--red);
-      --ok: var(--green);
       --badge-naranja: #9a3412;
       --badge-amarillo: #6b5b00;
       --badge-verde: #336d0e;
@@ -71,9 +53,7 @@
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: #ffffff;
-      color: var(--text);
+      /* El fondo, el color y la fuente los pone design-system.css. */
       line-height: 1.5;
       /* Deja lugar a la barra de navegación inferior fija para que no tape
          el último elemento de la lista. */

@@ -34,11 +34,21 @@ const HTML = fs.readFileSync(path.join(RAIZ, 'public/seguimiento.html'), 'utf8')
 // servidores de prueba tienen que servirlo o la página queda sin cabecera.
 const HEADER_JS = fs.readFileSync(path.join(RAIZ, 'public/header.js'), 'utf8');
 const UI_KIT = fs.readFileSync(path.join(RAIZ, 'public/ui-kit.css'), 'utf8');
+const DESIGN_SYSTEM = fs.readFileSync(path.join(RAIZ, 'public/design-system.css'), 'utf8');
 // Los dos archivos compartidos por las 5 páginas. Si el server de un test no
 // los sirve, esa pantalla corre sin header, sin botones con estilo y sin la
 // lupa de la búsqueda — y el test falla por una razón que no es la que
 // estaba probando.
 function servirHeaderJs(req, res) {
+  // design-system.css es dependencia DURA de ui-kit.css desde el 2026-10-19:
+  // los --ui-* ya no tienen valor de respaldo, los leen de los --ds-*. Si un
+  // server de prueba no lo sirve, los botones salen sin alto y sin radio y el
+  // test falla por el server, no por el código.
+  if (req.url.startsWith('/design-system.css')) {
+    res.writeHead(200, { 'Content-Type': 'text/css; charset=utf-8' });
+    res.end(DESIGN_SYSTEM);
+    return true;
+  }
   if (req.url.startsWith('/ui-kit.css')) {
     res.writeHead(200, { 'Content-Type': 'text/css; charset=utf-8' });
     res.end(UI_KIT);
@@ -1560,6 +1570,52 @@ async function testUniformidad(puerto) {
     ok(s.fuente >= 16, `la búsqueda de ${p} usa fuente ≥16px, para que iOS no haga zoom al enfocar (${s.fuente}px)`);
     ok(s.lupa && !s.emoji, `la búsqueda de ${p} tiene lupa SVG y ningún emoji en el placeholder`);
     ok(s.limpiar, `la búsqueda de ${p} tiene botón para limpiar`);
+  }
+
+  // ---- El sistema de diseño es una sola fuente de verdad ----
+  // Es LA prueba del pedido del usuario (2026-10-19): "si modificás el radio
+  // de los botones o el color principal, el cambio se aplica en todas las
+  // pantallas sin editar cada una por separado".
+  //
+  // No se verifica leyendo el CSS —eso solo diría que el token existe— sino
+  // pisando el token en caliente y preguntándole al navegador qué pinta. Si
+  // alguien vuelve a clavar un color o un radio en el <style> de una página,
+  // esa página deja de moverse y este test la nombra.
+  const PRUEBAS = [
+    { token: '--ds-accent', valor: 'rgb(255, 0, 0)', sel: '.btn-primary',
+      prop: 'backgroundColor', espera: 'rgb(255, 0, 0)', que: 'el color principal del botón' },
+    { token: '--ds-radius-button', valor: '3px', sel: '.btn-primary',
+      prop: 'borderTopLeftRadius', espera: '3px', que: 'el radio del botón' },
+    { token: '--ds-control-height', valor: '57px', sel: '.btn-primary',
+      prop: 'minHeight', espera: '57px', que: 'el alto de los controles' },
+    { token: '--ds-bg', valor: 'rgb(0, 128, 0)', sel: 'body',
+      prop: 'backgroundColor', espera: 'rgb(0, 128, 0)', que: 'el fondo de la pantalla' },
+    { token: '--ds-fg', valor: 'rgb(0, 0, 255)', sel: 'body',
+      prop: 'color', espera: 'rgb(0, 0, 255)', que: 'el color del texto' }
+  ];
+  for (const p of paginas) {
+    await page.goto(`http://localhost:${puerto}/${p}.html`, { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(150);
+    for (const prueba of PRUEBAS) {
+      const leido = await page.evaluate(({ token, valor, sel, prop }) => {
+        // Un botón de muestra: no todas las pantallas tienen uno a la vista
+        // al cargar, y lo que se prueba es la clase, no que esté en pantalla.
+        let temp = null;
+        if (!document.querySelector(sel)) {
+          temp = document.createElement('button');
+          temp.className = 'btn btn-primary';
+          document.body.appendChild(temp);
+        }
+        document.documentElement.style.setProperty(token, valor);
+        const v = getComputedStyle(document.querySelector(sel))[prop];
+        document.documentElement.style.removeProperty(token);
+        if (temp) temp.remove();
+        return v;
+      }, prueba);
+      ok(leido === prueba.espera,
+         `en ${p}, cambiar ${prueba.token} cambia ${prueba.que} sin tocar la página ` +
+         `(esperaba ${prueba.espera}, dio ${leido})`);
+    }
   }
 
   await browser.close();

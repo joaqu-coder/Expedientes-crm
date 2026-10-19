@@ -12,35 +12,18 @@
   <link rel="icon" type="image/svg+xml" href="/icon.svg">
   <link rel="apple-touch-icon" href="/icon.svg">
   <title>Expedientes CRM</title>
-  <!-- Sistema visual compartido por las 5 páginas (botones, búsqueda y los
-       estados de la barra inferior). Va ANTES del <style> de la página: lo de
-       acá es la base común y lo de abajo, lo propio de esta pantalla. -->
+  <!-- Sistema de diseño compartido por las 5 páginas. El orden importa:
+       design-system.css son los valores (colores, radios, medidas) y
+       ui-kit.css los componentes que los usan. El <style> de abajo es lo
+       propio de esta pantalla y va último, para poder pisar algo puntual. -->
+  <link rel="stylesheet" href="/design-system.css">
   <link rel="stylesheet" href="/ui-kit.css">
   <style>
-    :root {
-      /* Neutro, no índigo: ver la nota de seguimiento.html (2026-10-19). */
-      --primary: #1f2937;
-      --gray-50: #f9fafb;
-      --gray-100: #f3f4f6;
-      --gray-200: #e5e7eb;
-      --text: #1f2937;
-      --text-muted: #6b7280;
-      /* Nombres comunes del ui-kit (acá solo los usa la barra inferior). */
-      --accent: var(--primary);
-      --fg: var(--text);
-      --muted: var(--text-muted);
-      --surface-2: var(--gray-100);
-      --border: var(--gray-200);
-      /* Tarjetas blancas, como en el resto de la suite — antes la landing
-         era la única que las pintaba con --gray-100 (gris claro). */
-      --surface: #ffffff;
-    }
-    * { box-sizing: border-box; }
+    /* Sin :root propio: la landing no tiene ni un color que no esté en
+       design-system.css, incluidos los alias de su vocabulario viejo
+       (--primary, --text, --gray-*). */
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #ffffff;
-      color: var(--text);
     }
     .landing {
       min-height: 100vh;

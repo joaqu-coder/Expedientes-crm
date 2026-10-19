@@ -25,6 +25,18 @@ estáticos (binding `ASSETS`, declarado en `wrangler.toml`) y expone los
 endpoints de sync, usando un solo secret `GITHUB_TOKEN` compartido por las
 cuatro apps.
 
+Lo visual **sí** es compartido, y son los tres únicos archivos que lo son:
+
+| Archivo | Qué es |
+|---|---|
+| `public/design-system.css` | Los valores: paleta, tokens (`--ds-accent`, `--ds-radius-button`…) y la base de `body` |
+| `public/ui-kit.css` | Los componentes: `.btn` y sus variantes, la barra de búsqueda, los estados de la nav |
+| `public/header.js` | El header (título + ⋮), el FAB y el juego de iconos |
+
+Cambiar el color principal o el radio de todos los botones es **una línea en
+`design-system.css`**: no hay que abrir ningún `.html`. Los tests lo verifican
+pisando el token en caliente y comprobando que las cinco pantallas repinten.
+
 ```
 Navegador (seguimiento)   Navegador (proyectos)      Navegador (resoluciones)  Navegador (parques)
     │  /api/sync              │  /api/sync-cartas         │  /api/sync-resoluciones  │  /api/sync-parques
