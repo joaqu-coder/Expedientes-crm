@@ -1004,6 +1004,7 @@ async function testParques(viewport, puerto) {
   const html = fs.readFileSync(path.join(RAIZ, 'public/parques.html'), 'utf8');
   const datos = JSON.parse(fs.readFileSync(path.join(RAIZ, 'parques.json'), 'utf8'));
   let ultimoPost = null;
+  let posts = 0;
 
   const server = http.createServer((req, res) => {
     if (req.url.startsWith('/api/')) {
@@ -1012,6 +1013,7 @@ async function testParques(viewport, puerto) {
         req.on('data', (c) => (body += c));
         req.on('end', () => {
           ultimoPost = JSON.parse(body);
+          posts++;
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ ok: true }));
         });
@@ -1052,11 +1054,19 @@ async function testParques(viewport, puerto) {
   // (en el origen «L40», sin el relleno de ceros, y por eso no chocaba con
   // L040, que es otro lote: CERÁMICA SALTEÑA contra CRAYÓN S.R.L).
   ok(lotesGuemes.length === 139, `el archivo trae los ${lotesGuemes.length} lotes reales de Güemes`);
-  // 55 originales - AGSOF S.A. fusionada (2026-10-13) - AGROCONSTRUCCIONES LA
-  // POSTA, que el usuario borró desde la app el 2026-10-17 (L115 y L116
-  // quedaron libres).
-  ok(empresasGuemes.length === 53, `el archivo trae las ${empresasGuemes.length} empresas reales de Güemes`);
+  // 55 originales - AGSOF S.A. fusionada (2026-10-13). AGROCONSTRUCCIONES LA
+  // POSTA había bajado a 53 cuando el usuario la borró desde la app el
+  // 2026-10-17, y volvió el 2026-10-19 por decisión suya: la baja no era lo
+  // que quería y el export la sigue trayendo.
+  ok(empresasGuemes.length === 54, `el archivo trae las ${empresasGuemes.length} empresas reales de Güemes`);
+  const posta = datos.empresas.find((e) => /AGROCONSTRUCCIONES LA POSTA/i.test(e.nombre_empresa || ''));
+  ok(!!posta && posta.id_parque === 'guemes', 'AGROCONSTRUCCIONES LA POSTA está cargada en Güemes');
+  ok(['L115', 'L116'].every((id) =>
+       (datos.lotes.find((l) => l.id_lote === id) || {}).id_empresa === posta.id_empresa),
+     'L115 y L116 vuelven a estar a nombre de LA POSTA, no libres');
   ok(lotesSalta.length === 135, `el archivo trae los ${lotesSalta.length} lotes reales del Parque Industrial Salta`);
+  ok(datos.parques.map((p) => p.nombre).join('|') === 'Güemes|Salta',
+     'los dos parques se llaman por su nombre corto en el archivo');
   // 150 desde el 2026-10-19: 136 del origen + 15 ocupantes de la columna
   // «Alquilada» - ADMINISTRACION PARQUE INDUSTRIAL SALTA (A.P.I.S), que el
   // usuario borró desde la app y la fusión de los exports había conservado
@@ -1077,6 +1087,84 @@ async function testParques(viewport, puerto) {
      'arranca en Güemes, con el chip activo marcado');
   ok(await page.locator('#filterEstadoEmpresas option', { hasText: 'Todos los estados' }).count() === 1,
      'el listado de Empresas tiene el filtro "Todos los estados"');
+
+  // ======================================================================
+  // El filtro de situación tiene que FILTRAR, en los dos parques
+  // ======================================================================
+  // Hasta el 2026-10-19 esto solo verificaba que la opción "Todos los
+  // estados" existiera, y por eso pasó en verde un desplegable que en
+  // Güemes estaba deshabilitado (sus 53 empresas tenían `situacion: null`,
+  // el dato había quedado en el estado de los lotes). La cuenta esperada se
+  // calcula acá contra el archivo, con la misma regla pero escrita aparte.
+  const situacionEsperada = (e) => {
+    if (e.situacion) return e.situacion;
+    const estados = datos.lotes.filter((l) => l.id_empresa === e.id_empresa).map((l) => l.estado);
+    // "Alquilada" describe al LOTE, no dice si su titular sigue operando.
+    return ['Activa', 'En construcción', 'Sin actividad'].find((x) => estados.includes(x)) || null;
+  };
+  for (const [parque, empresasDel] of [['guemes', empresasGuemes], ['salta', empresasSalta]]) {
+    await page.locator(`#parqueSwitch [data-parque="${parque}"]`).click();
+    await page.waitForFunction(() => document.querySelectorAll('#empresasList .tarjeta').length > 0);
+    const opciones = await page.locator('#filterEstadoEmpresas option').evaluateAll((os) =>
+      os.map((o) => o.value).filter(Boolean));
+    const presentes = ['Activa', 'Sin actividad', 'En construcción']
+      .filter((x) => empresasDel.some((e) => situacionEsperada(e) === x));
+    ok(opciones.join('|') === presentes.join('|'),
+       `${parque}: el filtro ofrece las situaciones que el parque realmente tiene (${presentes.join(', ') || 'ninguna'})`);
+    ok(!(await page.locator('#filterEstadoEmpresas').isDisabled()),
+       `${parque}: el filtro de situación está habilitado`);
+    for (const valor of presentes) {
+      await page.selectOption('#filterEstadoEmpresas', valor);
+      await page.waitForTimeout(120);
+      const esperadas = empresasDel.filter((e) => situacionEsperada(e) === valor).length;
+      ok((await page.locator('#empresasList .tarjeta').count()) === esperadas,
+         `${parque}: filtrar por "${valor}" deja las ${esperadas} empresas que corresponden`);
+    }
+    await page.selectOption('#filterEstadoEmpresas', '');
+    await page.waitForTimeout(120);
+    ok((await page.locator('#empresasList .tarjeta').count()) === empresasDel.length,
+       `${parque}: volver a "Todos los estados" muestra las ${empresasDel.length} empresas otra vez`);
+  }
+
+  // Un filtro guardado que no existe en este parque no puede dejar la lista
+  // recortada mientras el desplegable dice "Todos los estados": se ve como
+  // "el filtro no funciona" y no hay forma de sacarlo desde la pantalla.
+  await page.evaluate(() => {
+    const s = JSON.parse(localStorage.getItem('parques_crm_v1'));
+    s.parqueActivo = 'guemes';
+    s.filterSituacionEmpresas = 'Una situación que no existe';
+    localStorage.setItem('parques_crm_v1', JSON.stringify(s));
+  });
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForFunction(() => document.querySelectorAll('#empresasList .tarjeta').length > 0);
+  ok((await page.locator('#empresasList .tarjeta').count()) === empresasGuemes.length,
+     'un filtro guardado que este parque no ofrece se descarta en vez de recortar la lista a ciegas');
+
+  // El chip es una etiqueta corta al lado de "Güemes" (pedido del usuario
+  // 2026-10-19): el nombre largo ocupaba la fila entera.
+  ok((await page.locator('#parqueSwitch [data-parque="salta"]').textContent()).replace(/\d+/g, '').trim() === 'Salta',
+     'el chip del segundo parque dice "Salta", no el nombre largo');
+
+  // Elegir parque es estado de pantalla. Si marca cambio pendiente, cada
+  // toque sube el archivo entero y deja un commit en el repo: seis toques
+  // daban seis commits y 1,4 MB subidos sin que nadie hubiera editado nada.
+  const postsAntes = posts;
+  for (let i = 0; i < 2; i++) {
+    await page.locator('#parqueSwitch [data-parque="salta"]').click();
+    await page.waitForTimeout(250);
+    await page.locator('#parqueSwitch [data-parque="guemes"]').click();
+    await page.waitForTimeout(250);
+  }
+  await page.waitForTimeout(400);
+  ok(posts === postsAntes, `cambiar de parque no dispara ningún POST (${posts - postsAntes} en 4 cambios)`);
+
+  // Escape cierra la ficha, igual que en Seguimiento y Proyectos: hasta el
+  // 2026-10-19 acá la única salida era la × o el clic afuera.
+  await page.locator('#empresasList .tarjeta').first().click();
+  await page.waitForSelector('#btnEditEmp');
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(150);
+  ok(await page.locator('#veil').isHidden(), 'Escape cierra la ficha abierta');
 
   // Búsqueda por empresa — AGSOF S.A. ya no debe aparecer duplicada.
   await page.fill('#searchEmpresas', 'AGSOF');

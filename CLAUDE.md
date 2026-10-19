@@ -344,7 +344,7 @@ prueba: es el registro, y se muestra tal como vino.
 
 ---
 
-## Parques: lotes y empresas (Güemes y Parque Industrial Salta)
+## Parques: lotes y empresas (Güemes y Salta)
 
 Pedido del usuario (2026-10-13): una cuarta tarjeta para gestionar lotes y
 contactos de las empresas instaladas en los parques industriales. Arrancó
@@ -519,10 +519,16 @@ supuestas—, porque van a volver en el próximo export:
   con el suyo: `SERVICIO DE AUTOELEVADORES` es de AUTO ELEVADORES BELLO, no de
   MANITO Snacks. Está en `REASIGNAR_RUBRO` en el importador, y falla ruidoso si
   el rubro de origen ya no es el esperado.
-- **Una baja hecha a mano le gana a un export más viejo.** AGRO CONSTRUCCIONES
-  LA POSTA la borró el usuario desde la app el 2026-10-17; el archivo se la
-  vuelve a asignar a L115/L116. No se resucitó: los lotes quedan libres y la
-  nota está en el lote (`BORRADAS_EN_LA_APP` en el importador).
+- **Una baja hecha a mano le gana a un export más viejo… salvo que el usuario
+  diga lo contrario.** AGRO CONSTRUCCIONES LA POSTA la borró el usuario desde
+  la app el 2026-10-17 y el archivo se la vuelve a asignar a L115/L116; la
+  fusión respetó la baja y dejó los lotes libres. **El 2026-10-19 el usuario
+  decidió lo contrario —"mantener"— y se repuso**: la empresa volvió con su
+  registro anterior a la baja (de la historia de git, sin `cuit` ni
+  `actividad`, que ya no están en el esquema) y L115/L116 volvieron a su
+  nombre. Lo que queda firme es el criterio de la línea de abajo: **ante una
+  empresa que el export y producción no cuentan igual, se pregunta**. Las dos
+  veces que se decidió sin preguntar se decidió mal, una para cada lado.
 - **Y le gana también cuando el export NO la trae** (2026-10-19). La regla de
   arriba —"producción manda en lo que el export no tiene"— tiene un borde que
   la fusión cruzó mal: una empresa que no figura en el export puede ser un
@@ -531,7 +537,8 @@ supuestas—, porque van a volver en el próximo export:
   (A.P.I.S) se conservó como lo primero cuando era lo segundo, y volvió a
   aparecer en el listado después de que el usuario la borró. Se eliminó a
   mano; no era titular de ningún lote ni parte de ninguna ocupación, así que
-  la baja no arrastró nada. **Para el próximo export: una empresa de
+  la baja no arrastró nada. El usuario lo confirmó el 2026-10-19 ("APIS
+  eliminar"): sigue afuera. **Para el próximo export: una empresa de
   producción que el archivo no nombra se consulta, no se conserva callado.**
 
 Lo que se fue: `cuit` y `actividad` (pedido), más `cuit_valido_11dig` y
@@ -543,9 +550,10 @@ queda sin procedencia. El `rubro` va literal del archivo, sin la categoría
 (" | Agroindustria y Alimentación") que traía la base anterior: decisión del
 usuario. Las 46 que la tenían la perdieron; está en el historial de git.
 
-Resultado: Güemes 139 lotes / 53 empresas (antes 138 / 53), Salta 135 / 150
-(151 el 2026-10-19 antes de la baja de A.P.I.S), 19 lotes libres y 15
-disponibles como antes, 20 ocupaciones intactas, y 3.230.124 m² contra
+Resultado: Güemes 139 lotes / 54 empresas (53 tras la fusión; 54 desde que
+volvió LA POSTA el 2026-10-19), Salta 135 / 150 (151 el 2026-10-19 antes de la
+baja de A.P.I.S), 17 lotes libres —19 hasta que L115 y L116 volvieron a tener
+titular— y 15 disponibles, 20 ocupaciones intactas, y 3.230.124 m² contra
 3.159.513 (la diferencia es exactamente el lote nuevo).
 
 ### La tarjeta de empresa no muestra CUIT, Actividad ni Observación (2026-10-19)
@@ -722,8 +730,78 @@ también.
   lote esté alquilado no dice si su titular sigue operando, y titular y
   ocupante pueden estar activos los dos a la vez. El desplegable "Todos los
   estados" del listado de Empresas —que estuvo inerte desde el 2026-10-13
-  esperando justamente esta definición— filtra por `situacion` desde ahora, y
-  se deshabilita en el parque donde el dato no existe (Güemes).
+  esperando justamente esta definición— filtra por `situacion` desde el
+  2026-10-18 (ver abajo lo que faltaba para que filtrara también en Güemes).
+
+### La situación de una empresa de Güemes sale de sus lotes (2026-10-19)
+
+Reporte del usuario: el desplegable "Todos los estados" no filtraba, y en
+Güemes la ficha mostraba "Situación —" para todas las empresas.
+
+La separación que se hizo al importar Salta —"Alquila" describe al LOTE,
+Activa/Sin actividad/En construcción describen a la EMPRESA— **nunca se hizo
+en Güemes**: la base SQLite dejó las dos cosas en `lotes.estado` y las 53
+empresas quedaron con `situacion: null` (54 desde que volvió LA POSTA). El
+desplegable salía deshabilitado
+("se deshabilita en el parque donde el dato no existe"), que era correcto
+según el dato cargado y, visto desde la pantalla, indistinguible de un filtro
+roto.
+
+- **Se deriva al leer, no se escribe.** `situacionDe(empresa)` devuelve la
+  `situacion` declarada y, si no hay, la deduce del estado de los lotes **a
+  nombre de esa misma empresa** — que es el dato que el origen puso en la fila
+  equivocada, no una invención. `"Alquilada"` no entra: describe al lote y no
+  dice si su titular sigue operando. Sin evidencia, sigue sin dato.
+- **Desempate**: gana el estado más activo (Activa > En construcción > Sin
+  actividad). Son 2 de las 53 (FMF ARGENTINA y PETIT PLAST), las dos con un
+  lote Activa: un titular con un lote parado y otro produciendo está operando.
+- Quedan 43 de 54 con situación y 11 sin dato (lotes solo `Alquilada` o sin
+  estado, o sin lotes). Resultado: Activa 29, Sin actividad 11,
+  En construcción 3.
+- **Se dice que es deducida**, en la ficha ("según el estado de sus lotes") y
+  en el formulario. El desplegable de edición sigue mostrando solo lo
+  declarado: precargar la deducción la convertiría en dato declarado apenas
+  alguien guardara cualquier otro campo. Si se carga a mano, ese valor gana.
+- **Salta no cambia**: ahí la `situacion` viene declarada (97 Activa, 11 Sin
+  actividad, 3 En construcción, 39 sin dato) y la derivación no se aplica.
+- **Un filtro guardado que el parque no ofrece se descarta.** `select.value =
+  <valor ausente>` no prende nada: el desplegable decía "Todos los estados"
+  mientras `empresasFiltradas()` seguía recortando por un valor invisible, sin
+  forma de sacarlo desde la pantalla.
+- **Test**: `testParques()` recorre las dos pantallas, pide cada situación y
+  compara contra el archivo con la regla escrita aparte. Lo anterior solo
+  verificaba que la opción "Todos los estados" existiera — por eso un
+  desplegable muerto pasó en verde.
+
+### Los chips del selector llevan el nombre corto (2026-10-19)
+
+Pedido del usuario: el segundo chip debe decir **"Salta"**, no "Parque
+Industrial Salta" — es una etiqueta al lado de "Güemes" y el nombre largo le
+comía la fila entera. El nombre canónico de cada parque vive en
+`NOMBRES_PARQUE` y `migrarParques()` lo normaliza **al leer**: si solo se
+cambiara `parques.json`, un celular con el nombre viejo en `localStorage` lo
+volvería a subir en su próximo POST.
+
+### Elegir parque no es un cambio de datos (2026-10-19)
+
+`save()` hacía dos cosas en una: guardar en el dispositivo y marcar que hay
+algo que subir. El selector de parque —estado de pantalla, lo dice
+`datosParaSync()`— lo llamaba para persistir `parqueActivo`, así que **cada
+toque subía los ~240 KB del archivo entero y dejaba un commit en el repo**.
+Medido en Chromium: 6 toques, 6 POST, 1,4 MB. Con el token de GitHub
+compartido entre las cuatro apps, es gasto del presupuesto de las otras tres
+—y, en una app de última-escritura-gana, una ocasión más de pisar a otro
+dispositivo— por una preferencia de pantalla. Ahora `guardarLocal()` persiste
+y `save()` = `guardarLocal()` + `marcarPendiente()`; el selector usa el
+primero. El test cuenta los POST de 4 cambios de parque y exige 0.
+
+### Escape cierra la ficha (2026-10-19)
+
+Parques y Resoluciones abrían sus modales con `openModal()` propio y sin
+tecla de salida: la única forma de cerrar era la × o el clic afuera.
+Seguimiento (`abrirOverlay`) y Proyectos ya lo tenían. Falta todavía el resto
+de `abrirOverlay()` en esas dos pantallas (foco inicial, trampa de Tab,
+retorno del foco).
 
 ## Formato del número de expediente
 
@@ -1165,3 +1243,21 @@ fuente, a diferencia del repo del Boletín donde lo genera el scraper.
       causa raíz de los cuatro bugs P0 del 2026-10-19: una defensa escrita una
       vez y aplicada en un solo lugar. El camino es el mismo que resolvió el
       CSS con `design-system.css`: un `sync.js` compartido primero.
+- [ ] **Borrar una empresa o un lote en Parques no se puede deshacer.** No
+      hay confirmación ni toast con Deshacer —el patrón que la propia
+      documentación de UI exige y que solo Seguimiento implementa
+      (`mostrarToast`)— y la baja **arrastra**: los lotes de esa empresa
+      quedan sin titular y sus ocupaciones se borran. A los 100ms ya está
+      subido y commiteado. Pasó al menos dos veces (AGROCONSTRUCCIONES LA
+      POSTA el 2026-10-17, A.P.I.S el 2026-10-19). Vale para Parques,
+      Proyectos y Resoluciones: el arreglo es sacar el toast de Seguimiento a
+      lo compartido, no copiarlo tres veces.
+- [ ] **Los modales de Parques y Resoluciones no son `abrirOverlay()`.**
+      Desde el 2026-10-19 cierran con Escape, pero siguen sin foco inicial,
+      sin trampa de Tab y sin retorno del foco al cerrar. Es el mismo
+      "una defensa escrita una vez y aplicada en un solo lugar" de la línea
+      de arriba.
+- [ ] **Cuando «Análisis» vuelva del stand by**, sumar la barra de empresas
+      por situación: el dato ahora existe en los dos parques (declarado en
+      Salta, derivado de los lotes en Güemes) y no se está mostrando en
+      ningún agregado.
