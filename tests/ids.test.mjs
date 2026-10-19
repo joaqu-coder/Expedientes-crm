@@ -164,5 +164,41 @@ ok(!optinEnCss,
    optinEnCss ? 'design-system.css volvió a declarar @view-transition: el opt-in va solo inline (ver el comentario del archivo)'
               : 'design-system.css no duplica el opt-in; sí define la animación y qué se queda quieto');
 
+// --- 6. parques.json: titularidad y ocupación no pueden contradecirse ------
+//
+// El 2026-10-19 la fusión de los exports normalizados dejó tres lotes a
+// nombre de su INQUILINO (L121 a ADIONICS en vez de RIXOM, L052 y L053 a
+// MOLINO DOÑA ANGELA en vez de DJM MONTAJES, que quedó sin un solo lote). El
+// export trae una fila por lote con la empresa que lo OCUPA — es la trampa
+// que CLAUDE.md ya documenta—, y la defensa se había aplicado a los campos de
+// la empresa (mail, contacto, rubro, links) pero no a `lote.id_empresa`, que
+// es la titularidad misma.
+//
+// No se nota en pantalla: la ficha de la inquilina cuenta el mismo lote dos
+// veces ("Lotes (2)"), le suma una superficie que no es suya y dice
+// "Alquilado a X" arriba y "Titular: X" abajo, todo con números plausibles.
+// Por eso se chequea acá, contra el archivo, y no mirando la pantalla.
+const parques = JSON.parse(fs.readFileSync(path.join(RAIZ, 'parques.json'), 'utf8'));
+const porLote = new Map(parques.lotes.map((l) => [l.id_lote, l]));
+const vigentes = parques.ocupaciones.filter((o) => o.vigente);
+const huerfanas = vigentes.filter((o) => !porLote.has(o.id_lote));
+ok(huerfanas.length === 0,
+   huerfanas.length ? `hay ocupaciones vigentes sobre lotes que no existen: ${huerfanas.map((o) => o.id_lote).join(', ')}`
+                    : `las ${vigentes.length} ocupaciones vigentes apuntan a un lote que existe`);
+const titularPisado = vigentes.filter((o) => {
+  const l = porLote.get(o.id_lote);
+  return l && l.id_empresa !== o.id_empresa_titular;
+});
+ok(titularPisado.length === 0,
+   titularPisado.length ? `el titular del lote no coincide con el de su ocupación: ${titularPisado.map((o) => o.id_lote).join(', ')} (¿una fusión de export escribió al inquilino en lote.id_empresa?)`
+                        : 'ningún lote quedó a nombre de alguien distinto del titular que declara su ocupación');
+const seAlquilaASiMisma = vigentes.filter((o) => {
+  const l = porLote.get(o.id_lote);
+  return l && l.id_empresa === o.id_empresa_ocupante;
+});
+ok(seAlquilaASiMisma.length === 0,
+   seAlquilaASiMisma.length ? `una empresa figura titular y ocupante del mismo lote: ${seAlquilaASiMisma.map((o) => o.id_lote).join(', ')}`
+                            : 'ninguna empresa figura a la vez titular y ocupante del mismo lote');
+
 console.log(fallas === 0 ? '\nEstructura OK' : `\n${fallas} fallas`);
 process.exit(fallas === 0 ? 0 : 1);

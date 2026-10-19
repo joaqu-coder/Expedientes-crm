@@ -404,7 +404,7 @@ asumir que lo que sigue generaliza a uno nuevo sin revisarlo con el usuario.
 - **Test**: `testParques()` en `tests/ui.test.mjs` corre contra los datos
   reales (no son de ejemplo, igual que Resoluciones) — filtros, búsqueda
   cruzando a la empresa, ficha con titularidad y ocupación, edición con UTF-8
-  intacto, y dashboard. Los conteos por parque (139 lotes / 53 empresas en
+  intacto, y dashboard. Los conteos por parque (138 lotes / 54 empresas en
   Güemes, 135 / 150 en Salta) están hardcodeados a propósito: es el archivo de
   referencia real, no una cifra que cambie por una regla de negocio como el
   archivado de Proyectos. Cuando una baja o un import los mueve, se actualiza
@@ -540,6 +540,32 @@ supuestas—, porque van a volver en el próximo export:
   la baja no arrastró nada. El usuario lo confirmó el 2026-10-19 ("APIS
   eliminar"): sigue afuera. **Para el próximo export: una empresa de
   producción que el archivo no nombra se consulta, no se conserva callado.**
+- **Y la titularidad de un lote alquilado se la quedó el inquilino**
+  (2026-10-19, lo reportó el usuario: "¿por qué a ADIONICS no sale alquila si
+  alquila?"). La defensa de "el export mezcla al inquilino con el titular" se
+  aplicó a los campos de la EMPRESA —a los 16 titulares no se les tocó mail,
+  contacto, rubro ni links— pero **no a `lote.id_empresa`, que es la
+  titularidad misma**. Tres lotes de Güemes quedaron a nombre de quien los
+  alquila: L121 a ADIONICS en vez de RIXOM, y L052/L053 a MOLINO DOÑA ANGELA
+  en vez de DJM MONTAJES, **que quedó sin un solo lote a su nombre**. En
+  pantalla no se ve como un error: la ficha de la inquilina cuenta el mismo
+  lote dos veces ("Lotes (2)"), le suma una superficie ajena y dice "Alquilado
+  a X" arriba y "Titular: X" abajo — se alquila a sí misma. Se restauró según
+  la ocupación, que es el dato que el usuario confirmó.
+- **Y el alta «L40» no era un lote nuevo: era L038 otra vez.** La fila traía
+  el id sin el relleno de ceros y se verificó que no fuera `L040` (que
+  efectivamente es otro lote). Lo que no se comparó fue contra el lote con la
+  **misma matrícula**: L038 — matrícula 11942, manzana 2, parcela 3, 70.611
+  m²—, cuya inquilina es justamente CRAYÓN S.R.L, la empresa que nombraba esa
+  fila. Entró como `L140` y duplicó 70.611 m² en el total de Güemes. Se dio de
+  baja. **Para el próximo export: un id que no matchea se compara por
+  matrícula + manzana + parcela antes de darlo de alta**, no solo contra el id
+  con el padding puesto.
+- **Lo cuida `test:ids` desde el 2026-10-19**, contra el archivo y no contra
+  la pantalla: ninguna ocupación vigente puede apuntar a un lote inexistente,
+  `lote.id_empresa` tiene que coincidir con `ocupacion.id_empresa_titular`, y
+  nadie puede figurar titular y ocupante del mismo lote. Corrido sobre el
+  archivo de antes del arreglo, nombra los tres lotes.
 
 Lo que se fue: `cuit` y `actividad` (pedido), más `cuit_valido_11dig` y
 `metodo_match_contacto`, que solo hablaban del cuit. La `observacion` de las
@@ -550,11 +576,12 @@ queda sin procedencia. El `rubro` va literal del archivo, sin la categoría
 (" | Agroindustria y Alimentación") que traía la base anterior: decisión del
 usuario. Las 46 que la tenían la perdieron; está en el historial de git.
 
-Resultado: Güemes 139 lotes / 54 empresas (53 tras la fusión; 54 desde que
+Resultado: Güemes 138 lotes / 54 empresas (53 tras la fusión; 54 desde que
 volvió LA POSTA el 2026-10-19), Salta 135 / 150 (151 el 2026-10-19 antes de la
 baja de A.P.I.S), 17 lotes libres —19 hasta que L115 y L116 volvieron a tener
-titular— y 15 disponibles, 20 ocupaciones intactas, y 3.230.124 m² contra
-3.159.513 (la diferencia es exactamente el lote nuevo).
+titular— y 15 disponibles, 20 ocupaciones intactas, y 3.159.513 m². Los 139
+lotes y los 3.230.124 m² que dio la fusión incluían el alta `L140`, que era
+L038 repetido: con esa baja el total vuelve a ser exactamente el de antes.
 
 ### La tarjeta de empresa no muestra CUIT, Actividad ni Observación (2026-10-19)
 
@@ -772,6 +799,33 @@ roto.
   compara contra el archivo con la regla escrita aparte. Lo anterior solo
   verificaba que la opción "Todos los estados" existiera — por eso un
   desplegable muerto pasó en verde.
+
+### Que una empresa alquila se dice en la pestaña Empresa (2026-10-19)
+
+Reporte del usuario sobre ADIONICS: *"¿por qué no sale alquila si alquila?"*.
+La ficha decía **Situación —** y nada más. Dos cosas distintas lo producían, y
+la primera —la titularidad pisada por la fusión del export— está arriba.
+
+La segunda es la regla: `situacionDe()` deduce la situación del estado de los
+lotes **a nombre de** la empresa y descarta `"Alquilada"` a propósito (describe
+al lote, no dice si su titular opera). Una inquilina pura no tiene ningún lote
+a su nombre, así que **nunca** iba a tener situación, y su único vínculo con el
+suelo solo se veía entrando a la pestaña Lotes.
+
+- **No se tocó `situacion`.** "Alquila" sigue sin entrar en `SITUACIONES`:
+  titular y ocupante pueden estar activos los dos a la vez, y meter el
+  alquiler ahí obligaría a elegir un solo valor. Decisión del usuario,
+  reafirmada el 2026-10-19 al elegir entre las dos opciones.
+- **Va en su propia fila**: "Ocupa por alquiler", debajo de Situación, con el
+  lote y su titular, los dos navegables. Se dibuja solo si hay ocupación — una
+  fila con guión en las 204 empresas no informa nada.
+- `infoRowHtml()` es `infoRow()` con el valor ya armado en HTML, porque la fila
+  lleva links. La variante que escapa sola sigue siendo la que se usa por
+  defecto: el `esc()` lo pone quien arma el valor.
+- El encabezado de la ficha ya hacía lo correcto sin saberlo:
+  `resumenSuperficie()` muestra "Ocupa 1 lote por alquiler" en vez de m²
+  cuando la empresa no tiene lotes propios. Con L121 mal asignado nunca se
+  veía, porque ADIONICS figuraba como titular.
 
 ### Los chips del selector llevan el nombre corto (2026-10-19)
 
@@ -1257,6 +1311,15 @@ fuente, a diferencia del repo del Boletín donde lo genera el scraper.
       sin trampa de Tab y sin retorno del foco al cerrar. Es el mismo
       "una defensa escrita una vez y aplicada en un solo lugar" de la línea
       de arriba.
+- [ ] **L081 y L139 pueden ser el mismo lote de Güemes.** Comparten manzana
+      6, parcela 11, matrícula 11997 y los 2.994 m², pero L081 figura libre
+      (cartera comercial, "LIBRE: GABRIEL SIÑARES") y L139 está a nombre de
+      CECILIA BORLA, en construcción. No lo produjo la fusión del 2026-10-19
+      —venían así de la base SQLite—, así que no se tocó junto con L140. La
+      app ya lo señala como matrícula compartida; falta decidir con el usuario
+      si es un duplicado o dos parcelas que comparten matrícula, como los
+      otros tres casos (L040/L114, L043/L137, L048/L073), donde la superficie
+      y la manzana sí difieren.
 - [ ] **Cuando «Análisis» vuelva del stand by**, sumar la barra de empresas
       por situación: el dato ahora existe en los dos parques (declarado en
       Salta, derivado de los lotes en Güemes) y no se está mostrando en

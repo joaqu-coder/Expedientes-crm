@@ -3091,7 +3091,7 @@
       "escritura": "No",
       "estado": "Alquilada",
       "disponible": false,
-      "observacion": "Origen (columna «per»): no",
+      "observacion": "Origen (columna «per»): no | El alta «L140» (en el origen, «L40») de la fusión del 2026-10-19 era este mismo lote: la fila nombraba a CRAYÓN S.R.L, que lo ocupa por alquiler. Se unificó el 2026-10-19.",
       "id_parque": "guemes"
     },
     {
@@ -3252,7 +3252,7 @@
     },
     {
       "id_lote": "L052",
-      "id_empresa": "E067",
+      "id_empresa": "E013",
       "manzana": "3",
       "parcela": "8",
       "superficie_m2": 3000,
@@ -3265,7 +3265,7 @@
     },
     {
       "id_lote": "L053",
-      "id_empresa": "E067",
+      "id_empresa": "E013",
       "manzana": "3",
       "parcela": "9",
       "superficie_m2": 2994,
@@ -4122,7 +4122,7 @@
     },
     {
       "id_lote": "L121",
-      "id_empresa": "E068",
+      "id_empresa": "E054-2",
       "manzana": "7",
       "parcela": "8",
       "superficie_m2": 2994,
@@ -4345,21 +4345,6 @@
       "escritura": "No",
       "estado": "En construcción",
       "disponible": false,
-      "id_parque": "guemes"
-    },
-    {
-      "id_lote": "L140",
-      "id_lote_original": "L40",
-      "id_empresa": "E028",
-      "manzana": "2",
-      "parcela": "3",
-      "superficie_m2": 70611,
-      "matricula": "11942",
-      "propietario_matricula": "EGPAIS",
-      "escritura": "No",
-      "estado": "Alquilada",
-      "disponible": false,
-      "observacion": "Alta desde guemes_normalizado el 2026-10-19 (en el origen, «L40»).",
       "id_parque": "guemes"
     },
     {

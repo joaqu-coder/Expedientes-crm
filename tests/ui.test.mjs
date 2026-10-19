@@ -1050,10 +1050,13 @@ async function testParques(viewport, puerto) {
   const lotesSalta = datos.lotes.filter((l) => delParque(l, 'salta'));
   const empresasSalta = datos.empresas.filter((e) => delParque(e, 'salta'));
   const sinEmpresa = lotesGuemes.filter((l) => !l.id_empresa);
-  // 139 desde el 2026-10-19: guemes_normalizado trajo un lote que no estaba
-  // (en el origen «L40», sin el relleno de ceros, y por eso no chocaba con
-  // L040, que es otro lote: CERÁMICA SALTEÑA contra CRAYÓN S.R.L).
-  ok(lotesGuemes.length === 139, `el archivo trae los ${lotesGuemes.length} lotes reales de Güemes`);
+  // 138: guemes_normalizado parecía traer un lote que no estaba («L40» en el
+  // origen, sin el relleno de ceros, y por eso no chocaba con L040, que sí es
+  // otro lote). Entró como L140 el 2026-10-19 y se dio de baja ese mismo día:
+  // era L038 otra vez —misma matrícula 11942, manzana 2, parcela 3 y 70.611
+  // m²—, con CRAYÓN S.R.L, que lo ocupa por alquiler. La comparación se había
+  // hecho contra L040 y no contra el lote con la misma matrícula.
+  ok(lotesGuemes.length === 138, `el archivo trae los ${lotesGuemes.length} lotes reales de Güemes`);
   // 55 originales - AGSOF S.A. fusionada (2026-10-13). AGROCONSTRUCCIONES LA
   // POSTA había bajado a 53 cuando el usuario la borró desde la app el
   // 2026-10-17, y volvió el 2026-10-19 por decisión suya: la baja no era lo
@@ -1254,6 +1257,28 @@ async function testParques(viewport, puerto) {
     ok((await page.locator('#empSubpanel a[href=""]').count()) === 0,
        `un "mail" que no es un mail (${mailFalso.mail}) no deja un link vacío`);
   }
+  // Una empresa que SOLO alquila. ADIONICS ocupa L121, cuya titular es
+  // RIXOM, y su ficha decía "Situación —" y nada más: la situación se deduce
+  // de los lotes A SU NOMBRE descartando "Alquilada", así que una inquilina
+  // pura se quedaba sin nada que mostrar y el alquiler solo se veía entrando
+  // a la pestaña Lotes. Encima la fusión del 2026-10-19 le había puesto L121
+  // a su nombre, así que el mismo lote se contaba dos veces ("Lotes (2)") y
+  // le sumaba 2.994 m² ajenos. test:ids cuida el dato; esto, la pantalla.
+  await page.click('#xCloseViewEmp');
+  await page.fill('#searchEmpresas', 'ADIONICS');
+  await page.waitForTimeout(200);
+  await page.locator('#empresasList .tarjeta').first().click();
+  await page.waitForSelector('#btnEditEmp');
+  const fichaAdionics = await page.locator('#modal').textContent();
+  ok(fichaAdionics.includes('Ocupa por alquiler'),
+     'la ficha de una empresa que alquila lo dice en la pestaña Empresa, no solo en la de Lotes');
+  ok(fichaAdionics.includes('RIXOM'),
+     'y nombra al titular del lote que ocupa, que es el otro lado del vínculo');
+  ok(fichaAdionics.includes('Lotes (1)'),
+     'el lote que ocupa se cuenta una sola vez: la inquilina ya no figura además como su titular');
+  ok(!/2\.994 m² totales/.test(fichaAdionics),
+     'y no se le atribuye la superficie de un lote que no es suyo');
+
   await page.click('#xCloseViewEmp');
   await page.fill('#searchEmpresas', 'AGSOF S.A');
   await page.waitForTimeout(200);
