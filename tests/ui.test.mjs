@@ -1048,7 +1048,10 @@ async function testParques(viewport, puerto) {
   const lotesSalta = datos.lotes.filter((l) => delParque(l, 'salta'));
   const empresasSalta = datos.empresas.filter((e) => delParque(e, 'salta'));
   const sinEmpresa = lotesGuemes.filter((l) => !l.id_empresa);
-  ok(lotesGuemes.length === 138, `el archivo trae los ${lotesGuemes.length} lotes reales de Güemes`);
+  // 139 desde el 2026-10-19: guemes_normalizado trajo un lote que no estaba
+  // (en el origen «L40», sin el relleno de ceros, y por eso no chocaba con
+  // L040, que es otro lote: CERÁMICA SALTEÑA contra CRAYÓN S.R.L).
+  ok(lotesGuemes.length === 139, `el archivo trae los ${lotesGuemes.length} lotes reales de Güemes`);
   // 55 originales - AGSOF S.A. fusionada (2026-10-13) - AGROCONSTRUCCIONES LA
   // POSTA, que el usuario borró desde la app el 2026-10-17 (L115 y L116
   // quedaron libres).

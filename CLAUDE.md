@@ -438,6 +438,82 @@ ver abajo). Güemes dejó de ser el único parque:
 - `parqueActivo` es estado de pantalla: se guarda en `localStorage` para
   sobrevivir a un refresh, pero **no viaja en `datosParaSync()`**.
 
+### Los exports normalizados: se fusionan, no reemplazan (2026-10-19)
+
+El usuario subió `guemes_normalizado.json` (139 filas) y `salta_normalizado.json`
+(194 filas), "con mejoras más prolijas sin tanto dato basura", y pidió sacar
+`actividad` y `cuit` de las dos y `observaciones` de Salta.
+
+**Son más limpios en columnas, pero no en todas.** Reemplazar habría borrado
+trabajo que no está en ningún export: las 20 ocupaciones de alquiler, los 15
+ocupantes sin registro, `disponible` (la cartera comercial), el `estado` de los
+135 lotes de Salta (esa columna no existe en el archivo) y
+`propietario_matricula`. Por eso la regla es **el export manda en lo que trae
+limpio; producción manda en lo que el export no tiene**. Con decisión del
+usuario, y vale para el próximo export también.
+
+Qué pasa con cada cosa:
+
+| Campo | Quién manda |
+|---|---|
+| matrícula, manzana, parcela, superficie (Güemes), escritura, titularidad | export |
+| nombre, rubro, mail, teléfono, representante, cargo, ubicación, situación | export |
+| `estado` del lote, `disponible`, `matriculas`, superficie (Salta) | producción; el export solo llena huecos |
+| `ocupaciones` y los 15 ocupantes sin registro | producción, intactas |
+| links (`pagweb`, `instagram`, `linkedin`, `facebook`) | producción; del export, solo si la URL nombra a la empresa |
+
+**Las trampas que tiene este origen** —todas verificadas contra los datos, no
+supuestas—, porque van a volver en el próximo export:
+
+- **`L40` no es `L040`.** Al id le falta el relleno de ceros y es otro lote
+  (CRAYÓN S.R.L, manzana 2, matrícula 11942; `L040` es CERÁMICA SALTEÑA,
+  manzana 19, matrícula 15048). Entró como alta, con `id_lote_original`.
+- **Los ids de empresa del origen colisionan**: `E066` es SEI INGENIERIA *y*
+  CRAYÓN, `E054` es REFINOR, RIXOM y ADIONICS, más 16 casos en Salta. El match
+  es **por nombre normalizado**, nunca por ese id, que solo se guarda como
+  `id_empresa_original`.
+- **Los lotes de Salta se mapean por id, no por matrícula.** `SL042` es el
+  `Id_lote` 42 del origen (el rango va de 1 a 144 con 10 huecos) y la fila con
+  `Id_lote: "x"` es `SLX1`. Por matrícula no sale: hay 8 repetidas.
+- **`LIBRE`, `LIBRE: COOPERATIVA`, `LIBRE: GABRIEL SIÑARES` no son empresas.**
+  Son las 15 filas de los lotes libres, el formato crudo que la base SQLite ya
+  había resuelto como `disponible`. Si se cargan como empresa, la cartera
+  comercial pasa de 19 lotes a 2 y la pestaña Comercial se vacía.
+- **Hay tres columnas corridas.** `per` (Güemes) mezcla URLs de LinkedIn con el
+  historial de desadjudicación; `PagWeb` trae cargos ("Socio - Gerente") y a
+  veces cargo + URL en el mismo campo; y **`LinkedIn` está desplazado**:
+  PETRASUD trae el de PETIT PLAST, PRONTO PACK el de POSCO, GRUPO CN el de
+  TRANSCLOR. Cada pedazo se reparte por lo que **es** (URL, cargo conocido,
+  dirección con número), y una URL solo se asigna si su slug nombra a la
+  empresa o a su representante. Lo que no encaja queda en `observacion`, no se
+  tira.
+- **La superficie de Salta es la suma de sus matrículas**, no el valor de la
+  primera fila, y este export perdió una fila respecto del anterior (a `SLX1`
+  le falta la matrícula 159021, 14.759 m²). Tomarla del archivo borraba
+  117.000 m² del total.
+- **El export vuelve a mezclar al inquilino con el titular.** Las 16 empresas
+  que hoy son titulares de un lote con ocupación vigente no reciben `mail`,
+  `contacto_nombre`, `cargo` ni links del archivo: eso se desarmó con evidencia
+  el 2026-10-18 y el export es anterior a ese trabajo. Sí reciben rubro,
+  teléfono, ubicación y situación.
+- **Una baja hecha a mano le gana a un export más viejo.** AGRO CONSTRUCCIONES
+  LA POSTA la borró el usuario desde la app el 2026-10-17; el archivo se la
+  vuelve a asignar a L115/L116. No se resucitó: los lotes quedan libres y la
+  nota está en el lote (`BORRADAS_EN_LA_APP` en el importador).
+
+Lo que se fue: `cuit` y `actividad` (pedido), más `cuit_valido_11dig` y
+`metodo_match_contacto`, que solo hablaban del cuit. La `observacion` de las
+empresas de Salta también (pedido): eran 151 de 151 diciendo "Importado del
+Sistema Salta el 2026-10-18." **Se conservó en los 15 ocupantes de alquiler**,
+donde dice qué datos se les reasignaron y desde qué titular — sin eso, ese dato
+queda sin procedencia. El `rubro` va literal del archivo, sin la categoría
+(" | Agroindustria y Alimentación") que traía la base anterior: decisión del
+usuario. Las 46 que la tenían la perdieron; está en el historial de git.
+
+Resultado: Güemes 139 lotes / 53 empresas (antes 138 / 53), Salta 135 / 151 sin
+cambios, 19 lotes libres y 15 disponibles como antes, 20 ocupaciones intactas,
+y 3.230.124 m² contra 3.159.513 (la diferencia es exactamente el lote nuevo).
+
 ### «Análisis» está en stand by (2026-10-19)
 
 Pedido del usuario: *"lo dejamos en stand by hasta organizar los KPIs que
