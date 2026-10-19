@@ -376,26 +376,44 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   // llega tal como lo tipeó alguien ("www.algo.com.ar", "@usuario"), así
   // que para que el click navegue de verdad hay que completar el esquema,
   // no usar el valor crudo como href.
+  // Varios campos del origen traen más de un valor pegado en el mismo
+  // string (" | ", " / ", un salto de línea). El dato se muestra entero —no
+  // se corrige el archivo— pero el link tiene que navegar a UNO. Esto
+  // estaba escrito solo dentro de linkedinHref, y por eso mail, teléfono e
+  // Instagram quedaron con el href roto: la misma defensa aplicada en un
+  // solo lugar, otra vez. Ahora es una función y la usan todos.
+  // No parte por "/" porque una URL está llena de barras; el teléfono, que
+  // sí las usa de separador, la parte aparte.
+  function primerValor(v){ return String(v||"").split(/[|;\n]/)[0].trim(); }
   function webHref(v){
+    v = primerValor(v);
     if(!v) return "";
     return /^https?:\/\//i.test(v) ? v : "https://"+v;
   }
   function instagramHref(v){
+    v = primerValor(v);
     if(!v) return "";
     if(/^https?:\/\//i.test(v)) return v;
     return "https://instagram.com/"+v.replace(/^@/,"");
   }
-  function mailtoHref(v){ return "mailto:"+v; }
-  function telHref(v){ return "tel:"+v.replace(/[^+\d]/g,""); }
-  // Algunos registros de origen traen más de una URL pegada en "linkedin"
-  // separadas por " | " (incluso una de Instagram colada ahí) — no se
-  // corrige el dato (se muestra tal cual), pero el link navega a la
-  // primera URL de la lista, no a las dos juntas como un href roto.
-  function linkedinHref(v){
-    if(!v) return "";
-    return webHref(String(v).split("|")[0].trim());
+  // 83 empresas traen dos o tres mails en el campo y "mailto:" + el campo
+  // entero no abre nada: el cliente recibe tres direcciones como si fueran
+  // una. Además hay 3 cuyo "mail" no es un mail ("no", "5000", un nombre):
+  // ahí no hay link que valga, y el valor se sigue mostrando como texto.
+  function mailtoHref(v){
+    var m = String(v||"").match(/[^\s|;,/<>()]+@[^\s|;,/<>()]+/);
+    return m ? "mailto:"+m[0] : "";
   }
+  // 54 empresas traen dos teléfonos. Sacarle los separadores al campo
+  // entero daba tel:38742827583875322977 — 20 dígitos que marcan cualquier
+  // cosa. Es el peor de los tres porque parecía funcionar.
+  function telHref(v){
+    var digitos = primerValor(v).split("/")[0].replace(/[^+\d]/g,"");
+    return digitos ? "tel:"+digitos : "";
+  }
+  function linkedinHref(v){ return webHref(v); }
   function facebookHref(v){
+    v = primerValor(v);
     if(!v) return "";
     if(/^https?:\/\//i.test(v)) return v;
     return "https://facebook.com/"+v.replace(/^@/,"");
@@ -447,15 +465,64 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     });
   }
 
+  // Un lote puede tener VARIAS matrículas, cada una con su superficie, su
+  // escritura y su titular registral: 23 de los 274 las tienen, hasta 6 en
+  // un mismo lote. Los campos sueltos (`matricula`, `escritura`,
+  // `propietario_matricula`) describen solo a la PRIMERA, así que dibujarlos
+  // como si fueran del lote entero miente cuando las matrículas no coinciden
+  // — y no coinciden seguido: 9 de esos 23 tienen titular distinto entre sus
+  // matrículas y 6, escritura distinta. En SL009 la ficha decía
+  // "Escritura: Sí · Sanabria Salmón" y ocultaba que los otros 1.352 m² son
+  // del Ente y no están escriturados.
+  //
+  // Devuelve siempre una lista, para que el render no se bifurque. Cuando el
+  // lote trae una sola, se arma con sus campos sueltos: así los otros 251
+  // lotes siguen dibujándose exactamente igual que antes.
+  function matriculasDe(l){
+    var lista = (Array.isArray(l.matriculas) ? l.matriculas : []).filter(function(m){
+      // Los 4 lotes de Salta sin datos registrales traen una entrada con
+      // todo en null: eso no es una matrícula, es la ausencia de una.
+      return m && (m.matricula || m.superficie_m2);
+    });
+    if(lista.length > 1) return lista;
+    return l.matricula
+      ? [{ matricula:l.matricula, superficie_m2:l.superficie_m2, escritura:l.escritura,
+           titulares: l.propietario_matricula ? [l.propietario_matricula] : [] }]
+      : [];
+  }
+  function titularDeMatricula(m){ return (m.titulares||[]).join(" · "); }
+  // "Si"/"si"/"NO"/"no " y a veces null — misma normalización que
+  // tituloYTitularDeLote, que es la otra que lee este campo.
+  function escrituraTexto(v){
+    var e = String(v||"").trim();
+    if(!e) return "Sin dato";
+    return /^s/i.test(e) ? "Sí" : "No";
+  }
+  function valoresDistintos(ms, leer){
+    var vistos = {};
+    ms.forEach(function(m){ vistos[String(leer(m)||"")] = 1; });
+    return Object.keys(vistos).length > 1;
+  }
+
   // Lotes con la misma matrícula pero distinto titular: no necesariamente un
   // error de carga (puede ser un caso que `ocupaciones` ya explica), pero
   // vale la pena marcarlo para revisar antes de asumir cualquier cosa.
+  // Compara TODAS las matrículas de los dos lotes: mirando solo la principal
+  // veía 14 repetidas de las 17 que hay.
   function lotesConMatriculaCompartida(lote){
-    if(!lote.matricula) return [];
-    return state.lotes.filter(function(o){
-      if(parqueDe(o)!==parqueDe(lote)) return false;
-      return o.id_lote!==lote.id_lote && o.matricula && o.matricula===lote.matricula && o.id_empresa!==lote.id_empresa;
+    var propias = matriculasDe(lote).map(function(m){ return String(m.matricula||""); })
+      .filter(Boolean);
+    if(!propias.length) return [];
+    var coincidencias = [];
+    state.lotes.forEach(function(o){
+      if(parqueDe(o)!==parqueDe(lote) || o.id_lote===lote.id_lote) return;
+      if(o.id_empresa===lote.id_empresa) return;
+      matriculasDe(o).forEach(function(m){
+        var nro = String(m.matricula||"");
+        if(nro && propias.indexOf(nro)!==-1) coincidencias.push({ lote:o, matricula:nro });
+      });
     });
+    return coincidencias;
   }
 
   // IDs nuevos siguen el esquema del dato real (E001, L001…) en vez de un
@@ -843,7 +910,11 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
       if(state.filterManzanaComercial && l.manzana!==state.filterManzanaComercial) return false;
       if(state.filterDisponibleComercial && !l.disponible) return false;
       if(state.searchComercial){
-        var blob = [l.id_lote,l.manzana,l.parcela,l.matricula].join(" ").toLowerCase();
+        // Todas las matrículas, no solo la principal: con la primera sola,
+        // buscar 172548 (la segunda de SL002) no encontraba nada.
+        var blob = [l.id_lote,l.manzana,l.parcela]
+          .concat(matriculasDe(l).map(function(m){ return m.matricula; }))
+          .join(" ").toLowerCase();
         if(blob.indexOf(state.searchComercial)===-1) return false;
       }
       return true;
@@ -853,7 +924,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     return empresasDelParque().filter(function(e){
       if(state.filterSituacionEmpresas && e.situacion!==state.filterSituacionEmpresas) return false;
       if(state.searchEmpresas){
-        var blob = [e.nombre_empresa,e.rubro,e.actividad,e.contacto_nombre].join(" ").toLowerCase();
+        var blob = [e.nombre_empresa,e.rubro,e.contacto_nombre].join(" ").toLowerCase();
         if(blob.indexOf(state.searchEmpresas)===-1) return false;
       }
       return true;
@@ -993,13 +1064,16 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   // de ocupación de la ficha de lote: titular y ocupante se muestran con el
   // mismo criterio y ninguno hereda los datos del otro.
   function filasContacto(e){
-    return contactRow(ICON_MAIL, "Email", e.mail, e.mail?mailtoHref(e.mail):null)+
-      contactRow(ICON_PHONE, "Teléfono", e.telefono, e.telefono?telHref(e.telefono):null)+
+    // `|| null` y no `e.campo ? … : null`: un valor que existe pero del que
+    // no sale un link (el "mail" que dice "no") tiene que quedar como texto,
+    // no como un <a href="">.
+    return contactRow(ICON_MAIL, "Email", e.mail, mailtoHref(e.mail) || null)+
+      contactRow(ICON_PHONE, "Teléfono", e.telefono, telHref(e.telefono) || null)+
       contactRow(ICON_PIN, "Domicilio", e.ubicacion, null)+
-      contactRow(ICON_WEB, "Página web", e.pagweb, e.pagweb?webHref(e.pagweb):null, true)+
-      contactRow(ICON_IG, "Instagram", e.instagram, e.instagram?instagramHref(e.instagram):null, true)+
-      contactRow(ICON_FB, "Facebook", e.facebook, e.facebook?facebookHref(e.facebook):null, true)+
-      contactRow(ICON_LINKEDIN, "LinkedIn", e.linkedin, e.linkedin?linkedinHref(e.linkedin):null, true);
+      contactRow(ICON_WEB, "Página web", e.pagweb, webHref(e.pagweb) || null, true)+
+      contactRow(ICON_IG, "Instagram", e.instagram, instagramHref(e.instagram) || null, true)+
+      contactRow(ICON_FB, "Facebook", e.facebook, facebookHref(e.facebook) || null, true)+
+      contactRow(ICON_LINKEDIN, "LinkedIn", e.linkedin, linkedinHref(e.linkedin) || null, true);
   }
   function tieneContacto(e){
     return !!(e.mail || e.telefono || e.ubicacion || e.pagweb || e.instagram || e.facebook || e.linkedin);
@@ -1026,29 +1100,76 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     var ocup = ocupacionDeLote(l.id_lote);
     var ocupante = ocup ? empresaPorId(ocup.id_empresa_ocupante) : null;
     var compartida = lotesConMatriculaCompartida(l);
+    // Cuando hay más de una matrícula, el resumen de arriba no puede hablar
+    // por todas: se dice "Según matrícula" y el detalle va en su sección.
+    var mats = matriculasDe(l);
+    var variasMat = mats.length > 1;
+    var escrituraMezclada = variasMat && valoresDistintos(mats, function(m){ return escrituraTexto(m.escritura); });
+    var titularMezclado  = variasMat && valoresDistintos(mats, titularDeMatricula);
+    var faltaMatricula = !mats.length;
+    var faltaSuperficie = l.superficie_m2 == null || l.superficie_m2 === "";
 
     modal.innerHTML =
       '<div class="modal-head"><button class="x-close" id="xCloseViewLote">&times;</button></div>'+
       '<div class="view-head">'+
         '<div><div class="view-title">'+esc(l.id_lote)+'</div>'+
-          '<div class="view-sub">Matrícula '+esc(l.matricula||"—")+'</div></div>'+
+          '<div class="view-sub">'+(variasMat
+            ? esc(mats.length+" matrículas")
+            : 'Matrícula '+esc(l.matricula||"—"))+'</div></div>'+
         (l.estado?'<span class="badge" style="background:var(--'+claseEstado(l.estado)+'-bg);color:var(--'+claseEstado(l.estado)+')">'+esc(l.estado)+'</span>':'')+
       '</div>'+
 
       '<div class="view-section"><h3>Ubicación</h3>'+
         '<div class="view-grid">'+
+          // 123 de los 135 lotes de Salta traen domicilio y la ficha no lo
+          // mostraba, con la sección llamándose justamente "Ubicación".
+          // Solo cuando hay dato: en Güemes la columna no existe (0 de 139)
+          // y una fila con guión en los 139 no informaría nada.
+          (l.ubicacion ? viewItem("Domicilio", esc(l.ubicacion)) : '')+
           viewItem("Manzana", l.manzana?esc(l.manzana):null)+
           viewItem("Parcela", l.parcela?esc(l.parcela):null)+
           viewItem("Superficie", esc(fmtM2(l.superficie_m2)))+
-          viewItem("Escritura", l.escritura?esc(l.escritura):null)+
+          viewItem("Escritura", escrituraMezclada
+            ? "Según matrícula"
+            : (variasMat ? esc(escrituraTexto(mats[0].escritura)) : (l.escritura?esc(l.escritura):null)))+
         '</div>'+
       '</div>'+
+
+      // Detalle registral, solo cuando hay más de una. Con una sola, lo que
+      // ya muestran Ubicación y Titularidad alcanza y esta sección sería
+      // repetir el mismo dato en dos lugares.
+      (variasMat
+        ? '<div class="view-section"><h3>Matrículas ('+mats.length+')</h3>'+
+            '<div class="lot-list">'+mats.map(function(m){
+              return '<div class="lot-row">'+
+                '<div class="lot-row-main">'+
+                  '<span class="mono">'+esc(m.matricula||"—")+'</span>'+
+                  '<span class="lot-m2">'+fmtM2(m.superficie_m2)+'</span>'+
+                '</div>'+
+                '<div class="lot-row-sub">'+
+                  '<span><span class="lot-field-label">Propiedad: </span><span class="lot-field-value">'+
+                    esc(titularDeMatricula(m) || "—")+'</span></span>'+
+                  '<span><span class="lot-field-label">Escritura: </span><span class="lot-field-value">'+
+                    esc(escrituraTexto(m.escritura))+'</span></span>'+
+                '</div>'+
+              '</div>';
+            }).join("")+'</div>'+
+            (titularMezclado || escrituraMezclada
+              ? '<p class="view-empty" style="margin-top:8px">Las matrículas de este lote no coinciden entre sí en '+
+                  (titularMezclado && escrituraMezclada ? 'titular y escritura'
+                    : (titularMezclado ? 'el titular registral' : 'el estado de escritura'))+
+                '. El lote no es de una sola propiedad: cada matrícula vale por su fila.</p>'
+              : '')+
+          '</div>'
+        : '')+
 
       '<div class="view-section"><h3>Titularidad</h3>'+
         (titular
           ? '<div class="view-grid">'+
               viewItem("Empresa", '<a href="#" data-goto-empresa="'+esc(titular.id_empresa)+'">'+esc(titular.nombre_empresa)+'</a>')+
-              viewItem("Propietario de la matrícula", l.propietario_matricula?esc(l.propietario_matricula):null)+
+              viewItem("Propietario de la matrícula", titularMezclado
+                ? "Según matrícula"
+                : (variasMat ? esc(titularDeMatricula(mats[0]) || "") : (l.propietario_matricula?esc(l.propietario_matricula):null)))+
             '</div>'
           : '<p class="view-empty">'+(l.disponible ? 'Sin empresa — disponible para la venta.' : 'Sin empresa asignada (pendiente de revisión).')+'</p>')+
       '</div>'+
@@ -1099,14 +1220,31 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
           '</div>'
         : '')+
 
+      // Un lote sin matrícula ni superficie se dibujaba como una fila de
+      // guiones: fmtM2(null) ya devolvía "—" y no "0 m²", así que el total
+      // nunca estuvo mal, pero nada distinguía "falta el dato" de "no
+      // corresponde". Son 15 lotes de Salta sin superficie, 4 de ellos sin
+      // matrícula tampoco. Se dice, no se completa a ojo.
+      ((faltaMatricula || faltaSuperficie)
+        ? '<div class="view-section revisar"><h3>A revisar</h3>'+
+            '<p>Este lote no tiene '+
+            (faltaMatricula && faltaSuperficie ? 'matrícula ni superficie'
+              : (faltaMatricula ? 'matrícula' : 'superficie'))+
+            ' en el archivo. Los guiones de arriba son dato faltante, no un lote vacío.</p>'+
+          '</div>'
+        : '')+
+
       (compartida.length
         ? '<div class="view-section revisar"><h3>A revisar</h3>'+
-            '<p>La matrícula '+esc(l.matricula)+' también aparece en '+
-            compartida.map(function(o){
-              var ot = empresaPorId(o.id_empresa);
-              return '<a href="#" data-goto-lote="'+esc(o.id_lote)+'">'+esc(o.id_lote)+'</a>'+(ot?' ('+esc(ot.nombre_empresa)+')':'');
-            }).join(", ")+
-            ' con otro titular. Puede ser que `ocupaciones` ya lo explique (titular de la matrícula ≠ empresa que ocupa el lote) — revisar antes de asumir que es un error de carga.</p>'+
+            '<p>'+(compartida.length===1
+              ? 'La matrícula '
+              : 'Estas matrículas del lote también están cargadas en otro lote con otro titular: ')+
+            compartida.map(function(c){
+              var ot = empresaPorId(c.lote.id_empresa);
+              return esc(c.matricula)+', en <a href="#" data-goto-lote="'+esc(c.lote.id_lote)+'">'+esc(c.lote.id_lote)+'</a>'+(ot?' ('+esc(ot.nombre_empresa)+')':'');
+            }).join("; ")+
+            (compartida.length===1 ? ' también está cargada con otro titular.' : '.')+
+            ' Puede ser que `ocupaciones` ya lo explique (titular de la matrícula ≠ empresa que ocupa el lote) — revisar antes de asumir que es un error de carga.</p>'+
           '</div>'
         : '')+
 
@@ -1242,6 +1380,17 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     // veces null — un null no se asume "No": sería inventar un dato que el
     // origen no tiene (ver nota de L048 en CLAUDE.md). Sin color (pedido
     // del usuario 2026-10-13): acá solo se devuelve el texto.
+    // Con varias matrículas que no coinciden, esta fila no puede dar un
+    // único Sí/No ni un único propietario sin inventar: manda a la ficha.
+    var ms = matriculasDe(l);
+    if(ms.length > 1){
+      var escDist = valoresDistintos(ms, function(m){ return escrituraTexto(m.escritura); });
+      var titDist = valoresDistintos(ms, titularDeMatricula);
+      if(escDist || titDist) return {
+        siNo: escDist ? "Según matrícula" : escrituraTexto(ms[0].escritura),
+        propiedad: titDist ? "Según matrícula" : (titularDeMatricula(ms[0]) || "—")
+      };
+    }
     var e = String(l.escritura||"").trim();
     if(!e) return { siNo:"Sin dato", propiedad: l.propietario_matricula || "—" };
     if(/^s/i.test(e)) return { siNo:"Sí", propiedad: l.propietario_matricula || (empresa&&empresa.nombre_empresa) || "—" };
@@ -1278,7 +1427,9 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
         var info = tituloYTitularDeLote(l, empresaPorId(l.id_empresa));
         return '<div class="lot-row">'+
           '<div class="lot-row-main">'+
-            '<a href="#" class="mono" data-goto-lote="'+esc(l.id_lote)+'">Mz '+esc(l.manzana||"—")+' · Parc. '+esc(l.parcela||"—")+' · '+esc(l.matricula||"—")+'</a>'+
+            '<a href="#" class="mono" data-goto-lote="'+esc(l.id_lote)+'">Mz '+esc(l.manzana||"—")+' · Parc. '+esc(l.parcela||"—")+' · '+esc(l.matricula||"—")+
+              // Sin esto, un lote de 6 matrículas se lee como si tuviera una.
+              (matriculasDe(l).length>1 ? ' +'+(matriculasDe(l).length-1) : '')+'</a>'+
             '<span class="lot-m2">'+fmtM2(l.superficie_m2)+'</span>'+
           '</div>'+
           '<div class="lot-row-sub">'+
@@ -1317,8 +1468,13 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
         ? '<p class="view-empty">Sin datos de contacto cargados.</p>'
         : '<div class="contact-list">'+filasContacto(e)+'</div>';
     } else {
-      // Representante, Cargo, Rubro, Actividad, CUIT, en ese orden — título
-      // en negrita y dato en gris (al revés de las demás pestañas).
+      // Representante, Cargo, Rubro, Situación, en ese orden — título en
+      // negrita y dato en gris (al revés de las demás pestañas). Actividad,
+      // CUIT y Observación salieron de la ficha a pedido del usuario
+      // (2026-10-19): los dos primeros ya no existen en los datos desde la
+      // fusión de los exports normalizados, y la observación era ruido en
+      // pantalla. La de los 15 ocupantes de alquiler sigue guardada en el
+      // registro (es su procedencia), solo no se muestra ni se edita acá.
       panelHtml =
         (similares.length
           ? '<div class="view-section revisar" style="margin-top:0;padding-top:0;border-top:none"><h3>A revisar</h3>'+
@@ -1331,11 +1487,8 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
           infoRow("Representante", e.contacto_nombre)+
           infoRow("Cargo", e.cargo)+
           infoRow("Rubro", e.rubro)+
-          infoRow("Actividad", e.actividad)+
-          infoRow("CUIT", e.cuit)+
           infoRow("Situación", e.situacion)+
-        '</dl>'+
-        (e.observacion ? '<div class="view-section"><h3>Observación</h3><p class="view-texto">'+esc(e.observacion)+'</p></div>' : '');
+        '</dl>';
     }
 
     modal.innerHTML =
@@ -1379,8 +1532,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
       '<div class="modal-head"><h2>'+(isNew?"Nueva empresa":"Editar empresa")+'</h2><button class="x-close" id="xCloseEmp">&times;</button></div>'+
       '<form id="empresaForm">'+
         field("nombre_empresa","Nombre","text",e,"Razón social")+
-        '<div class="row2">'+field("rubro","Rubro","text",e)+field("actividad","Actividad","text",e)+'</div>'+
-        '<div class="row2">'+field("cuit","CUIT","text",e)+field("telefono","Teléfono","text",e)+'</div>'+
+        '<div class="row2">'+field("rubro","Rubro","text",e)+field("telefono","Teléfono","text",e)+'</div>'+
         '<div class="row2">'+field("contacto_nombre","Contacto","text",e)+field("cargo","Cargo","text",e)+'</div>'+
         '<div class="field"><label for="f_situacion">Situación</label><select id="f_situacion" name="situacion">'+
           '<option value="">Sin dato</option>'+
@@ -1392,7 +1544,6 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
         field("ubicacion","Ubicación","text",e)+
         '<div class="row2">'+field("pagweb","Página web","text",e)+field("instagram","Instagram","text",e)+'</div>'+
         '<div class="row2">'+field("facebook","Facebook","text",e)+field("linkedin","LinkedIn","text",e)+'</div>'+
-        '<div class="field"><label for="f_observacion">Observación</label><textarea id="f_observacion" name="observacion">'+esc(e?e.observacion:"")+'</textarea></div>'+
         '<div class="modal-actions"><button type="submit" class="btn btn-primary btn-grow">'+HeaderGlobal.icono("guardar")+'Guardar</button>'+
         (isNew?'':'<button type="button" class="btn btn-secondary btn-grow" id="btnCancelEditEmp">'+HeaderGlobal.icono("cancelar")+'Cancelar</button><button type="button" class="btn btn-danger btn-grow" id="btnDeleteEmp">'+HeaderGlobal.icono("eliminar")+'Eliminar</button>')+'</div>'+
       '</form>';
@@ -1421,8 +1572,6 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     };
     e.nombre_empresa = g("nombre_empresa").trim();
     e.rubro = g("rubro").trim();
-    e.actividad = g("actividad").trim();
-    e.cuit = g("cuit").trim();
     e.telefono = g("telefono").trim();
     e.contacto_nombre = g("contacto_nombre").trim();
     e.cargo = g("cargo").trim();
@@ -1433,7 +1582,6 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     e.instagram = g("instagram").trim();
     e.facebook = g("facebook").trim();
     e.linkedin = g("linkedin").trim();
-    e.observacion = g("observacion").trim();
 
     if(isNew) state.empresas.push(e);
     state.editingTipo = "empresa"; state.editingId = e.id_empresa;

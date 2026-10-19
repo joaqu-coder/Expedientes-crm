@@ -404,10 +404,11 @@ asumir que lo que sigue generaliza a uno nuevo sin revisarlo con el usuario.
 - **Test**: `testParques()` en `tests/ui.test.mjs` corre contra los datos
   reales (no son de ejemplo, igual que Resoluciones) — filtros, búsqueda
   cruzando a la empresa, ficha con titularidad y ocupación, edición con UTF-8
-  intacto, y dashboard. Los conteos por parque (138/54 en Güemes, 135/151 en
-  Salta) están hardcodeados a propósito: es el archivo de referencia real, no
-  una cifra que cambie por una regla de negocio como el archivado de
-  Proyectos.
+  intacto, y dashboard. Los conteos por parque (139 lotes / 53 empresas en
+  Güemes, 135 / 150 en Salta) están hardcodeados a propósito: es el archivo de
+  referencia real, no una cifra que cambie por una regla de negocio como el
+  archivado de Proyectos. Cuando una baja o un import los mueve, se actualiza
+  el número **y** el comentario que dice de dónde sale.
 
 ### Dos parques en el mismo archivo (2026-10-18)
 
@@ -522,6 +523,16 @@ supuestas—, porque van a volver en el próximo export:
   LA POSTA la borró el usuario desde la app el 2026-10-17; el archivo se la
   vuelve a asignar a L115/L116. No se resucitó: los lotes quedan libres y la
   nota está en el lote (`BORRADAS_EN_LA_APP` en el importador).
+- **Y le gana también cuando el export NO la trae** (2026-10-19). La regla de
+  arriba —"producción manda en lo que el export no tiene"— tiene un borde que
+  la fusión cruzó mal: una empresa que no figura en el export puede ser un
+  dato que el export no cubre **o** una baja que el usuario ya hizo, y las dos
+  se ven igual desde el archivo. ADMINISTRACION PARQUE INDUSTRIAL SALTA
+  (A.P.I.S) se conservó como lo primero cuando era lo segundo, y volvió a
+  aparecer en el listado después de que el usuario la borró. Se eliminó a
+  mano; no era titular de ningún lote ni parte de ninguna ocupación, así que
+  la baja no arrastró nada. **Para el próximo export: una empresa de
+  producción que el archivo no nombra se consulta, no se conserva callado.**
 
 Lo que se fue: `cuit` y `actividad` (pedido), más `cuit_valido_11dig` y
 `metodo_match_contacto`, que solo hablaban del cuit. La `observacion` de las
@@ -532,9 +543,120 @@ queda sin procedencia. El `rubro` va literal del archivo, sin la categoría
 (" | Agroindustria y Alimentación") que traía la base anterior: decisión del
 usuario. Las 46 que la tenían la perdieron; está en el historial de git.
 
-Resultado: Güemes 139 lotes / 53 empresas (antes 138 / 53), Salta 135 / 151 sin
-cambios, 19 lotes libres y 15 disponibles como antes, 20 ocupaciones intactas,
-y 3.230.124 m² contra 3.159.513 (la diferencia es exactamente el lote nuevo).
+Resultado: Güemes 139 lotes / 53 empresas (antes 138 / 53), Salta 135 / 150
+(151 el 2026-10-19 antes de la baja de A.P.I.S), 19 lotes libres y 15
+disponibles como antes, 20 ocupaciones intactas, y 3.230.124 m² contra
+3.159.513 (la diferencia es exactamente el lote nuevo).
+
+### La tarjeta de empresa no muestra CUIT, Actividad ni Observación (2026-10-19)
+
+Segundo pedido del usuario el mismo día, después de ver la app con los exports
+ya fusionados. Salieron de los tres lugares, no solo del que se ve:
+
+- **La ficha** (tab Empresa) quedó en Representante / Cargo / Rubro /
+  Situación.
+- **El formulario** dejó de pedirlos. No es cosmética: mientras los inputs
+  existieran, `onSaveEmpresa` escribía `actividad = ""` y `cuit = ""` en cada
+  guardado, **recreando los dos campos que la fusión acababa de sacar de los
+  datos**. Y sacar solo el `<textarea>` habría sido peor: `g("observacion")`
+  devuelve `""` cuando el campo no existe, así que el primer guardado de un
+  ocupante de alquiler le borraba la observación que es su procedencia.
+- **El buscador** de empresas leía `e.actividad` en su blob, un campo que ya
+  no existe. Busca por nombre, rubro y contacto, que es lo que dice su
+  placeholder.
+
+**El dato guardado no se tocó.** La `observacion` de los 15 ocupantes de
+alquiler —qué se les reasignó y desde qué titular— sigue en el registro; lo
+que cambió es que no se muestra ni se edita desde la tarjeta. La `observacion`
+de la **ocupación** (`ocup.observacion`, "Alquiler confirmado por usuario") es
+otra cosa y sigue visible en la ficha del LOTE, donde siempre estuvo.
+
+`testParques()` lo sostiene por los dos lados: que la ficha no diga Actividad,
+CUIT ni Observación (con AGSOF, que sí tiene `observacion` cargada, así que el
+test ve si el bloque vuelve), que el formulario no tenga los tres inputs, y
+que después de guardar una empresa el POST **no** traiga `actividad` ni `cuit`
+y **sí** conserve la observación que ya estaba.
+
+### Un lote puede tener varias matrículas (2026-10-19)
+
+Salió de una auditoría que pidió el usuario — *"no rescata toda la
+información […] la información no es la correcta o es parcial"*— comparando
+campo por campo `parques.json` contra lo que la app dibuja. Tenía razón.
+
+**23 de los 274 lotes tienen entre 2 y 6 matrículas** (`matriculas`, un array
+de `{matricula, superficie_m2, escritura, titulares}`) y la ficha mostraba
+una sola. No era un problema de presentación: **9 de esos lotes tienen
+titular registral distinto entre sus matrículas y 6, escritura distinta.** En
+SL009 la ficha afirmaba "Escritura: Sí · Sanabria Salmón" sobre un lote cuya
+otra mitad —1.352 de 3.670 m²— es del Ente y no está escriturada.
+
+- **`matriculasDe(l)` devuelve siempre una lista**, así el render no se
+  bifurca. Con una sola matrícula la arma con los campos sueltos del lote
+  (`matricula`/`escritura`/`propietario_matricula`), que para esos 251 lotes
+  coinciden exactamente con el array — verificado: 0 diferencias en matrícula
+  y escritura sobre los 108 que traen array de uno. **Blast radius cero**
+  fuera de los 23.
+- **Los 4 lotes de Salta sin datos registrales** (SL030, SL105, SL141, SL143)
+  traen una entrada con todo en `null`. Eso no es una matrícula, es la
+  ausencia de una, y se filtra: si no, la ficha dibujaba una fila vacía.
+- **El resumen no miente cuando las matrículas difieren**: "Escritura" y
+  "Propietario de la matrícula" pasan a decir *Según matrícula*, y el detalle
+  va en la sección "Matrículas (N)". Si todas coinciden (como SL005, 4
+  matrículas todas de AGENOR y escrituradas) se muestra el valor y no hay
+  aviso — un aviso que aparece siempre no se lee.
+- **Con una sola matrícula no se agrega ninguna sección.** Sería repetir
+  arriba y abajo el mismo dato.
+- **`lotesConMatriculaCompartida` compara todas las matrículas de los dos
+  lotes**, no solo la principal: veía 14 repetidas de las 17 que hay, y por
+  eso 5 lotes (SL028, SL087, SL110, SL125, SL135) no mostraban el aviso "A
+  revisar" que les corresponde. El aviso ahora nombra **cuál** matrícula se
+  repite, que con lotes de 6 es la mitad del dato.
+- **La fila de lote en la ficha de la empresa** lleva un `+N` después de la
+  matrícula y dice *Según matrícula* en Propiedad/Escritura cuando difieren.
+  Sin eso, un lote de 6 matrículas se leía como si tuviera una.
+- **La búsqueda de Comercial indexa todas las matrículas.** Hoy no cambia
+  ningún resultado (ninguno de los lotes sin empresa tiene más de una), pero
+  es donde el bug iba a reaparecer el día que uno vuelva a la cartera.
+- **La superficie del lote ya era la suma de sus matrículas** en los 23
+  casos, así que no se tocó. `testParques()` lo sostiene: si alguna vez deja
+  de serlo, el total de la app y el detalle de la ficha se contradicen.
+
+**Lo demás que encontró esa auditoría**, hecho en la misma vuelta salvo lo
+último:
+
+- **Un link por campo, no todos pegados.** 83 empresas traen dos o tres mails
+  en el mismo string y `"mailto:"+campo` no abría nada; 54 traen dos
+  teléfonos y `tel:` les sacaba los separadores dejando **un número de 20
+  dígitos** que marca cualquier cosa — el peor, porque parecía funcionar. La
+  defensa existía: `linkedinHref` ya tomaba el primer valor. Estaba escrita
+  en un solo lugar, igual que los bugs P0 del 2026-10-19. Ahora es
+  `primerValor()` y la usan los cinco (`web`, `instagram`, `facebook`,
+  `linkedin` y, con su propia forma, `mail` y `telefono`).
+  - `primerValor()` parte por `|`, `;` y salto de línea, **no por `/`**: una
+    URL está llena de barras. El teléfono, que sí las usa de separador
+    (`387-4676346/3875 325608`), la parte aparte.
+  - `mailtoHref` no parte: **extrae** la primera dirección con una regex. El
+    archivo mezcla `" | "`, `" / "`, `"/"` sin espacios y saltos de línea, y
+    tiene 3 empresas cuyo "mail" no es un mail (`no`, `5000`, un nombre).
+    Para esas devuelve `""`, y `filasContacto` lo pasa como `|| null` para
+    que el valor quede como texto y no como `<a href="">`.
+  - **El dato no se toca**: en pantalla se siguen viendo los dos o tres
+    valores. Lo que cambia es a cuál navega el link.
+- **El domicilio del lote.** 123 de los 135 lotes de Salta traen `ubicacion`
+  y la ficha no lo mostraba, con la sección llamándose "Ubicación". Se dibuja
+  **solo cuando hay dato**: en Güemes la columna no existe (0 de 139) y una
+  fila con guión repetida 139 veces no informa nada.
+- **"Falta el dato" ya no se lee igual que "no corresponde".** 15 lotes de
+  Salta no tienen superficie y 4 de ellos tampoco matrícula: la ficha era una
+  fila de guiones. Ahora hay un "A revisar" que nombra qué falta. Ojo:
+  `fmtM2(null)` **siempre** devolvió `"—"` y no `"0 m²"` — el total de la app
+  nunca estuvo mal, el problema era solo que nada distinguía los dos casos.
+- **Sin hacer, y necesita decisión del usuario**: 19 empresas tienen
+  `observacion_contactos_2024` con notas accionables ("Sigue estando?", "Que
+  lote es?", "Desadjudicado"), 50 tienen `propietario_matricula` y 18 lotes
+  tienen `observacion`. Nada de eso se ve. Mostrarlo choca con el pedido del
+  mismo día de **sacar** la observación de la tarjeta de empresa, así que se
+  acuerda antes de tocarlo.
 
 ### «Análisis» está en stand by (2026-10-19)
 

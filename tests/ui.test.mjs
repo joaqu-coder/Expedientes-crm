@@ -1057,8 +1057,16 @@ async function testParques(viewport, puerto) {
   // quedaron libres).
   ok(empresasGuemes.length === 53, `el archivo trae las ${empresasGuemes.length} empresas reales de Güemes`);
   ok(lotesSalta.length === 135, `el archivo trae los ${lotesSalta.length} lotes reales del Parque Industrial Salta`);
-  ok(empresasSalta.length === 151,
-     `el archivo trae las ${empresasSalta.length} empresas de Salta (136 del origen + 15 ocupantes de la columna «Alquilada»)`);
+  // 150 desde el 2026-10-19: 136 del origen + 15 ocupantes de la columna
+  // «Alquilada» - ADMINISTRACION PARQUE INDUSTRIAL SALTA (A.P.I.S), que el
+  // usuario borró desde la app y la fusión de los exports había conservado
+  // (no figuraba en el export, así que se tomó como "dato que el export no
+  // trae" en vez de como una baja hecha a mano; no era titular de ningún
+  // lote ni parte de ninguna ocupación).
+  ok(empresasSalta.length === 150,
+     `el archivo trae las ${empresasSalta.length} empresas de Salta (136 del origen + 15 ocupantes de la columna «Alquilada», menos la baja de A.P.I.S)`);
+  ok(!datos.empresas.some((e) => /ADMINISTRACION PARQUE INDUSTRIAL SALTA/i.test(e.nombre_empresa || '')),
+     'la empresa que el usuario borró no volvió a aparecer en los datos');
   ok(totalLotes === lotesGuemes.length + lotesSalta.length && totalEmpresas === empresasGuemes.length + empresasSalta.length,
      'todos los lotes y empresas están atribuidos a uno de los dos parques (ninguno quedó sin id_parque)');
   ok((await page.locator('#empresasCount').textContent()).includes(String(empresasGuemes.length)),
@@ -1080,17 +1088,25 @@ async function testParques(viewport, puerto) {
   await page.fill('#searchEmpresas', '');
   await page.waitForTimeout(150);
 
-  // Ficha de empresa: tab Empresa — Representante, Cargo, Rubro, Actividad,
-  // CUIT, en ese orden, con el contacto real de la empresa instalada.
+  // Ficha de empresa: tab Empresa — Representante, Cargo, Rubro, Situación,
+  // en ese orden, con el contacto real de la empresa instalada. Actividad,
+  // CUIT y Observación salieron de la tarjeta el 2026-10-19 (pedido del
+  // usuario): AGSOF sirve de caso porque SÍ tiene `observacion` cargada
+  // (la nota de la fusión con E004), así que si el bloque volviera, este
+  // test lo ve.
   await page.locator('#empresasList .tarjeta', { hasText: 'AGSOF S.A' }).first().click();
   await page.waitForSelector('#btnEditEmp');
   const fichaEmpresa = await page.locator('#modal').textContent();
   ok(fichaEmpresa.includes('Guillermo Frisch'), 'la ficha de la empresa muestra su contacto (Representante)');
   ok(fichaEmpresa.includes('Encargado'), 'la ficha de la empresa muestra el Cargo');
-  const ordenCampos = ['Representante', 'Cargo', 'Rubro', 'Actividad', 'CUIT']
+  const ordenCampos = ['Representante', 'Cargo', 'Rubro', 'Situación']
     .map((campo) => fichaEmpresa.indexOf(campo));
   ok(ordenCampos.every((i, idx) => idx === 0 || i > ordenCampos[idx - 1]),
-     'el tab Empresa respeta el orden Representante/Cargo/Rubro/Actividad/CUIT');
+     'el tab Empresa respeta el orden Representante/Cargo/Rubro/Situación');
+  ok(!/Actividad|CUIT|Observación/.test(fichaEmpresa),
+     'la tarjeta de empresa ya no muestra Actividad, CUIT ni Observación');
+  ok(!fichaEmpresa.includes('Fusionada el 2026-10-13'),
+     'el texto de la observación no se filtra por otra vía a la tarjeta');
   ok(fichaEmpresa.includes('Lotes (3)'), 'la ficha fusionada de AGSOF lista sus 3 lotes (L005+L006+L007)');
   ok(fichaEmpresa.includes('20.394'), 'el total de superficie suma los m² de los 3 lotes fusionados');
 
@@ -1106,6 +1122,56 @@ async function testParques(viewport, puerto) {
   ok((hrefMail || '').startsWith('mailto:'), 'el email abre el cliente de mail (mailto:)');
   const hrefLinkedin = await page.locator('#empSubpanel a', { hasText: 'linkedin.com/in/elianacabrera88' }).getAttribute('href');
   ok(/^https?:\/\/.*linkedin\.com/.test(hrefLinkedin || ''), 'LinkedIn se renderiza y navega a una URL real (antes no aparecía)');
+  // Un campo con dos o tres valores pegados daba un link roto: "mailto:" +
+  // las tres direcciones juntas no abre nada, y tel: concatenaba los dígitos
+  // de los dos teléfonos en un número de 20 que marcaba cualquier cosa — el
+  // peor de los dos, porque parecía funcionar. Se verifica contra una
+  // empresa real del archivo, no contra un caso inventado.
+  const conDosMails = datos.empresas.find((e) => delParque(e, 'guemes') && (e.mail || '').split('@').length > 2);
+  const conDosTels = datos.empresas.find((e) => delParque(e, 'guemes') && /[|;/\n]/.test(e.telefono || ''));
+  ok(!!conDosMails && !!conDosTels, 'el archivo sigue teniendo los casos de dos mails y dos teléfonos en un campo');
+  for (const [emp, campo, etiqueta] of [[conDosMails, 'mail', 'Email'], [conDosTels, 'telefono', 'Teléfono']]) {
+    await page.click('#xCloseViewEmp');
+    await page.fill('#searchEmpresas', emp.nombre_empresa);
+    await page.waitForTimeout(200);
+    await page.locator('#empresasList .tarjeta').first().click();
+    await page.waitForSelector('#btnEditEmp');
+    await page.click('[data-subtab="contacto"]');
+    const fila = page.locator('#empSubpanel .contact-row', { hasText: emp[campo].slice(0, 18) }).first();
+    ok((await fila.textContent()).includes(emp[campo]),
+       `${etiqueta}: se siguen mostrando los dos valores, el dato no se toca`);
+    const href = await fila.getAttribute('href');
+    if (campo === 'mail') {
+      const primero = emp.mail.match(/[^\s|;,/<>()]+@[^\s|;,/<>()]+/)[0];
+      ok(href === `mailto:${primero}`,
+         `el mail enlaza a una sola dirección (${href}), no a las ${emp.mail.split('@').length - 1} pegadas`);
+    } else {
+      const digitos = (href || '').replace(/\D/g, '');
+      ok(digitos.length > 0 && digitos.length <= 13,
+         `el teléfono enlaza a un número solo (${href}), no a los dos concatenados`);
+      ok(emp.telefono.replace(/\D/g, '').startsWith(digitos),
+         'el número enlazado es el primero del campo, no un invento');
+    }
+  }
+  // Un valor que existe pero del que no sale un link ("no", "5000") queda
+  // como texto, nunca como <a href="">.
+  const mailFalso = datos.empresas.find((e) => delParque(e, 'guemes') && e.mail && !e.mail.includes('@'));
+  if (mailFalso) {
+    await page.click('#xCloseViewEmp');
+    await page.fill('#searchEmpresas', mailFalso.nombre_empresa);
+    await page.waitForTimeout(200);
+    await page.locator('#empresasList .tarjeta').first().click();
+    await page.waitForSelector('#btnEditEmp');
+    await page.click('[data-subtab="contacto"]');
+    ok((await page.locator('#empSubpanel a[href=""]').count()) === 0,
+       `un "mail" que no es un mail (${mailFalso.mail}) no deja un link vacío`);
+  }
+  await page.click('#xCloseViewEmp');
+  await page.fill('#searchEmpresas', 'AGSOF S.A');
+  await page.waitForTimeout(200);
+  await page.locator('#empresasList .tarjeta').first().click();
+  await page.waitForSelector('#btnEditEmp');
+  await page.click('[data-subtab="contacto"]');
   const contactoHTML = await page.locator('#empSubpanel').innerHTML();
   ok(/class="contact-label"[^>]*>Email/.test(contactoHTML) || contactoHTML.includes('contact-label">Email'),
      'en Contacto el título va con la clase que lo pone en negrita');
@@ -1119,7 +1185,27 @@ async function testParques(viewport, puerto) {
   ok(!panelLotes.includes('Titular:'), 'el tab Lotes ya no muestra "Titular"');
   ok(!/class="lot-si"|class="lot-no"/.test(panelLotes), 'el tab Lotes no colorea Escritura (sobrio, sin color)');
   ok(panelLotes.includes('lot-field-label'), 'el tab Lotes marca Propiedad/Escritura en negrita (lot-field-label)');
-  await page.click('#xCloseViewEmp');
+
+  // El formulario de empresa tampoco pide los tres campos. No es cosmética:
+  // mientras los inputs existieran, onSaveEmpresa escribía
+  // actividad/cuit = "" en cada guardado (los recreaba después de que la
+  // fusión de los exports los sacó) y, al sacar solo el textarea, habría
+  // pisado con "" la observación que es la procedencia de los 15 ocupantes
+  // de alquiler. Se guarda y se mira el POST, no el formulario.
+  await page.click('#btnEditEmp');
+  await page.waitForSelector('#f_nombre_empresa');
+  ok((await page.locator('#f_actividad').count()) === 0
+     && (await page.locator('#f_cuit').count()) === 0
+     && (await page.locator('#f_observacion').count()) === 0,
+     'el formulario de empresa no pide Actividad, CUIT ni Observación');
+  await page.click('#empresaForm button[type=submit]');
+  await page.waitForTimeout(300);
+  const agsofPost = ultimoPost?.empresas?.find((e) => e.id_empresa === 'E003');
+  ok(agsofPost && !('actividad' in agsofPost) && !('cuit' in agsofPost),
+     'guardar una empresa no vuelve a crear actividad ni cuit');
+  ok(agsofPost && /Fusionada el 2026-10-13/.test(agsofPost.observacion || ''),
+     'guardar una empresa no borra la observación que ya tenía cargada');
+  // onSaveEmpresa ya cerró la ficha al guardar.
 
   // Sublocación: L038 tiene una ocupación vigente (titular E008/ALISAN,
   // ocupante E028) — se revisa entrando por la ficha de la empresa titular,
@@ -1295,6 +1381,102 @@ async function testParques(viewport, puerto) {
 
   await page.fill('#searchEmpresas', '');
   await page.waitForTimeout(150);
+
+  // Un lote puede tener varias matrículas y la ficha mostraba UNA. No es un
+  // detalle de presentación: en SL009 las dos matrículas tienen distinto
+  // titular y distinta escritura, así que la ficha afirmaba "Escritura: Sí,
+  // propietario Sanabria Salmón" sobre un lote cuya otra mitad es del Ente y
+  // no está escriturada. Se prueban los tres casos que existen en los datos.
+  const abrirLoteDeSalta = async (idLote) => {
+    const emp = datos.lotes.find((l) => l.id_lote === idLote).id_empresa;
+    const nombre = datos.empresas.find((e) => e.id_empresa === emp).nombre_empresa;
+    await page.fill('#searchEmpresas', nombre);
+    await page.waitForTimeout(200);
+    await page.locator('#empresasList .tarjeta').first().click();
+    await page.waitForSelector('#btnEditEmp');
+    await page.click('[data-subtab="lote"]');
+    await page.click(`[data-goto-lote="${idLote}"]`);
+    await page.waitForSelector('#btnEditLote');
+  };
+  const cerrarLote = async () => {
+    await page.click('#xCloseViewLote');
+    await page.fill('#searchEmpresas', '');
+    await page.waitForTimeout(150);
+  };
+
+  // (a) Dos matrículas que NO coinciden entre sí.
+  const sl009 = datos.lotes.find((l) => l.id_lote === 'SL009');
+  ok(sl009.matriculas.length === 2, 'SL009 sigue siendo el caso de dos matrículas en conflicto');
+  await abrirLoteDeSalta('SL009');
+  const fichaSL009 = (await page.locator('#modal').textContent()).replace(/\s+/g, ' ');
+  for (const m of sl009.matriculas) {
+    ok(fichaSL009.includes(String(m.matricula)), `la ficha muestra la matrícula ${m.matricula}, no solo la primera`);
+    ok(fichaSL009.includes(m.titulares[0]), `la ficha muestra el titular de ${m.matricula} (${m.titulares[0]})`);
+  }
+  ok(/Escritura:? Sí/.test(fichaSL009) && /Escritura:? No/.test(fichaSL009),
+     'cada matrícula lleva su propio estado de escritura (una Sí y otra No en el mismo lote)');
+  ok(fichaSL009.includes('Según matrícula'),
+     'el resumen del lote no afirma una escritura ni un propietario únicos cuando las matrículas difieren');
+  ok(/no coinciden entre sí en titular y escritura/.test(fichaSL009),
+     'la ficha avisa que el lote no es de una sola propiedad');
+  ok(fichaSL009.includes('2 matrículas'), 'el encabezado dice cuántas matrículas tiene, en vez de nombrar una');
+  await cerrarLote();
+
+  // (b) Cuatro matrículas que SÍ coinciden: se listan igual, pero sin aviso
+  //     ni "Según matrícula" — si no, el aviso perdería significado.
+  await abrirLoteDeSalta('SL005');
+  const fichaSL005 = (await page.locator('#modal').textContent()).replace(/\s+/g, ' ');
+  ok(fichaSL005.includes('4 matrículas') &&
+     datos.lotes.find((l) => l.id_lote === 'SL005').matriculas.every((m) => fichaSL005.includes(String(m.matricula))),
+     'SL005 lista sus 4 matrículas');
+  ok(!fichaSL005.includes('Según matrícula') && !/no coinciden entre sí/.test(fichaSL005),
+     'con todas las matrículas coincidentes no se avisa nada y el resumen da el valor');
+  await cerrarLote();
+
+  // (c) Una sola matrícula: la ficha queda exactamente como estaba, sin una
+  //     sección "Matrículas (1)" repitiendo el dato de arriba.
+  await abrirLoteDeSalta('SL001');
+  const fichaSL001 = (await page.locator('#modal').textContent()).replace(/\s+/g, ' ');
+  ok(fichaSL001.includes('Matrícula 172586') && !/MATRÍCULAS \(/i.test(fichaSL001),
+     'un lote de una sola matrícula no gana una sección nueva');
+  await cerrarLote();
+
+  // (d) El domicilio del lote: 123 de los 135 de Salta lo traen y la ficha
+  //     no lo mostraba, con la sección llamándose "Ubicación".
+  const conDomicilio = datos.lotes.find((l) => delParque(l, 'salta') && l.ubicacion && l.id_empresa);
+  ok(!!conDomicilio, 'el archivo sigue trayendo lotes de Salta con domicilio');
+  await abrirLoteDeSalta(conDomicilio.id_lote);
+  const fichaDom = (await page.locator('#modal').textContent()).replace(/\s+/g, ' ');
+  ok(fichaDom.includes('Domicilio') && fichaDom.includes(conDomicilio.ubicacion),
+     `la ficha del lote muestra su domicilio (${conDomicilio.ubicacion})`);
+  await cerrarLote();
+
+  // (e) Un lote sin matrícula ni superficie se dibujaba como una fila de
+  //     guiones, sin distinguir "falta el dato" de "no corresponde".
+  const sinRegistral = datos.lotes.find((l) => delParque(l, 'salta') && l.superficie_m2 == null && !l.matricula);
+  ok(!!sinRegistral, 'el archivo sigue trayendo lotes sin datos registrales');
+  await abrirLoteDeSalta(sinRegistral.id_lote);
+  const fichaSin = (await page.locator('#modal').textContent()).replace(/\s+/g, ' ');
+  ok(/no tiene matrícula ni superficie en el archivo/.test(fichaSin),
+     'la ficha avisa que faltan los datos registrales, en vez de dejar solo guiones');
+  await cerrarLote();
+
+  // Y el aviso NO sale donde los datos están: si apareciera siempre, dejaría
+  // de significar algo.
+  const completo = datos.lotes.find((l) => delParque(l, 'salta') && l.superficie_m2 != null && l.matricula);
+  await abrirLoteDeSalta(completo.id_lote);
+  ok(!/en el archivo\. Los guiones de arriba/.test((await page.locator('#modal').textContent())),
+     'un lote con sus datos registrales no muestra el aviso');
+  await cerrarLote();
+
+  // La superficie del lote es la suma de sus matrículas: si alguna vez deja
+  // de serlo, el total de la app y el detalle de la ficha se contradicen.
+  const sumasMal = datos.lotes.filter((l) => (l.matriculas || []).length > 1).filter((l) => {
+    const suma = l.matriculas.reduce((t, m) => t + (Number(m.superficie_m2) || 0), 0);
+    return Math.abs(suma - (Number(l.superficie_m2) || 0)) > 1;
+  });
+  ok(sumasMal.length === 0,
+     `la superficie de cada lote es la suma de sus matrículas${sumasMal.length ? ': falla en ' + sumasMal.map((l) => l.id_lote).join(', ') : ''}`);
 
   // Vuelta a Güemes: el cambio de parque no deja estado del otro colgado.
   await page.locator('#parqueSwitch [data-parque="guemes"]').click();
