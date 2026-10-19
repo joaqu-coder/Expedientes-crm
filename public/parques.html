@@ -12,6 +12,10 @@
 <link rel="icon" type="image/svg+xml" href="/icon.svg">
 <link rel="apple-touch-icon" href="/icon.svg">
 <title>Parques — EGPAIS</title>
+<!-- Sistema visual compartido por las 5 páginas (botones, búsqueda y los
+     estados de la barra inferior). Va ANTES del <style> de la página: lo de
+     acá es la base común y lo de abajo, lo propio de esta pantalla. -->
+<link rel="stylesheet" href="/ui-kit.css">
 <style>
 /* Misma paleta/tipografía que las otras tres apps: mismo acento índigo,
    misma escala de grises, fuente del sistema en toda la app. */
@@ -105,8 +109,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 /* ---- Toolbar ---- */
 .toolbar-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:20px;display:flex;flex-direction:column;gap:12px}
-.toolbar-card select,.toolbar-card input[type=search]{background:var(--surface-2);border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:8px 10px;font-size:13px}
-.toolbar-search input[type=search]{width:100%}
+/* El campo de búsqueda lo dibuja .search-bar de ui-kit.css: acá quedan
+   solo los desplegables de filtro. */
+.toolbar-card select{background:var(--surface-2);border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:8px 10px;font-size:13px}
 .toolbar-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .toolbar-filters select{flex:1 1 150px}
 .toolbar-check{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);white-space:nowrap}
@@ -156,11 +161,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media (max-width:420px){.row2{grid-template-columns:1fr}}
 
+/* Los botones de acción (Guardar/Cancelar/Eliminar/Editar) viven en
+   /ui-kit.css, compartidos con las otras tres apps. */
 .modal-actions{display:flex;gap:8px;margin-top:16px}
-.btn-primary{flex:1;background:var(--accent);color:var(--accent-fg);border:none;border-radius:8px;padding:11px;font-weight:600;font-size:14px;min-height:44px}
-.btn-ghost{background:none;border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:11px 14px;font-size:14px;min-height:44px}
-.btn-danger{background:none;border:1px solid var(--danger);color:var(--danger);border-radius:8px;padding:11px 14px;font-size:13px;min-height:44px}
-.btn-edit{background:none;border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:11px 14px;font-size:14px;min-height:44px}
 
 /* ---- Modal: vista de lectura ---- */
 .view-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
@@ -178,8 +181,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .view-item .v a{color:inherit}
 .view-empty{font-size:12.5px;color:var(--muted)}
 .view-actions{display:flex;gap:8px;margin-top:16px}
-.btn-view-action{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;background:none;border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:11px;font-weight:600;font-size:14px;min-height:44px}
-.btn-view-action:hover{border-color:var(--muted)}
 
 /* ---- Ficha de empresa: sub-tabs Empresa / Lotes / Contacto ----
    Mismo patrón visual que .tabs/.tab de arriba, pero escalado para vivir
@@ -276,7 +277,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 <section class="view" id="viewEmpresas" role="tabpanel" aria-labelledby="tabEmpresas">
   <div class="toolbar-card">
     <div class="toolbar-search">
-      <input type="search" id="searchEmpresas" placeholder="Buscar por empresa, rubro o contacto…">
+      <div class="search-bar"><input type="search" id="searchEmpresas" placeholder="Buscar por empresa, rubro o contacto…"></div>
     </div>
     <div class="toolbar-filters">
       <!-- Filtra por la situación de la EMPRESA (`situacion`: Activa / Sin
@@ -295,7 +296,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 <section class="view" id="viewComercial" role="tabpanel" aria-labelledby="tabComercial" hidden>
   <div class="toolbar-card">
     <div class="toolbar-search">
-      <input type="search" id="searchComercial" placeholder="Buscar por lote, manzana, parcela o matrícula…">
+      <div class="search-bar"><input type="search" id="searchComercial" placeholder="Buscar por lote, manzana, parcela o matrícula…"></div>
     </div>
     <div class="toolbar-filters">
       <select id="filterEstadoComercial"><option value="">Todos los estados</option></select>
@@ -347,8 +348,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     return "c"+n;
   }
 
-  var ICON_EDIT = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"></path></svg>';
-  var ICON_TRASH = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>';
 
   // Íconos de la pestaña Contacto — mismo trazo gris neutro para todos,
   // sin un color propio por red (pedido explícito del usuario).
@@ -1055,8 +1054,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
         : '')+
 
       '<div class="view-actions">'+
-        '<button type="button" class="btn-view-action" id="btnEditLote">'+ICON_EDIT+'Editar</button>'+
-        '<button type="button" class="btn-view-action" id="btnDeleteViewLote">'+ICON_TRASH+'Eliminar</button>'+
+        '<button type="button" class="btn btn-outline btn-grow" id="btnEditLote">'+HeaderGlobal.icono("editar")+'Editar</button>'+
+        '<button type="button" class="btn btn-danger btn-grow" id="btnDeleteViewLote">'+HeaderGlobal.icono("eliminar")+'Eliminar</button>'+
       '</div>';
 
     document.getElementById("xCloseViewLote").addEventListener("click", closeModal);
@@ -1113,8 +1112,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
           '<select id="f_ocupante" name="ocupante">'+ocupanteOpts+'</select>'+
           '<p class="field-nota">La titularidad, la matrícula, la superficie y la escritura no cambian: '+
           'quedan como están arriba. Esto solo registra quién ocupa el lote.</p></div>')+
-        '<div class="modal-actions"><button type="submit" class="btn-primary">Guardar</button>'+
-        (isNew?'':'<button type="button" class="btn-edit" id="btnCancelEditLote">Cancelar</button><button type="button" class="btn-danger" id="btnDeleteLote">Eliminar</button>')+'</div>'+
+        '<div class="modal-actions"><button type="submit" class="btn btn-primary btn-grow">'+HeaderGlobal.icono("guardar")+'Guardar</button>'+
+        (isNew?'':'<button type="button" class="btn btn-secondary" id="btnCancelEditLote">'+HeaderGlobal.icono("cancelar")+'Cancelar</button><button type="button" class="btn btn-danger" id="btnDeleteLote">'+HeaderGlobal.icono("eliminar")+'Eliminar</button>')+'</div>'+
       '</form>';
 
     veil.hidden = false;
@@ -1296,8 +1295,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
       tabsHtml+
       '<div id="empSubpanel">'+panelHtml+'</div>'+
       '<div class="view-actions">'+
-        '<button type="button" class="btn-view-action" id="btnEditEmp">'+ICON_EDIT+'Editar</button>'+
-        '<button type="button" class="btn-view-action" id="btnDeleteViewEmp">'+ICON_TRASH+'Eliminar</button>'+
+        '<button type="button" class="btn btn-outline btn-grow" id="btnEditEmp">'+HeaderGlobal.icono("editar")+'Editar</button>'+
+        '<button type="button" class="btn btn-danger btn-grow" id="btnDeleteViewEmp">'+HeaderGlobal.icono("eliminar")+'Eliminar</button>'+
       '</div>';
 
     document.getElementById("xCloseViewEmp").addEventListener("click", closeModal);
@@ -1337,8 +1336,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
         '<div class="row2">'+field("pagweb","Página web","text",e)+field("instagram","Instagram","text",e)+'</div>'+
         '<div class="row2">'+field("facebook","Facebook","text",e)+field("linkedin","LinkedIn","text",e)+'</div>'+
         '<div class="field"><label for="f_observacion">Observación</label><textarea id="f_observacion" name="observacion">'+esc(e?e.observacion:"")+'</textarea></div>'+
-        '<div class="modal-actions"><button type="submit" class="btn-primary">Guardar</button>'+
-        (isNew?'':'<button type="button" class="btn-edit" id="btnCancelEditEmp">Cancelar</button><button type="button" class="btn-danger" id="btnDeleteEmp">Eliminar</button>')+'</div>'+
+        '<div class="modal-actions"><button type="submit" class="btn btn-primary btn-grow">'+HeaderGlobal.icono("guardar")+'Guardar</button>'+
+        (isNew?'':'<button type="button" class="btn btn-secondary" id="btnCancelEditEmp">'+HeaderGlobal.icono("cancelar")+'Cancelar</button><button type="button" class="btn btn-danger" id="btnDeleteEmp">'+HeaderGlobal.icono("eliminar")+'Eliminar</button>')+'</div>'+
       '</form>';
 
     veil.hidden = false;

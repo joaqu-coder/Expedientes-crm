@@ -12,6 +12,10 @@
   <link rel="icon" type="image/svg+xml" href="/icon.svg">
   <link rel="apple-touch-icon" href="/icon.svg">
   <title>Expedientes CRM</title>
+  <!-- Sistema visual compartido por las 5 páginas (botones, búsqueda y los
+       estados de la barra inferior). Va ANTES del <style> de la página: lo de
+       acá es la base común y lo de abajo, lo propio de esta pantalla. -->
+  <link rel="stylesheet" href="/ui-kit.css">
   <style>
     :root {
       --primary: #667eea;
@@ -20,6 +24,12 @@
       --gray-200: #e5e7eb;
       --text: #1f2937;
       --text-muted: #6b7280;
+      /* Nombres comunes del ui-kit (acá solo los usa la barra inferior). */
+      --accent: var(--primary);
+      --fg: var(--text);
+      --muted: var(--text-muted);
+      --surface-2: var(--gray-100);
+      --border: var(--gray-200);
       /* Tarjetas blancas, como en el resto de la suite — antes la landing
          era la única que las pintaba con --gray-100 (gris claro). */
       --surface: #ffffff;
@@ -177,6 +187,10 @@
     </a>
   </nav>
 
+  <!-- La landing no tiene header ni alta, así que no llama a HeaderGlobal.init().
+       Carga header.js igual por la barra inferior: así la respuesta al toque es
+       la misma que en las otras cuatro pantallas, sin repetir el código acá. -->
+  <script src="/header.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(() => {});

@@ -15,6 +15,10 @@
   <link rel="icon" type="image/svg+xml" href="/icon.svg">
   <link rel="apple-touch-icon" href="/icon.svg">
   <title>Cartas de Intención — Parques Industriales</title>
+<!-- Sistema visual compartido por las 5 páginas (botones, búsqueda y los
+     estados de la barra inferior). Va ANTES del <style> de la página: lo de
+     acá es la base común y lo de abajo, lo propio de esta pantalla. -->
+<link rel="stylesheet" href="/ui-kit.css">
 <style>
 
 /* Barra de navegación inferior fija, presente en las 5 páginas del hub —
@@ -118,7 +122,9 @@ svg text{font-family:var(--font-body)}
 .tile .hint b{color:var(--fg);font-weight:600}
 
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
-.toolbar select,.toolbar input[type=search]{background:var(--surface);border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:8px 10px;font-size:13px}
+/* El campo de búsqueda lo dibuja .search-bar de ui-kit.css: acá quedan
+   solo los desplegables de filtro. */
+.toolbar select{background:var(--surface);border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:8px 10px;font-size:13px}
 
 /* ---- Listado de tarjetas ---- */
 .list-count{font-size:12px;color:var(--muted);margin-bottom:8px;font-variant-numeric:tabular-nums}
@@ -176,11 +182,9 @@ svg text{font-family:var(--font-body)}
 .hist-time .sys{color:var(--accent);text-transform:uppercase;letter-spacing:.04em;font-size:9px;border:1px solid var(--accent);border-radius:4px;padding:0 4px;margin-left:6px}
 .hist-text{font-size:13px;line-height:1.4}
 
+/* Los botones de acción (Guardar/Cancelar/Eliminar/Editar) viven en
+   /ui-kit.css, compartidos con las otras tres apps. */
 .modal-actions{display:flex;gap:8px;margin-top:16px}
-.btn-primary{flex:1;background:var(--accent);color:var(--accent-fg);border:none;border-radius:8px;padding:11px;font-weight:600;font-size:14px}
-.btn-ghost{background:none;border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:11px 14px;font-size:14px}
-.btn-danger{background:none;border:1px solid var(--danger);color:var(--danger);border-radius:8px;padding:11px 14px;font-size:13px}
-.btn-edit{background:none;border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:11px 14px;font-size:14px}
 
 /* ---- Modal: vista de lectura ---- */
 .view-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
@@ -315,6 +319,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 <!-- ===== VISTA LISTADO ===== -->
 <section class="view" id="viewList" role="tabpanel" aria-labelledby="tabList">
   <div class="toolbar">
+    <div class="search-bar"><input type="search" id="search" placeholder="Buscar empresa, expediente o representante…"></div>
     <select id="filterParque"><option value="">Todos los parques</option></select>
     <select id="filterRubro"><option value="">Todos los rubros</option></select>
     <select id="filterSituacion">
@@ -332,7 +337,6 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
       <option value="verde">🟢 En plazo</option>
       <option value="sinfecha">⚠️ Sin fecha de inicio</option>
     </select>
-    <input type="search" id="search" placeholder="Buscar empresa, expediente o representante…">
   </div>
   <div class="settings-row">
     Plazo administrativo estimado (para el semáforo de urgencia):
@@ -2091,9 +2095,12 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
       historialHtml(e)+
 
       '<div class="view-actions">'+
-        (e.archivado?'<button type="button" class="btn-primary" id="btnRescatar">Rescatar</button>':'')+
-        '<button type="button" class="'+(e.archivado?"btn-edit":"btn-primary")+'" id="btnEdit">Editar</button>'+
-        '<button type="button" class="btn-danger" id="btnDeleteView">Eliminar</button>'+
+        (e.archivado?'<button type="button" class="btn btn-primary btn-grow" id="btnRescatar">'+HeaderGlobal.icono("reabrir")+'Rescatar</button>':'')+
+        // Editar es la acción principal de un expediente vivo y la secundaria
+        // de uno archivado, donde la principal es Rescatar: cambia la
+        // variante de color, no el tamaño ni el icono.
+        '<button type="button" class="btn btn-grow '+(e.archivado?"btn-outline":"btn-primary")+'" id="btnEdit">'+HeaderGlobal.icono("editar")+'Editar</button>'+
+        '<button type="button" class="btn btn-danger btn-grow" id="btnDeleteView">'+HeaderGlobal.icono("eliminar")+'Eliminar</button>'+
       '</div>';
 
     document.getElementById("xCloseView").addEventListener("click", closeModal);
@@ -2122,8 +2129,8 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
         '<div class="row2">'+field("contacto_tel","Contacto — tel/cel","text",e)+field("contacto_mail","Contacto — mail","text",e)+'</div>'+
         '<div class="field"><label for="f_nota">Nueva nota (se agrega al historial)</label><textarea id="f_nota" placeholder="Observación, llamado, documentación recibida…"></textarea></div>'+
         historialHtml(e)+
-        '<div class="modal-actions"><button type="submit" class="btn-primary">Guardar</button>'+
-        (isNew?'':'<button type="button" class="btn-edit" id="btnCancelEdit">Cancelar</button><button type="button" class="btn-danger" id="btnDelete">Eliminar</button>')+'</div>'+
+        '<div class="modal-actions"><button type="submit" class="btn btn-primary btn-grow">'+HeaderGlobal.icono("guardar")+'Guardar</button>'+
+        (isNew?'':'<button type="button" class="btn btn-secondary" id="btnCancelEdit">'+HeaderGlobal.icono("cancelar")+'Cancelar</button><button type="button" class="btn btn-danger" id="btnDelete">'+HeaderGlobal.icono("eliminar")+'Eliminar</button>')+'</div>'+
       '</form>';
 
     veil.hidden = false;

@@ -23,7 +23,8 @@ public/seguimiento.html  ← la app de expedientes (la de siempre; antes era ind
 public/proyectos.html    ← cartas de intención de parques industriales (EGPAIS)
 public/resoluciones.html ← resoluciones del Directorio (archivo histórico 2012-2025)
 public/parques.html      ← lotes y empresas instaladas en los parques (Güemes + Salta)
-public/header.js         ← ÚNICO código compartido entre apps: el header (título + ⋮) y el FAB
+public/header.js         ← compartido: header (título + ⋮), FAB, iconos y buscador
+public/ui-kit.css        ← compartido: botones de acción, barra de búsqueda y estados de la nav
 
 Navegador (seguimiento)   Navegador (proyectos)      Navegador (resoluciones)  Navegador (parques)
     │  /api/sync              │  /api/sync-cartas         │  /api/sync-resoluciones  │  /api/sync-parques
@@ -447,7 +448,22 @@ El sidebar se eliminó por completo. Reglas que quedan:
 
 ---
 
-## Header global: el único código compartido entre apps
+## Lo compartido entre apps: `header.js` y `ui-kit.css`
+
+Son las **dos únicas** excepciones a "cada app es un documento autónomo". Todo
+lo demás sigue inline en su HTML. La regla para decidir si algo va acá: ¿tiene
+que verse y comportarse idéntico en las cuatro pantallas? Si la respuesta es
+"más o menos", no va.
+
+| Archivo | Qué vive adentro |
+|---|---|
+| `public/header.js` | El header (título + ⋮), el FAB, el juego de iconos (`HeaderGlobal.icono`), el cableado de la barra de búsqueda y la vibración de la nav |
+| `public/ui-kit.css` | Los tokens `--ui-*`, el componente `.btn` con sus variantes, la barra de búsqueda y los estados de `.bottom-nav .nav-item` |
+
+Los dos se sirven **network-first** en `sw.js`: una copia vieja deja la app sin
+cabecera o con los botones sin estilo, que es peor que esperar la red.
+
+## Header global: el primer código compartido entre apps
 
 Pedido del usuario (2026-10-14), con especificación propia: título de la sección
 a la izquierda, menú ⋮ a la derecha, misma estructura y posición en las cuatro
@@ -486,6 +502,57 @@ HeaderGlobal.setSync("Al día", "ok");          // ok | pendiente | error
   que se estaba mirando si alguien lo tocaba. `testUniformidad()` lo prueba
   por comportamiento —abre el modal y pregunta qué recibe el toque en el
   centro del botón—, no comparando z-index entre archivos.
+
+## Sistema visual compartido (`ui-kit.css`)
+
+Especificación del usuario (2026-10-18): un solo componente de botón, una sola
+barra de búsqueda y una sola barra de navegación para las cuatro apps, con
+WhatsApp como referencia estética.
+
+**Qué había antes**, y es lo que no hay que volver a dejar pasar: cinco
+vocabularios de botón (`.btn-neutral`/`.btn-small` en Seguimiento,
+`.btn-ghost`/`.btn-edit`/`.btn-view-action` en las otras tres), **tres alturas
+distintas** (38, 41 y 44px), Eliminar en 13px contra 14px del resto y, en
+Seguimiento, Eliminar dibujado como botón *chico* al lado de Guardar — la
+acción más grave con la mitad del peso visual. `.btn-edit` ni siquiera era
+Editar: era la clase de **Cancelar**.
+
+- **Los colores no se redefinen en el kit.** Los tokens `--ui-*` se leen de lo
+  que cada app ya declara (`--accent`, `--border`, `--surface`…), así que
+  Proyectos sigue en ámbar y las otras tres en indigo. El verde `#00a884` de
+  la especificación es el de WhatsApp: se dejó afuera a propósito — la propia
+  especificación dice "si existen valores aprobados en el proyecto,
+  conservarlos". Seguimiento e index declaran además unos alias
+  (`--fg: var(--text)`, `--border: var(--gray-200)`…) porque nombran sus
+  colores distinto; sin eso el kit caería en sus valores de respaldo.
+- **40px de botón y 44px de área táctil, las dos cosas.** La especificación
+  pide controles de 40px y el proyecto exige 44px de objetivo táctil: el botón
+  mide 40 y un `::after` estira el área a 44, igual que los chips de filtro
+  (38 visuales / 44 táctiles). El test lo verifica por comportamiento
+  (`elementFromPoint`), no midiendo el rectángulo.
+- **Las medidas de escritorio de la barra de búsqueda no se tomaron
+  literales** (alto 134px, texto 46px, lupa 50px): son píxeles de la captura
+  de referencia, no de CSS — a esa escala la barra ocupa un quinto de la
+  pantalla. Se usan las del bloque móvil de la misma especificación (48px,
+  16px, 20px) en los dos anchos. Mismo caso que los "40px" del título del
+  header en la especificación del 2026-10-14.
+- **Resolver pasó de neutro a color de acento.** El 2026-10-13 el usuario
+  había pedido que Resolver se viera como Editar ("sin verde/gris distintos");
+  la especificación nueva le asigna la variante `success`, que en el kit es el
+  acento de la app, no verde. Las dos cosas se respetan: no es verde, pero sí
+  se distingue de Editar como acción principal.
+- **Los iconos son Lucide dibujados a mano** (`HeaderGlobal.icono`): save, x,
+  trash-2, pencil, check-circle-2, rotate-ccw y search, todos al mismo trazo y
+  tamaño. No se sumó la librería: el proyecto no tiene build step ni
+  dependencias y serían siete iconos. El emoji 🔍 que hacía de lupa en el
+  buscador de Seguimiento se eliminó — se dibuja distinto en cada sistema.
+- **La vibración al tocar la nav es opcional de verdad**: solo donde el
+  navegador la soporta, nunca como única señal (el `:active` del kit siempre
+  está) y apagada si el sistema pide menos movimiento.
+- **Test**: `testUniformidad()` compara entre las cuatro apps el alto, el
+  radio, la tipografía, la alineación y el tamaño de icono de los botones, y
+  el alto, el radio, la fuente, la lupa y el botón de limpiar de las
+  búsquedas. Es el test que hubiera cazado las tres alturas distintas.
 
 ### No hay modo oscuro
 

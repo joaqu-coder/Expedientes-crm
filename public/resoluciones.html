@@ -12,6 +12,10 @@
 <link rel="icon" type="image/svg+xml" href="/icon.svg">
 <link rel="apple-touch-icon" href="/icon.svg">
 <title>Resoluciones — EGPAIS</title>
+<!-- Sistema visual compartido por las 5 páginas (botones, búsqueda y los
+     estados de la barra inferior). Va ANTES del <style> de la página: lo de
+     acá es la base común y lo de abajo, lo propio de esta pantalla. -->
+<link rel="stylesheet" href="/ui-kit.css">
 <style>
 /* Misma paleta/tipografía que Seguimiento y Proyectos: mismo acento índigo,
    misma escala de grises, fuente del sistema en toda la app. */
@@ -53,8 +57,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 /* ---- Toolbar: búsqueda siempre visible + filtros ---- */
 .toolbar-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:20px;display:flex;flex-direction:column;gap:12px}
-.toolbar-card select,.toolbar-card input[type=search]{background:var(--surface-2);border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:8px 10px;font-size:13px}
-.toolbar-search input[type=search]{width:100%}
+/* El campo de búsqueda lo dibuja .search-bar de ui-kit.css: acá quedan
+   solo los desplegables de filtro. */
+.toolbar-card select{background:var(--surface-2);border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:8px 10px;font-size:13px}
 .toolbar-filters{display:flex;gap:8px;flex-wrap:wrap}
 .toolbar-filters select{flex:1 1 160px}
 
@@ -94,11 +99,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media (max-width:420px){.row2{grid-template-columns:1fr}}
 
+/* Los botones de acción (Guardar/Cancelar/Eliminar/Editar) viven en
+   /ui-kit.css, compartidos con las otras tres apps. */
 .modal-actions{display:flex;gap:8px;margin-top:16px}
-.btn-primary{flex:1;background:var(--accent);color:var(--accent-fg);border:none;border-radius:8px;padding:11px;font-weight:600;font-size:14px}
-.btn-ghost{background:none;border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:11px 14px;font-size:14px}
-.btn-danger{background:none;border:1px solid var(--danger);color:var(--danger);border-radius:8px;padding:11px 14px;font-size:13px}
-.btn-edit{background:none;border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:11px 14px;font-size:14px}
 
 /* ---- Modal: vista de lectura ---- */
 .view-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
@@ -113,9 +116,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .view-texto{font-size:13.5px;line-height:1.5;white-space:pre-wrap;margin:0}
 .view-empty{font-size:12.5px;color:var(--muted)}
 .view-actions{display:flex;gap:8px;margin-top:16px}
-.btn-view-action{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;background:none;border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:11px;font-weight:600;font-size:14px}
-.btn-view-action:hover{border-color:var(--muted)}
-.btn-view-action svg{flex:0 0 auto}
 
 </style>
 </head>
@@ -126,7 +126,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 <div class="toolbar-card">
   <div class="toolbar-search">
-    <input type="search" id="search" placeholder="Buscar por N° de resolución, expediente, autoridad o texto de la resolución…">
+    <div class="search-bar"><input type="search" id="search" placeholder="Buscar por N° de resolución, expediente, autoridad o texto de la resolución…"></div>
   </div>
   <div class="toolbar-filters">
     <select id="filterTema"><option value="">Todos los temas</option></select>
@@ -168,8 +168,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     return "c"+n;
   }
 
-  var ICON_EDIT = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"></path></svg>';
-  var ICON_TRASH = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>';
 
   var STORAGE_KEY = "resoluciones_crm_v1";
 
@@ -361,7 +359,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     });
     var restantes = filtradas.length - visibles.length;
     mas.innerHTML = restantes>0
-      ? '<button type="button" class="btn-ghost" id="btnMas">Mostrar '+Math.min(restantes,PAGINA)+' más ('+restantes+' restantes)</button>'
+      ? '<button type="button" class="btn btn-secondary" id="btnMas">Mostrar '+Math.min(restantes,PAGINA)+' más ('+restantes+' restantes)</button>'
       : "";
     var btnMas = document.getElementById("btnMas");
     if(btnMas) btnMas.addEventListener("click", function(){ state.limite += PAGINA; renderList(); });
@@ -413,8 +411,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
         : '')+
 
       '<div class="view-actions">'+
-        '<button type="button" class="btn-view-action" id="btnEdit">'+ICON_EDIT+'Editar</button>'+
-        '<button type="button" class="btn-view-action" id="btnDeleteView">'+ICON_TRASH+'Eliminar</button>'+
+        '<button type="button" class="btn btn-outline btn-grow" id="btnEdit">'+HeaderGlobal.icono("editar")+'Editar</button>'+
+        '<button type="button" class="btn btn-danger btn-grow" id="btnDeleteView">'+HeaderGlobal.icono("eliminar")+'Eliminar</button>'+
       '</div>';
 
     document.getElementById("xCloseView").addEventListener("click", closeModal);
@@ -436,8 +434,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
         field("autoridad","Autoridad","text",r,"Directorio EGPAIS")+
         '<div class="field"><label for="f_contenido">Contenido</label><textarea id="f_contenido" name="contenido" placeholder="Texto resolutivo…">'+esc(r?r.contenido:"")+'</textarea></div>'+
         '<div class="field"><label for="f_observaciones">Observaciones</label><textarea id="f_observaciones" name="observaciones" placeholder="Observaciones…">'+esc(r?r.observaciones:"")+'</textarea></div>'+
-        '<div class="modal-actions"><button type="submit" class="btn-primary">Guardar</button>'+
-        (isNew?'':'<button type="button" class="btn-edit" id="btnCancelEdit">Cancelar</button><button type="button" class="btn-danger" id="btnDelete">Eliminar</button>')+'</div>'+
+        '<div class="modal-actions"><button type="submit" class="btn btn-primary btn-grow">'+HeaderGlobal.icono("guardar")+'Guardar</button>'+
+        (isNew?'':'<button type="button" class="btn btn-secondary" id="btnCancelEdit">'+HeaderGlobal.icono("cancelar")+'Cancelar</button><button type="button" class="btn btn-danger" id="btnDelete">'+HeaderGlobal.icono("eliminar")+'Eliminar</button>')+'</div>'+
       '</form>';
 
     veil.hidden = false;

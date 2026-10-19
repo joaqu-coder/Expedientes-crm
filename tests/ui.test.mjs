@@ -33,7 +33,17 @@ const HTML = fs.readFileSync(path.join(RAIZ, 'public/seguimiento.html'), 'utf8')
 // Las 4 apps cargan el header común con <script src="/header.js">, así que los
 // servidores de prueba tienen que servirlo o la página queda sin cabecera.
 const HEADER_JS = fs.readFileSync(path.join(RAIZ, 'public/header.js'), 'utf8');
+const UI_KIT = fs.readFileSync(path.join(RAIZ, 'public/ui-kit.css'), 'utf8');
+// Los dos archivos compartidos por las 5 páginas. Si el server de un test no
+// los sirve, esa pantalla corre sin header, sin botones con estilo y sin la
+// lupa de la búsqueda — y el test falla por una razón que no es la que
+// estaba probando.
 function servirHeaderJs(req, res) {
+  if (req.url.startsWith('/ui-kit.css')) {
+    res.writeHead(200, { 'Content-Type': 'text/css; charset=utf-8' });
+    res.end(UI_KIT);
+    return true;
+  }
   if (!req.url.startsWith('/header.js')) return false;
   res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8' });
   res.end(HEADER_JS);
@@ -466,14 +476,12 @@ async function testMovilTactil() {
   // Objetivos táctiles de 44px.
   await page.locator('.expediente-header-urgencia').first().click();
   const alto = async (sel) => (await page.locator(sel).first().boundingBox()).height;
-  for (const [sel, nombre] of [['.expediente-actions .btn', 'Resolver'], ['#btnMenu', 'menú ⋮']]) {
-    const h = await alto(sel);
-    ok(h >= 44, `${nombre} mide ≥44px de alto (${Math.round(h)}px)`);
-  }
-  // Los chips de filtro son la excepción: miden 38px a la vista (para quedar
-  // iguales a los de Parques/Proyectos) y extienden el objetivo táctil a 44px
-  // con un pseudo-elemento. Por eso no se mide el alto del rect sino lo que
-  // importa de verdad: que un dedo que cae en esa franja active el chip.
+  ok((await alto('#btnMenu')) >= 44, `el menú ⋮ mide ≥44px de alto (${Math.round(await alto('#btnMenu'))}px)`);
+  // Los chips de filtro y, desde el ui-kit, también los botones de acción
+  // miden menos a la vista (38 y 40px, las medidas pedidas) y extienden el
+  // objetivo táctil a 44px con un pseudo-elemento. Por eso no se mide el alto
+  // del rect sino lo que importa de verdad: que un dedo que cae en esa franja
+  // active el control.
   for (const [sel, nombre] of [['.area-btn', 'chip de área'], ['.pestana-btn', 'pestaña']]) {
     const r = await page.evaluate((s) => {
       const el = document.querySelector(s);
@@ -488,6 +496,30 @@ async function testMovilTactil() {
     ok(Math.round(r.alto) === 38, `${nombre} mide 38px a la vista, igual que en Parques/Proyectos (${Math.round(r.alto)}px)`);
     ok(r.arriba && r.abajo, `${nombre} responde al toque en los 44px completos (arriba=${r.arriba}, abajo=${r.abajo})`);
   }
+  // Mismo criterio para los botones de acción: 40px a la vista (la medida de
+  // la especificación) y 44px de área táctil.
+  const resolver = await page.evaluate(() => {
+    const el = document.querySelector('.expediente-actions .btn');
+    // Al centro de la pantalla antes de medir: si el botón queda abajo de
+    // todo, quien recibe el toque es la barra de navegación y el test falla
+    // por dónde estaba parada la página, no por el tamaño del objetivo.
+    el.scrollIntoView({ block: 'center' });
+    const b = el.getBoundingClientRect();
+    const x = b.left + b.width / 2;
+    const centro = b.top + b.height / 2;
+    const ha = document.elementFromPoint(x, centro - 21);
+    const hb = document.elementFromPoint(x, centro + 21);
+    return {
+      alto: b.height,
+      arriba: el.contains(ha),
+      abajo: el.contains(hb),
+      quien: (ha ? ha.className : 'null') + ' / ' + (hb ? hb.className : 'null'),
+      y: Math.round(b.top)
+    };
+  });
+  ok(Math.round(resolver.alto) === 40, `Resolver mide los 40px de la especificación (${Math.round(resolver.alto)}px)`);
+  ok(resolver.arriba && resolver.abajo,
+     `Resolver responde al toque en los 44px completos (arriba=${resolver.arriba}, abajo=${resolver.abajo}, y=${resolver.y}, tapa=${resolver.quien})`);
 
   // Los chips de área van en una sola fila con scroll horizontal.
   const chips = await page.evaluate(() => {
@@ -1292,6 +1324,8 @@ async function testUniformidad(puerto) {
   const chipDe = { seguimiento: '.pestana-btn', proyectos: '.tab', parques: '.tab' };
   const medidas = {};
   const barras = {};
+  const botones = {};
+  const buscadores = {};
 
   for (const p of paginas) {
     await page.goto(`http://localhost:${puerto}/${p}.html`, { waitUntil: 'domcontentloaded' });
@@ -1312,6 +1346,24 @@ async function testUniformidad(puerto) {
     // app en su propio CSS. Con el + por encima quedaba flotando sobre la
     // ficha abierta y además clickeable. Se prueba por comportamiento (quién
     // recibe el toque), no comparando z-index entre archivos.
+    // La barra de búsqueda: misma pastilla en las cuatro apps, con lupa SVG
+    // (en Seguimiento la "lupa" era un emoji dentro del placeholder, que se
+    // dibuja distinto en cada sistema operativo).
+    buscadores[p] = await page.evaluate(() => {
+      const barra = document.querySelector('.search-bar');
+      if (!barra) return null;
+      const input = barra.querySelector('input');
+      const cs = getComputedStyle(barra);
+      return {
+        alto: Math.round(barra.getBoundingClientRect().height),
+        radio: cs.borderTopLeftRadius,
+        fuente: Math.round(parseFloat(getComputedStyle(input).fontSize)),
+        lupa: !!barra.querySelector('svg.search-icon'),
+        limpiar: !!barra.querySelector('.search-clear'),
+        emoji: /[\u{1F300}-\u{1FAFF}\u{2190}-\u{2BFF}]/u.test(input.placeholder || '')
+      };
+    });
+
     if (await page.locator('#fabNuevo').count()) {
       await page.locator('#fabNuevo').click();
       await page.waitForTimeout(250);
@@ -1322,6 +1374,28 @@ async function testUniformidad(puerto) {
         return el === f || f.contains(el);
       });
       ok(!tapado, `en ${p} el botón + no queda por encima del modal abierto`);
+
+      // Con el formulario abierto están a la vista Guardar / Cancelar: es el
+      // momento de comparar el componente de botón entre pantallas.
+      botones[p] = await page.evaluate(() => {
+        const visibles = [...document.querySelectorAll('.btn')].filter((b) => b.offsetParent !== null);
+        if (!visibles.length) return null;
+        const cs = getComputedStyle(visibles[0]);
+        return {
+          cuantos: visibles.length,
+          alto: Math.round(visibles[0].getBoundingClientRect().height),
+          altos: [...new Set(visibles.map((b) => Math.round(b.getBoundingClientRect().height)))],
+          radio: cs.borderTopLeftRadius,
+          fuente: Math.round(parseFloat(cs.fontSize)) + '/' + cs.fontWeight,
+          alineado: cs.alignItems + '/' + cs.justifyContent,
+          iconos: visibles.filter((b) => b.querySelector('svg.btn-icon')).length,
+          tamIcono: (() => {
+            const i = document.querySelector('.btn svg.btn-icon');
+            return i ? Math.round(i.getBoundingClientRect().width) : 0;
+          })()
+        };
+      });
+
       await page.goto(`http://localhost:${puerto}/${p}.html`, { waitUntil: 'domcontentloaded' });
       await page.waitForTimeout(150);
     }
@@ -1435,6 +1509,36 @@ async function testUniformidad(puerto) {
     const esperado = p === 'index' ? 0 : 1;
     ok(barras[p].activos === esperado,
        `en ${p} hay ${esperado} app${esperado === 1 ? '' : 's'} marcada${esperado === 1 ? '' : 's'} como activa en la barra inferior`);
+  }
+
+  // ---- Un solo componente de botón para las cuatro apps ----
+  // Antes de ui-kit.css convivían tres alturas (38/41/44px), Eliminar venía
+  // en 13px contra 14px del resto, y en Seguimiento era además un botón
+  // "small": la mitad de peso visual que Guardar para una acción más grave.
+  const conBotones = Object.keys(botones).filter((p) => botones[p]);
+  ok(conBotones.length === 4, `las 4 apps exponen botones del sistema compartido (${conBotones.join(', ')})`);
+  const btnRef = botones[conBotones[0]];
+  for (const p of conBotones) {
+    const b = botones[p];
+    ok(b.altos.length === 1 && b.altos[0] === 40,
+       `en ${p} todos los botones a la vista miden los 40px de la especificación (${b.altos.join('/')}px)`);
+    ok(b.radio === btnRef.radio && b.fuente === btnRef.fuente && b.alineado === btnRef.alineado,
+       `el botón de ${p} comparte radio, tipografía y alineación con el de ${conBotones[0]} (${b.radio}, ${b.fuente})`);
+    ok(b.iconos > 0 && b.tamIcono === 18,
+       `en ${p} los botones llevan icono del juego compartido, a 18px (${b.iconos} con icono, ${b.tamIcono}px)`);
+  }
+
+  // ---- Una sola barra de búsqueda ----
+  const conBusqueda = Object.keys(buscadores).filter((p) => buscadores[p]);
+  ok(conBusqueda.length === 4, `las 4 apps usan la barra de búsqueda compartida (${conBusqueda.join(', ')})`);
+  const busRef = buscadores[conBusqueda[0]];
+  for (const p of conBusqueda) {
+    const s = buscadores[p];
+    ok(s.alto === busRef.alto && s.radio === busRef.radio && s.fuente === busRef.fuente,
+       `la búsqueda de ${p} mide y se ve igual que la de ${conBusqueda[0]} (${s.alto}px, radio ${s.radio}, ${s.fuente}px)`);
+    ok(s.fuente >= 16, `la búsqueda de ${p} usa fuente ≥16px, para que iOS no haga zoom al enfocar (${s.fuente}px)`);
+    ok(s.lupa && !s.emoji, `la búsqueda de ${p} tiene lupa SVG y ningún emoji en el placeholder`);
+    ok(s.limpiar, `la búsqueda de ${p} tiene botón para limpiar`);
   }
 
   await browser.close();

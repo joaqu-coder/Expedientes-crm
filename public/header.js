@@ -120,9 +120,95 @@
     '<circle cx="12" cy="19" r="2"></circle>' +
     "</svg>";
 
+  /* Iconos de las acciones, en un solo lugar para las cuatro apps. Son los de
+     Lucide (save, x, trash-2, pencil, check-circle-2, rotate-ccw, search),
+     dibujados a mano como SVG inline: el proyecto no tiene build step ni
+     dependencias, así que sumar la librería entera sería traer un paquete
+     para siete iconos. Mismo viewBox, mismo grosor de trazo y mismas puntas
+     redondeadas que el resto — que es lo que la especificación pide de ellos.
+     El tamaño lo fija .btn-icon en ui-kit.css, no cada SVG. */
+  var TRAZO =
+    '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+    'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
+
+  var ICONOS = {
+    guardar: TRAZO + '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"></path>' +
+      '<path d="M17 21v-8H7v8M7 3v5h8"></path></svg>',
+    cancelar: TRAZO + '<path d="M18 6 6 18M6 6l12 12"></path></svg>',
+    eliminar: TRAZO + '<path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"></path>' +
+      '<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M10 11v6M14 11v6"></path></svg>',
+    editar: TRAZO + '<path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path></svg>',
+    resolver: TRAZO + '<circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>',
+    reabrir: TRAZO + '<path d="M3 2v6h6"></path><path d="M3 13a9 9 0 1 0 3-7.7L3 8"></path></svg>',
+    buscar: TRAZO.replace('class="btn-icon"', 'class="search-icon"') +
+      '<circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>'
+  };
+
+  function icono(nombre) {
+    return ICONOS[nombre] || "";
+  }
+
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  /* Conecta una barra de búsqueda ya presente en el HTML: dibuja la lupa y el
+     botón de limpiar, y mantiene ese botón visible solo cuando hay texto. No
+     toca el `oninput` ni el filtrado de cada app — al limpiar dispara el
+     mismo evento `input` que escribir a mano, así que el listado se actualiza
+     por el camino que ya existía. */
+  function initBuscador(input) {
+    if (!input || input.dataset.uiBuscador === "1") return;
+    var barra = input.closest(".search-bar");
+    if (!barra) return;
+    input.dataset.uiBuscador = "1";
+    input.classList.add("search-input");
+
+    if (!barra.querySelector(".search-icon")) {
+      barra.insertAdjacentHTML("afterbegin", icono("buscar"));
+    }
+
+    var limpiar = barra.querySelector(".search-clear");
+    if (!limpiar) {
+      limpiar = document.createElement("button");
+      limpiar.type = "button";
+      limpiar.className = "search-clear";
+      limpiar.setAttribute("aria-label", "Limpiar la búsqueda");
+      limpiar.innerHTML = ICONOS.cancelar.replace('class="btn-icon"', "");
+      barra.appendChild(limpiar);
+    }
+
+    function sincronizar() {
+      limpiar.setAttribute("data-visible", input.value ? "1" : "0");
+    }
+    input.addEventListener("input", sincronizar);
+    limpiar.addEventListener("click", function () {
+      input.value = "";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.focus();
+      sincronizar();
+    });
+    sincronizar();
+  }
+
+  /* Vibración breve al tocar la barra de navegación. Es un extra: solo corre
+     donde el navegador lo soporta (hoy, Android), nunca es la única señal de
+     que el toque llegó —eso lo hace el :active de ui-kit.css— y se calla si
+     el sistema pide menos movimiento. */
+  var navListo = false;
+  function initVibracionNav() {
+    if (navListo) return;
+    navListo = true;
+    if (typeof navigator === "undefined" || typeof navigator.vibrate !== "function") return;
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    var nav = document.querySelector(".bottom-nav");
+    if (!nav) return;
+    nav.addEventListener("click", function (ev) {
+      if (ev.target.closest(".nav-item")) {
+        try { navigator.vibrate(10); } catch (e) {}
+      }
     });
   }
 
@@ -266,6 +352,12 @@
       document.body.appendChild(fab);
     }
 
+    // Lo mismo para todas: cada barra de búsqueda que haya en la página y la
+    // vibración de la navegación. Si una app suma un buscador después, le
+    // alcanza con el marcado — no hay nada que registrar acá.
+    document.querySelectorAll(".search-bar input").forEach(initBuscador);
+    initVibracionNav();
+
     return { boton: botonEl };
   }
 
@@ -293,5 +385,27 @@
     if (menuEl && !menuEl.hidden) pintarMenu();
   }
 
-  window.HeaderGlobal = { init: init, setTitulo: setTitulo, setSync: setSync, setMenu: setMenu };
+  /* La landing (index.html) no llama a init(): no tiene título de sección ni
+     ⋮ ni alta, solo la barra inferior. Pero la barra se comporta igual en las
+     cinco páginas, así que lo que no depende de init() arranca solo. Las dos
+     funciones son idempotentes, por lo que init() puede volver a llamarlas
+     sin duplicar nada. */
+  function autoArranque() {
+    document.querySelectorAll(".search-bar input").forEach(initBuscador);
+    initVibracionNav();
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", autoArranque);
+  } else {
+    autoArranque();
+  }
+
+  window.HeaderGlobal = {
+    init: init,
+    setTitulo: setTitulo,
+    setSync: setSync,
+    setMenu: setMenu,
+    icono: icono,
+    initBuscador: initBuscador
+  };
 })();

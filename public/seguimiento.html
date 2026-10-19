@@ -12,6 +12,10 @@
   <link rel="icon" type="image/svg+xml" href="/icon.svg">
   <link rel="apple-touch-icon" href="/icon.svg">
   <title>Expedientes CRM</title>
+  <!-- Sistema visual compartido por las 5 páginas (botones, búsqueda y los
+       estados de la barra inferior). Va ANTES del <style> de la página: lo de
+       acá es la base común y lo de abajo, lo propio de esta pantalla. -->
+  <link rel="stylesheet" href="/ui-kit.css">
   <style>
     :root {
       --primary: #667eea;
@@ -30,6 +34,17 @@
       --gray-300: #d1d5db;
       --text: #1f2937;
       --text-muted: #6b7280;
+      /* Nombres comunes del ui-kit. Esta pantalla llama a sus colores
+         --text/--gray-*, y las otras tres --fg/--border/--surface: los alias
+         hacen que ui-kit.css lea EXACTAMENTE los mismos colores que ya usa
+         esta página, en vez de caer en sus valores de respaldo. */
+      --fg: var(--text);
+      --muted: var(--text-muted);
+      --surface: #ffffff;
+      --surface-2: var(--gray-100);
+      --border: var(--gray-200);
+      --danger: var(--red);
+      --ok: var(--green);
       --badge-naranja: #9a3412;
       --badge-amarillo: #6b5b00;
       --badge-verde: #336d0e;
@@ -275,26 +290,8 @@
       border-bottom: 1px solid var(--gray-300);
     }
 
-    .search-input {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid var(--gray-300);
-      border-radius: 6px;
-      font-size: 16px; /* <16px hace que iOS Safari haga zoom al enfocar */
-      font-family: inherit;
-      color: var(--text);
-      background: white;
-    }
-
-    .search-input:focus {
-      outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
-    }
-
-    .search-input::placeholder {
-      color: var(--text-muted);
-    }
+    /* El campo de búsqueda (pastilla, lupa, foco y botón de limpiar) vive en
+       ui-kit.css, compartido con las otras tres apps. */
 
     /* Lista de Expedientes */
     .expedientes-list {
@@ -644,8 +641,9 @@
       border-top: 1px solid var(--gray-200);
     }
 
+    /* El ancho lo da .btn-full de ui-kit.css; acá solo se anula el margen
+       que la fila de acciones le pone a sus hijos. */
     .btn-full {
-      width: 100%;
       margin: 0 !important;
     }
 
@@ -785,76 +783,18 @@
 
     /* Botones — mismo radio/tipografía que proyectos.html/resoluciones.html/parques.html
        (antes 6px/12px, un poco más chico y cuadrado que el resto de la suite). */
-    .btn {
-      padding: 10px 16px;
-      border: none;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
 
-    .btn-primary {
-      background: var(--accent);
-      color: var(--accent-fg);
-    }
 
-    .btn-primary:hover {
-      opacity: 0.9;
-    }
 
-    .btn-secondary {
-      background: var(--gray-200);
-      color: var(--text);
-    }
 
-    .btn-secondary:hover {
-      background: var(--gray-300);
-    }
 
-    .btn-danger {
-      background: var(--red);
-      color: white;
-    }
 
-    .btn-danger:hover {
-      opacity: 0.9;
-    }
 
-    .btn-small {
-      padding: 6px 12px;
-      font-size: 11px;
-    }
 
-    .btn-success {
-      background: var(--green);
-      color: white;
-    }
 
-    .btn-success:hover {
-      opacity: 0.9;
-    }
 
-    /* Acciones de la tarjeta expandida (Resolver/Reabrir/Editar): mismo tono
-       neutro que el botón Editar de Proyectos, sin verde/gris distintos. */
-    .btn-neutral {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      background: none;
-      border: 1px solid var(--gray-300);
-      color: var(--text);
-    }
 
-    .btn-neutral:hover {
-      border-color: var(--text-muted);
-    }
 
-    .btn-neutral svg {
-      flex: 0 0 auto;
-    }
 
     .hidden {
       display: none;
@@ -922,7 +862,8 @@
        mantienen 38px a la vista para ser iguales a los de Parques/Proyectos y
        extienden solo su área de toque (ver el ::after de más arriba). */
     @media (pointer: coarse) {
-      .btn,
+      /* .btn ya no está acá: ui-kit.css le estira el área táctil a 44px con
+         un ::after, sin agrandar el botón. */
       .modal-close,
       .config-close,
       .config-item button,
@@ -1153,7 +1094,11 @@
       </div>
 
       <div class="search-box">
-        <input type="search" class="search-input" id="searchInput" placeholder="🔍 Buscar por palabra..." aria-label="Buscar expedientes" oninput="filtrarBusqueda()">
+        <!-- La lupa la dibuja header.js como SVG: el emoji 🔍 del placeholder
+             se veía distinto en cada sistema y no es un icono del juego. -->
+        <div class="search-bar">
+          <input type="search" class="search-input" id="searchInput" placeholder="Buscar expedientes" aria-label="Buscar expedientes" oninput="filtrarBusqueda()">
+        </div>
       </div>
 
       <div class="expedientes-list" id="expedientesList" role="tabpanel"></div>
@@ -1205,8 +1150,8 @@
         <form id="formularioModal"></form>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-neutral" id="btnCancelar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="M6 6l12 12"></path></svg> Cancelar</button>
-        <button class="btn btn-neutral btn-small hidden" id="btnEliminar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg> Eliminar</button>
+        <button class="btn btn-secondary" id="btnCancelar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="M6 6l12 12"></path></svg> Cancelar</button>
+        <button class="btn btn-danger hidden" id="btnEliminar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg> Eliminar</button>
         <button class="btn btn-primary" id="btnGuardar">Guardar</button>
       </div>
     </div>
@@ -1235,9 +1180,6 @@
   <script>
     // ===== CONFIGURACIÓN =====
     // Iconos de las acciones de la tarjeta expandida (mismo trazo que Proyectos).
-    const ICON_CHECK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>';
-    const ICON_UNDO = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path></svg>';
-    const ICON_EDIT = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"></path></svg>';
 
     const AREAS_DEFAULT = [
       "Jurídica",
@@ -2026,10 +1968,10 @@
 
               <div class="expediente-actions">
                 ${archivado
-                  ? `<button class="btn btn-neutral btn-full" data-id="${esc(exp.id)}" onclick="reabrirExpediente(this.dataset.id)">${ICON_UNDO} Reabrir</button>`
-                  : `<button class="btn btn-neutral btn-full" data-id="${esc(exp.id)}" onclick="marcarResuelto(this.dataset.id)">${ICON_CHECK} Resolver</button>`
+                  ? `<button class="btn btn-secondary btn-full" data-id="${esc(exp.id)}" onclick="reabrirExpediente(this.dataset.id)">${HeaderGlobal.icono('reabrir')} Reabrir</button>`
+                  : `<button class="btn btn-success btn-full" data-id="${esc(exp.id)}" onclick="marcarResuelto(this.dataset.id)">${HeaderGlobal.icono('resolver')} Resolver</button>`
                 }
-                <button class="btn btn-neutral btn-full" data-id="${esc(exp.id)}" onclick="abrirEditar(this.dataset.id)">${ICON_EDIT} Editar</button>
+                <button class="btn btn-outline btn-full" data-id="${esc(exp.id)}" onclick="abrirEditar(this.dataset.id)">${HeaderGlobal.icono('editar')} Editar</button>
               </div>
             </div>
           </div>
@@ -2258,6 +2200,15 @@
     document.getElementById('btnCancelar').addEventListener('click', cerrarModal);
     document.getElementById('btnGuardar').addEventListener('click', guardarExpediente);
     document.getElementById('btnEliminar').addEventListener('click', eliminarExpediente);
+
+    // Los iconos de estos tres salen del juego compartido (header.js), igual
+    // que en las otras apps. Se ponen desde acá y no en el HTML porque el
+    // SVG se define una sola vez para las cuatro pantallas.
+    [['btnGuardar','guardar','Guardar'],
+     ['btnCancelar','cancelar','Cancelar'],
+     ['btnEliminar','eliminar','Eliminar']].forEach(([id, ico, texto]) => {
+      document.getElementById(id).innerHTML = HeaderGlobal.icono(ico) + texto;
+    });
     document.getElementById('formularioModal').addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
         e.preventDefault();

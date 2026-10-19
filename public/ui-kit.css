@@ -1,0 +1,306 @@
+/* ui-kit.css — sistema visual compartido por las 5 páginas
+ *
+ * Segunda (y por ahora última) excepción a "cada app es un documento
+ * autónomo", junto con header.js: acá vive SOLO lo que tiene que verse
+ * idéntico en las cuatro apps — botones de acción, barra de búsqueda y los
+ * estados de la barra de navegación. Todo lo demás sigue inline en cada HTML.
+ *
+ * Se carga ANTES del <style> de cada página, así que una página todavía puede
+ * pisar algo puntual; si lo hace, es un bug a mirar, no la forma de trabajar.
+ *
+ * Antes de esto convivían cinco vocabularios de botón: .btn-neutral/.btn-small
+ * en Seguimiento, .btn-ghost/.btn-edit/.btn-view-action en las otras tres, con
+ * tres alturas distintas (38, 41 y 44px), Eliminar en 13px contra 14px del
+ * resto, y "Eliminar" dibujado como botón chico en una pantalla y como botón
+ * entero en otra.
+ */
+
+:root {
+  /* Los colores NO se redefinen acá. Cada app ya trae su acento (indigo en
+     Seguimiento/Resoluciones/Parques, ámbar en Proyectos, decisión del
+     2026-10-09) y el kit lo toma como está: estos tokens solo le ponen un
+     nombre común a lo que la página ya define. El valor de respaldo es para
+     una página que no declare el token, no para pisar al que sí lo hace. */
+  --ui-accent: var(--accent, #667eea);
+  --ui-accent-fg: var(--accent-fg, #ffffff);
+  --ui-accent-soft: color-mix(in srgb, var(--ui-accent) 16%, transparent);
+  --ui-accent-hover: color-mix(in srgb, var(--ui-accent) 86%, #000);
+
+  --ui-text: var(--fg, #1f2937);
+  --ui-muted: var(--muted, #6b7280);
+  --ui-surface: var(--surface, #ffffff);
+  --ui-surface-soft: var(--surface-2, #f3f4f6);
+  --ui-border: var(--border, #e5e7eb);
+
+  --ui-danger: var(--danger, #a1392c);
+  --ui-danger-soft: color-mix(in srgb, var(--ui-danger) 8%, transparent);
+  --ui-danger-border: color-mix(in srgb, var(--ui-danger) 35%, transparent);
+
+  /* Dimensiones: las de la especificación del usuario (2026-10-18). */
+  --ui-control-height: 40px;
+  --ui-icon-size: 18px;
+  --ui-radius-pill: 999px;
+  --ui-radius-button: 8px;
+  --ui-radius-nav: 10px;
+  --ui-gap: 8px;
+  --ui-padding-x: 14px;
+  --ui-transition: 160ms ease;
+
+  /* Alto mínimo de un objetivo táctil. La especificación pide controles de
+     40px y el proyecto venía con 44px: no se elige entre uno y otro — el
+     botón mide 40 y el área que responde al dedo se estira a 44 con un
+     ::after, igual que los chips de filtro (38px visuales / 44px táctiles). */
+  --ui-touch-min: 44px;
+
+  --ui-search-height: 48px;
+}
+
+/* ============================ BOTONES ============================
+ * Un solo componente con variantes. La diferencia entre ellas es el color y
+ * el significado de la acción, nunca el tamaño: Eliminar mide exactamente lo
+ * mismo que Guardar.
+ */
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-gap);
+
+  min-height: var(--ui-control-height);
+  padding: 0 var(--ui-padding-x);
+
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-button);
+
+  /* `font: 500 14px/1.2 inherit` no es CSS válido (la familia no acepta
+     palabras clave dentro del atajo) y además un <button> no hereda la
+     tipografía del documento por defecto: por eso va explícito. */
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.2;
+
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+
+  transition:
+    background var(--ui-transition),
+    color var(--ui-transition),
+    border-color var(--ui-transition),
+    transform var(--ui-transition);
+}
+
+.btn .btn-icon {
+  display: block;
+  flex: 0 0 var(--ui-icon-size);
+  width: var(--ui-icon-size);
+  height: var(--ui-icon-size);
+}
+
+.btn:active { transform: scale(.98); }
+.btn:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: .5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* El área táctil se estira sin cambiar lo que se ve. Solo a lo alto: a lo
+   ancho invadiría al botón de al lado, que en estas pantallas está a 8px. */
+@media (pointer: coarse) {
+  .btn::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: var(--ui-touch-min);
+  }
+}
+
+/* Guardar */
+.btn-primary { background: var(--ui-accent); color: var(--ui-accent-fg); }
+.btn-primary:hover { background: var(--ui-accent-hover); }
+
+/* Cancelar */
+.btn-secondary {
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  border-color: var(--ui-border);
+}
+.btn-secondary:hover { background: var(--ui-surface-soft); }
+
+/* Eliminar — contorno, no rojo pleno: es una acción destructiva que se
+   confirma después, no la acción principal de la pantalla. */
+.btn-danger {
+  background: var(--ui-surface);
+  color: var(--ui-danger);
+  border-color: var(--ui-danger-border);
+}
+.btn-danger:hover { background: var(--ui-danger-soft); border-color: var(--ui-danger); }
+
+/* Editar */
+.btn-outline {
+  background: transparent;
+  color: var(--ui-text);
+  border-color: var(--ui-border);
+}
+.btn-outline:hover { background: var(--ui-surface-soft); border-color: var(--ui-muted); }
+
+/* Resolver */
+.btn-success { background: var(--ui-accent); color: var(--ui-accent-fg); }
+.btn-success:hover { background: var(--ui-accent-hover); }
+
+/* Modificadores de ancho: el tamaño del botón no cambia, solo cómo se reparte
+   el espacio de la fila que lo contiene. */
+.btn-grow { flex: 1 1 auto; }
+.btn-full { width: 100%; }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn { transition: none; }
+  .btn:active { transform: none; }
+}
+
+/* ========================= BARRA DE BÚSQUEDA =========================
+ * Pastilla gris que se aclara al enfocar, lupa SVG a la izquierda y botón
+ * para limpiar cuando hay texto (lo conecta HeaderGlobal.initBuscador).
+ *
+ * Las medidas de escritorio de la especificación (alto 134px, texto 46px,
+ * lupa 50px) son píxeles de la captura de referencia, no de CSS: a esa escala
+ * la barra ocuparía un quinto de la pantalla. Se usan las del bloque móvil de
+ * la misma especificación, que sí son medidas reales, en los dos anchos —
+ * "mantener consistencia visual entre móvil y escritorio".
+ */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  width: 100%;
+  min-width: 0;
+  height: var(--ui-search-height);
+  padding: 0 14px;
+
+  background: var(--ui-surface-soft);
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-pill);
+
+  transition:
+    background var(--ui-transition),
+    border-color var(--ui-transition);
+}
+
+.search-bar:focus-within {
+  background: var(--ui-surface);
+  border-color: var(--ui-border);
+}
+
+.search-icon {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  color: var(--ui-muted);
+}
+
+.search-bar .search-input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+
+  border: 0;
+  outline: none;
+  background: transparent;
+
+  color: var(--ui-text);
+  font-family: inherit;
+  /* 16px no es decorativo: con menos, iOS hace zoom al enfocar el campo. */
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.search-bar .search-input::placeholder { color: var(--ui-muted); opacity: 1; }
+
+/* La X nativa de `type=search` aparece solo en algunos navegadores y no se
+   puede estilar: se apaga y se usa la propia, igual en todos. */
+.search-bar .search-input::-webkit-search-cancel-button { display: none; }
+
+.search-clear {
+  flex: 0 0 auto;
+  display: none;
+  align-items: center;
+  justify-content: center;
+
+  width: 28px;
+  height: 28px;
+  padding: 0;
+
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ui-muted);
+  cursor: pointer;
+
+  transition: background var(--ui-transition), color var(--ui-transition);
+}
+
+.search-clear[data-visible="1"] { display: inline-flex; }
+.search-clear:hover { background: var(--ui-surface-soft); color: var(--ui-text); }
+.search-clear:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+.search-clear svg { width: 16px; height: 16px; display: block; }
+
+@media (pointer: coarse) {
+  .search-clear { position: relative; }
+  .search-clear::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: var(--ui-touch-min);
+    height: var(--ui-touch-min);
+    transform: translate(-50%, -50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-bar, .search-clear { transition: none; }
+}
+
+/* ======================= BARRA DE NAVEGACIÓN =======================
+ * La barra, su marcado y el enlace activo ya existían en las 5 páginas y no
+ * se tocan (son <a href> reales entre documentos: el "router" es el
+ * navegador, y `aria-current="page"` lo pone el HTML de cada página). Acá se
+ * suma solo lo que faltaba: respuesta inmediata al toque y foco con teclado.
+ * La vibración opcional la conecta header.js.
+ */
+.bottom-nav .nav-item {
+  border-radius: var(--ui-radius-nav);
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background var(--ui-transition),
+    color var(--ui-transition),
+    transform var(--ui-transition);
+}
+
+.bottom-nav .nav-item:active {
+  background: var(--ui-accent-soft);
+  color: var(--ui-accent);
+  transform: scale(.97);
+}
+
+.bottom-nav .nav-item:focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bottom-nav .nav-item { transition: none; }
+  .bottom-nav .nav-item:active { transform: none; }
+}
