@@ -89,6 +89,9 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 .tab{flex:0 0 auto;display:inline-flex;align-items:center;height:38px;background:var(--surface-2);border:none;color:var(--fg);font-size:14px;font-weight:400;padding:0 14px;border-radius:999px;white-space:nowrap;transition:background-color .15s ease,color .15s ease}
 .tab:hover{background:color-mix(in srgb, var(--accent) 8%, var(--surface-2))}
 .tab.active{background:color-mix(in srgb, var(--accent) 16%, transparent);color:var(--accent)}
+/* display:inline-flex le gana a [hidden], así que una pestaña oculta
+   (hoy "Análisis", en stand by) seguiría viéndose sin esta línea. */
+.tab[hidden]{display:none}
 /* Contador integrado junto al nombre del filtro ("Empresas 55"), en
    seminegrita para distinguirlo del texto del filtro (peso normal). No va
    en "Análisis": no es un listado, no tiene una cantidad que mostrar. */
@@ -261,7 +264,10 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 <div class="tabs" role="tablist" aria-label="Vistas">
   <button class="tab" id="tabEmpresas" role="tab" aria-selected="true" aria-controls="viewEmpresas">Empresas</button>
   <button class="tab" id="tabComercial" role="tab" aria-selected="false" aria-controls="viewComercial">Comercial</button>
-  <button class="tab" id="tabDash" role="tab" aria-selected="false" aria-controls="viewDash">Análisis</button>
+  <!-- "Análisis" arranca oculto: está en stand by hasta definir los KPIs
+       (ver DASH_STANDBY en el script). El atributo acá evita que la pestaña
+       parpadee antes de que corra el JS; el interruptor real es la constante. -->
+  <button class="tab" id="tabDash" role="tab" aria-selected="false" aria-controls="viewDash" hidden>Análisis</button>
 </div>
 </div>
 
@@ -1541,8 +1547,21 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   // Default = Empresas (ya no hay una pestaña "Lotes" suelta).
   var tabEmpresas = document.getElementById("tabEmpresas"), tabComercial = document.getElementById("tabComercial"), tabDash = document.getElementById("tabDash");
   var viewEmpresas = document.getElementById("viewEmpresas"), viewComercial = document.getElementById("viewComercial"), viewDash = document.getElementById("viewDash");
+
+  // "Análisis" en stand by (pedido del usuario, 2026-10-19): los KPIs de hoy
+  // mezclan cosas que no se usan para decidir nada y hacen ruido. No se borró
+  // nada — renderDashboard() y su marcado quedan intactos; esta constante
+  // oculta la pestaña y manda #dashboard a Empresas. Para volver a
+  // encenderla, una vez acordados los KPIs: poner false acá.
+  var DASH_STANDBY = true;
+  tabDash.hidden = DASH_STANDBY;
+  function vistaDeHash(h){
+    if(h==="#comercial") return "comercial";
+    if(h==="#dashboard" && !DASH_STANDBY) return "dashboard";
+    return "empresas";
+  }
   function showView(name, desdeHash){
-    var isComercial = name==="comercial", isDash = name==="dashboard";
+    var isComercial = name==="comercial", isDash = name==="dashboard" && !DASH_STANDBY;
     var isEmpresas = !isComercial && !isDash;
     viewEmpresas.hidden = !isEmpresas;
     viewComercial.hidden = !isComercial;
@@ -1562,8 +1581,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   tabComercial.addEventListener("click", function(){ showView("comercial"); });
   tabDash.addEventListener("click", function(){ showView("dashboard"); });
   window.addEventListener("hashchange", function(){
-    var h = location.hash;
-    showView(h==="#comercial" ? "comercial" : h==="#dashboard" ? "dashboard" : "empresas", true);
+    showView(vistaDeHash(location.hash), true);
   });
 
 
@@ -1580,7 +1598,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   renderFiltros();
   renderComercial();
   renderEmpresas();
-  showView(location.hash==="#comercial" ? "comercial" : location.hash==="#dashboard" ? "dashboard" : "empresas", true);
+  showView(vistaDeHash(location.hash), true);
   bajarCambiosIniciales();
 
   if('serviceWorker' in navigator){

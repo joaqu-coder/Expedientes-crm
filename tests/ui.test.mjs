@@ -1048,7 +1048,10 @@ async function testParques(viewport, puerto) {
   const lotesSalta = datos.lotes.filter((l) => delParque(l, 'salta'));
   const empresasSalta = datos.empresas.filter((e) => delParque(e, 'salta'));
   const sinEmpresa = lotesGuemes.filter((l) => !l.id_empresa);
-  ok(lotesGuemes.length === 138, `el archivo trae los ${lotesGuemes.length} lotes reales de Güemes`);
+  // 139 desde el 2026-10-19: guemes_normalizado trajo un lote que no estaba
+  // (en el origen «L40», sin el relleno de ceros, y por eso no chocaba con
+  // L040, que es otro lote: CERÁMICA SALTEÑA contra CRAYÓN S.R.L).
+  ok(lotesGuemes.length === 139, `el archivo trae los ${lotesGuemes.length} lotes reales de Güemes`);
   // 55 originales - AGSOF S.A. fusionada (2026-10-13) - AGROCONSTRUCCIONES LA
   // POSTA, que el usuario borró desde la app el 2026-10-17 (L115 y L116
   // quedaron libres).
@@ -1175,13 +1178,18 @@ async function testParques(viewport, puerto) {
      'un lote comercial abre la misma ficha de lote (con su sección Titularidad)');
   await page.click('#xCloseViewLote');
 
-  // Dashboard: KPIs básicos.
-  await page.click('#tabDash');
-  await page.waitForSelector('.kpi-card');
-  const kpis = await page.locator('.kpi-card .n').allTextContents();
-  ok(kpis.some((n) => n.trim() === String(lotesGuemes.length)), 'el dashboard muestra el total de lotes del parque activo');
-  ok(kpis.some((n) => n.trim() === String(empresasGuemes.length)), 'el dashboard muestra el total de empresas del parque activo');
-  await page.click('#tabEmpresas');
+  // "Análisis" está en stand by hasta definir los KPIs (DASH_STANDBY en
+  // parques.html). Se verifica que la pestaña no se vea y que un #dashboard
+  // viejo —un favorito, el historial— caiga en Empresas en vez de dejar la
+  // pantalla vacía. El dashboard en sí no se prueba: el código sigue ahí pero
+  // no hay forma de llegar, y cuando se reactive este bloque vuelve a ser la
+  // prueba de KPIs de arriba.
+  ok(await page.locator('#tabDash').isHidden(), 'la pestaña Análisis está oculta (stand by)');
+  await page.evaluate(() => { location.hash = '#dashboard'; });
+  await page.waitForSelector('#empresasList .tarjeta');
+  ok(await page.locator('#viewDash').isHidden() && await page.locator('#viewEmpresas').isVisible(),
+     'un #dashboard viejo cae en Empresas, no en una pantalla vacía');
+  await page.evaluate(() => { location.hash = '#empresas'; });
   await page.waitForSelector('#empresasList .tarjeta');
 
   // ======================================================================
