@@ -1175,13 +1175,18 @@ async function testParques(viewport, puerto) {
      'un lote comercial abre la misma ficha de lote (con su sección Titularidad)');
   await page.click('#xCloseViewLote');
 
-  // Dashboard: KPIs básicos.
-  await page.click('#tabDash');
-  await page.waitForSelector('.kpi-card');
-  const kpis = await page.locator('.kpi-card .n').allTextContents();
-  ok(kpis.some((n) => n.trim() === String(lotesGuemes.length)), 'el dashboard muestra el total de lotes del parque activo');
-  ok(kpis.some((n) => n.trim() === String(empresasGuemes.length)), 'el dashboard muestra el total de empresas del parque activo');
-  await page.click('#tabEmpresas');
+  // "Análisis" está en stand by hasta definir los KPIs (DASH_STANDBY en
+  // parques.html). Se verifica que la pestaña no se vea y que un #dashboard
+  // viejo —un favorito, el historial— caiga en Empresas en vez de dejar la
+  // pantalla vacía. El dashboard en sí no se prueba: el código sigue ahí pero
+  // no hay forma de llegar, y cuando se reactive este bloque vuelve a ser la
+  // prueba de KPIs de arriba.
+  ok(await page.locator('#tabDash').isHidden(), 'la pestaña Análisis está oculta (stand by)');
+  await page.evaluate(() => { location.hash = '#dashboard'; });
+  await page.waitForSelector('#empresasList .tarjeta');
+  ok(await page.locator('#viewDash').isHidden() && await page.locator('#viewEmpresas').isVisible(),
+     'un #dashboard viejo cae en Empresas, no en una pantalla vacía');
+  await page.evaluate(() => { location.hash = '#empresas'; });
   await page.waitForSelector('#empresasList .tarjeta');
 
   // ======================================================================

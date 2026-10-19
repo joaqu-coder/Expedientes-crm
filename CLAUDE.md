@@ -438,6 +438,23 @@ ver abajo). Güemes dejó de ser el único parque:
 - `parqueActivo` es estado de pantalla: se guarda en `localStorage` para
   sobrevivir a un refresh, pero **no viaja en `datosParaSync()`**.
 
+### «Análisis» está en stand by (2026-10-19)
+
+Pedido del usuario: *"lo dejamos en stand by hasta organizar los KPIs que
+realmente necesito. Veo mucha información insignificante y con ello ruido"*.
+La pestaña se oculta, **no se borró nada**: `renderDashboard()`, su marcado y
+sus barras siguen enteros. El interruptor es la constante `DASH_STANDBY` en
+`parques.html` — ponerla en `false` la devuelve tal como estaba. Un
+`#dashboard` viejo (favorito, historial) cae en Empresas, no en una pantalla
+en blanco. Ojo con `[hidden]` en una pestaña: `.tab` es `display:inline-flex`
+y le gana, así que hizo falta `.tab[hidden]{display:none}`.
+
+Lo que mostraba, para la conversación de KPIs: lotes, empresas, superficie
+total, disponibles, alquilados a un tercero, alquilados sin ocupante cargado,
+y barras de estado, escrituración, ranking de empresas por superficie y
+rubros. `testParques()` ya no prueba el dashboard: verifica que la pestaña no
+se vea y que el hash viejo no deje la pantalla vacía.
+
 ### «Alquilada»: titularidad y ocupación son dos vínculos distintos
 
 Especificación del usuario (2026-10-18). El origen trae una fila por lote con
