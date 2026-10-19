@@ -71,6 +71,22 @@
     ".app-menu__item:hover{background:var(--surface-2)}",
     ".app-menu__item:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}",
 
+    /* Diálogo de la clave compartida. Mismos tokens que el resto: el radio,
+       el borde y las superficies salen de design-system.css, y los botones
+       son los `.btn` de ui-kit.css — no hay un botón nuevo para esto. */
+    ".app-clave__fondo{position:fixed;inset:0;z-index:70;display:flex;align-items:center;" +
+      "justify-content:center;padding:16px;background:rgba(0,0,0,.45)}",
+    ".app-clave{width:100%;max-width:360px;background:var(--surface);border:1px solid var(--border);" +
+      "border-radius:var(--ds-radius-panel);padding:18px;display:flex;flex-direction:column;gap:12px;" +
+      "box-shadow:0 10px 30px rgba(0,0,0,.18)}",
+    ".app-clave__tit{margin:0;font-size:18px;font-weight:600;color:var(--fg)}",
+    ".app-clave__texto{margin:0;font-size:13.5px;line-height:1.45;color:var(--muted)}",
+    /* 16px no es decorativo: con menos, iOS hace zoom al enfocar el campo. */
+    ".app-clave__input{width:100%;min-height:var(--ds-control-height);padding:0 12px;font:inherit;" +
+      "font-size:16px;color:var(--fg);background:var(--surface);border:1px solid var(--border);" +
+      "border-radius:var(--ds-radius-card)}",
+    ".app-clave__acciones{display:flex;gap:var(--ds-gap)}",
+
     /* Estado de sincronización: vive acá adentro en vez de ocupar un lugar fijo
        arriba. Cuando algo falla sí sale a la vista (ver .app-sync-aviso). */
     ".app-menu__estado{padding:10px 12px 8px;font-size:12px;color:var(--muted);" +
@@ -405,12 +421,135 @@
     autoArranque();
   }
 
+
+  /* ===================== CLAVE COMPARTIDA =====================
+   *
+   * Vive acá y no en cada app por el mismo motivo que el header: tiene que
+   * comportarse idéntico en las cuatro, y escribirlo cuatro veces es cómo
+   * nacieron los bugs que esta sesión encontró (cuatro implementaciones de
+   * sync, dos con un bucle de reintento sin freno).
+   *
+   * La clave se guarda una vez por DISPOSITIVO, no por app: las cinco
+   * páginas comparten origen, así que comparten este localStorage.
+   *
+   * Mientras el Worker no tenga cargado el secret APP_CLAVE, nunca devuelve
+   * 401 y este código no se nota: no pide nada a nadie.
+   */
+  var CLAVE_KEY = "expedientes_crm_clave_v1";
+  var CABECERA_CLAVE = "X-Clave";
+  var pidiendoClave = null; // promesa en curso: un solo diálogo aunque fallen varios pedidos a la vez
+
+  function leerClave() {
+    try { return localStorage.getItem(CLAVE_KEY) || ""; } catch (e) { return ""; }
+  }
+  function guardarClave(v) {
+    try { v ? localStorage.setItem(CLAVE_KEY, v) : localStorage.removeItem(CLAVE_KEY); } catch (e) {}
+  }
+
+  /* Diálogo propio y no prompt(): el proyecto ya decidió que no se usan
+     popups bloqueantes del navegador, y prompt() además está deshabilitado
+     en algunos contextos. Devuelve la clave escrita, o null si cancelan. */
+  function pedirClave(motivo) {
+    if (pidiendoClave) return pidiendoClave;
+    pidiendoClave = new Promise(function (resolver) {
+      var antes = document.activeElement;
+      var fondo = document.createElement("div");
+      fondo.className = "app-clave__fondo";
+      fondo.innerHTML =
+        '<div class="app-clave" role="dialog" aria-modal="true" aria-labelledby="appClaveTit">' +
+          '<h2 class="app-clave__tit" id="appClaveTit">Clave de acceso</h2>' +
+          '<p class="app-clave__texto"></p>' +
+          '<input class="app-clave__input" type="password" autocomplete="current-password" ' +
+                 'inputmode="text" aria-label="Clave">' +
+          '<div class="app-clave__acciones">' +
+            '<button type="button" class="btn btn-secondary btn-grow" data-cancelar>Cancelar</button>' +
+            '<button type="button" class="btn btn-primary btn-grow" data-aceptar>Entrar</button>' +
+          '</div>' +
+        '</div>';
+      fondo.querySelector(".app-clave__texto").textContent = motivo ||
+        "Escribí la clave para ver y guardar los datos. Queda guardada en este dispositivo.";
+      document.body.appendChild(fondo);
+
+      var campo = fondo.querySelector(".app-clave__input");
+      campo.focus();
+
+      function cerrar(valor) {
+        document.removeEventListener("keydown", enTecla, true);
+        fondo.remove();
+        if (antes && antes.focus) antes.focus();
+        pidiendoClave = null;
+        resolver(valor);
+      }
+      function aceptar() {
+        var v = campo.value.trim();
+        if (!v) { campo.focus(); return; }
+        guardarClave(v);
+        cerrar(v);
+      }
+      function enTecla(e) {
+        if (e.key === "Escape") { e.preventDefault(); cerrar(null); }
+        else if (e.key === "Enter" && fondo.contains(document.activeElement)) { e.preventDefault(); aceptar(); }
+        else if (e.key === "Tab") {
+          // Trampa de foco: el diálogo tapa la app, el tabulador no sale.
+          var focos = fondo.querySelectorAll("input, button");
+          var primero = focos[0], ultimo = focos[focos.length - 1];
+          if (e.shiftKey && document.activeElement === primero) { e.preventDefault(); ultimo.focus(); }
+          else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primero.focus(); }
+        }
+      }
+      document.addEventListener("keydown", enTecla, true);
+      fondo.querySelector("[data-aceptar]").addEventListener("click", aceptar);
+      fondo.querySelector("[data-cancelar]").addEventListener("click", function () { cerrar(null); });
+    });
+    return pidiendoClave;
+  }
+
+  /* El fetch que usan las cuatro apps para hablar con /api/.
+   *
+   * Agrega la cabecera si hay clave guardada. Si el Worker responde 401,
+   * pide la clave UNA vez y reintenta UNA vez: sin bucle. Si cancelan,
+   * devuelve el 401 tal cual para que el llamador lo trate como un fallo
+   * normal (y, en las apps, dispare su backoff en vez de insistir). */
+  async function fetchApi(recurso, opciones) {
+    var opts = Object.assign({}, opciones || {});
+    function conClave(clave) {
+      var h = new Headers(opts.headers || {});
+      if (clave) h.set(CABECERA_CLAVE, clave);
+      return Object.assign({}, opts, { headers: h });
+    }
+
+    var resp = await fetch(recurso, conClave(leerClave()));
+    // Mientras el Worker siga diciendo 401, se vuelve a preguntar. Es un
+    // `while` y no un solo reintento porque si no, una clave mal tipeada
+    // dejaba la app sin forma de entrar: el diálogo no volvía hasta el
+    // siguiente pedido, que podía no llegar nunca. Lo encontró el test del
+    // navegador, no la lectura del código.
+    //
+    // No es un bucle que pueda desbocarse: cada vuelta espera a que una
+    // persona escriba algo, y cancelar sale devolviendo el 401 tal cual para
+    // que el llamador lo trate como un fallo normal (y dispare su backoff).
+    var yaIntento = false;
+    while (resp.status === 401) {
+      guardarClave("");
+      var nueva = await pedirClave(yaIntento
+        ? "Esa clave no es correcta. Probá de nuevo."
+        : "Esta app pide una clave para ver y guardar los datos. Queda guardada en este dispositivo.");
+      if (!nueva) return resp;
+      yaIntento = true;
+      resp = await fetch(recurso, conClave(nueva));
+    }
+    return resp;
+  }
+
   window.HeaderGlobal = {
     init: init,
     setTitulo: setTitulo,
     setSync: setSync,
     setMenu: setMenu,
     icono: icono,
-    initBuscador: initBuscador
+    initBuscador: initBuscador,
+    fetchApi: fetchApi,
+    pedirClave: pedirClave,
+    olvidarClave: function () { guardarClave(""); }
   };
 })();

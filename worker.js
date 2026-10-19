@@ -29,7 +29,7 @@
  */
 
 // Se incrementa a mano para confirmar qué versión está viva en producción.
-const WORKER_VERSION = 'diag-2';
+const WORKER_VERSION = 'auth-1';
 
 const GITHUB_OWNER = 'joaqu-coder';
 const GITHUB_REPO = 'Expedientes-crm';
@@ -54,6 +54,67 @@ const APPS = {
     vacio: { parque: 'Güemes', empresas: [], lotes: [], ocupaciones: [], reservas: [] }
   }
 };
+
+// Valida la forma de lo que llega, para las apps del protocolo simple.
+//
+// Hasta el 2026-10-19 `manejarSync` escribía en GitHub lo que viniera: un
+// `POST {"hola":"mundo"}` reemplazaba las 422 resoluciones y devolvía 200.
+// `manejarSyncCartas` ya tenía `validarCartas` y su comentario lo decía
+// textual — "sin esto, un POST con cualquier JSON sobreescribe el archivo
+// entero con basura"—, pero la defensa se había escrito para una sola app.
+//
+// Las claves obligatorias NO se listan a mano: salen del `vacio` de cada app,
+// que ya declara la forma. Si mañana se agrega una app con
+// `vacio: { cosas: [] }`, su POST queda obligado a traer `cosas` como array
+// sin tocar esta función.
+function validarFormaApp(datos, app) {
+  if (datos === null || typeof datos !== 'object' || Array.isArray(datos)) {
+    return 'El cuerpo debe ser un objeto JSON.';
+  }
+  const faltan = Object.keys(app.vacio)
+    .filter((k) => Array.isArray(app.vacio[k]))
+    .filter((k) => !Array.isArray(datos[k]));
+  if (faltan.length) {
+    return `Faltan, o no son arrays, estas claves: ${faltan.join(', ')}.`;
+  }
+  return null;
+}
+
+// ===== Clave compartida =====
+//
+// Hasta el 2026-10-19 cualquiera que supiera la URL podía leer los
+// expedientes (que tienen datos personales) y, con un POST, vaciar las cuatro
+// bases. El GITHUB_TOKEN estaba bien guardado; la puerta que lo usa estaba
+// abierta.
+//
+// MODO TRANSICIÓN, a propósito: si el secret `APP_CLAVE` no está cargado en
+// Cloudflare, el Worker se comporta como antes y deja pasar todo. Así este
+// deploy no deja afuera a nadie de una app que se usa todos los días. La
+// protección se enciende sola en cuanto cargues el secret, y `/api/health`
+// dice en qué modo está. Mientras diga `auth_activa: false`, el agujero sigue
+// abierto — no es un detalle de configuración, es LA mitad del arreglo.
+const CABECERA_CLAVE = 'X-Clave';
+
+// Comparación de tiempo constante. Un `===` filtra, por lo que tarda, cuántos
+// caracteres coinciden. Sobre la red es poco práctico de explotar, pero son
+// seis líneas y saca la duda.
+function clavesIguales(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string' || a.length !== b.length) return false;
+  let dif = 0;
+  for (let i = 0; i < a.length; i++) dif |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return dif === 0;
+}
+
+// Devuelve una Response si hay que cortar, o null si puede seguir.
+function rechazarSiNoAutorizado(request, env) {
+  if (!env.APP_CLAVE) return null; // modo transición: sin secret, sin puerta
+  const enviada = request.headers.get(CABECERA_CLAVE);
+  if (enviada && clavesIguales(enviada, env.APP_CLAVE)) return null;
+  return jsonResponse({
+    error: 'clave_invalida',
+    detalle: enviada ? 'La clave no es correcta.' : 'Esta app necesita una clave.'
+  }, 401);
+}
 
 function jsonResponse(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -244,7 +305,15 @@ async function manejarSync(request, env, app) {
     }
 
     if (request.method === 'POST') {
-      const nuevosDatos = await request.json();
+      let nuevosDatos;
+      try {
+        nuevosDatos = await request.json();
+      } catch (err) {
+        return jsonResponse({ error: 'Cuerpo JSON inválido', detalle: String(err.message || err) }, 400);
+      }
+      const problema = validarFormaApp(nuevosDatos, app);
+      if (problema) return jsonResponse({ error: 'Datos rechazados', detalle: problema }, 422);
+
       const { sha } = await githubGetFile(env.GITHUB_TOKEN, app.archivo);
       await githubPutFile(env.GITHUB_TOKEN, app.archivo, app.nombre, nuevosDatos, sha);
       return jsonResponse({ ok: true });
@@ -265,11 +334,23 @@ export default {
       return jsonResponse({
         version_worker: WORKER_VERSION,
         tiene_github_token: Boolean(env.GITHUB_TOKEN),
+        // false = cualquiera con la URL puede leer y borrar. Cargá el secret
+        // APP_CLAVE en Settings -> "Runtime variables and secrets".
+        auth_activa: Boolean(env.APP_CLAVE),
         largo_token: env.GITHUB_TOKEN ? env.GITHUB_TOKEN.length : 0,
         tiene_binding_assets: Boolean(env.ASSETS),
         claves_env: Object.keys(env).sort(),
         archivos: Object.values(APPS).map((a) => a.archivo).concat([ARCHIVO_CARTAS])
       });
+    }
+
+    // La puerta va acá y no dentro de cada handler: un endpoint nuevo queda
+    // protegido por existir bajo /api/, sin que nadie tenga que acordarse.
+    // /api/health queda afuera a propósito — no expone ningún dato y es lo
+    // primero que se mira cuando algo falla, incluida la propia clave.
+    if (url.pathname.startsWith('/api/') && url.pathname !== '/api/health') {
+      const rechazo = rechazarSiNoAutorizado(request, env);
+      if (rechazo) return rechazo;
     }
 
     if (url.pathname === '/api/version-cartas') {

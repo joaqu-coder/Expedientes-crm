@@ -1638,6 +1638,202 @@ async function testUniformidad(puerto) {
 // hacerlo interfiere con la transición y da falsos negativos. Se escucha el
 // evento `pagereveal`, que es el que dice si el documento nuevo entró con
 // transición o sin ella.
+// ---------------------------------------------------------------------------
+// El reintento de sync no se desboca
+// ---------------------------------------------------------------------------
+// Regresión del bug más grave que encontró la auditoría del 2026-10-19. En
+// Resoluciones y Parques el `catch` de subirCambios() terminaba llamándose a
+// sí mismo de inmediato, porque al fallar no se borra la marca de pendiente:
+//
+//     }catch(e){ setSyncStatus("offline"); }
+//     syncEnProgreso = false;
+//     if(haySyncPendiente()) subirCambios();   // ← otra vez, ya
+//
+// Medido con los datos reales y el server devolviendo 500: 62 POST por
+// segundo, 170 MB en 10 segundos, y las llamadas que eso dispara contra la
+// API de GitHub agotaban el presupuesto de 5.000/hora en 40 segundos. Como el
+// token es uno solo para las cuatro apps, un teléfono con mala señal dejaba
+// sin sincronizar a las otras tres.
+//
+// Se mide por comportamiento —cuántos POST llegan y con qué separación—
+// porque leer el código solo diría que hay un setTimeout, no que la espera
+// crezca ni que exista un techo.
+async function testReintentoSyncNoSeDesboca() {
+  console.log('\n=== REINTENTO DE SYNC (no se desboca) ===');
+
+  const paginas = {
+    resoluciones: { endpoint: '/api/sync-resoluciones', vacio: { resoluciones: [] } },
+    parques: { endpoint: '/api/sync-parques', vacio: { parques: [], empresas: [], lotes: [], ocupaciones: [], reservas: [] } }
+  };
+
+  for (const [app, cfg] of Object.entries(paginas)) {
+    const html = fs.readFileSync(path.join(RAIZ, `public/${app}.html`), 'utf8');
+    const posts = [];
+    const server = http.createServer((req, res) => {
+      if (req.url.startsWith('/api/')) {
+        if (req.method === 'POST') {
+          posts.push(Date.now());
+          // 500: el fallo transitorio clásico (incluido el que devuelve el
+          // propio Worker cuando le falta el GITHUB_TOKEN). Tiene que
+          // reintentar, pero espaciado.
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          return res.end('{"error":"simulado"}');
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(cfg.vacio));
+      }
+      if (servirHeaderJs(req, res)) return;
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(html);
+    });
+    await new Promise((r) => server.listen(8779, r));
+
+    const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    await page.goto('http://localhost:8779/', { waitUntil: 'networkidle' });
+    await page.waitForTimeout(400);
+
+    // Alta por la UI, como una persona: el FAB y el formulario.
+    await page.click('#fabNuevo');
+    await page.waitForTimeout(300);
+    await page.evaluate(() => {
+      document.querySelectorAll('form input[type=text], form input:not([type]), form input[type=number]')
+        .forEach((i, n) => { if (!i.value) { i.value = i.type === 'number' ? '1' : ('P' + n); i.dispatchEvent(new Event('input', { bubbles: true })); } });
+      document.querySelectorAll('form select').forEach((sel) => {
+        if (sel.options.length > 1 && !sel.value) { sel.selectedIndex = 1; sel.dispatchEvent(new Event('change', { bubbles: true })); }
+      });
+    });
+    posts.length = 0;
+    await page.evaluate(() => { const f = document.querySelector('form'); if (f) f.requestSubmit(); });
+    await page.waitForTimeout(9000);
+
+    const huecos = posts.slice(1).map((t, i) => t - posts[i]);
+    // En 9 segundos, con esperas de 2s, 4s y 8s, entran 3 intentos. La
+    // cota se verifica POR LOS DOS LADOS a propósito:
+    //  - techo 10: el bucle desbocado daba más de 3.000;
+    //  - piso 2: si alguien "arregla" el bucle dejando de reintentar, los
+    //    cambios se quedan en el teléfono sin subir nunca y la pantalla
+    //    dice "guardado". Eso es peor que el bucle, porque no se nota.
+    // Esta segunda mitad no estaba en la primera versión del test, y por eso
+    // una recreación parcial del bug pasaba en verde.
+    ok(posts.length >= 2 && posts.length <= 10,
+       `${app}: ${posts.length} POST en 9s con el server caído — reintenta pero no se desboca (el bucle daba >3000, rendirse daría 1)`);
+    // Solo los primeros huecos en el mensaje: con el bug puesto son miles y
+    // el fallo se vuelve ilegible justo cuando hay que leerlo.
+    const muestra = huecos.slice(0, 5).map((h) => h + 'ms').join(', ') +
+      (huecos.length > 5 ? ` … y ${huecos.length - 5} más` : '');
+    ok(huecos.length === 0 || huecos.every((h) => h >= 1500),
+       `${app}: entre reintentos pasan al menos 1,5s (${muestra || 'un solo intento'})`);
+    ok(huecos.length < 2 || huecos[1] > huecos[0],
+       `${app}: la espera crece entre un intento y el siguiente (${huecos.slice(0, 3).map((h) => h + 'ms').join(' -> ')})`);
+    // Con la espera creciente el reintento se calma solo; sin ella no.
+    // Este es el número que importaba: 62 POST/s contra 0,3 POST/s.
+    console.log(`         (ritmo: ${(posts.length / 9).toFixed(1)} POST por segundo; el bucle daba 62)`);
+
+    await browser.close();
+    server.close();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Clave compartida: el flujo del lado del navegador
+// ---------------------------------------------------------------------------
+// El Worker con APP_CLAVE cargada responde 401. Este test verifica lo que
+// pasa DESPUÉS, que es lo que decide si la app queda usable o no:
+// aparece el diálogo, la clave se guarda, el pedido se reintenta y en la
+// próxima pantalla ya no vuelve a preguntar.
+//
+// Es el camino más riesgoso del cambio: si esto falla, cargar el secret en
+// Cloudflare deja la app en blanco y sin forma de entrar.
+async function testClaveCompartidaEnElNavegador() {
+  console.log('\n=== CLAVE COMPARTIDA (navegador) ===');
+  const CLAVE = 'la-clave-buena';
+  const paginas = ['seguimiento', 'proyectos', 'resoluciones', 'parques'];
+  const htmls = {};
+  for (const p of paginas) htmls[p] = fs.readFileSync(path.join(RAIZ, `public/${p}.html`), 'utf8');
+
+  let sinClave = 0, conClave = 0;
+  const server = http.createServer((req, res) => {
+    if (req.url.startsWith('/api/')) {
+      if (req.headers['x-clave'] !== CLAVE) {
+        sinClave++;
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        return res.end('{"error":"clave_invalida"}');
+      }
+      conClave++;
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({
+        expedientes: [], areas: [], responsables: [], resoluciones: [],
+        parques: [], empresas: [], lotes: [], ocupaciones: [], reservas: [],
+        _meta: { sha: 'x' }
+      }));
+    }
+    if (servirHeaderJs(req, res)) return;
+    const cual = paginas.find((p) => req.url.startsWith('/' + p)) || 'seguimiento';
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(htmls[cual]);
+  });
+  await new Promise((r) => server.listen(8778, r));
+
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await ctx.newPage();
+
+  await page.goto('http://localhost:8778/resoluciones.html', { waitUntil: 'networkidle' });
+  await page.waitForTimeout(600);
+
+  const dialogo = page.locator('.app-clave');
+  ok(await dialogo.isVisible(), 'con el Worker pidiendo clave, aparece el diálogo');
+  ok(await page.locator('.app-clave__input').isVisible(), 'el diálogo tiene un campo para escribirla');
+  // 16px o iOS hace zoom al enfocar; y type=password para que no quede a la vista.
+  const campo = await page.evaluate(() => {
+    const i = document.querySelector('.app-clave__input');
+    return { fuente: parseFloat(getComputedStyle(i).fontSize), tipo: i.type, enfocado: document.activeElement === i };
+  });
+  ok(campo.fuente >= 16, `el campo usa fuente ≥16px, para que iOS no haga zoom (${campo.fuente}px)`);
+  ok(campo.tipo === 'password', 'la clave no queda a la vista mientras se escribe');
+  ok(campo.enfocado, 'el campo arranca enfocado: se puede escribir sin tocarlo');
+
+  // Clave equivocada: vuelve a preguntar, no deja la app colgada.
+  conClave = 0;
+  await page.fill('.app-clave__input', 'equivocada');
+  await page.click('.app-clave [data-aceptar]');
+  await page.waitForTimeout(700);
+  ok(await page.locator('.app-clave').isVisible(), 'con la clave equivocada vuelve a preguntar');
+  ok(conClave === 0, 'con la clave equivocada no pasó ningún pedido');
+
+  // Clave correcta: entra y la guarda.
+  await page.fill('.app-clave__input', CLAVE);
+  await page.click('.app-clave [data-aceptar]');
+  await page.waitForTimeout(900);
+  ok(!(await page.locator('.app-clave').count()) || !(await page.locator('.app-clave').isVisible()),
+     'con la clave correcta el diálogo se cierra');
+  ok(conClave > 0, `el pedido se reintentó solo con la clave puesta (${conClave} pedidos autorizados)`);
+
+  // Y no vuelve a preguntar: ni al recargar, ni en las otras apps. La clave
+  // es por dispositivo, no por pantalla — las cinco comparten origen.
+  for (const otra of ['resoluciones', 'parques', 'proyectos', 'seguimiento']) {
+    await page.goto(`http://localhost:8778/${otra}.html`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(500);
+    const pide = await page.locator('.app-clave').count();
+    ok(pide === 0, `${otra} no vuelve a pedir la clave: se guardó para todo el dispositivo`);
+  }
+
+  // Cancelar no deja un diálogo colgado ni un bucle de pedidos.
+  await page.evaluate(() => HeaderGlobal.olvidarClave());
+  await page.goto('http://localhost:8778/resoluciones.html', { waitUntil: 'networkidle' });
+  await page.waitForTimeout(600);
+  ok(await page.locator('.app-clave').isVisible(), 'tras olvidar la clave, vuelve a pedirla');
+  sinClave = 0;
+  await page.click('.app-clave [data-cancelar]');
+  await page.waitForTimeout(1500);
+  ok((await page.locator('.app-clave').count()) === 0, 'cancelar cierra el diálogo');
+  ok(sinClave <= 4, `cancelar no dispara un bucle de pedidos (${sinClave} en 1,5s)`);
+
+  await browser.close();
+  server.close();
+}
+
 async function testTransiciones() {
   console.log('\n=== TRANSICIÓN ENTRE PANTALLAS ===');
   const paginas = ['index', 'seguimiento', 'proyectos', 'resoluciones', 'parques'];
@@ -1735,6 +1931,8 @@ await testParques({ width: 1440, height: 900 }, 8793);
 await testParques({ width: 390, height: 844 }, 8792);
 await testUniformidad(8791);
 await testTransiciones();
+await testReintentoSyncNoSeDesboca();
+await testClaveCompartidaEnElNavegador();
 
 console.log(fallas === 0 ? '\nUI OK en desktop y mobile' : `\n${fallas} fallas`);
 process.exit(fallas === 0 ? 0 : 1);

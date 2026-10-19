@@ -1498,7 +1498,7 @@
           timestamp: new Date().toISOString()
         };
 
-        const resp = await fetch('/api/sync', {
+        const resp = await HeaderGlobal.fetchApi('/api/sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(datos)
@@ -1518,7 +1518,7 @@
 
     async function descargarDesdeGitHub() {
       try {
-        const resp = await fetch('/api/sync');
+        const resp = await HeaderGlobal.fetchApi('/api/sync');
         if (!resp.ok) {
           actualizarIndicadorSync(false);
           return false;

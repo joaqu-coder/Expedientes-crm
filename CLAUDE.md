@@ -79,7 +79,10 @@ Navegador (seguimiento)   Navegador (proyectos)      Navegador (resoluciones)  N
 | `POST /api/sync-resoluciones` | Reescribe `resoluciones.json` (~320 KB: el archivo histórico entero). |
 | `GET /api/sync-parques` | Devuelve `parques.json` (Parques: lotes/empresas de Güemes). Si no existe, devuelve listas vacías. |
 | `POST /api/sync-parques` | Reescribe `parques.json`. Protocolo simple (como Resoluciones), no el de Proyectos. |
-| `GET /api/health` | Diagnóstico: `tiene_github_token`, `tiene_binding_assets`, `claves_env`, `archivos`. **Nunca expone el valor del secret.** |
+| `GET /api/health` | Diagnóstico: `tiene_github_token`, `auth_activa`, `tiene_binding_assets`, `claves_env`, `archivos`. **Nunca expone el valor del secret.** Es el único `/api/` que no pide clave. |
+
+**Todos los `/api/*` salvo `/api/health` piden la cabecera `X-Clave`** cuando el
+secret `APP_CLAVE` está cargado. Ver "Clave compartida" más abajo.
 
 Cuando algo falle, `/api/health` primero. Dice qué ve el runtime sin adivinar.
 
@@ -147,6 +150,92 @@ interpolar strings (un área `D'Angelo` rompía el handler).
 - El indicador refleja el resultado real del POST (antes lo pisaba con "Sincronizado").
 - El campo número se sanea en el evento `input`, **no** en `keydown`: filtrar
   teclas bloqueaba Ctrl+V y el teclado de Android.
+
+---
+
+## Clave compartida (2026-10-19)
+
+Hasta esta fecha **cualquiera que supiera la URL podía leer los expedientes
+—que tienen datos personales— y, con un POST, vaciar las cuatro bases.** El
+`GITHUB_TOKEN` estaba bien guardado; la puerta que lo usa estaba abierta.
+
+- **Worker**: secret `APP_CLAVE` + cabecera `X-Clave`. La puerta está en el
+  router, no dentro de cada handler: un endpoint nuevo bajo `/api/` queda
+  protegido por existir, sin que nadie tenga que acordarse. La comparación es
+  de tiempo constante.
+- **MODO TRANSICIÓN, a propósito**: si `APP_CLAVE` no está cargado, el Worker
+  se comporta como antes y deja pasar todo, para que el deploy no deje afuera
+  a quien usa la app todos los días. **Mientras `/api/health` diga
+  `auth_activa: false`, el agujero sigue abierto** — no es un detalle de
+  configuración, es la mitad del arreglo. El secret va en Settings →
+  "Runtime variables and secrets" (ver la trampa 1 de este documento).
+- **Cliente**: `HeaderGlobal.fetchApi()` en `header.js`. Las cuatro apps
+  dejaron de llamar a `fetch()` directo. Agrega la cabecera, y ante un 401
+  abre un diálogo propio (no `prompt()`), guarda la clave y reintenta.
+- **La clave es por DISPOSITIVO, no por app**: las cinco páginas comparten
+  origen, así que comparten el `localStorage`. Se escribe una vez.
+- **El reintento es un `while`, no un solo intento.** Con un solo reintento,
+  una clave mal tipeada dejaba la app sin forma de entrar: el diálogo no
+  volvía hasta el siguiente pedido, que podía no llegar nunca. No se puede
+  desbocar porque cada vuelta espera a que una persona escriba; cancelar sale
+  devolviendo el 401 para que el llamador dispare su backoff.
+  **Lo encontró el test del navegador, no la lectura del código.**
+- **Los estáticos no piden clave**: son la cáscara, el dato está detrás de
+  `/api/`. Pedirla ahí dejaría una pantalla en blanco.
+
+---
+
+## Validación de forma en el Worker (2026-10-19)
+
+`manejarSyncCartas` validaba la forma desde siempre y su comentario lo decía
+textual — *"sin esto, un POST con cualquier JSON sobreescribe el archivo
+entero con basura"*—. `manejarSync`, que usan las **otras tres** apps, no.
+Un `POST {"hola":"mundo"}` de cuatro bytes reemplazaba las 422 resoluciones y
+devolvía 200. Es el mismo patrón que produjo los demás bugs de esta
+auditoría: una defensa escrita una vez y aplicada en un solo lugar.
+
+`validarFormaApp()` deriva las claves obligatorias del `vacio` de cada app, que
+ya declara la forma. **Una app nueva con `vacio: { cosas: [] }` queda obligada
+a traer `cosas` como array sin tocar esa función** — que es lo que evita que
+la próxima app vuelva a quedarse afuera.
+
+---
+
+## El reintento de sync no se desboca (2026-10-19)
+
+El bug más grave que encontró la auditoría. En **Resoluciones y Parques** el
+`catch` de `subirCambios()` terminaba llamándose a sí mismo de inmediato,
+porque al fallar no se borra la marca de pendiente:
+
+```js
+}catch(e){ setSyncStatus("offline"); }
+syncEnProgreso = false;
+if(haySyncPendiente()) subirCambios();   // ← otra vez, ya
+```
+
+Medido en Chromium con los datos reales y el server devolviendo 500:
+
+| | Antes | Después |
+|---|---|---|
+| Pedidos | **62 POST/s**, para siempre | 0,3 POST/s, con techo |
+| Subida | 170 MB en 10s (~60 GB/h) | 3 pedidos |
+| API de GitHub | 124 llamadas/s → 5.000/h **en 40 segundos** | — |
+
+Como el `GITHUB_TOKEN` es uno solo para las cuatro apps, un teléfono con mala
+señal dejaba sin sincronizar a las otras tres. El disparador es lo más común
+que hay: que el server no esté un rato — incluido el 500 que devuelve el
+propio Worker cuando le falta el token.
+
+**Seguimiento y Proyectos nunca lo tuvieron**: el primero corta el `while` al
+fallar, el segundo ya tenía backoff exponencial. Se portó el de Proyectos tal
+cual (2s → 4s → 8s, techo 60s, `errorPermanente` para los 4xx) en vez de
+inventar un tercero.
+
+**El test mide por los dos lados**: techo 10 pedidos (el bucle daba >3.000) y
+**piso 2**. El piso no estaba en la primera versión y por eso una recreación
+parcial del bug pasaba en verde — si alguien "arregla" el bucle dejando de
+reintentar, los cambios se quedan en el teléfono y la pantalla dice guardado,
+que es peor porque no se nota.
 
 ---
 
@@ -822,8 +911,20 @@ fuente, a diferencia del repo del Boletín donde lo genera el scraper.
       GitHub, actualizar **solo** el secret de runtime, y borrar el de Builds.
 - [ ] Verificar sync entre dos dispositivos reales (cargar en la compu, abrir en
       el celular).
-- [ ] `expedientes.json` se reescribe entero en cada POST. Con dos dispositivos
-      editando a la vez, el último gana y el otro pierde sus cambios. Hoy es un
-      usuario solo, así que no es un problema real; si alguna vez lo es, la
-      solución es usar el `sha` que ya devuelve `githubGetFile` para detectar
-      conflictos en vez de pisar.
+- [ ] **Última escritura gana en 3 de las 4 apps** (Seguimiento, Resoluciones,
+      Parques). Demostrado el 2026-10-19 contra el Worker real: dos
+      dispositivos que abren la misma pantalla y guardan, y el trabajo del
+      primero desaparece sin error ni aviso (Proyectos devuelve 409 y fusiona).
+      La solución es generalizar `manejarSyncCartas`, no reescribirla: el
+      `sha` que ya devuelve `githubGetFile` alcanza para detectar el choque.
+- [ ] **Dos tablas de feriados distintas**, y las dos mal en Viernes Santo
+      2026. Seguimiento y Proyectos calculan días hábiles con listas propias:
+      el mismo vencimiento da semáforo distinto según la pantalla. Verificado
+      calculando Pascua (Meeus/Jones/Butcher, contrastado con 2023-2025):
+      Viernes Santo 2026 es el **03/04**; Proyectos dice 17/04 y Seguimiento
+      10/04. Falta decidir los movibles por decreto (Soberanía, 25/07) con el
+      usuario, y unificar en un `calendario.js` compartido.
+- [ ] **33 funciones comparten nombre entre apps y 32 divergieron.** Es la
+      causa raíz de los cuatro bugs P0 del 2026-10-19: una defensa escrita una
+      vez y aplicada en un solo lugar. El camino es el mismo que resolvió el
+      CSS con `design-system.css`: un `sync.js` compartido primero.

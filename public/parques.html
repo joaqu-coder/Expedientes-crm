@@ -518,11 +518,41 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   var SYNC_PENDING_KEY = "parques_crm_sync_pendiente_v1";
   var syncTimer = null, syncEnProgreso = false;
 
+  // Reintento con espera creciente, portado de proyectos.html.
+  //
+  // Antes de esto el `catch` de subirCambios() terminaba llamándose a sí
+  // mismo de inmediato, porque al fallar NO se borra la marca de pendiente:
+  //     }catch(e){ setSyncStatus("offline"); }
+  //     syncEnProgreso = false;
+  //     if(haySyncPendiente()) subirCambios();   // ← otra vez, ya
+  // Medido en Chromium con los datos reales y el server devolviendo 500: 62
+  // POST por segundo, 170 MB subidos en 10 segundos, y las 124 llamadas/s que
+  // eso dispara contra la API de GitHub agotan el presupuesto de 5.000/hora
+  // en 40 segundos. Como el GITHUB_TOKEN es uno solo para las cuatro apps,
+  // un teléfono con mala señal dejaba sin sincronizar a las otras tres.
+  //
+  // El disparador es lo más común que hay: que el server no esté un rato.
+  var BACKOFF_BASE_MS = 2000;
+  var BACKOFF_MAX_MS = 60000;
+  var fallosSeguidos = 0;
+  var errorPermanente = false; // 4xx: reintentar no lo va a arreglar
+
+  function proximoBackoff(){
+    return Math.min(BACKOFF_BASE_MS * Math.pow(2, fallosSeguidos - 1), BACKOFF_MAX_MS);
+  }
+  function programarSubida(ms){
+    if(syncTimer) clearTimeout(syncTimer);
+    syncTimer = setTimeout(function(){ syncTimer = null; subirCambios(); }, ms);
+  }
+
   function marcarPendiente(){
     try{ localStorage.setItem(SYNC_PENDING_KEY, "1"); }catch(e){}
     setSyncStatus("pendiente");
-    if(syncTimer) clearTimeout(syncTimer);
-    syncTimer = setTimeout(subirCambios, 100);
+    // Un cambio nuevo es señal de que el usuario sigue trabajando: se limpia
+    // el contador de fallos para que no arrastre la espera del intento viejo.
+    fallosSeguidos = 0;
+    errorPermanente = false;
+    programarSubida(100);
   }
   function haySyncPendiente(){
     try{ return localStorage.getItem(SYNC_PENDING_KEY) === "1"; }catch(e){ return false; }
@@ -537,10 +567,18 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
       cargando: ["Cargando…", "ok"],
       pendiente: ["Subiendo cambios…", "ok"],
       subiendo: ["Subiendo cambios…", "ok"],
-      offline: ["Sin conexión. Tus cambios están guardados en este dispositivo y se suben solos al volver la señal. Tocá para reintentar.", "error"]
+      offline: ["Sin conexión. Tus cambios están guardados en este dispositivo y se suben solos al volver la señal. Tocá para reintentar.", "error"],
+      rechazado: ["El servidor rechazó los datos. Tus cambios están guardados en este dispositivo, pero no se van a subir hasta que esto se corrija. Tocá para reintentar.", "error"]
     };
     var m = map[s] || map.sincronizado;
-    HeaderGlobal.setSync(m[0], m[1], function(){ subirCambios(); bajarCambiosIniciales(); });
+    // El reintento manual es una decisión explícita del usuario: levanta la
+    // bandera de "error permanente", que si no dejaría el botón muerto.
+    HeaderGlobal.setSync(m[0], m[1], function(){
+      errorPermanente = false;
+      fallosSeguidos = 0;
+      subirCambios();
+      bajarCambiosIniciales();
+    });
   }
 
   // Lo que se publica en el repo son los DATOS, no el estado de la pantalla.
@@ -560,23 +598,41 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   }
 
   async function subirCambios(){
-    if(syncEnProgreso || !haySyncPendiente()) return;
+    if(syncEnProgreso || !haySyncPendiente() || errorPermanente) return;
     syncEnProgreso = true;
     setSyncStatus("subiendo");
     try{
-      var resp = await fetch(SYNC_ENDPOINT, {
+      var resp = await HeaderGlobal.fetchApi(SYNC_ENDPOINT, {
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body: JSON.stringify(datosParaSync())
       });
-      if(!resp.ok) throw new Error("POST falló: "+resp.status);
+      if(!resp.ok){
+        // 4xx (salvo 429) es culpa del payload o de la configuración:
+        // reintentar en loop no lo arregla y esconde el problema.
+        if(resp.status >= 400 && resp.status < 500 && resp.status !== 429) errorPermanente = true;
+        throw new Error("POST falló: "+resp.status);
+      }
       try{ localStorage.removeItem(SYNC_PENDING_KEY); }catch(e){}
+      fallosSeguidos = 0;
       setSyncStatus("sincronizado");
     }catch(e){
-      setSyncStatus("offline");
+      fallosSeguidos++;
+      setSyncStatus(errorPermanente ? "rechazado" : "offline");
+      if(!errorPermanente){
+        var espera = proximoBackoff();
+        console.warn("[sync] intento "+fallosSeguidos+" falló; reintento en "+(espera/1000)+"s:", e.message||e);
+        programarSubida(espera);
+      } else {
+        console.error("[sync] el servidor rechaza los datos, no se reintenta:", e.message||e);
+      }
+      syncEnProgreso = false;
+      return;
     }
     syncEnProgreso = false;
-    if(haySyncPendiente()) subirCambios();
+    // Llegó algo nuevo mientras el POST estaba en vuelo: se manda agendado,
+    // nunca por recursión inmediata.
+    if(haySyncPendiente()) programarSubida(100);
   }
 
   async function bajarCambiosIniciales(){
@@ -586,7 +642,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     }
     setSyncStatus("cargando");
     try{
-      var resp = await fetch(SYNC_ENDPOINT);
+      var resp = await HeaderGlobal.fetchApi(SYNC_ENDPOINT);
       if(!resp.ok) throw new Error("GET falló: "+resp.status);
       var datos = await resp.json();
       if(datos && (Array.isArray(datos.lotes) || Array.isArray(datos.empresas))){
