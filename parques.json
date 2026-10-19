@@ -2478,14 +2478,6 @@
       "id_parque": "salta"
     },
     {
-      "id_empresa": "SE135",
-      "id_empresa_original": "124",
-      "nombre_empresa": "ADMINISTRACION PARQUE INDUSTRIAL SALTA (A.P.I.S)",
-      "observacion": "No figura en el export normalizado del 2026-10-19; se conserva el registro anterior.",
-      "es_ocupante_sin_registro": false,
-      "id_parque": "salta"
-    },
-    {
       "id_empresa": "SE136",
       "id_empresa_original": "124",
       "nombre_empresa": "ENTE GENERAL DE PARQUES Y AREAS INDUSTRIALES DE SALTA",

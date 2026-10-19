@@ -1057,8 +1057,16 @@ async function testParques(viewport, puerto) {
   // quedaron libres).
   ok(empresasGuemes.length === 53, `el archivo trae las ${empresasGuemes.length} empresas reales de Güemes`);
   ok(lotesSalta.length === 135, `el archivo trae los ${lotesSalta.length} lotes reales del Parque Industrial Salta`);
-  ok(empresasSalta.length === 151,
-     `el archivo trae las ${empresasSalta.length} empresas de Salta (136 del origen + 15 ocupantes de la columna «Alquilada»)`);
+  // 150 desde el 2026-10-19: 136 del origen + 15 ocupantes de la columna
+  // «Alquilada» - ADMINISTRACION PARQUE INDUSTRIAL SALTA (A.P.I.S), que el
+  // usuario borró desde la app y la fusión de los exports había conservado
+  // (no figuraba en el export, así que se tomó como "dato que el export no
+  // trae" en vez de como una baja hecha a mano; no era titular de ningún
+  // lote ni parte de ninguna ocupación).
+  ok(empresasSalta.length === 150,
+     `el archivo trae las ${empresasSalta.length} empresas de Salta (136 del origen + 15 ocupantes de la columna «Alquilada», menos la baja de A.P.I.S)`);
+  ok(!datos.empresas.some((e) => /ADMINISTRACION PARQUE INDUSTRIAL SALTA/i.test(e.nombre_empresa || '')),
+     'la empresa que el usuario borró no volvió a aparecer en los datos');
   ok(totalLotes === lotesGuemes.length + lotesSalta.length && totalEmpresas === empresasGuemes.length + empresasSalta.length,
      'todos los lotes y empresas están atribuidos a uno de los dos parques (ninguno quedó sin id_parque)');
   ok((await page.locator('#empresasCount').textContent()).includes(String(empresasGuemes.length)),
@@ -1080,17 +1088,25 @@ async function testParques(viewport, puerto) {
   await page.fill('#searchEmpresas', '');
   await page.waitForTimeout(150);
 
-  // Ficha de empresa: tab Empresa — Representante, Cargo, Rubro, Actividad,
-  // CUIT, en ese orden, con el contacto real de la empresa instalada.
+  // Ficha de empresa: tab Empresa — Representante, Cargo, Rubro, Situación,
+  // en ese orden, con el contacto real de la empresa instalada. Actividad,
+  // CUIT y Observación salieron de la tarjeta el 2026-10-19 (pedido del
+  // usuario): AGSOF sirve de caso porque SÍ tiene `observacion` cargada
+  // (la nota de la fusión con E004), así que si el bloque volviera, este
+  // test lo ve.
   await page.locator('#empresasList .tarjeta', { hasText: 'AGSOF S.A' }).first().click();
   await page.waitForSelector('#btnEditEmp');
   const fichaEmpresa = await page.locator('#modal').textContent();
   ok(fichaEmpresa.includes('Guillermo Frisch'), 'la ficha de la empresa muestra su contacto (Representante)');
   ok(fichaEmpresa.includes('Encargado'), 'la ficha de la empresa muestra el Cargo');
-  const ordenCampos = ['Representante', 'Cargo', 'Rubro', 'Actividad', 'CUIT']
+  const ordenCampos = ['Representante', 'Cargo', 'Rubro', 'Situación']
     .map((campo) => fichaEmpresa.indexOf(campo));
   ok(ordenCampos.every((i, idx) => idx === 0 || i > ordenCampos[idx - 1]),
-     'el tab Empresa respeta el orden Representante/Cargo/Rubro/Actividad/CUIT');
+     'el tab Empresa respeta el orden Representante/Cargo/Rubro/Situación');
+  ok(!/Actividad|CUIT|Observación/.test(fichaEmpresa),
+     'la tarjeta de empresa ya no muestra Actividad, CUIT ni Observación');
+  ok(!fichaEmpresa.includes('Fusionada el 2026-10-13'),
+     'el texto de la observación no se filtra por otra vía a la tarjeta');
   ok(fichaEmpresa.includes('Lotes (3)'), 'la ficha fusionada de AGSOF lista sus 3 lotes (L005+L006+L007)');
   ok(fichaEmpresa.includes('20.394'), 'el total de superficie suma los m² de los 3 lotes fusionados');
 
@@ -1119,7 +1135,27 @@ async function testParques(viewport, puerto) {
   ok(!panelLotes.includes('Titular:'), 'el tab Lotes ya no muestra "Titular"');
   ok(!/class="lot-si"|class="lot-no"/.test(panelLotes), 'el tab Lotes no colorea Escritura (sobrio, sin color)');
   ok(panelLotes.includes('lot-field-label'), 'el tab Lotes marca Propiedad/Escritura en negrita (lot-field-label)');
-  await page.click('#xCloseViewEmp');
+
+  // El formulario de empresa tampoco pide los tres campos. No es cosmética:
+  // mientras los inputs existieran, onSaveEmpresa escribía
+  // actividad/cuit = "" en cada guardado (los recreaba después de que la
+  // fusión de los exports los sacó) y, al sacar solo el textarea, habría
+  // pisado con "" la observación que es la procedencia de los 15 ocupantes
+  // de alquiler. Se guarda y se mira el POST, no el formulario.
+  await page.click('#btnEditEmp');
+  await page.waitForSelector('#f_nombre_empresa');
+  ok((await page.locator('#f_actividad').count()) === 0
+     && (await page.locator('#f_cuit').count()) === 0
+     && (await page.locator('#f_observacion').count()) === 0,
+     'el formulario de empresa no pide Actividad, CUIT ni Observación');
+  await page.click('#empresaForm button[type=submit]');
+  await page.waitForTimeout(300);
+  const agsofPost = ultimoPost?.empresas?.find((e) => e.id_empresa === 'E003');
+  ok(agsofPost && !('actividad' in agsofPost) && !('cuit' in agsofPost),
+     'guardar una empresa no vuelve a crear actividad ni cuit');
+  ok(agsofPost && /Fusionada el 2026-10-13/.test(agsofPost.observacion || ''),
+     'guardar una empresa no borra la observación que ya tenía cargada');
+  // onSaveEmpresa ya cerró la ficha al guardar.
 
   // Sublocación: L038 tiene una ocupación vigente (titular E008/ALISAN,
   // ocupante E028) — se revisa entrando por la ficha de la empresa titular,

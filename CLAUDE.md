@@ -404,10 +404,11 @@ asumir que lo que sigue generaliza a uno nuevo sin revisarlo con el usuario.
 - **Test**: `testParques()` en `tests/ui.test.mjs` corre contra los datos
   reales (no son de ejemplo, igual que Resoluciones) — filtros, búsqueda
   cruzando a la empresa, ficha con titularidad y ocupación, edición con UTF-8
-  intacto, y dashboard. Los conteos por parque (138/54 en Güemes, 135/151 en
-  Salta) están hardcodeados a propósito: es el archivo de referencia real, no
-  una cifra que cambie por una regla de negocio como el archivado de
-  Proyectos.
+  intacto, y dashboard. Los conteos por parque (139 lotes / 53 empresas en
+  Güemes, 135 / 150 en Salta) están hardcodeados a propósito: es el archivo de
+  referencia real, no una cifra que cambie por una regla de negocio como el
+  archivado de Proyectos. Cuando una baja o un import los mueve, se actualiza
+  el número **y** el comentario que dice de dónde sale.
 
 ### Dos parques en el mismo archivo (2026-10-18)
 
@@ -522,6 +523,16 @@ supuestas—, porque van a volver en el próximo export:
   LA POSTA la borró el usuario desde la app el 2026-10-17; el archivo se la
   vuelve a asignar a L115/L116. No se resucitó: los lotes quedan libres y la
   nota está en el lote (`BORRADAS_EN_LA_APP` en el importador).
+- **Y le gana también cuando el export NO la trae** (2026-10-19). La regla de
+  arriba —"producción manda en lo que el export no tiene"— tiene un borde que
+  la fusión cruzó mal: una empresa que no figura en el export puede ser un
+  dato que el export no cubre **o** una baja que el usuario ya hizo, y las dos
+  se ven igual desde el archivo. ADMINISTRACION PARQUE INDUSTRIAL SALTA
+  (A.P.I.S) se conservó como lo primero cuando era lo segundo, y volvió a
+  aparecer en el listado después de que el usuario la borró. Se eliminó a
+  mano; no era titular de ningún lote ni parte de ninguna ocupación, así que
+  la baja no arrastró nada. **Para el próximo export: una empresa de
+  producción que el archivo no nombra se consulta, no se conserva callado.**
 
 Lo que se fue: `cuit` y `actividad` (pedido), más `cuit_valido_11dig` y
 `metodo_match_contacto`, que solo hablaban del cuit. La `observacion` de las
@@ -532,9 +543,39 @@ queda sin procedencia. El `rubro` va literal del archivo, sin la categoría
 (" | Agroindustria y Alimentación") que traía la base anterior: decisión del
 usuario. Las 46 que la tenían la perdieron; está en el historial de git.
 
-Resultado: Güemes 139 lotes / 53 empresas (antes 138 / 53), Salta 135 / 151 sin
-cambios, 19 lotes libres y 15 disponibles como antes, 20 ocupaciones intactas,
-y 3.230.124 m² contra 3.159.513 (la diferencia es exactamente el lote nuevo).
+Resultado: Güemes 139 lotes / 53 empresas (antes 138 / 53), Salta 135 / 150
+(151 el 2026-10-19 antes de la baja de A.P.I.S), 19 lotes libres y 15
+disponibles como antes, 20 ocupaciones intactas, y 3.230.124 m² contra
+3.159.513 (la diferencia es exactamente el lote nuevo).
+
+### La tarjeta de empresa no muestra CUIT, Actividad ni Observación (2026-10-19)
+
+Segundo pedido del usuario el mismo día, después de ver la app con los exports
+ya fusionados. Salieron de los tres lugares, no solo del que se ve:
+
+- **La ficha** (tab Empresa) quedó en Representante / Cargo / Rubro /
+  Situación.
+- **El formulario** dejó de pedirlos. No es cosmética: mientras los inputs
+  existieran, `onSaveEmpresa` escribía `actividad = ""` y `cuit = ""` en cada
+  guardado, **recreando los dos campos que la fusión acababa de sacar de los
+  datos**. Y sacar solo el `<textarea>` habría sido peor: `g("observacion")`
+  devuelve `""` cuando el campo no existe, así que el primer guardado de un
+  ocupante de alquiler le borraba la observación que es su procedencia.
+- **El buscador** de empresas leía `e.actividad` en su blob, un campo que ya
+  no existe. Busca por nombre, rubro y contacto, que es lo que dice su
+  placeholder.
+
+**El dato guardado no se tocó.** La `observacion` de los 15 ocupantes de
+alquiler —qué se les reasignó y desde qué titular— sigue en el registro; lo
+que cambió es que no se muestra ni se edita desde la tarjeta. La `observacion`
+de la **ocupación** (`ocup.observacion`, "Alquiler confirmado por usuario") es
+otra cosa y sigue visible en la ficha del LOTE, donde siempre estuvo.
+
+`testParques()` lo sostiene por los dos lados: que la ficha no diga Actividad,
+CUIT ni Observación (con AGSOF, que sí tiene `observacion` cargada, así que el
+test ve si el bloque vuelve), que el formulario no tenga los tres inputs, y
+que después de guardar una empresa el POST **no** traiga `actividad` ni `cuit`
+y **sí** conserve la observación que ya estaba.
 
 ### «Análisis» está en stand by (2026-10-19)
 

@@ -853,7 +853,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     return empresasDelParque().filter(function(e){
       if(state.filterSituacionEmpresas && e.situacion!==state.filterSituacionEmpresas) return false;
       if(state.searchEmpresas){
-        var blob = [e.nombre_empresa,e.rubro,e.actividad,e.contacto_nombre].join(" ").toLowerCase();
+        var blob = [e.nombre_empresa,e.rubro,e.contacto_nombre].join(" ").toLowerCase();
         if(blob.indexOf(state.searchEmpresas)===-1) return false;
       }
       return true;
@@ -1317,8 +1317,13 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
         ? '<p class="view-empty">Sin datos de contacto cargados.</p>'
         : '<div class="contact-list">'+filasContacto(e)+'</div>';
     } else {
-      // Representante, Cargo, Rubro, Actividad, CUIT, en ese orden — título
-      // en negrita y dato en gris (al revés de las demás pestañas).
+      // Representante, Cargo, Rubro, Situación, en ese orden — título en
+      // negrita y dato en gris (al revés de las demás pestañas). Actividad,
+      // CUIT y Observación salieron de la ficha a pedido del usuario
+      // (2026-10-19): los dos primeros ya no existen en los datos desde la
+      // fusión de los exports normalizados, y la observación era ruido en
+      // pantalla. La de los 15 ocupantes de alquiler sigue guardada en el
+      // registro (es su procedencia), solo no se muestra ni se edita acá.
       panelHtml =
         (similares.length
           ? '<div class="view-section revisar" style="margin-top:0;padding-top:0;border-top:none"><h3>A revisar</h3>'+
@@ -1331,11 +1336,8 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
           infoRow("Representante", e.contacto_nombre)+
           infoRow("Cargo", e.cargo)+
           infoRow("Rubro", e.rubro)+
-          infoRow("Actividad", e.actividad)+
-          infoRow("CUIT", e.cuit)+
           infoRow("Situación", e.situacion)+
-        '</dl>'+
-        (e.observacion ? '<div class="view-section"><h3>Observación</h3><p class="view-texto">'+esc(e.observacion)+'</p></div>' : '');
+        '</dl>';
     }
 
     modal.innerHTML =
@@ -1379,8 +1381,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
       '<div class="modal-head"><h2>'+(isNew?"Nueva empresa":"Editar empresa")+'</h2><button class="x-close" id="xCloseEmp">&times;</button></div>'+
       '<form id="empresaForm">'+
         field("nombre_empresa","Nombre","text",e,"Razón social")+
-        '<div class="row2">'+field("rubro","Rubro","text",e)+field("actividad","Actividad","text",e)+'</div>'+
-        '<div class="row2">'+field("cuit","CUIT","text",e)+field("telefono","Teléfono","text",e)+'</div>'+
+        '<div class="row2">'+field("rubro","Rubro","text",e)+field("telefono","Teléfono","text",e)+'</div>'+
         '<div class="row2">'+field("contacto_nombre","Contacto","text",e)+field("cargo","Cargo","text",e)+'</div>'+
         '<div class="field"><label for="f_situacion">Situación</label><select id="f_situacion" name="situacion">'+
           '<option value="">Sin dato</option>'+
@@ -1392,7 +1393,6 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
         field("ubicacion","Ubicación","text",e)+
         '<div class="row2">'+field("pagweb","Página web","text",e)+field("instagram","Instagram","text",e)+'</div>'+
         '<div class="row2">'+field("facebook","Facebook","text",e)+field("linkedin","LinkedIn","text",e)+'</div>'+
-        '<div class="field"><label for="f_observacion">Observación</label><textarea id="f_observacion" name="observacion">'+esc(e?e.observacion:"")+'</textarea></div>'+
         '<div class="modal-actions"><button type="submit" class="btn btn-primary btn-grow">'+HeaderGlobal.icono("guardar")+'Guardar</button>'+
         (isNew?'':'<button type="button" class="btn btn-secondary btn-grow" id="btnCancelEditEmp">'+HeaderGlobal.icono("cancelar")+'Cancelar</button><button type="button" class="btn btn-danger btn-grow" id="btnDeleteEmp">'+HeaderGlobal.icono("eliminar")+'Eliminar</button>')+'</div>'+
       '</form>';
@@ -1421,8 +1421,6 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     };
     e.nombre_empresa = g("nombre_empresa").trim();
     e.rubro = g("rubro").trim();
-    e.actividad = g("actividad").trim();
-    e.cuit = g("cuit").trim();
     e.telefono = g("telefono").trim();
     e.contacto_nombre = g("contacto_nombre").trim();
     e.cargo = g("cargo").trim();
@@ -1433,7 +1431,6 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     e.instagram = g("instagram").trim();
     e.facebook = g("facebook").trim();
     e.linkedin = g("linkedin").trim();
-    e.observacion = g("observacion").trim();
 
     if(isNew) state.empresas.push(e);
     state.editingTipo = "empresa"; state.editingId = e.id_empresa;
