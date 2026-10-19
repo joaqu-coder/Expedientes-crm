@@ -333,6 +333,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 </section>
 
 <div class="veil" id="veil" hidden><div class="modal" id="modal"></div></div>
+<div class="veil" id="veilConfirm" hidden><div class="modal" role="alertdialog" aria-labelledby="confirmTitulo"><div class="modal-head"><h2 id="confirmTitulo">¿Estás seguro que desea eliminar esta empresa?</h2></div><div class="modal-actions"><button type="button" class="btn btn-secondary btn-grow" id="btnConfirmNo">Cancelar</button><button type="button" class="btn btn-danger btn-grow" id="btnConfirmSi">Eliminar</button></div></div></div>
 
 <script src="/header.js"></script>
 <script>
@@ -1075,14 +1076,29 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 
   // ---- Modal ----
   var veil = document.getElementById("veil"), modal = document.getElementById("modal");
+  var veilConfirm = document.getElementById("veilConfirm");
   veil.addEventListener("click", function(ev){ if(ev.target===veil) closeModal(); });
+
+  // Confirmación para eliminar una empresa. Es un diálogo propio y no
+  // confirm(): se ve igual en las dos pantallas y, como la ficha queda
+  // detrás, Escape o el clic afuera cierran solo la pregunta.
+  veilConfirm.addEventListener("click", function(ev){ if(ev.target===veilConfirm) cerrarConfirmacion(); });
+  document.getElementById("btnConfirmNo").addEventListener("click", cerrarConfirmacion);
+  document.getElementById("btnConfirmSi").addEventListener("click", function(){ cerrarConfirmacion(); borrarEmpresa(); });
+  document.getElementById("btnConfirmSi").insertAdjacentHTML("afterbegin", HeaderGlobal.icono("eliminar"));
+  document.getElementById("btnConfirmNo").insertAdjacentHTML("afterbegin", HeaderGlobal.icono("cancelar"));
+  function pedirConfirmacionEmpresa(){ veilConfirm.hidden = false; document.getElementById("btnConfirmNo").focus(); }
+  function cerrarConfirmacion(){ veilConfirm.hidden = true; }
 
   // Escape cierra la ficha, como en Seguimiento (abrirOverlay) y en
   // Proyectos. Sin esto, en Parques la única salida era la × o el clic
   // fuera: con el teclado la ficha quedaba abierta y, en el celular, el
   // botón «atrás» salía de la app en vez de cerrar lo que estaba arriba.
+  // Si la confirmación está abierta, Escape cierra solo ella.
   document.addEventListener("keydown", function(ev){
-    if(ev.key==="Escape" && !veil.hidden) closeModal();
+    if(ev.key!=="Escape") return;
+    if(!veilConfirm.hidden) cerrarConfirmacion();
+    else if(!veil.hidden) closeModal();
   });
 
   function openModal(tipo, id){
@@ -1676,6 +1692,10 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     renderComercial();
   }
   function onDeleteEmpresa(){
+    if(!state.editingId || state.editingTipo!=="empresa") return;
+    pedirConfirmacionEmpresa();
+  }
+  function borrarEmpresa(){
     if(!state.editingId || state.editingTipo!=="empresa") return;
     var id = state.editingId;
     state.empresas = state.empresas.filter(function(x){return x.id_empresa!==id;});

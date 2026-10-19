@@ -1572,6 +1572,35 @@ async function testParques(viewport, puerto) {
   ok((await page.locator('#empresasCount').textContent()).includes(String(empresasGuemes.length)),
      'al volver a Güemes el listado vuelve a sus empresas');
 
+  // Eliminar empresa pide confirmación. Va al final porque borra una empresa
+  // y eso mueve los conteos de arriba. Cancelar y Escape no borran; solo
+  // Eliminar dentro de la pregunta lo hace.
+  const antesEmp = await page.locator('#empresasList .tarjeta').count();
+  await page.locator('#empresasList .tarjeta').first().click();
+  await page.waitForSelector('#btnDeleteViewEmp');
+  await page.click('#btnDeleteViewEmp');
+  await page.waitForTimeout(150);
+  ok(await page.locator('#veilConfirm').isVisible() && /¿Estás seguro que desea eliminar esta empresa\?/.test(await page.locator('#veilConfirm').textContent()),
+     'eliminar empresa abre la pregunta de confirmación');
+  ok(await page.locator('#veil').isVisible(), 'la ficha queda abierta detrás de la pregunta');
+  await page.click('#btnConfirmNo');
+  await page.waitForTimeout(150);
+  ok(await page.locator('#veilConfirm').isHidden() && await page.locator('#veil').isVisible(), 'Cancelar cierra la pregunta y deja la ficha abierta');
+
+  await page.click('#btnDeleteViewEmp');
+  await page.waitForTimeout(150);
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(150);
+  ok(await page.locator('#veilConfirm').isHidden() && await page.locator('#veil').isVisible(), 'Escape cierra solo la pregunta, la ficha sigue abierta');
+  ok((await page.locator('#empresasList .tarjeta').count()) === antesEmp, 'ni Cancelar ni Escape borran la empresa');
+
+  await page.click('#btnDeleteViewEmp');
+  await page.waitForTimeout(150);
+  await page.click('#btnConfirmSi');
+  await page.waitForTimeout(150);
+  ok(await page.locator('#veil').isHidden() && (await page.locator('#empresasList .tarjeta').count()) === antesEmp - 1,
+     'Eliminar en la pregunta borra la empresa y cierra la ficha');
+
   ok(problemas.length === 0, 'sin errores de JS ni diálogos nativos' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
   await browser.close();
   server.close();
