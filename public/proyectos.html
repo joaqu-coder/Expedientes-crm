@@ -850,7 +850,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     syncEnProgreso = true;
     setSyncStatus("subiendo");
     try{
-      var resp = await fetch("/api/sync-cartas", {
+      var resp = await HeaderGlobal.fetchApi("/api/sync-cartas", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body: JSON.stringify({
@@ -932,7 +932,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     }
     setSyncStatus("cargando");
     try{
-      var resp = await fetch("/api/sync-cartas");
+      var resp = await HeaderGlobal.fetchApi("/api/sync-cartas");
       if(!resp.ok) throw new Error(await leerError(resp));
       var datos = await resp.json();
       if(!datos || !Array.isArray(datos.expedientes)){
@@ -1044,7 +1044,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     var puede = !document.hidden && veil.hidden && !haySyncPendiente() && !syncEnProgreso;
     if(puede){
       try{
-        var r = await fetch("/api/version-cartas");
+        var r = await HeaderGlobal.fetchApi("/api/version-cartas");
         if(r.ok){
           var v = await r.json();
           // Se compara contra el sha de lo que REALMENTE tenemos cargado, no

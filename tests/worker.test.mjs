@@ -290,6 +290,133 @@ async function testParquesNoSeMezclaConOtrasApps() {
   assert(archivosConsultados.some((u) => u.includes('/parques.json')), '/api/sync-parques consultó parques.json, no otro archivo');
 }
 
+
+// ---------------------------------------------------------------------------
+// Validación de forma en las apps del protocolo simple
+// ---------------------------------------------------------------------------
+// Hasta el 2026-10-19 `manejarSync` escribía en GitHub lo que viniera: un
+// POST de cuatro bytes reemplazaba las 422 resoluciones y devolvía 200.
+// Se verifica app por app porque el bug era justamente que la defensa
+// existía en UNA sola (/api/sync-cartas).
+async function testValidacionDeFormaEnLasTresApps() {
+  const CASOS = [
+    ['/api/sync', 'expedientes.json', { expedientes: [], areas: [], responsables: [] }],
+    ['/api/sync-resoluciones', 'resoluciones.json', { resoluciones: [] }],
+    ['/api/sync-parques', 'parques.json', { empresas: [], lotes: [], ocupaciones: [], reservas: [] }]
+  ];
+  const BASURA = [
+    [{ hola: 'mundo' }, 'un objeto con otras claves'],
+    [[], 'un array'],
+    [null, 'null'],
+    ['texto', 'un string'],
+    [{ expedientes: 'no soy un array', resoluciones: 'tampoco', empresas: 1 }, 'claves presentes pero no arrays']
+  ];
+
+  for (const [ruta, archivo, valido] of CASOS) {
+    for (const [cuerpo, queEs] of BASURA) {
+      llamadas = [];
+      mockFetch(async () => new Response(JSON.stringify({
+        sha: 'sha-1', content: Buffer.from(JSON.stringify({ real: true }), 'utf8').toString('base64')
+      }), { status: 200 }));
+      const resp = await worker.fetch(new Request('https://x.workers.dev' + ruta, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo)
+      }), { GITHUB_TOKEN: 'fake', ASSETS: { fetch: async () => new Response('x') } });
+      const escribio = llamadas.some((l) => l.method === 'PUT');
+      assert(resp.status === 422 && !escribio,
+        `${ruta} rechaza ${queEs} con 422 y NO escribe ${archivo} (dio ${resp.status}, PUT=${escribio})`);
+    }
+
+    // Y lo válido sigue pasando: una validación que rechaza todo no sirve.
+    llamadas = [];
+    mockFetch(async (url, opts) => {
+      if ((opts?.method || 'GET') === 'GET') return new Response('Not Found', { status: 404 });
+      return new Response(JSON.stringify({ content: { sha: 'nuevo' } }), { status: 201 });
+    });
+    const ok = await worker.fetch(new Request('https://x.workers.dev' + ruta, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(valido)
+    }), { GITHUB_TOKEN: 'fake', ASSETS: { fetch: async () => new Response('x') } });
+    assert(ok.status === 200 && llamadas.some((l) => l.method === 'PUT'),
+      `${ruta} sigue aceptando un cuerpo bien formado (dio ${ok.status})`);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Clave compartida
+// ---------------------------------------------------------------------------
+async function testClaveCompartida() {
+  const RUTAS = ['/api/sync', '/api/sync-resoluciones', '/api/sync-parques',
+                 '/api/sync-cartas', '/api/version-cartas'];
+  const contenidoOk = async () => new Response(JSON.stringify({
+    sha: 'sha-1', content: Buffer.from(JSON.stringify({ expedientes: [] }), 'utf8').toString('base64')
+  }), { status: 200 });
+
+  // 1. Sin secret cargado: modo transición, todo pasa como antes. Es lo que
+  //    evita que este deploy deje afuera a quien usa la app todos los días.
+  for (const ruta of RUTAS) {
+    mockFetch(contenidoOk);
+    const r = await worker.fetch(new Request('https://x.workers.dev' + ruta),
+      { GITHUB_TOKEN: 'fake', ASSETS: { fetch: async () => new Response('x') } });
+    assert(r.status !== 401, `sin APP_CLAVE configurada, ${ruta} no pide clave (dio ${r.status})`);
+  }
+
+  // 2. Con secret cargado: sin cabecera, 401 y NO se toca GitHub.
+  const env = { GITHUB_TOKEN: 'fake', APP_CLAVE: 'la-clave-buena', ASSETS: { fetch: async () => new Response('x') } };
+  for (const ruta of RUTAS) {
+    llamadas = [];
+    mockFetch(contenidoOk);
+    const r = await worker.fetch(new Request('https://x.workers.dev' + ruta), env);
+    assert(r.status === 401 && llamadas.length === 0,
+      `con APP_CLAVE, ${ruta} sin clave da 401 y ni consulta GitHub (dio ${r.status}, ${llamadas.length} llamadas)`);
+  }
+
+  // 3. Un POST sin clave tampoco escribe: es el borrado remoto que se cierra.
+  llamadas = [];
+  mockFetch(contenidoOk);
+  const borrado = await worker.fetch(new Request('https://x.workers.dev/api/sync', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ expedientes: [], areas: [], responsables: [] })
+  }), env);
+  assert(borrado.status === 401 && !llamadas.some((l) => l.method === 'PUT'),
+    `con APP_CLAVE, un POST sin clave no vacía el archivo (dio ${borrado.status})`);
+
+  // 4. Clave equivocada: 401. Clave correcta: pasa.
+  mockFetch(contenidoOk);
+  const mala = await worker.fetch(new Request('https://x.workers.dev/api/sync',
+    { headers: { 'X-Clave': 'la-clave-mala' } }), env);
+  assert(mala.status === 401, `una clave equivocada da 401 (dio ${mala.status})`);
+
+  mockFetch(contenidoOk);
+  const buena = await worker.fetch(new Request('https://x.workers.dev/api/sync',
+    { headers: { 'X-Clave': 'la-clave-buena' } }), env);
+  assert(buena.status === 200, `la clave correcta pasa (dio ${buena.status})`);
+
+  // 5. Mismo largo pero distinta: la comparación de tiempo constante tiene
+  //    que seguir comparando bien, no solo rápido.
+  mockFetch(contenidoOk);
+  const mismoLargo = await worker.fetch(new Request('https://x.workers.dev/api/sync',
+    { headers: { 'X-Clave': 'la-clave-buenX' } }), env);
+  assert(mismoLargo.status === 401, `una clave del mismo largo pero distinta da 401 (dio ${mismoLargo.status})`);
+
+  // 6. /api/health queda abierta —no expone datos— y dice en qué modo está.
+  //    Si alguna vez dice auth_activa:false en producción, el agujero está abierto.
+  mockFetch(contenidoOk);
+  const salud = await worker.fetch(new Request('https://x.workers.dev/api/health'), env);
+  const cuerpoSalud = await salud.json();
+  assert(salud.status === 200 && cuerpoSalud.auth_activa === true,
+    '/api/health responde sin clave y reporta auth_activa:true');
+  mockFetch(contenidoOk);
+  const saludAbierta = await worker.fetch(new Request('https://x.workers.dev/api/health'),
+    { GITHUB_TOKEN: 'fake', ASSETS: { fetch: async () => new Response('x') } });
+  assert((await saludAbierta.json()).auth_activa === false,
+    '/api/health reporta auth_activa:false cuando el secret no está cargado');
+
+  // 7. Los estáticos no piden clave: son la cáscara de la app, el dato está
+  //    detrás de /api/. Pedirla acá dejaría una pantalla en blanco.
+  mockFetch(contenidoOk);
+  const estatico = await worker.fetch(new Request('https://x.workers.dev/parques.html'), env);
+  assert(estatico.status === 200, 'los archivos estáticos se sirven sin clave');
+}
+
 async function main() {
   await testGetSinArchivoTodavia();
   await testPostCreaArchivoNuevo();
@@ -305,6 +432,8 @@ async function main() {
   await testParquesGetSinArchivoTodavia();
   await testParquesPostEscribeArchivoPropio();
   await testParquesNoSeMezclaConOtrasApps();
+  await testValidacionDeFormaEnLasTresApps();
+  await testClaveCompartida();
   console.log('\n✅ TODOS LOS TESTS PASARON');
 }
 
