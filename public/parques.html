@@ -376,26 +376,44 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   // llega tal como lo tipeó alguien ("www.algo.com.ar", "@usuario"), así
   // que para que el click navegue de verdad hay que completar el esquema,
   // no usar el valor crudo como href.
+  // Varios campos del origen traen más de un valor pegado en el mismo
+  // string (" | ", " / ", un salto de línea). El dato se muestra entero —no
+  // se corrige el archivo— pero el link tiene que navegar a UNO. Esto
+  // estaba escrito solo dentro de linkedinHref, y por eso mail, teléfono e
+  // Instagram quedaron con el href roto: la misma defensa aplicada en un
+  // solo lugar, otra vez. Ahora es una función y la usan todos.
+  // No parte por "/" porque una URL está llena de barras; el teléfono, que
+  // sí las usa de separador, la parte aparte.
+  function primerValor(v){ return String(v||"").split(/[|;\n]/)[0].trim(); }
   function webHref(v){
+    v = primerValor(v);
     if(!v) return "";
     return /^https?:\/\//i.test(v) ? v : "https://"+v;
   }
   function instagramHref(v){
+    v = primerValor(v);
     if(!v) return "";
     if(/^https?:\/\//i.test(v)) return v;
     return "https://instagram.com/"+v.replace(/^@/,"");
   }
-  function mailtoHref(v){ return "mailto:"+v; }
-  function telHref(v){ return "tel:"+v.replace(/[^+\d]/g,""); }
-  // Algunos registros de origen traen más de una URL pegada en "linkedin"
-  // separadas por " | " (incluso una de Instagram colada ahí) — no se
-  // corrige el dato (se muestra tal cual), pero el link navega a la
-  // primera URL de la lista, no a las dos juntas como un href roto.
-  function linkedinHref(v){
-    if(!v) return "";
-    return webHref(String(v).split("|")[0].trim());
+  // 83 empresas traen dos o tres mails en el campo y "mailto:" + el campo
+  // entero no abre nada: el cliente recibe tres direcciones como si fueran
+  // una. Además hay 3 cuyo "mail" no es un mail ("no", "5000", un nombre):
+  // ahí no hay link que valga, y el valor se sigue mostrando como texto.
+  function mailtoHref(v){
+    var m = String(v||"").match(/[^\s|;,/<>()]+@[^\s|;,/<>()]+/);
+    return m ? "mailto:"+m[0] : "";
   }
+  // 54 empresas traen dos teléfonos. Sacarle los separadores al campo
+  // entero daba tel:38742827583875322977 — 20 dígitos que marcan cualquier
+  // cosa. Es el peor de los tres porque parecía funcionar.
+  function telHref(v){
+    var digitos = primerValor(v).split("/")[0].replace(/[^+\d]/g,"");
+    return digitos ? "tel:"+digitos : "";
+  }
+  function linkedinHref(v){ return webHref(v); }
   function facebookHref(v){
+    v = primerValor(v);
     if(!v) return "";
     if(/^https?:\/\//i.test(v)) return v;
     return "https://facebook.com/"+v.replace(/^@/,"");
@@ -1046,13 +1064,16 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   // de ocupación de la ficha de lote: titular y ocupante se muestran con el
   // mismo criterio y ninguno hereda los datos del otro.
   function filasContacto(e){
-    return contactRow(ICON_MAIL, "Email", e.mail, e.mail?mailtoHref(e.mail):null)+
-      contactRow(ICON_PHONE, "Teléfono", e.telefono, e.telefono?telHref(e.telefono):null)+
+    // `|| null` y no `e.campo ? … : null`: un valor que existe pero del que
+    // no sale un link (el "mail" que dice "no") tiene que quedar como texto,
+    // no como un <a href="">.
+    return contactRow(ICON_MAIL, "Email", e.mail, mailtoHref(e.mail) || null)+
+      contactRow(ICON_PHONE, "Teléfono", e.telefono, telHref(e.telefono) || null)+
       contactRow(ICON_PIN, "Domicilio", e.ubicacion, null)+
-      contactRow(ICON_WEB, "Página web", e.pagweb, e.pagweb?webHref(e.pagweb):null, true)+
-      contactRow(ICON_IG, "Instagram", e.instagram, e.instagram?instagramHref(e.instagram):null, true)+
-      contactRow(ICON_FB, "Facebook", e.facebook, e.facebook?facebookHref(e.facebook):null, true)+
-      contactRow(ICON_LINKEDIN, "LinkedIn", e.linkedin, e.linkedin?linkedinHref(e.linkedin):null, true);
+      contactRow(ICON_WEB, "Página web", e.pagweb, webHref(e.pagweb) || null, true)+
+      contactRow(ICON_IG, "Instagram", e.instagram, instagramHref(e.instagram) || null, true)+
+      contactRow(ICON_FB, "Facebook", e.facebook, facebookHref(e.facebook) || null, true)+
+      contactRow(ICON_LINKEDIN, "LinkedIn", e.linkedin, linkedinHref(e.linkedin) || null, true);
   }
   function tieneContacto(e){
     return !!(e.mail || e.telefono || e.ubicacion || e.pagweb || e.instagram || e.facebook || e.linkedin);
@@ -1085,6 +1106,8 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     var variasMat = mats.length > 1;
     var escrituraMezclada = variasMat && valoresDistintos(mats, function(m){ return escrituraTexto(m.escritura); });
     var titularMezclado  = variasMat && valoresDistintos(mats, titularDeMatricula);
+    var faltaMatricula = !mats.length;
+    var faltaSuperficie = l.superficie_m2 == null || l.superficie_m2 === "";
 
     modal.innerHTML =
       '<div class="modal-head"><button class="x-close" id="xCloseViewLote">&times;</button></div>'+
@@ -1098,6 +1121,11 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 
       '<div class="view-section"><h3>Ubicación</h3>'+
         '<div class="view-grid">'+
+          // 123 de los 135 lotes de Salta traen domicilio y la ficha no lo
+          // mostraba, con la sección llamándose justamente "Ubicación".
+          // Solo cuando hay dato: en Güemes la columna no existe (0 de 139)
+          // y una fila con guión en los 139 no informaría nada.
+          (l.ubicacion ? viewItem("Domicilio", esc(l.ubicacion)) : '')+
           viewItem("Manzana", l.manzana?esc(l.manzana):null)+
           viewItem("Parcela", l.parcela?esc(l.parcela):null)+
           viewItem("Superficie", esc(fmtM2(l.superficie_m2)))+
@@ -1189,6 +1217,20 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
         ? '<div class="view-section revisar"><h3>A revisar</h3>'+
             '<p>El lote tiene una empresa ocupante cargada, pero su estado es '+
             esc(l.estado||"Sin dato")+' y no <strong>Alquilada</strong>. Conviene que coincidan.</p>'+
+          '</div>'
+        : '')+
+
+      // Un lote sin matrícula ni superficie se dibujaba como una fila de
+      // guiones: fmtM2(null) ya devolvía "—" y no "0 m²", así que el total
+      // nunca estuvo mal, pero nada distinguía "falta el dato" de "no
+      // corresponde". Son 15 lotes de Salta sin superficie, 4 de ellos sin
+      // matrícula tampoco. Se dice, no se completa a ojo.
+      ((faltaMatricula || faltaSuperficie)
+        ? '<div class="view-section revisar"><h3>A revisar</h3>'+
+            '<p>Este lote no tiene '+
+            (faltaMatricula && faltaSuperficie ? 'matrícula ni superficie'
+              : (faltaMatricula ? 'matrícula' : 'superficie'))+
+            ' en el archivo. Los guiones de arriba son dato faltante, no un lote vacío.</p>'+
           '</div>'
         : '')+
 

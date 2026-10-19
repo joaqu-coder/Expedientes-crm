@@ -621,23 +621,42 @@ otra mitad —1.352 de 3.670 m²— es del Ente y no está escriturada.
   casos, así que no se tocó. `testParques()` lo sostiene: si alguna vez deja
   de serlo, el total de la app y el detalle de la ficha se contradicen.
 
-**Lo que esa auditoría encontró y NO se tocó todavía**, por decisión del
-usuario (eligió arrancar solo por las matrículas):
+**Lo demás que encontró esa auditoría**, hecho en la misma vuelta salvo lo
+último:
 
-- 83 empresas tienen 2 o 3 mails en el mismo campo y el `mailto:` los pega
-  todos; 54 tienen dos teléfonos y `tel:` los concatena en un número de 20
-  dígitos que marca cualquier cosa. `linkedinHref` ya resuelve esto tomando
-  el primero — `mailtoHref` y `telHref` quedaron afuera.
-- 123 de 274 lotes tienen domicilio (`ubicacion`: "Av. Delgadillo 2278") y la
-  ficha no lo muestra, aunque la sección se llama "Ubicación".
-- Los 4 lotes sin matrícula ni superficie se dibujan como "Matrícula —" y
-  "0 m²", sin distinguir dato faltante de lote de 0 m².
-- 19 empresas tienen `observacion_contactos_2024` con notas accionables
-  ("Sigue estando?", "Que lote es?", "Desadjudicado"), 50 tienen
-  `propietario_matricula` y 18 lotes tienen `observacion`: nada de eso se ve.
-  Ojo con este grupo: el mismo día el usuario pidió **sacar** la observación
-  de la tarjeta de empresa, así que mostrarla de nuevo va en contra salvo que
-  se acuerde explícitamente.
+- **Un link por campo, no todos pegados.** 83 empresas traen dos o tres mails
+  en el mismo string y `"mailto:"+campo` no abría nada; 54 traen dos
+  teléfonos y `tel:` les sacaba los separadores dejando **un número de 20
+  dígitos** que marca cualquier cosa — el peor, porque parecía funcionar. La
+  defensa existía: `linkedinHref` ya tomaba el primer valor. Estaba escrita
+  en un solo lugar, igual que los bugs P0 del 2026-10-19. Ahora es
+  `primerValor()` y la usan los cinco (`web`, `instagram`, `facebook`,
+  `linkedin` y, con su propia forma, `mail` y `telefono`).
+  - `primerValor()` parte por `|`, `;` y salto de línea, **no por `/`**: una
+    URL está llena de barras. El teléfono, que sí las usa de separador
+    (`387-4676346/3875 325608`), la parte aparte.
+  - `mailtoHref` no parte: **extrae** la primera dirección con una regex. El
+    archivo mezcla `" | "`, `" / "`, `"/"` sin espacios y saltos de línea, y
+    tiene 3 empresas cuyo "mail" no es un mail (`no`, `5000`, un nombre).
+    Para esas devuelve `""`, y `filasContacto` lo pasa como `|| null` para
+    que el valor quede como texto y no como `<a href="">`.
+  - **El dato no se toca**: en pantalla se siguen viendo los dos o tres
+    valores. Lo que cambia es a cuál navega el link.
+- **El domicilio del lote.** 123 de los 135 lotes de Salta traen `ubicacion`
+  y la ficha no lo mostraba, con la sección llamándose "Ubicación". Se dibuja
+  **solo cuando hay dato**: en Güemes la columna no existe (0 de 139) y una
+  fila con guión repetida 139 veces no informa nada.
+- **"Falta el dato" ya no se lee igual que "no corresponde".** 15 lotes de
+  Salta no tienen superficie y 4 de ellos tampoco matrícula: la ficha era una
+  fila de guiones. Ahora hay un "A revisar" que nombra qué falta. Ojo:
+  `fmtM2(null)` **siempre** devolvió `"—"` y no `"0 m²"` — el total de la app
+  nunca estuvo mal, el problema era solo que nada distinguía los dos casos.
+- **Sin hacer, y necesita decisión del usuario**: 19 empresas tienen
+  `observacion_contactos_2024` con notas accionables ("Sigue estando?", "Que
+  lote es?", "Desadjudicado"), 50 tienen `propietario_matricula` y 18 lotes
+  tienen `observacion`. Nada de eso se ve. Mostrarlo choca con el pedido del
+  mismo día de **sacar** la observación de la tarjeta de empresa, así que se
+  acuerda antes de tocarlo.
 
 ### «Análisis» está en stand by (2026-10-19)
 
