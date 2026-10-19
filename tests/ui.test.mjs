@@ -1332,6 +1332,74 @@ async function testParques(viewport, puerto) {
   await page.fill('#searchEmpresas', '');
   await page.waitForTimeout(150);
 
+  // Un lote puede tener varias matrículas y la ficha mostraba UNA. No es un
+  // detalle de presentación: en SL009 las dos matrículas tienen distinto
+  // titular y distinta escritura, así que la ficha afirmaba "Escritura: Sí,
+  // propietario Sanabria Salmón" sobre un lote cuya otra mitad es del Ente y
+  // no está escriturada. Se prueban los tres casos que existen en los datos.
+  const abrirLoteDeSalta = async (idLote) => {
+    const emp = datos.lotes.find((l) => l.id_lote === idLote).id_empresa;
+    const nombre = datos.empresas.find((e) => e.id_empresa === emp).nombre_empresa;
+    await page.fill('#searchEmpresas', nombre);
+    await page.waitForTimeout(200);
+    await page.locator('#empresasList .tarjeta').first().click();
+    await page.waitForSelector('#btnEditEmp');
+    await page.click('[data-subtab="lote"]');
+    await page.click(`[data-goto-lote="${idLote}"]`);
+    await page.waitForSelector('#btnEditLote');
+  };
+  const cerrarLote = async () => {
+    await page.click('#xCloseViewLote');
+    await page.fill('#searchEmpresas', '');
+    await page.waitForTimeout(150);
+  };
+
+  // (a) Dos matrículas que NO coinciden entre sí.
+  const sl009 = datos.lotes.find((l) => l.id_lote === 'SL009');
+  ok(sl009.matriculas.length === 2, 'SL009 sigue siendo el caso de dos matrículas en conflicto');
+  await abrirLoteDeSalta('SL009');
+  const fichaSL009 = (await page.locator('#modal').textContent()).replace(/\s+/g, ' ');
+  for (const m of sl009.matriculas) {
+    ok(fichaSL009.includes(String(m.matricula)), `la ficha muestra la matrícula ${m.matricula}, no solo la primera`);
+    ok(fichaSL009.includes(m.titulares[0]), `la ficha muestra el titular de ${m.matricula} (${m.titulares[0]})`);
+  }
+  ok(/Escritura:? Sí/.test(fichaSL009) && /Escritura:? No/.test(fichaSL009),
+     'cada matrícula lleva su propio estado de escritura (una Sí y otra No en el mismo lote)');
+  ok(fichaSL009.includes('Según matrícula'),
+     'el resumen del lote no afirma una escritura ni un propietario únicos cuando las matrículas difieren');
+  ok(/no coinciden entre sí en titular y escritura/.test(fichaSL009),
+     'la ficha avisa que el lote no es de una sola propiedad');
+  ok(fichaSL009.includes('2 matrículas'), 'el encabezado dice cuántas matrículas tiene, en vez de nombrar una');
+  await cerrarLote();
+
+  // (b) Cuatro matrículas que SÍ coinciden: se listan igual, pero sin aviso
+  //     ni "Según matrícula" — si no, el aviso perdería significado.
+  await abrirLoteDeSalta('SL005');
+  const fichaSL005 = (await page.locator('#modal').textContent()).replace(/\s+/g, ' ');
+  ok(fichaSL005.includes('4 matrículas') &&
+     datos.lotes.find((l) => l.id_lote === 'SL005').matriculas.every((m) => fichaSL005.includes(String(m.matricula))),
+     'SL005 lista sus 4 matrículas');
+  ok(!fichaSL005.includes('Según matrícula') && !/no coinciden entre sí/.test(fichaSL005),
+     'con todas las matrículas coincidentes no se avisa nada y el resumen da el valor');
+  await cerrarLote();
+
+  // (c) Una sola matrícula: la ficha queda exactamente como estaba, sin una
+  //     sección "Matrículas (1)" repitiendo el dato de arriba.
+  await abrirLoteDeSalta('SL001');
+  const fichaSL001 = (await page.locator('#modal').textContent()).replace(/\s+/g, ' ');
+  ok(fichaSL001.includes('Matrícula 172586') && !/MATRÍCULAS \(/i.test(fichaSL001),
+     'un lote de una sola matrícula no gana una sección nueva');
+  await cerrarLote();
+
+  // La superficie del lote es la suma de sus matrículas: si alguna vez deja
+  // de serlo, el total de la app y el detalle de la ficha se contradicen.
+  const sumasMal = datos.lotes.filter((l) => (l.matriculas || []).length > 1).filter((l) => {
+    const suma = l.matriculas.reduce((t, m) => t + (Number(m.superficie_m2) || 0), 0);
+    return Math.abs(suma - (Number(l.superficie_m2) || 0)) > 1;
+  });
+  ok(sumasMal.length === 0,
+     `la superficie de cada lote es la suma de sus matrículas${sumasMal.length ? ': falla en ' + sumasMal.map((l) => l.id_lote).join(', ') : ''}`);
+
   // Vuelta a Güemes: el cambio de parque no deja estado del otro colgado.
   await page.locator('#parqueSwitch [data-parque="guemes"]').click();
   await page.waitForFunction(() => document.querySelectorAll('#empresasList .tarjeta').length > 0);

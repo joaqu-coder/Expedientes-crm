@@ -577,6 +577,68 @@ test ve si el bloque vuelve), que el formulario no tenga los tres inputs, y
 que después de guardar una empresa el POST **no** traiga `actividad` ni `cuit`
 y **sí** conserve la observación que ya estaba.
 
+### Un lote puede tener varias matrículas (2026-10-19)
+
+Salió de una auditoría que pidió el usuario — *"no rescata toda la
+información […] la información no es la correcta o es parcial"*— comparando
+campo por campo `parques.json` contra lo que la app dibuja. Tenía razón.
+
+**23 de los 274 lotes tienen entre 2 y 6 matrículas** (`matriculas`, un array
+de `{matricula, superficie_m2, escritura, titulares}`) y la ficha mostraba
+una sola. No era un problema de presentación: **9 de esos lotes tienen
+titular registral distinto entre sus matrículas y 6, escritura distinta.** En
+SL009 la ficha afirmaba "Escritura: Sí · Sanabria Salmón" sobre un lote cuya
+otra mitad —1.352 de 3.670 m²— es del Ente y no está escriturada.
+
+- **`matriculasDe(l)` devuelve siempre una lista**, así el render no se
+  bifurca. Con una sola matrícula la arma con los campos sueltos del lote
+  (`matricula`/`escritura`/`propietario_matricula`), que para esos 251 lotes
+  coinciden exactamente con el array — verificado: 0 diferencias en matrícula
+  y escritura sobre los 108 que traen array de uno. **Blast radius cero**
+  fuera de los 23.
+- **Los 4 lotes de Salta sin datos registrales** (SL030, SL105, SL141, SL143)
+  traen una entrada con todo en `null`. Eso no es una matrícula, es la
+  ausencia de una, y se filtra: si no, la ficha dibujaba una fila vacía.
+- **El resumen no miente cuando las matrículas difieren**: "Escritura" y
+  "Propietario de la matrícula" pasan a decir *Según matrícula*, y el detalle
+  va en la sección "Matrículas (N)". Si todas coinciden (como SL005, 4
+  matrículas todas de AGENOR y escrituradas) se muestra el valor y no hay
+  aviso — un aviso que aparece siempre no se lee.
+- **Con una sola matrícula no se agrega ninguna sección.** Sería repetir
+  arriba y abajo el mismo dato.
+- **`lotesConMatriculaCompartida` compara todas las matrículas de los dos
+  lotes**, no solo la principal: veía 14 repetidas de las 17 que hay, y por
+  eso 5 lotes (SL028, SL087, SL110, SL125, SL135) no mostraban el aviso "A
+  revisar" que les corresponde. El aviso ahora nombra **cuál** matrícula se
+  repite, que con lotes de 6 es la mitad del dato.
+- **La fila de lote en la ficha de la empresa** lleva un `+N` después de la
+  matrícula y dice *Según matrícula* en Propiedad/Escritura cuando difieren.
+  Sin eso, un lote de 6 matrículas se leía como si tuviera una.
+- **La búsqueda de Comercial indexa todas las matrículas.** Hoy no cambia
+  ningún resultado (ninguno de los lotes sin empresa tiene más de una), pero
+  es donde el bug iba a reaparecer el día que uno vuelva a la cartera.
+- **La superficie del lote ya era la suma de sus matrículas** en los 23
+  casos, así que no se tocó. `testParques()` lo sostiene: si alguna vez deja
+  de serlo, el total de la app y el detalle de la ficha se contradicen.
+
+**Lo que esa auditoría encontró y NO se tocó todavía**, por decisión del
+usuario (eligió arrancar solo por las matrículas):
+
+- 83 empresas tienen 2 o 3 mails en el mismo campo y el `mailto:` los pega
+  todos; 54 tienen dos teléfonos y `tel:` los concatena en un número de 20
+  dígitos que marca cualquier cosa. `linkedinHref` ya resuelve esto tomando
+  el primero — `mailtoHref` y `telHref` quedaron afuera.
+- 123 de 274 lotes tienen domicilio (`ubicacion`: "Av. Delgadillo 2278") y la
+  ficha no lo muestra, aunque la sección se llama "Ubicación".
+- Los 4 lotes sin matrícula ni superficie se dibujan como "Matrícula —" y
+  "0 m²", sin distinguir dato faltante de lote de 0 m².
+- 19 empresas tienen `observacion_contactos_2024` con notas accionables
+  ("Sigue estando?", "Que lote es?", "Desadjudicado"), 50 tienen
+  `propietario_matricula` y 18 lotes tienen `observacion`: nada de eso se ve.
+  Ojo con este grupo: el mismo día el usuario pidió **sacar** la observación
+  de la tarjeta de empresa, así que mostrarla de nuevo va en contra salvo que
+  se acuerde explícitamente.
+
 ### «Análisis» está en stand by (2026-10-19)
 
 Pedido del usuario: *"lo dejamos en stand by hasta organizar los KPIs que
