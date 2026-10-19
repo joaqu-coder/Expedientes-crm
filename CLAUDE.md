@@ -518,13 +518,48 @@ acción más grave con la mitad del peso visual. `.btn-edit` ni siquiera era
 Editar: era la clase de **Cancelar**.
 
 - **Los colores no se redefinen en el kit.** Los tokens `--ui-*` se leen de lo
-  que cada app ya declara (`--accent`, `--border`, `--surface`…), así que
-  Proyectos sigue en ámbar y las otras tres en indigo. El verde `#00a884` de
-  la especificación es el de WhatsApp: se dejó afuera a propósito — la propia
-  especificación dice "si existen valores aprobados en el proyecto,
-  conservarlos". Seguimiento e index declaran además unos alias
+  que cada app ya declara (`--accent`, `--border`, `--surface`…). El verde
+  `#00a884` de la especificación es el de WhatsApp: se dejó afuera a propósito
+  — la propia especificación dice "si existen valores aprobados en el
+  proyecto, conservarlos". Seguimiento e index declaran además unos alias
   (`--fg: var(--text)`, `--border: var(--gray-200)`…) porque nombran sus
   colores distinto; sin eso el kit caería en sus valores de respaldo.
+- **No hay color de marca: ni índigo ni ámbar** (2026-10-19). Hasta esa fecha
+  Proyectos iba en ámbar `#a8650f` y las otras tres en índigo `#667eea`, y eso
+  pintaba la barra de estado del teléfono de un color distinto en cada
+  pantalla. El usuario lo pidió al revés: *"se elimina el ámbar y el índigo
+  […] pantalla blanca en su totalidad"*. Hoy:
+  - `--accent` es `#1f2937` —la misma tinta del texto— en las cinco páginas,
+    y `--accent-fg` es blanco. Lo que era un FAB de color es un FAB oscuro.
+  - `--bg` y el fondo del `body` son `#ffffff`, no `#f9fafb`. Las tarjetas se
+    separan del fondo por su `border`, que ya tenían todas.
+  - `theme-color` es `#ffffff` en las cinco páginas **y** en `manifest.json`.
+    Si agregás una página, ese meta va en blanco: es lo que pinta la franja de
+    arriba en el teléfono y es lo que se veía mal.
+  - Lo que **sí** sigue teniendo color son los estados y las categorías:
+    `--danger`, `--ok`, `--warn`, los `--c1..--c6` de los temas y los
+    `--s1..--s8` de los gráficos. Codifican información; sacarles el color
+    sería borrar el dato, no normalizar la marca. (Quedan ahí un `--c1`
+    índigo y un `--c3`/`--warn` ámbar: son badges, no identidad.)
+- **Los cinco botones son una pastilla del mismo ancho** (2026-10-19). El
+  usuario pidió "mismo radius, ancho, alto e icono" tomando como referencia la
+  pestaña **Análisis** de Proyectos, que ya era `border-radius:999px`. Por eso
+  `--ui-radius-button` es ahora `var(--ui-radius-pill)` y no 8px. El ancho
+  igual lo da `.btn-grow`, que pasó de `flex:1 1 auto` a `flex:1 1 0`: con
+  base `auto` el reparto arrancaba del largo del texto y "Eliminar" terminaba
+  más ancho que "Editar" en la misma fila. A 390px una fila de tres botones da
+  114px cada uno y ninguno desborda. Lo que falta para que la regla se cumpla
+  es poner `btn-grow` en **todos** los botones de una fila, no solo en el
+  principal — era el bug: Guardar lo tenía y Cancelar/Eliminar no.
+- **Editar es siempre `btn-outline`.** Proyectos lo alternaba entre
+  `btn-primary` y `btn-outline` según el expediente estuviera archivado: el
+  mismo botón con dos pesos visuales dentro de la misma app, y un tercero
+  respecto de Resoluciones y Parques.
+- **Seguimiento ya no dibuja sus propios SVG en el HTML.** Cancelar y Eliminar
+  traían un SVG a mano de 14px en el marcado *además* del icono que
+  `HeaderGlobal.icono()` les pone al iniciar, y Guardar no traía ninguno: se
+  veían tres cosas distintas hasta que corría el script. Ahora el HTML es solo
+  el texto y el icono viene siempre del juego compartido, a 18px.
 - **40px de botón y 44px de área táctil, las dos cosas.** La especificación
   pide controles de 40px y el proyecto exige 44px de objetivo táctil: el botón
   mide 40 y un `::after` estira el área a 44, igual que los chips de filtro
@@ -550,9 +585,12 @@ Editar: era la clase de **Cancelar**.
   navegador la soporta, nunca como única señal (el `:active` del kit siempre
   está) y apagada si el sistema pide menos movimiento.
 - **Test**: `testUniformidad()` compara entre las cuatro apps el alto, el
-  radio, la tipografía, la alineación y el tamaño de icono de los botones, y
-  el alto, el radio, la fuente, la lupa y el botón de limpiar de las
-  búsquedas. Es el test que hubiera cazado las tres alturas distintas.
+  radio (que sea de pastilla), la tipografía, la alineación y el tamaño de
+  icono de los botones, el ancho **dentro de cada fila de acciones**, y el
+  alto, el radio, la fuente, la lupa y el botón de limpiar de las búsquedas.
+  Es el test que hubiera cazado las tres alturas distintas. El ancho se
+  compara por fila y no entre pantallas a propósito: una fila de dos botones
+  y una de tres dan anchos distintos y las dos están bien.
 
 ### No hay modo oscuro
 
