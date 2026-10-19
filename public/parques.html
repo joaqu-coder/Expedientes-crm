@@ -222,6 +222,8 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 .info-row:last-child{border-bottom:none}
 .info-row dt{font-weight:700;color:var(--fg);flex-shrink:0;margin:0}
 .info-row dd{margin:0;font-weight:400;color:var(--muted);text-align:right}
+.info-row .info-nota{display:block;font-size:11.5px;color:var(--muted);opacity:.8}
+.field-hint{font-size:11.5px;color:var(--muted);line-height:1.45;margin:5px 0 0}
 
 /* ---- Ficha de empresa: sub-tab Contacto — fila con ícono + label + valor.
    Íconos SVG inline, todos en el mismo gris neutro (pedido explícito del
@@ -551,10 +553,19 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   // tenga la versión vieja en localStorage, o un GET que todavía devuelva el
   // formato anterior, entran igual y quedan atribuidos a Güemes en vez de
   // aparecer con el selector vacío.
+  //
+  // El nombre que se muestra en el selector sale de acá y no del dato: el
+  // chip es una etiqueta corta al lado de otra ("Güemes"), y
+  // "Parque Industrial Salta" quedaba desparejo y ocupando toda la fila.
+  // Normalizarlo al leer —y no una sola vez en parques.json— evita que un
+  // celular con el nombre viejo en localStorage lo vuelva a subir en su
+  // próximo POST.
+  var NOMBRES_PARQUE = { guemes:"Güemes", salta:"Salta" };
   function migrarParques(d){
     if(!Array.isArray(d.parques) || !d.parques.length){
       d.parques = [{ id:"guemes", nombre: d.parque || "Güemes" }];
     }
+    d.parques.forEach(function(p){ if(NOMBRES_PARQUE[p.id]) p.nombre = NOMBRES_PARQUE[p.id]; });
     var primero = d.parques[0].id;
     d.empresas.forEach(function(e){ if(!e.id_parque) e.id_parque = primero; });
     d.lotes.forEach(function(l){ if(!l.id_parque) l.id_parque = primero; });
@@ -581,8 +592,18 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
       });
     }catch(e){ return vacio(); }
   }
-  function save(){
+  // Dos cosas distintas, separadas a propósito: guardar en el dispositivo y
+  // declarar que hay un cambio que subir. Confundirlas hacía que elegir un
+  // parque —que es estado de pantalla, no dato— disparara un POST con el
+  // archivo entero (~240 KB) y, del otro lado, un commit en el repo: seis
+  // toques al selector, seis commits y 1,4 MB subidos sin que nadie hubiera
+  // editado nada. Lo mismo que se evita en datosParaSync, pero del lado del
+  // disparador.
+  function guardarLocal(){
     try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+  }
+  function save(){
+    guardarLocal();
     marcarPendiente();
   }
 
@@ -802,7 +823,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
         var bc = document.getElementById("searchComercial"); if(bc) bc.value="";
         var be = document.getElementById("searchEmpresas"); if(be) be.value="";
         var dc = document.getElementById("filterDisponibleComercial"); if(dc) dc.checked=false;
-        save();
+        guardarLocal(); // ver save(): elegir parque no es un cambio de datos
         renderParqueSwitch();
         renderFiltros();
         renderComercial();
@@ -827,6 +848,42 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     return lotesDeEmpresa(id).reduce(function(acc,l){ return acc + (Number(l.superficie_m2)||0); }, 0);
   }
   function ocupacionDeLote(idLote){ return state.ocupaciones.find(function(o){return o.id_lote===idLote && o.vigente;}); }
+
+  // La situación de la EMPRESA cuando su registro no la declara.
+  //
+  // El origen de Salta traía una columna que mezclaba las dos cosas y se
+  // separó al importar (ver CLAUDE.md): "Alquila" describe al LOTE y pasó a
+  // `estado`, Activa/Sin actividad/En construcción describen a la EMPRESA y
+  // pasaron a `situacion`. En Güemes esa separación nunca se hizo: la base
+  // SQLite dejó TODO en `lotes.estado` y las 53 empresas quedaron con
+  // `situacion: null`, así que el desplegable del listado estaba
+  // deshabilitado y la ficha mostraba "—" para todas.
+  //
+  // Se deriva, no se inventa: el valor sale del estado de los lotes que esa
+  // misma empresa tiene a su nombre, que es exactamente el dato que el
+  // origen puso en la fila equivocada. "Alquilada" no entra porque describe
+  // al lote y no dice nada de si su titular sigue operando; si no queda
+  // ninguna evidencia, la situación sigue siendo desconocida.
+  //
+  // Es una lectura, no una escritura: nada de esto se guarda en el registro
+  // de la empresa. Si alguien carga la situación a mano desde la ficha, ese
+  // valor gana y la derivación deja de aplicarse para esa empresa.
+  var PRIORIDAD_SITUACION = ["Activa","En construcción","Sin actividad"];
+  function situacionSegunLotes(idEmpresa){
+    var estados = lotesDeEmpresa(idEmpresa).map(function(l){ return l.estado; });
+    // Un titular con un lote activo y otro parado está operando: gana el
+    // estado más activo. Son 2 de las 53 de Güemes (FMF ARGENTINA y PETIT
+    // PLAST), las dos con un lote Activa.
+    for(var i=0;i<PRIORIDAD_SITUACION.length;i++){
+      if(estados.indexOf(PRIORIDAD_SITUACION[i])!==-1) return PRIORIDAD_SITUACION[i];
+    }
+    return null;
+  }
+  function situacionDe(e){
+    if(!e) return null;
+    return e.situacion || situacionSegunLotes(e.id_empresa);
+  }
+  function situacionEsDerivada(e){ return !!e && !e.situacion && !!situacionSegunLotes(e.id_empresa); }
 
   // Guardar el ocupante elegido en el formulario. Toca SOLO `ocupaciones`:
   // ni el lote ni ninguna de las dos empresas. Cambiar de ocupante cierra la
@@ -888,8 +945,16 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     // Güemes vinieron sin el dato, así que ahí el desplegable queda con la
     // única opción "Todos" en vez de ofrecer filtros que no filtran nada.
     var sits = SITUACIONES.filter(function(s){
-      return empresasDelParque().some(function(e){ return e.situacion===s; });
+      return empresasDelParque().some(function(e){ return situacionDe(e)===s; });
     });
+    // El filtro elegido sobrevive en localStorage. Si al volver no está
+    // entre las opciones de este parque, `select.value = ...` no prende
+    // nada y el desplegable dice "Todos los estados" mientras la lista
+    // sigue filtrada por un valor invisible: parece que el filtro no
+    // funciona y no hay forma de sacarlo. Se descarta antes de dibujar.
+    if(state.filterSituacionEmpresas && sits.indexOf(state.filterSituacionEmpresas)===-1){
+      state.filterSituacionEmpresas = "";
+    }
     selSituacionEmpresas.innerHTML = '<option value="">Todos los estados</option>'+
       sits.map(function(s){ return '<option value="'+esc(s)+'">'+esc(s)+'</option>'; }).join("");
     selSituacionEmpresas.value = state.filterSituacionEmpresas || "";
@@ -922,7 +987,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   }
   function empresasFiltradas(){
     return empresasDelParque().filter(function(e){
-      if(state.filterSituacionEmpresas && e.situacion!==state.filterSituacionEmpresas) return false;
+      if(state.filterSituacionEmpresas && situacionDe(e)!==state.filterSituacionEmpresas) return false;
       if(state.searchEmpresas){
         var blob = [e.nombre_empresa,e.rubro,e.contacto_nombre].join(" ").toLowerCase();
         if(blob.indexOf(state.searchEmpresas)===-1) return false;
@@ -1012,6 +1077,14 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   var veil = document.getElementById("veil"), modal = document.getElementById("modal");
   veil.addEventListener("click", function(ev){ if(ev.target===veil) closeModal(); });
 
+  // Escape cierra la ficha, como en Seguimiento (abrirOverlay) y en
+  // Proyectos. Sin esto, en Parques la única salida era la × o el clic
+  // fuera: con el teclado la ficha quedaba abierta y, en el celular, el
+  // botón «atrás» salía de la app en vez de cerrar lo que estaba arriba.
+  document.addEventListener("keydown", function(ev){
+    if(ev.key==="Escape" && !veil.hidden) closeModal();
+  });
+
   function openModal(tipo, id){
     state.editingTipo = tipo;
     state.editingId = id;
@@ -1041,8 +1114,9 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   // Fila título-en-negrita/dato-en-gris para la pestaña Empresa de la
   // ficha (al revés de viewItem, que usa label chico arriba y valor en
   // negrita abajo) — pedido explícito del usuario 2026-10-13.
-  function infoRow(label, valor){
-    return '<div class="info-row"><dt>'+esc(label)+'</dt><dd>'+(valor?esc(valor):'<span class="view-empty">—</span>')+'</dd></div>';
+  function infoRow(label, valor, nota){
+    return '<div class="info-row"><dt>'+esc(label)+'</dt><dd>'+(valor?esc(valor):'<span class="view-empty">—</span>')+
+      (valor&&nota?'<span class="info-nota">'+esc(nota)+'</span>':'')+'</dd></div>';
   }
 
   // Fila ícono + label + valor para la pestaña Contacto. Si hay href, toda
@@ -1187,7 +1261,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
               // al sistema con el nombre y nada más, y una grilla de seis
               // guiones no informa nada.
               itemsConDato([
-                ["Actividad", ocupante && ocupante.situacion],
+                ["Actividad", situacionDe(ocupante)],
                 ["Representante", ocupante && ocupante.contacto_nombre],
                 ["Cargo", ocupante && ocupante.cargo],
                 ["Rubro", ocupante && ocupante.rubro],
@@ -1487,7 +1561,10 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
           infoRow("Representante", e.contacto_nombre)+
           infoRow("Cargo", e.cargo)+
           infoRow("Rubro", e.rubro)+
-          infoRow("Situación", e.situacion)+
+          // Si la situación se dedujo del estado de sus lotes se dice, para
+          // que no se lea como un dato declarado en el registro.
+          infoRow("Situación", situacionDe(e),
+                  situacionEsDerivada(e) ? "según el estado de sus lotes" : null)+
         '</dl>';
     }
 
@@ -1534,12 +1611,19 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
         field("nombre_empresa","Nombre","text",e,"Razón social")+
         '<div class="row2">'+field("rubro","Rubro","text",e)+field("telefono","Teléfono","text",e)+'</div>'+
         '<div class="row2">'+field("contacto_nombre","Contacto","text",e)+field("cargo","Cargo","text",e)+'</div>'+
+        // El desplegable muestra SOLO lo que el registro declara: si la
+        // situación de la ficha venía deducida de los lotes, precargarla
+        // acá la convertiría en dato declarado apenas alguien guarda
+        // cualquier otro campo. Se avisa en una línea y se deja elegir.
         '<div class="field"><label for="f_situacion">Situación</label><select id="f_situacion" name="situacion">'+
           '<option value="">Sin dato</option>'+
           SITUACIONES.map(function(s){
             return '<option value="'+esc(s)+'" '+(e&&e.situacion===s?"selected":"")+'>'+esc(s)+'</option>';
           }).join("")+
-        '</select></div>'+
+        '</select>'+
+        (situacionEsDerivada(e) ? '<p class="field-hint">Hoy figura como «'+esc(situacionDe(e))+
+          '», deducida del estado de sus lotes. Elegí un valor para dejarlo declarado.</p>' : '')+
+        '</div>'+
         field("mail","Mail","text",e)+
         field("ubicacion","Ubicación","text",e)+
         '<div class="row2">'+field("pagweb","Página web","text",e)+field("instagram","Instagram","text",e)+'</div>'+

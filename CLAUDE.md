@@ -344,7 +344,7 @@ prueba: es el registro, y se muestra tal como vino.
 
 ---
 
-## Parques: lotes y empresas (Güemes y Parque Industrial Salta)
+## Parques: lotes y empresas (Güemes y Salta)
 
 Pedido del usuario (2026-10-13): una cuarta tarjeta para gestionar lotes y
 contactos de las empresas instaladas en los parques industriales. Arrancó
@@ -722,8 +722,77 @@ también.
   lote esté alquilado no dice si su titular sigue operando, y titular y
   ocupante pueden estar activos los dos a la vez. El desplegable "Todos los
   estados" del listado de Empresas —que estuvo inerte desde el 2026-10-13
-  esperando justamente esta definición— filtra por `situacion` desde ahora, y
-  se deshabilita en el parque donde el dato no existe (Güemes).
+  esperando justamente esta definición— filtra por `situacion` desde el
+  2026-10-18 (ver abajo lo que faltaba para que filtrara también en Güemes).
+
+### La situación de una empresa de Güemes sale de sus lotes (2026-10-19)
+
+Reporte del usuario: el desplegable "Todos los estados" no filtraba, y en
+Güemes la ficha mostraba "Situación —" para todas las empresas.
+
+La separación que se hizo al importar Salta —"Alquila" describe al LOTE,
+Activa/Sin actividad/En construcción describen a la EMPRESA— **nunca se hizo
+en Güemes**: la base SQLite dejó las dos cosas en `lotes.estado` y las 53
+empresas quedaron con `situacion: null`. El desplegable salía deshabilitado
+("se deshabilita en el parque donde el dato no existe"), que era correcto
+según el dato cargado y, visto desde la pantalla, indistinguible de un filtro
+roto.
+
+- **Se deriva al leer, no se escribe.** `situacionDe(empresa)` devuelve la
+  `situacion` declarada y, si no hay, la deduce del estado de los lotes **a
+  nombre de esa misma empresa** — que es el dato que el origen puso en la fila
+  equivocada, no una invención. `"Alquilada"` no entra: describe al lote y no
+  dice si su titular sigue operando. Sin evidencia, sigue sin dato.
+- **Desempate**: gana el estado más activo (Activa > En construcción > Sin
+  actividad). Son 2 de las 53 (FMF ARGENTINA y PETIT PLAST), las dos con un
+  lote Activa: un titular con un lote parado y otro produciendo está operando.
+- Quedan 42 de 53 con situación y 11 sin dato (lotes solo `Alquilada` o sin
+  estado, o sin lotes). Resultado: Activa 28, Sin actividad 11,
+  En construcción 3.
+- **Se dice que es deducida**, en la ficha ("según el estado de sus lotes") y
+  en el formulario. El desplegable de edición sigue mostrando solo lo
+  declarado: precargar la deducción la convertiría en dato declarado apenas
+  alguien guardara cualquier otro campo. Si se carga a mano, ese valor gana.
+- **Salta no cambia**: ahí la `situacion` viene declarada (97 Activa, 11 Sin
+  actividad, 3 En construcción, 39 sin dato) y la derivación no se aplica.
+- **Un filtro guardado que el parque no ofrece se descarta.** `select.value =
+  <valor ausente>` no prende nada: el desplegable decía "Todos los estados"
+  mientras `empresasFiltradas()` seguía recortando por un valor invisible, sin
+  forma de sacarlo desde la pantalla.
+- **Test**: `testParques()` recorre las dos pantallas, pide cada situación y
+  compara contra el archivo con la regla escrita aparte. Lo anterior solo
+  verificaba que la opción "Todos los estados" existiera — por eso un
+  desplegable muerto pasó en verde.
+
+### Los chips del selector llevan el nombre corto (2026-10-19)
+
+Pedido del usuario: el segundo chip debe decir **"Salta"**, no "Parque
+Industrial Salta" — es una etiqueta al lado de "Güemes" y el nombre largo le
+comía la fila entera. El nombre canónico de cada parque vive en
+`NOMBRES_PARQUE` y `migrarParques()` lo normaliza **al leer**: si solo se
+cambiara `parques.json`, un celular con el nombre viejo en `localStorage` lo
+volvería a subir en su próximo POST.
+
+### Elegir parque no es un cambio de datos (2026-10-19)
+
+`save()` hacía dos cosas en una: guardar en el dispositivo y marcar que hay
+algo que subir. El selector de parque —estado de pantalla, lo dice
+`datosParaSync()`— lo llamaba para persistir `parqueActivo`, así que **cada
+toque subía los ~240 KB del archivo entero y dejaba un commit en el repo**.
+Medido en Chromium: 6 toques, 6 POST, 1,4 MB. Con el token de GitHub
+compartido entre las cuatro apps, es gasto del presupuesto de las otras tres
+—y, en una app de última-escritura-gana, una ocasión más de pisar a otro
+dispositivo— por una preferencia de pantalla. Ahora `guardarLocal()` persiste
+y `save()` = `guardarLocal()` + `marcarPendiente()`; el selector usa el
+primero. El test cuenta los POST de 4 cambios de parque y exige 0.
+
+### Escape cierra la ficha (2026-10-19)
+
+Parques y Resoluciones abrían sus modales con `openModal()` propio y sin
+tecla de salida: la única forma de cerrar era la × o el clic afuera.
+Seguimiento (`abrirOverlay`) y Proyectos ya lo tenían. Falta todavía el resto
+de `abrirOverlay()` en esas dos pantallas (foco inicial, trampa de Tab,
+retorno del foco).
 
 ## Formato del número de expediente
 
@@ -1165,3 +1234,21 @@ fuente, a diferencia del repo del Boletín donde lo genera el scraper.
       causa raíz de los cuatro bugs P0 del 2026-10-19: una defensa escrita una
       vez y aplicada en un solo lugar. El camino es el mismo que resolvió el
       CSS con `design-system.css`: un `sync.js` compartido primero.
+- [ ] **Borrar una empresa o un lote en Parques no se puede deshacer.** No
+      hay confirmación ni toast con Deshacer —el patrón que la propia
+      documentación de UI exige y que solo Seguimiento implementa
+      (`mostrarToast`)— y la baja **arrastra**: los lotes de esa empresa
+      quedan sin titular y sus ocupaciones se borran. A los 100ms ya está
+      subido y commiteado. Pasó al menos dos veces (AGROCONSTRUCCIONES LA
+      POSTA el 2026-10-17, A.P.I.S el 2026-10-19). Vale para Parques,
+      Proyectos y Resoluciones: el arreglo es sacar el toast de Seguimiento a
+      lo compartido, no copiarlo tres veces.
+- [ ] **Los modales de Parques y Resoluciones no son `abrirOverlay()`.**
+      Desde el 2026-10-19 cierran con Escape, pero siguen sin foco inicial,
+      sin trampa de Tab y sin retorno del foco al cerrar. Es el mismo
+      "una defensa escrita una vez y aplicada en un solo lugar" de la línea
+      de arriba.
+- [ ] **Cuando «Análisis» vuelva del stand by**, sumar la barra de empresas
+      por situación: el dato ahora existe en los dos parques (declarado en
+      Salta, derivado de los lotes en Güemes) y no se está mostrando en
+      ningún agregado.

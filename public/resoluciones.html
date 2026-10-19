@@ -420,6 +420,14 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   var veil = document.getElementById("veil"), modal = document.getElementById("modal");
   veil.addEventListener("click", function(ev){ if(ev.target===veil) closeModal(); });
 
+  // Escape cierra la ficha, como en Seguimiento (abrirOverlay) y en
+  // Proyectos. Sin esto, en Resoluciones la única salida era la × o el clic
+  // fuera: con el teclado la ficha quedaba abierta y, en el celular, el
+  // botón «atrás» salía de la app en vez de cerrar lo que estaba arriba.
+  document.addEventListener("keydown", function(ev){
+    if(ev.key==="Escape" && !veil.hidden) closeModal();
+  });
+
   function openModal(id){
     state.editingId = id;
     state.modalMode = id ? "view" : "edit";
