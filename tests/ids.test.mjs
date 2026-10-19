@@ -130,5 +130,39 @@ for (const nombre of PAGINAS) {
        : `${nombre}.html no redeclara ningún token del sistema${permitidos.length ? ` (desvío anotado: ${permitidos.join(', ')})` : ''}`);
 }
 
+// 4. El opt-in a la transición entre pantallas va INLINE y es idéntico en las
+//    cinco. No puede vivir en design-system.css: el navegador decide si anima
+//    en el primer render del documento nuevo y una hoja externa llega tarde.
+//    Medido sobre las pantallas reales: en el CSS externo salía en 5 de 8
+//    navegaciones, inline en 8 de 8. Una animación intermitente se lee como
+//    un error, así que esto es correctitud, no estética. Y si una sola página
+//    no opta, la transición tampoco ocurre al venir DESDE ella: hacen falta
+//    las dos puntas.
+const OPTIN = '<style>@view-transition{navigation:auto}' +
+  '@media(prefers-reduced-motion:reduce){@view-transition{navigation:none}}</style>';
+for (const nombre of PAGINAS) {
+  const html = fs.readFileSync(path.join(RAIZ, `public/${nombre}.html`), 'utf8');
+  const tiene = html.includes(OPTIN);
+  // Tiene que estar antes de cualquier hoja de estilo, o el navegador ya
+  // decidió para cuando lo lee.
+  const pos = html.indexOf(OPTIN);
+  const primerLink = html.indexOf('<link rel="stylesheet"');
+  ok(tiene && pos < primerLink,
+     !tiene ? `${nombre}.html no tiene el opt-in inline a la transición, o no es idéntico al de las otras`
+            : `${nombre}.html opta a la transición inline y antes de las hojas de estilo`);
+}
+
+// 5. Y no está duplicado en el CSS: dos opt-ins es tener que acordarse de los
+//    dos. El archivo compartido se queda con lo que sí puede regular desde un
+//    solo lugar (qué se anima, cuánto dura, qué se queda quieto).
+const dsCss = fs.readFileSync(path.join(RAIZ, 'public/design-system.css'), 'utf8');
+// Sin los comentarios: el archivo EXPLICA por qué el opt-in no está ahí, y
+// esa explicación nombra la regla. Buscar en el texto crudo la encuentra
+// dentro del comentario y falla por la documentación, no por el código.
+const optinEnCss = /@view-transition\s*\{/.test(dsCss.replace(/\/\*[\s\S]*?\*\//g, ''));
+ok(!optinEnCss,
+   optinEnCss ? 'design-system.css volvió a declarar @view-transition: el opt-in va solo inline (ver el comentario del archivo)'
+              : 'design-system.css no duplica el opt-in; sí define la animación y qué se queda quieto');
+
 console.log(fallas === 0 ? '\nEstructura OK' : `\n${fallas} fallas`);
 process.exit(fallas === 0 ? 0 : 1);

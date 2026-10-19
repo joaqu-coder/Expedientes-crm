@@ -29,6 +29,11 @@
 (function () {
   "use strict";
 
+  /* Los colores salen de design-system.css y van sin valor de respaldo: los
+     tokens existen siempre porque las cinco páginas cargan ese archivo. Un
+     `var(--warn, #a8650f)` sería una segunda copia del color, que hay que
+     acordarse de actualizar — el mismo motivo por el que ui-kit.css no tiene
+     ni un literal. */
   var CSS = [
     /* El header ocupa el ancho disponible y respeta el margen horizontal de
        cada página. Sin bordes ni sombras: se integra con el fondo. */
@@ -43,34 +48,34 @@
        el botón, que debe quedar SIEMPRE en la misma posición respecto del
        borde derecho, en las cuatro pantallas. */
     ".app-header__titulo{flex:1 1 auto;min-width:0;margin:0;font-size:clamp(22px,6vw,28px);" +
-      "font-weight:600;letter-spacing:-.02em;color:var(--fg,#1f2937);" +
+      "font-weight:600;letter-spacing:-.02em;color:var(--fg);" +
       "white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
 
     /* 48x48 de objetivo táctil (guía de Android), con el ícono de 24px
        centrado: el área cómoda no agranda el dibujo. */
     ".app-header__menu{flex:0 0 auto;width:48px;height:48px;display:flex;align-items:center;" +
       "justify-content:center;background:none;border:none;padding:0;cursor:pointer;" +
-      "border-radius:999px;color:var(--fg,#1f2937);transition:background-color .15s ease}",
-    ".app-header__menu:hover{background:var(--surface-2,#f3f4f6)}",
-    ".app-header__menu:focus-visible{outline:2px solid var(--accent,#1f2937);outline-offset:-2px}",
+      "border-radius:999px;color:var(--fg);transition:background-color .15s ease}",
+    ".app-header__menu:hover{background:var(--surface-2)}",
+    ".app-header__menu:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}",
     ".app-header__menu svg{width:24px;height:24px;display:block}",
 
     /* Menú contextual: se ancla al botón y nunca se sale de la pantalla. */
     ".app-menu{position:fixed;z-index:60;min-width:216px;max-width:calc(100vw - 32px);" +
-      "background:var(--surface,#fff);border:1px solid var(--border,#e5e7eb);border-radius:12px;" +
+      "background:var(--surface);border:1px solid var(--border);border-radius:12px;" +
       "box-shadow:0 10px 30px rgba(0,0,0,.12);padding:6px;overflow:hidden}",
     ".app-menu[hidden]{display:none}",
     ".app-menu__item{display:flex;align-items:center;width:100%;min-height:44px;gap:10px;" +
       "padding:0 12px;background:none;border:none;border-radius:8px;cursor:pointer;" +
-      "font-family:inherit;font-size:14px;color:var(--fg,#1f2937);text-align:left}",
-    ".app-menu__item:hover{background:var(--surface-2,#f3f4f6)}",
-    ".app-menu__item:focus-visible{outline:2px solid var(--accent,#1f2937);outline-offset:-2px}",
+      "font-family:inherit;font-size:14px;color:var(--fg);text-align:left}",
+    ".app-menu__item:hover{background:var(--surface-2)}",
+    ".app-menu__item:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}",
 
     /* Estado de sincronización: vive acá adentro en vez de ocupar un lugar fijo
        arriba. Cuando algo falla sí sale a la vista (ver .app-sync-aviso). */
-    ".app-menu__estado{padding:10px 12px 8px;font-size:12px;color:var(--muted,#6b7280);" +
-      "border-top:1px solid var(--border,#e5e7eb);margin-top:6px}",
-    ".app-menu__estado b{display:block;font-weight:600;color:var(--fg,#1f2937);margin-bottom:2px}",
+    ".app-menu__estado{padding:10px 12px 8px;font-size:12px;color:var(--muted);" +
+      "border-top:1px solid var(--border);margin-top:6px}",
+    ".app-menu__estado b{display:block;font-weight:600;color:var(--fg);margin-bottom:2px}",
 
     ".app-menu__velo{position:fixed;inset:0;z-index:59;background:transparent}",
     ".app-menu__velo[hidden]{display:none}",
@@ -82,8 +87,8 @@
       "margin:0 0 12px;padding:9px 12px;border-radius:10px;border:1px solid transparent;" +
       "font-family:inherit;font-size:12.5px;text-align:left;cursor:pointer}",
     ".app-sync-aviso[hidden]{display:none}",
-    ".app-sync-aviso--pendiente{background:var(--warn-bg,#fbead0);border-color:var(--warn,#a8650f);color:var(--warn,#a8650f)}",
-    ".app-sync-aviso--error{background:var(--danger-bg,#f7e2dd);border-color:var(--danger,#a1392c);color:var(--danger,#a1392c)}",
+    ".app-sync-aviso--pendiente{background:var(--warn-bg);border-color:var(--warn);color:var(--warn)}",
+    ".app-sync-aviso--error{background:var(--danger-bg);border-color:var(--danger);color:var(--danger)}",
 
     /* El botón flotante vive acá, con el header, porque es el otro elemento
        que tiene que verse y ubicarse EXACTAMENTE igual en las cuatro apps:
@@ -102,10 +107,10 @@
     ".app-fab{position:fixed;right:16px;bottom:calc(76px + env(safe-area-inset-bottom,0px));" +
       "width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;z-index:14;" +
       "display:flex;align-items:center;justify-content:center;" +
-      "background:var(--accent,#1f2937);color:var(--accent-fg,#fff);" +
+      "background:var(--accent);color:var(--accent-fg);" +
       "box-shadow:0 4px 12px rgba(0,0,0,.22);transition:box-shadow .2s ease}",
     ".app-fab:hover{box-shadow:0 8px 18px rgba(0,0,0,.28)}",
-    ".app-fab:focus-visible{outline:2px solid var(--accent,#1f2937);outline-offset:3px}",
+    ".app-fab:focus-visible{outline:2px solid var(--accent);outline-offset:3px}",
     ".app-fab svg{width:26px;height:26px;display:block}"
   ].join("\n");
 

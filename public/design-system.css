@@ -158,6 +158,10 @@
 
   /* --- Movimiento --- */
   --ds-transition: 160ms ease;
+  /* El cambio de pantalla. Corto a propósito: lo que el usuario pidió
+     (2026-10-19) es que no sea brusco, no que sea lento — una transición
+     larga se siente como una app que tarda. */
+  --ds-transition-pantalla: 220ms;
 
   /* --- Gancho de herencia controlada ---------------------------------------
      Si alguna vez una app necesita su propio acento, va acá y NO suelto en su
@@ -260,3 +264,68 @@ textarea:focus-visible {
 }
 
 button { font-family: inherit; cursor: pointer; }
+
+/* ===========================================================================
+ * CAMBIO DE PANTALLA
+ * ---------------------------------------------------------------------------
+ * Esto es un MPA: pasar de Proyectos a Parques es cargar otro documento, y
+ * por defecto el navegador corta de una pantalla a la otra sin nada en el
+ * medio. Eso es lo que el usuario describió como "transiciones bruscas"
+ * (2026-10-19).
+ *
+ * La API de View Transitions entre documentos lo resuelve sin JavaScript y
+ * sin convertir la suite en una SPA.
+ *
+ * EL OPT-IN NO ESTÁ ACÁ, y es la única excepción del sistema de diseño: la
+ * regla `@view-transition{navigation:auto}` va inline en el <head> de cada
+ * página. El navegador decide si anima en el primer render del documento que
+ * entra, y una hoja externa llega tarde a esa decisión: medido sobre las
+ * pantallas reales, con la regla en este archivo la transición salía en 5 de
+ * 8 navegaciones — peor que no tenerla, porque una animación intermitente se
+ * lee como un error. Inline, 8 de 8. La preferencia de menos movimiento viaja
+ * en el mismo bloque inline por el mismo motivo.
+ *
+ * Lo que sí vive acá —y se regula desde acá para las cinco pantallas— es
+ * QUÉ se anima, CUÁNTO dura y QUÉ se queda quieto.
+ *
+ * Dónde se regula la duración: `--ds-transition-pantalla`, arriba.
+ *
+ * Un navegador que no soporte la API ignora todo esto y se comporta como
+ * hasta ahora: no hay nada que romper ni fallback que escribir.
+ * ======================================================================== */
+
+/* La barra de abajo NO se desvanece con el resto: se la nombra, así el
+   navegador la trata como el mismo elemento en las dos pantallas y queda
+   quieta mientras el contenido cambia. Es lo que hace que se sienta como una
+   app y no como una recarga. Solo cruza su propio cambio: qué app está
+   activa. (El header no se nombra a propósito: lo monta header.js en
+   DOMContentLoaded, así que puede no existir todavía cuando el navegador
+   saca la foto del documento nuevo, y un nombre sin elemento del otro lado
+   se ve peor que un fundido.) */
+.bottom-nav { view-transition-name: ds-barra-apps; }
+
+::view-transition-group(*) {
+  animation-duration: var(--ds-transition-pantalla);
+}
+
+/* El contenido: la pantalla que se va se desvanece, la que entra se desvanece
+   y sube 8px. El desplazamiento es chico a propósito — alcanza para dar
+   dirección al cambio sin que parezca que la página "salta". */
+::view-transition-old(root) {
+  animation: ds-pantalla-sale var(--ds-transition-pantalla) ease both;
+}
+::view-transition-new(root) {
+  animation: ds-pantalla-entra var(--ds-transition-pantalla) ease both;
+}
+
+@keyframes ds-pantalla-sale {
+  to { opacity: 0; }
+}
+@keyframes ds-pantalla-entra {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Quien pidió menos movimiento no recibe ninguno: el `@view-transition
+   {navigation:none}` del bloque inline de cada página apaga la transición
+   entera, así que no hace falta apagar cada animación por separado acá. */

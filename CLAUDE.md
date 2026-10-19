@@ -592,6 +592,75 @@ las cinco acciones entre las cuatro apps.
   verdad a las cinco pantallas. Si alguien vuelve a clavar un color en el
   `<style>` de una página, esa página deja de moverse y el test la nombra.
 
+### Cambio de pantalla (transición entre documentos)
+
+Esto es un MPA, así que pasar de Proyectos a Parques es cargar otro documento
+y el navegador corta en seco. Lo resuelve la API de View Transitions entre
+documentos, sin JavaScript y sin volverlo una SPA.
+
+**El opt-in va INLINE en el `<head>` de cada página, y es la única excepción
+del sistema de diseño.** No es una preferencia de estilo: el navegador decide
+si anima en el primer render del documento que entra, y una hoja externa llega
+tarde a esa decisión. Medido sobre las pantallas reales, con la regla en
+`design-system.css` la transición salía en **5 de 8** navegaciones; inline, en
+**8 de 8**. Una animación intermitente se lee como un error, así que esto es
+correctitud. La preferencia de menos movimiento viaja en el mismo bloque
+inline por el mismo motivo.
+
+Lo que sí vive en `design-system.css` —y se regula desde ahí para las cinco—
+es qué se anima, cuánto dura (`--ds-transition-pantalla`) y qué se queda
+quieto: `.bottom-nav` tiene `view-transition-name`, así que la barra no se
+desvanece con el contenido, solo cruza su propio cambio de app activa. El
+header **no** se nombra a propósito: lo monta `header.js` en `DOMContentLoaded`
+y puede no existir cuando el navegador saca la foto del documento nuevo.
+
+> Dos elementos con el mismo `view-transition-name` en un documento hacen que
+> el navegador descarte la transición **entera**, sin avisar. Por eso el test
+> cuenta cuántas `.bottom-nav` hay, no solo que el nombre esté puesto.
+
+**Cómo se prueba, y por qué así:** el modo de fallar de esto no es "la regla
+no está", es "la regla está y el navegador la ignora". Un test que leyera el
+CSS daría verde en los dos casos. `testTransiciones()` escucha el evento
+`pagereveal` en navegaciones reales y pregunta si el documento entró con
+transición. **No saques screenshots durante la navegación**: interfiere con la
+transición y da falsos negativos — costó una vuelta entera de diagnóstico.
+
+### La línea índigo al cambiar de pantalla (2026-10-19)
+
+Reporte del usuario: al pasar de una pantalla a otra se veía, por unos
+milisegundos, una línea fina índigo. No estaba en la página — se grabó la
+navegación cuadro por cuadro, con el CSS retrasado 300ms a propósito, y no hay
+**un solo pixel azulado** en el viewport.
+
+Estaba en `manifest.json`, servido con la estrategia de assets
+(stale-while-revalidate). De ahí salen `theme_color` y `background_color`, y
+el navegador seguía leyendo el `theme_color` viejo —el índigo `#667eea`— de la
+copia cacheada. Entre dos documentos hay un instante en que el `<meta
+name="theme-color">` del que se va ya no aplica y el del que entra todavía no
+se parseó: ahí el navegador cae al manifest. Esa era la línea.
+
+`manifest.json` pasó a la lista de **network-first** junto al HTML,
+`header.js`, `design-system.css` y `ui-kit.css`. Si agregás algo de lo que
+dependa el aspecto de la app, va en esa lista: lo que se cachea como asset
+puede quedar meses atrás.
+
+En la misma pasada se corrigieron dos cosas más:
+
+- **La rama network-first cacheaba respuestas de error.** `cache.put()` sin
+  chequear `res.ok` —la rama de assets sí lo hacía— guardaba un 500 o un 404
+  servido durante un deploy a medio terminar, y después lo devolvía como
+  "fallback offline".
+- **Los cinco iconos de atajo del manifest** tenían un color cada uno, entre
+  ellos el índigo `#667eea` y el ámbar `#a8650f`. Eran el último lugar donde
+  sobrevivían. Quedaron todos en el neutro; los distingue el emoji.
+
+Lo que **sigue** teniendo esos valores, a propósito, es la paleta semántica:
+`--ds-c-amber` (`--warn`: "vencido", "pendiente") y `--ds-c-periwinkle`
+(`--c1`: uno de los seis colores de tema de Resoluciones y el círculo de
+avatar de Parques). Codifican información. Si alguna vez se cambian, hay que
+elegir un color que siga distinguiéndose de los otros cinco, no simplemente
+sacarlo.
+
 ### Lo que el refactor destapó
 
 Pasar los tokens a un archivo común no cambió ni un pixel en Proyectos,

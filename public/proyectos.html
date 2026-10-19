@@ -2,6 +2,15 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <!-- Opt-in a la transición entre pantallas. Es LO ÚNICO del sistema de
+       diseño que NO puede vivir en design-system.css: el navegador decide si
+       anima en el primer render del documento nuevo, y una hoja externa llega
+       tarde a esa decisión. Medido: con la regla en design-system.css la
+       transición salía en 5 de 8 navegaciones; acá adentro, en 8 de 8.
+       El resto —qué se anima, cuánto dura, qué se queda quieto— sí está en
+       design-system.css. Si tocás este bloque, tocá las cinco páginas: lo
+       verifica tests/ids.test.mjs. -->
+  <style>@view-transition{navigation:auto}@media(prefers-reduced-motion:reduce){@view-transition{navigation:none}}</style>
   <!-- Sin este viewport el navegador movil renderiza a 980px y hace zoom out:
        todas las media queries de 420px/640px/860px de abajo quedaban muertas y
        la UI mobile-first no se usaba nunca. -->

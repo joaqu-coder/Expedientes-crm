@@ -7,7 +7,7 @@
  *
  * Cambiar CACHE_VERSION cuando hay cambios incompatibles.
  */
-const CACHE_VERSION = 'expedientes-crm-v8';
+const CACHE_VERSION = 'expedientes-crm-v9';
 const ASSETS = ['/manifest.json'];
 
 self.addEventListener('install', (event) => {
@@ -52,7 +52,17 @@ self.addEventListener('fetch', (event) => {
   // botones o —desde que las páginas no declaran sus propios colores— con los
   // tokens sin resolver. Network-first = siempre la última si hay red, y la
   // cacheada solo cuando no la hay.
-  const CRITICOS = ['/header.js', '/design-system.css', '/ui-kit.css'];
+  // manifest.json va acá y no con los assets: de él salen theme_color y
+  // background_color, o sea el color de la franja de arriba. Servido
+  // stale-while-revalidate (como estaba hasta el 2026-10-19) el navegador
+  // seguía leyendo el theme_color VIEJO —el índigo #667eea— de la copia
+  // cacheada. Entre dos documentos hay un instante en que el <meta
+  // name="theme-color"> del que se va ya no aplica y el del que entra todavía
+  // no se parseó: ahí el navegador cae al manifest, y ese es el "línea fina
+  // índigo de unos milisegundos" al cambiar de pantalla. No estaba en la
+  // página —se grabó la navegación cuadro por cuadro y no hay un solo pixel
+  // azulado en el viewport—, estaba en el manifest cacheado.
+  const CRITICOS = ['/header.js', '/design-system.css', '/ui-kit.css', '/manifest.json'];
   const esCritico = isHTML || CRITICOS.includes(url.pathname);
 
   if (esCritico) {
@@ -61,8 +71,14 @@ self.addEventListener('fetch', (event) => {
       (async () => {
         try {
           const fresh = await fetch(req, { cache: 'no-store' });
-          const cache = await caches.open(CACHE_VERSION);
-          cache.put(req, fresh.clone());
+          // Solo se guarda una respuesta buena. Sin este chequeo —que la rama
+          // de abajo sí tenía— un 500 o un 404 servido durante un deploy a
+          // medio terminar quedaba cacheado y después se devolvía como
+          // "fallback offline", que es peor que no tener nada.
+          if (fresh.ok) {
+            const cache = await caches.open(CACHE_VERSION);
+            cache.put(req, fresh.clone());
+          }
           return fresh;
         } catch (_err) {
           const cached = await caches.match(req);
