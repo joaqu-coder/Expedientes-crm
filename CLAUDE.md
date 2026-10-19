@@ -519,10 +519,16 @@ supuestas—, porque van a volver en el próximo export:
   con el suyo: `SERVICIO DE AUTOELEVADORES` es de AUTO ELEVADORES BELLO, no de
   MANITO Snacks. Está en `REASIGNAR_RUBRO` en el importador, y falla ruidoso si
   el rubro de origen ya no es el esperado.
-- **Una baja hecha a mano le gana a un export más viejo.** AGRO CONSTRUCCIONES
-  LA POSTA la borró el usuario desde la app el 2026-10-17; el archivo se la
-  vuelve a asignar a L115/L116. No se resucitó: los lotes quedan libres y la
-  nota está en el lote (`BORRADAS_EN_LA_APP` en el importador).
+- **Una baja hecha a mano le gana a un export más viejo… salvo que el usuario
+  diga lo contrario.** AGRO CONSTRUCCIONES LA POSTA la borró el usuario desde
+  la app el 2026-10-17 y el archivo se la vuelve a asignar a L115/L116; la
+  fusión respetó la baja y dejó los lotes libres. **El 2026-10-19 el usuario
+  decidió lo contrario —"mantener"— y se repuso**: la empresa volvió con su
+  registro anterior a la baja (de la historia de git, sin `cuit` ni
+  `actividad`, que ya no están en el esquema) y L115/L116 volvieron a su
+  nombre. Lo que queda firme es el criterio de la línea de abajo: **ante una
+  empresa que el export y producción no cuentan igual, se pregunta**. Las dos
+  veces que se decidió sin preguntar se decidió mal, una para cada lado.
 - **Y le gana también cuando el export NO la trae** (2026-10-19). La regla de
   arriba —"producción manda en lo que el export no tiene"— tiene un borde que
   la fusión cruzó mal: una empresa que no figura en el export puede ser un
@@ -531,7 +537,8 @@ supuestas—, porque van a volver en el próximo export:
   (A.P.I.S) se conservó como lo primero cuando era lo segundo, y volvió a
   aparecer en el listado después de que el usuario la borró. Se eliminó a
   mano; no era titular de ningún lote ni parte de ninguna ocupación, así que
-  la baja no arrastró nada. **Para el próximo export: una empresa de
+  la baja no arrastró nada. El usuario lo confirmó el 2026-10-19 ("APIS
+  eliminar"): sigue afuera. **Para el próximo export: una empresa de
   producción que el archivo no nombra se consulta, no se conserva callado.**
 
 Lo que se fue: `cuit` y `actividad` (pedido), más `cuit_valido_11dig` y
@@ -543,9 +550,10 @@ queda sin procedencia. El `rubro` va literal del archivo, sin la categoría
 (" | Agroindustria y Alimentación") que traía la base anterior: decisión del
 usuario. Las 46 que la tenían la perdieron; está en el historial de git.
 
-Resultado: Güemes 139 lotes / 53 empresas (antes 138 / 53), Salta 135 / 150
-(151 el 2026-10-19 antes de la baja de A.P.I.S), 19 lotes libres y 15
-disponibles como antes, 20 ocupaciones intactas, y 3.230.124 m² contra
+Resultado: Güemes 139 lotes / 54 empresas (53 tras la fusión; 54 desde que
+volvió LA POSTA el 2026-10-19), Salta 135 / 150 (151 el 2026-10-19 antes de la
+baja de A.P.I.S), 17 lotes libres —19 hasta que L115 y L116 volvieron a tener
+titular— y 15 disponibles, 20 ocupaciones intactas, y 3.230.124 m² contra
 3.159.513 (la diferencia es exactamente el lote nuevo).
 
 ### La tarjeta de empresa no muestra CUIT, Actividad ni Observación (2026-10-19)
@@ -733,7 +741,8 @@ Güemes la ficha mostraba "Situación —" para todas las empresas.
 La separación que se hizo al importar Salta —"Alquila" describe al LOTE,
 Activa/Sin actividad/En construcción describen a la EMPRESA— **nunca se hizo
 en Güemes**: la base SQLite dejó las dos cosas en `lotes.estado` y las 53
-empresas quedaron con `situacion: null`. El desplegable salía deshabilitado
+empresas quedaron con `situacion: null` (54 desde que volvió LA POSTA). El
+desplegable salía deshabilitado
 ("se deshabilita en el parque donde el dato no existe"), que era correcto
 según el dato cargado y, visto desde la pantalla, indistinguible de un filtro
 roto.
@@ -746,8 +755,8 @@ roto.
 - **Desempate**: gana el estado más activo (Activa > En construcción > Sin
   actividad). Son 2 de las 53 (FMF ARGENTINA y PETIT PLAST), las dos con un
   lote Activa: un titular con un lote parado y otro produciendo está operando.
-- Quedan 42 de 53 con situación y 11 sin dato (lotes solo `Alquilada` o sin
-  estado, o sin lotes). Resultado: Activa 28, Sin actividad 11,
+- Quedan 43 de 54 con situación y 11 sin dato (lotes solo `Alquilada` o sin
+  estado, o sin lotes). Resultado: Activa 29, Sin actividad 11,
   En construcción 3.
 - **Se dice que es deducida**, en la ficha ("según el estado de sus lotes") y
   en el formulario. El desplegable de edición sigue mostrando solo lo

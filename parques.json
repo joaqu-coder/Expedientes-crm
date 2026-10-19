@@ -511,6 +511,19 @@
       "id_parque": "guemes"
     },
     {
+      "id_empresa": "E052",
+      "nombre_empresa": "AGROCONSTRUCCIONES LA POSTA S.R.L",
+      "rubro": "Planta de producción de pre - tensados",
+      "propietario_matricula": "Ente General de Parques y Areas Industriales de Salta",
+      "mail": "fygpremoldeados@outlook.com",
+      "telefono": "388-5837437 /0388 491-1600",
+      "contacto_nombre": "Francisco Ferrero",
+      "cargo": "Socio - Gerente",
+      "observacion": "Repuesta el 2026-10-19 por decisión del usuario («mantener»): se había dado de baja desde la app el 2026-10-17 y la fusión del export del 2026-10-19 respetó esa baja, dejando L115 y L116 sin titular. Los datos salen del registro anterior a la baja (historia de git), sin cuit ni actividad, que ya no están en el esquema. El export la nombra «AGRO CONSTRUCCIONES LA POSTA», con espacio: en la próxima fusión es la misma empresa, no un alta.",
+      "observacion_contactos_2024": "Confirmado por usuario (lote + contacto 2024)",
+      "id_parque": "guemes"
+    },
+    {
       "id_empresa": "E053",
       "id_empresa_original": "E053",
       "nombre_empresa": "PRONTO PACK",
@@ -4039,9 +4052,9 @@
       "escritura": "No",
       "estado": "Sin actividad",
       "disponible": false,
-      "observacion": "El export del 2026-10-19 le vuelve a asignar «AGRO CONSTRUCCIONES LA POSTA», que fue dada de baja desde la app el 2026-10-17: el lote queda libre.",
+      "observacion": "Titular repuesto el 2026-10-19: AGROCONSTRUCCIONES LA POSTA S.R.L vuelve por decisión del usuario, después de la baja del 2026-10-17 que había dejado el lote libre.",
       "id_parque": "guemes",
-      "id_empresa": null
+      "id_empresa": "E052"
     },
     {
       "id_lote": "L116",
@@ -4053,9 +4066,9 @@
       "escritura": "No",
       "estado": "Activa",
       "disponible": false,
-      "observacion": "El export del 2026-10-19 le vuelve a asignar «AGRO CONSTRUCCIONES LA POSTA», que fue dada de baja desde la app el 2026-10-17: el lote queda libre.",
+      "observacion": "Titular repuesto el 2026-10-19: AGROCONSTRUCCIONES LA POSTA S.R.L vuelve por decisión del usuario, después de la baja del 2026-10-17 que había dejado el lote libre.",
       "id_parque": "guemes",
-      "id_empresa": null
+      "id_empresa": "E052"
     },
     {
       "id_lote": "L117",

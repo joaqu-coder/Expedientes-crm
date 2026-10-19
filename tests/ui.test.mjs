@@ -1054,10 +1054,16 @@ async function testParques(viewport, puerto) {
   // (en el origen «L40», sin el relleno de ceros, y por eso no chocaba con
   // L040, que es otro lote: CERÁMICA SALTEÑA contra CRAYÓN S.R.L).
   ok(lotesGuemes.length === 139, `el archivo trae los ${lotesGuemes.length} lotes reales de Güemes`);
-  // 55 originales - AGSOF S.A. fusionada (2026-10-13) - AGROCONSTRUCCIONES LA
-  // POSTA, que el usuario borró desde la app el 2026-10-17 (L115 y L116
-  // quedaron libres).
-  ok(empresasGuemes.length === 53, `el archivo trae las ${empresasGuemes.length} empresas reales de Güemes`);
+  // 55 originales - AGSOF S.A. fusionada (2026-10-13). AGROCONSTRUCCIONES LA
+  // POSTA había bajado a 53 cuando el usuario la borró desde la app el
+  // 2026-10-17, y volvió el 2026-10-19 por decisión suya: la baja no era lo
+  // que quería y el export la sigue trayendo.
+  ok(empresasGuemes.length === 54, `el archivo trae las ${empresasGuemes.length} empresas reales de Güemes`);
+  const posta = datos.empresas.find((e) => /AGROCONSTRUCCIONES LA POSTA/i.test(e.nombre_empresa || ''));
+  ok(!!posta && posta.id_parque === 'guemes', 'AGROCONSTRUCCIONES LA POSTA está cargada en Güemes');
+  ok(['L115', 'L116'].every((id) =>
+       (datos.lotes.find((l) => l.id_lote === id) || {}).id_empresa === posta.id_empresa),
+     'L115 y L116 vuelven a estar a nombre de LA POSTA, no libres');
   ok(lotesSalta.length === 135, `el archivo trae los ${lotesSalta.length} lotes reales del Parque Industrial Salta`);
   ok(datos.parques.map((p) => p.nombre).join('|') === 'Güemes|Salta',
      'los dos parques se llaman por su nombre corto en el archivo');
