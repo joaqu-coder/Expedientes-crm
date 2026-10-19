@@ -882,10 +882,9 @@
       "id_empresa": "SE010",
       "id_empresa_original": "84",
       "nombre_empresa": "LABORATORIO TECNIMETER SOCIEDAD ANONIMA",
-      "rubro": "TRANSPORTE",
       "telefono": "3815879099 | 3874137319",
       "ubicacion": "Av. Rodríguez Durañona 0",
-      "observacion": "Su fila del export 2026-10-19 vuelve a mezclar datos del inquilino: mail, contacto y links quedaron como estaban (desarmados el 2026-10-18).",
+      "observacion": "Su fila del export 2026-10-19 vuelve a mezclar datos del inquilino: mail, contacto y links quedaron como estaban (desarmados el 2026-10-18). El rubro «TRANSPORTE» que traia esta fila describe al inquilino (TRADELOG) y se le paso a su registro el 2026-10-19.",
       "es_ocupante_sin_registro": false,
       "id_parque": "salta"
     },
@@ -2538,12 +2537,13 @@
     {
       "id_empresa": "SE142",
       "nombre_empresa": "TRADELOG",
+      "rubro": "TRANSPORTE",
       "mail": "lorena.ralle@tradelog.com.ar / maria.emilia@tradelog.com.ar",
       "contacto_nombre": "Lorena Ralle",
       "pagweb": "https://www.tradelog.com.ar/",
       "instagram": "https://www.instagram.com/tradelogsau/?hl=es",
       "situacion": "Activa",
-      "observacion": "Ocupante por alquiler, importado de la columna «Alquilada» del Sistema Salta el 2026-10-18. Se le reasignaron datos institucionales que en el origen estaban cargados sobre el titular (LABORATORIO TECNIMETER SOCIEDAD ANONIMA): mail, pagweb, instagram, contacto_nombre.",
+      "observacion": "Ocupante por alquiler, importado de la columna «Alquilada» del Sistema Salta el 2026-10-18. Se le reasignaron datos institucionales que en el origen estaban cargados sobre el titular (LABORATORIO TECNIMETER SOCIEDAD ANONIMA): mail, pagweb, instagram, contacto_nombre. Rubro «TRANSPORTE» reasignado desde el titular (LABORATORIO TECNIMETER SOCIEDAD ANONIMA) el 2026-10-19: el valor lo nombra a él, no al dueño del lote.",
       "es_ocupante_sin_registro": true,
       "id_parque": "salta"
     },

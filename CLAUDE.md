@@ -506,9 +506,18 @@ supuestas—, porque van a volver en el próximo export:
   117.000 m² del total.
 - **El export vuelve a mezclar al inquilino con el titular.** Las 16 empresas
   que hoy son titulares de un lote con ocupación vigente no reciben `mail`,
-  `contacto_nombre`, `cargo` ni links del archivo: eso se desarmó con evidencia
-  el 2026-10-18 y el export es anterior a ese trabajo. Sí reciben rubro,
-  teléfono, ubicación y situación.
+  `contacto_nombre`, `cargo`, `rubro` ni links del archivo: eso se desarmó con
+  evidencia el 2026-10-18 y el export es anterior a ese trabajo. Sí reciben
+  teléfono, ubicación y situación. El usuario reafirmó el criterio el
+  2026-10-19 —"dueño e inquilino separados"— después de ver el caso completo.
+  `rubro` se sumó a ese grupo ese día: la fila del titular describe a veces la
+  actividad del inquilino. **Un solo rubro se movió**, con el mismo criterio
+  que el resto de la importación —que el valor nombre al ocupante—:
+  `TRANSPORTE` pasó de LABORATORIO TECNIMETER a TRADELOG, que es una empresa
+  de transporte y lo dice su propio dominio. Los otros 15 titulares se quedan
+  con el suyo: `SERVICIO DE AUTOELEVADORES` es de AUTO ELEVADORES BELLO, no de
+  MANITO Snacks. Está en `REASIGNAR_RUBRO` en el importador, y falla ruidoso si
+  el rubro de origen ya no es el esperado.
 - **Una baja hecha a mano le gana a un export más viejo.** AGRO CONSTRUCCIONES
   LA POSTA la borró el usuario desde la app el 2026-10-17; el archivo se la
   vuelve a asignar a L115/L116. No se resucitó: los lotes quedan libres y la
