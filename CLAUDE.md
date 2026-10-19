@@ -460,7 +460,7 @@ Qué pasa con cada cosa:
 | nombre, rubro, mail, teléfono, representante, cargo, ubicación, situación | export |
 | `estado` del lote, `disponible`, `matriculas`, superficie (Salta) | producción; el export solo llena huecos |
 | `ocupaciones` y los 15 ocupantes sin registro | producción, intactas |
-| links (`pagweb`, `instagram`, `linkedin`, `facebook`) | producción; del export, solo si la URL nombra a la empresa |
+| links (`pagweb`, `instagram`, `linkedin`, `facebook`) | **se suman** los del export y los de producción |
 
 **Las trampas que tiene este origen** —todas verificadas contra los datos, no
 supuestas—, porque van a volver en el próximo export:
@@ -479,14 +479,27 @@ supuestas—, porque van a volver en el próximo export:
   Son las 15 filas de los lotes libres, el formato crudo que la base SQLite ya
   había resuelto como `disponible`. Si se cargan como empresa, la cartera
   comercial pasa de 19 lotes a 2 y la pestaña Comercial se vacía.
-- **Hay tres columnas corridas.** `per` (Güemes) mezcla URLs de LinkedIn con el
-  historial de desadjudicación; `PagWeb` trae cargos ("Socio - Gerente") y a
-  veces cargo + URL en el mismo campo; y **`LinkedIn` está desplazado**:
-  PETRASUD trae el de PETIT PLAST, PRONTO PACK el de POSCO, GRUPO CN el de
-  TRANSCLOR. Cada pedazo se reparte por lo que **es** (URL, cargo conocido,
-  dirección con número), y una URL solo se asigna si su slug nombra a la
-  empresa o a su representante. Lo que no encaja queda en `observacion`, no se
-  tira.
+- **`per` y `PagWeb` vienen con las columnas corridas.** `per` (Güemes) mezcla
+  URLs de LinkedIn con el historial de desadjudicación; `PagWeb` trae cargos
+  ("Socio - Gerente") y a veces cargo + URL en el mismo campo. Cada pedazo se
+  reparte por lo que **es**: URL, cargo del vocabulario conocido, o dirección
+  (lleva número). Lo que no encaja queda en `observacion`, no se tira.
+- **`LinkedIn` parece corrido y NO lo está.** PETRASUD trae el LinkedIn de
+  PETIT PLAST, PRONTO PACK el de POSCO, GRUPO CN el de TRANSCLOR — y el
+  usuario aclaró que **eso lo movió él a propósito**, porque en el origen
+  estaba mal ingresado: *"respetalo de esta manera"*. El archivo es la
+  corrección, no el error. **No se valida el slug contra el nombre de la
+  empresa**: a qué empresa va cada link lo decide el archivo. Si en el futuro
+  algo parece desalineado, se pregunta antes de "arreglarlo".
+- **Los links se suman, no se pisan.** El archivo trae una URL por campo y
+  producción a veces tiene dos pegadas con " | ". Reemplazar borraba datos
+  reales: a NIKRON, un `"no"` del archivo le pisaba su propio LinkedIn.
+  Dentro de cada empresa —sin mover nada de empresa— se hacen tres cosas:
+  `"no"` y `"No dispnible"` no son un perfil y se sacan; cada URL va al campo
+  de **su** red (un `instagram.com` en la columna LinkedIn es un Instagram);
+  y el muro de login de Instagram
+  (`instagram.com/accounts/login/?next=%2Fpetitplast_sa%2F`) se reescribe al
+  perfil. Son 8 links que pasaron de no abrir nada a abrir el perfil.
 - **La superficie de Salta es la suma de sus matrículas**, no el valor de la
   primera fila, y este export perdió una fila respecto del anterior (a `SLX1`
   le falta la matrícula 159021, 14.759 m²). Tomarla del archivo borraba

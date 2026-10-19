@@ -66,7 +66,7 @@
       "contacto_nombre": "Alberto Cevero Antonini",
       "cargo": "Socio - Gerente",
       "instagram": "https://www.instagram.com/mikuy.srl/p/CYkKskgs1yP/?hl=en",
-      "linkedin": "https://www.linkedin.com/in/ignacio-antonini-014001196?original_referer=https%3A%2F%2Fwww%2Egoogle%2Ecom%2F&originalSubdomain=ar",
+      "linkedin": "https://www.linkedin.com/company/manuchar/ | https://www.linkedin.com/in/ignacio-antonini-014001196?original_referer=https%3A%2F%2Fwww%2Egoogle%2Ecom%2F&originalSubdomain=ar",
       "id_parque": "guemes"
     },
     {
@@ -134,8 +134,8 @@
       "contacto_nombre": "Julio Fazio",
       "cargo": "Representante",
       "pagweb": "https://www.ceramicasaltena.com.ar/",
-      "instagram": "https://www.ceramicasaltena.com.ar/ | https://www.instagram.com/ceramicasaltena/?hl=es",
-      "linkedin": "https://www.instagram.com/ceramicasaltena/?hl=es | https://www.linkedin.com/company/ceramica-saltena/?originalSubdomain=ar",
+      "instagram": "https://www.instagram.com/ceramicasaltena/?hl=es",
+      "linkedin": "https://www.linkedin.com/company/ceramica-saltena/?originalSubdomain=ar",
       "observacion": "https://www.linkedin.com/company/ceramica-saltena/?originalSubdomain=ar",
       "id_parque": "guemes"
     },
@@ -159,7 +159,6 @@
       "contacto_nombre": "Miguel Segura López",
       "cargo": "Socio - Gerente",
       "instagram": "https://www.instagram.com/supermercados.miguelito/",
-      "linkedin": "https://www.instagram.com/supermercados.miguelito/",
       "ubicacion": "Alberdi 139, General Güemes, Salta",
       "id_parque": "guemes"
     },
@@ -200,7 +199,7 @@
       "telefono": "3874157784",
       "contacto_nombre": "Facundo Agustín Martinez",
       "cargo": "Socio - Gerente",
-      "instagram": "https://elasticosmym.com.ar/",
+      "pagweb": "https://elasticosmym.com.ar/",
       "id_parque": "guemes"
     },
     {
@@ -228,8 +227,8 @@
       "contacto_nombre": "Guillermo Fort",
       "cargo": "Socio - Gerente",
       "pagweb": "https://fmfsa.com/fmf-argentina/",
-      "instagram": "https://fmfsa.com/fmf-argentina/ | https://www.instagram.com/fmfargentina/",
-      "linkedin": "https://www.instagram.com/fmfargentina/ | https://www.linkedin.com/company/fmf-group/?originalSubdomain=ar",
+      "instagram": "https://www.instagram.com/fmfargentina/",
+      "linkedin": "https://www.linkedin.com/company/fmf-group/?originalSubdomain=ar",
       "observacion": "https://www.linkedin.com/company/fmf-group/?originalSubdomain=ar",
       "id_parque": "guemes"
     },
@@ -243,7 +242,7 @@
       "contacto_nombre": "Guadalupe Fort",
       "cargo": "Socio - Gerente",
       "pagweb": "https://fmfsa.com/",
-      "instagram": "instagram.com/fmfargentina/?hl=es",
+      "instagram": "https://instagram.com/fmfargentina/?hl=es",
       "linkedin": "https://www.linkedin.com/showcase/fmf-composites/about/",
       "id_parque": "guemes"
     },
@@ -258,8 +257,8 @@
       "contacto_nombre": "Ricardo Manzur",
       "cargo": "Socio - Gerente",
       "pagweb": "https://fullblock.com.ar/",
-      "instagram": "https://fullblock.com.ar/ | https://www.instagram.com/accounts/login/?next=%2Ffullblockarg%2F&source=omni_redirect",
-      "linkedin": "https://www.instagram.com/accounts/login/?next=%2Ffullblockarg%2F&source=omni_redirect | https://www.linkedin.com/in/pedro-ricardo-manzur-771a072a/?originalSubdomain=ar",
+      "instagram": "https://www.instagram.com/fullblockarg/",
+      "linkedin": "https://www.linkedin.com/in/pedro-ricardo-manzur-771a072a/?originalSubdomain=ar",
       "id_parque": "guemes"
     },
     {
@@ -273,8 +272,8 @@
       "contacto_nombre": "Eduardo Lagame",
       "cargo": "Socio - Gerente",
       "pagweb": "https://gruastucuman.com.ar/",
-      "instagram": "https://gruastucuman.com.ar/",
-      "observacion": "https://www.linkedin.com/showcase/fmf-composites/about/; https://www.linkedin.com/in/pedro-ricardo-manzur-771a072a/?originalSubdomain=ar El origen trae en linkedin «https://www.linkedin.com/showcase/fmf-composites/about/», que no nombra a la empresa ni a su contacto: no se asigna (esa columna viene corrida). El origen trae en linkedin «https://www.linkedin.com/in/pedro-ricardo-manzur-771a072a/?originalSubdomain=ar», que no nombra a la empresa ni a su contacto: no se asigna (esa columna viene corrida).",
+      "linkedin": "https://www.linkedin.com/in/pedro-ricardo-manzur-771a072a/?originalSubdomain=ar | https://www.linkedin.com/showcase/fmf-composites/about/",
+      "observacion": "https://www.linkedin.com/showcase/fmf-composites/about/; https://www.linkedin.com/in/pedro-ricardo-manzur-771a072a/?originalSubdomain=ar",
       "id_parque": "guemes"
     },
     {
@@ -288,8 +287,8 @@
       "contacto_nombre": "Elias Gutierrez/Luis Trogliero",
       "cargo": "Encargado",
       "pagweb": "http://www.lafrancisca.com/",
-      "instagram": "http://www.lafrancisca.com/ | https://www.instagram.com/lafranciscaok/",
-      "linkedin": "https://www.instagram.com/lafranciscaok/ | https://www.linkedin.com/company/industrias-frigorificas-norte-grande-s-a-/?originalSubdomain=ar",
+      "instagram": "https://www.instagram.com/lafranciscaok/",
+      "linkedin": "https://www.linkedin.com/company/industrias-frigorificas-norte-grande-s-a-/?originalSubdomain=ar",
       "id_parque": "guemes"
     },
     {
@@ -316,8 +315,8 @@
       "contacto_nombre": "Juan Gilly",
       "cargo": "Gerente de relación es institucionales",
       "pagweb": "https://ganfenglithium-latam.com/",
-      "instagram": "https://ganfenglithium-latam.com/ | https://www.instagram.com/ganfenglithium.latam/?hl=es-la",
-      "linkedin": "https://www.instagram.com/ganfenglithium.latam/?hl=es-la | https://www.linkedin.com/company/ganfenglithium-latam/posts/?feedView=all",
+      "instagram": "https://www.instagram.com/ganfenglithium.latam/?hl=es-la",
+      "linkedin": "https://www.linkedin.com/company/ganfenglithium-latam/posts/?feedView=all",
       "ubicacion": "Juramento 80",
       "id_parque": "guemes"
     },
@@ -332,8 +331,8 @@
       "contacto_nombre": "Gonzalo Maestro",
       "cargo": "Socio - Gerente",
       "pagweb": "https://distribuidoramaestro.com/",
-      "instagram": "https://distribuidoramaestro.com/ | https://www.instagram.com/accounts/login/?next=%2Fdistribuidoramaestro_srl%2F&source=omni_redirect",
-      "linkedin": "https://www.instagram.com/accounts/login/?next=%2Fdistribuidoramaestro_srl%2F&source=omni_redirect | https://www.linkedin.com/company/distribuidora-maestro-s-r-l/?originalSubdomain=ar",
+      "instagram": "https://www.instagram.com/distribuidoramaestro_srl/",
+      "linkedin": "https://www.linkedin.com/company/distribuidora-maestro-s-r-l/?originalSubdomain=ar",
       "observacion_contactos_2024": "Confirmado",
       "id_parque": "guemes"
     },
@@ -347,8 +346,8 @@
       "telefono": "387-2430850",
       "contacto_nombre": "Ramiro Carrizo",
       "cargo": "Socio - Gerente",
-      "instagram": "https://www.instagram.com/accounts/login/?next=%2Fmahesrl%2F&source=omni_redirect",
-      "linkedin": "https://www.instagram.com/accounts/login/?next=%2Fmahesrl%2F&source=omni_redirect",
+      "instagram": "https://www.instagram.com/mahesrl/",
+      "linkedin": "https://www.linkedin.com/company/distribuidora-maestro-s-r-l/?originalSubdomain=ar",
       "observacion": "https://www.linkedin.com/company/ganfenglithium-latam/posts/?feedView=all; https://www.linkedin.com/company/distribuidora-maestro-s-r-l/?originalSubdomain=ar",
       "id_parque": "guemes"
     },
@@ -362,8 +361,8 @@
       "telefono": "0800 345 0549",
       "contacto_nombre": "Lucas Gresio",
       "pagweb": "https://www.manuchar.com/sv/es",
-      "instagram": "https://www.manuchar.com/sv/es | https://www.instagram.com/manuchar_belgium/?hl=nl",
-      "linkedin": "https://www.instagram.com/manuchar_belgium/?hl=nl | https://www.linkedin.com/company/manuchar/",
+      "instagram": "https://www.instagram.com/manuchar_belgium/?hl=nl",
+      "linkedin": "https://www.linkedin.com/company/manuchar/",
       "id_parque": "guemes"
     },
     {
@@ -385,8 +384,8 @@
       "contacto_nombre": "Jose Garcia",
       "cargo": "Socio - Gerente",
       "pagweb": "https://marimarimodular.com/",
-      "instagram": "https://www.instagram.com/accounts/login/?next=%2Fmarimarimodular%2F&source=omni_redirect",
-      "linkedin": "https://www.instagram.com/accounts/login/?next=%2Fmarimarimodular%2F&source=omni_redirect | https://www.linkedin.com/company/marimari/?originalSubdomain=ar",
+      "instagram": "https://www.instagram.com/marimarimodular/",
+      "linkedin": "https://www.linkedin.com/company/marimari/?originalSubdomain=ar",
       "id_parque": "guemes"
     },
     {
@@ -400,8 +399,8 @@
       "contacto_nombre": "Guillermo Fraile",
       "cargo": "Socio - Gerente",
       "pagweb": "https://www.mochec.com.ar/nosotros.html",
-      "instagram": "https://www.mochec.com.ar/nosotros.html | https://www.instagram.com/mochecoficial/",
-      "linkedin": "https://www.instagram.com/mochecoficial/ | https://www.linkedin.com/company/mochec/?originalSubdomain=ar",
+      "instagram": "https://www.instagram.com/mochecoficial/",
+      "linkedin": "https://www.linkedin.com/company/mochec/?originalSubdomain=ar",
       "ubicacion": "San Juan 106",
       "observacion": "https://www.linkedin.com/company/marimari/?originalSubdomain=ar",
       "id_parque": "guemes"
@@ -414,7 +413,6 @@
       "propietario_matricula": "Ente General de Parques y Areas Industriales de Salta",
       "cargo": "Socio - Gerente",
       "pagweb": "https://nikron.com.ar/",
-      "instagram": "https://nikron.com.ar/",
       "linkedin": "https://www.linkedin.com/company/nikron/",
       "observacion_contactos_2024": "Sigue estando?",
       "id_parque": "guemes"
@@ -430,8 +428,8 @@
       "contacto_nombre": "Freddy Tejerina",
       "cargo": "Socio - Gerente",
       "pagweb": "https://www.grupofmssrl.com/producto/northcool-camara-de-super-congelados/",
-      "instagram": "https://www.grupofmssrl.com/producto/northcool-camara-de-super-congelados/ | https://www.instagram.com/grupofmssrl/",
-      "linkedin": "https://www.instagram.com/grupofmssrl/ | https://www.linkedin.com/company/north-cool-s.a./",
+      "instagram": "https://www.instagram.com/grupofmssrl/",
+      "linkedin": "https://www.linkedin.com/company/mochec/?originalSubdomain=ar | https://www.linkedin.com/company/north-cool-s.a./",
       "ubicacion": "Caseros 238, piso primero, oficina 1",
       "observacion": "https://www.linkedin.com/company/mochec/?originalSubdomain=ar",
       "observacion_contactos_2024": "Que lote es?",
@@ -448,8 +446,9 @@
       "contacto_nombre": "Alvaro Herrera",
       "cargo": "Socio - Gerente",
       "pagweb": "https://oxitesa.com/",
-      "instagram": "https://oxitesa.com/ | http://instagram.com/oxitesa/",
-      "observacion": "https://www.linkedin.com/company/nikron/; https://www.linkedin.com/company/north-cool-s.a./ El origen trae en linkedin «https://www.linkedin.com/company/nikron/», que no nombra a la empresa ni a su contacto: no se asigna (esa columna viene corrida). El origen trae en linkedin «https://www.linkedin.com/company/north-cool-s.a./», que no nombra a la empresa ni a su contacto: no se asigna (esa columna viene corrida).",
+      "instagram": "http://instagram.com/oxitesa/",
+      "linkedin": "https://www.linkedin.com/company/north-cool-s.a./ | https://www.linkedin.com/company/nikron/",
+      "observacion": "https://www.linkedin.com/company/nikron/; https://www.linkedin.com/company/north-cool-s.a./",
       "id_parque": "guemes"
     },
     {
@@ -462,8 +461,8 @@
       "telefono": "387-4046535",
       "contacto_nombre": "Frank Leclerk",
       "cargo": "Socio - Gerente",
-      "instagram": "https://www.instagram.com/accounts/login/?next=%2Fpetitplast_sa%2F&source=omni_redirect",
-      "linkedin": "https://www.instagram.com/accounts/login/?next=%2Fpetitplast_sa%2F&source=omni_redirect | https://www.linkedin.com/company/petit-plast/?originalSubdomain=ar",
+      "instagram": "https://www.instagram.com/petitplast_sa/",
+      "linkedin": "https://www.linkedin.com/company/petit-plast/?originalSubdomain=ar",
       "id_parque": "guemes"
     },
     {
@@ -476,7 +475,8 @@
       "telefono": "387-4660872",
       "contacto_nombre": "Leopoldo Guerrero",
       "cargo": "Encargado",
-      "observacion": "https://www.linkedin.com/company/petit-plast/?originalSubdomain=ar El origen trae en instagram «no», que no nombra a la empresa ni a su contacto: no se asigna (esa columna viene corrida). El origen trae en linkedin «https://www.linkedin.com/company/petit-plast/?originalSubdomain=ar», que no nombra a la empresa ni a su contacto: no se asigna (esa columna viene corrida).",
+      "linkedin": "https://www.linkedin.com/company/petit-plast/?originalSubdomain=ar",
+      "observacion": "https://www.linkedin.com/company/petit-plast/?originalSubdomain=ar",
       "id_parque": "guemes"
     },
     {
@@ -490,8 +490,8 @@
       "contacto_nombre": "Facundo Rodriguez",
       "cargo": "Socio - Gerente",
       "pagweb": "https://petroandina.com.ar/",
-      "instagram": "https://petroandina.com.ar/ | https://www.instagram.com/accounts/login/?next=%2Fgrupopetroandina%2F&source=omni_redirect",
-      "linkedin": "https://www.instagram.com/accounts/login/?next=%2Fgrupopetroandina%2F&source=omni_redirect | https://www.linkedin.com/company/grupopetroandina/?originalSubdomain=ar",
+      "instagram": "https://www.instagram.com/grupopetroandina/",
+      "linkedin": "https://www.linkedin.com/company/grupopetroandina/?originalSubdomain=ar",
       "observacion": "https://www.linkedin.com/company/grupopetroandina/?originalSubdomain=ar",
       "id_parque": "guemes"
     },
@@ -506,7 +506,6 @@
       "contacto_nombre": "Arias Vicente Jose",
       "cargo": "Apoderado",
       "pagweb": "http://www.poscoargentina.com/",
-      "instagram": "http://www.poscoargentina.com/",
       "linkedin": "https://www.linkedin.com/company/posco-argentina/?originalSubdomain=ar",
       "observacion_contactos_2024": "Contacto apis/Leiva",
       "id_parque": "guemes"
@@ -523,7 +522,7 @@
       "cargo": "Socio - Gerente",
       "pagweb": "https://www.prontopack.com.ar/",
       "instagram": "https://www.instagram.com/p/DPRbWUlEfJK/",
-      "linkedin": "https://www.instagram.com/p/DPRbWUlEfJK/ | https://www.linkedin.com/in/leandro-etchezar/?originalSubdomain=ar",
+      "linkedin": "https://www.linkedin.com/company/posco-argentina/?originalSubdomain=ar | https://www.linkedin.com/in/leandro-etchezar/?originalSubdomain=ar",
       "ubicacion": "Parque Ind. Güemes, MANZANA 3 - PARCELA 15/16, A4430 Gral. Guemes, Salta",
       "observacion": "https://www.linkedin.com/company/posco-argentina/?originalSubdomain=ar",
       "id_parque": "guemes"
@@ -565,8 +564,8 @@
       "contacto_nombre": "Facundo Rodriguez",
       "cargo": "Socio - Gerente",
       "pagweb": "https://www.saltapetrol.com.ar/",
-      "instagram": "https://www.saltapetrol.com.ar/ | https://www.instagram.com/grupopetroandina/",
-      "linkedin": "https://www.instagram.com/grupopetroandina/ | https://www.linkedin.com/company/grupopetroandina/?originalSubdomain=ar",
+      "instagram": "https://www.instagram.com/grupopetroandina/",
+      "linkedin": "https://www.linkedin.com/company/grupopetroandina/?originalSubdomain=ar",
       "id_parque": "guemes"
     },
     {
@@ -579,8 +578,8 @@
       "contacto_nombre": "Martin Miguez",
       "cargo": "Socio - Gerente",
       "pagweb": "https://saltapor.com/",
-      "instagram": "https://saltapor.com/ | https://www.instagram.com/accounts/login/?next=%2Fsaltaporsrl%2F&source=omni_redirect",
-      "linkedin": "https://www.instagram.com/accounts/login/?next=%2Fsaltaporsrl%2F&source=omni_redirect | https://www.linkedin.com/company/saltapor-srl/?originalSubdomain=ar",
+      "instagram": "https://www.instagram.com/saltaporsrl/",
+      "linkedin": "https://www.linkedin.com/company/grupopetroandina/?originalSubdomain=ar | https://www.linkedin.com/company/saltapor-srl/?originalSubdomain=ar",
       "observacion": "https://www.linkedin.com/company/grupopetroandina/?originalSubdomain=ar",
       "observacion_contactos_2024": "Sigue estando?",
       "id_parque": "guemes"
@@ -595,7 +594,7 @@
       "contacto_nombre": "Guillermo Cotto",
       "cargo": "Socio - Gerente",
       "instagram": "https://www.instagram.com/p/CzoX2X2uzV9/",
-      "linkedin": "https://www.instagram.com/p/CzoX2X2uzV9/ | https://www.linkedin.com/company/transporte-sanchez-huerta-s-r-l/?originalSubdomain=ar",
+      "linkedin": "https://www.linkedin.com/company/transporte-sanchez-huerta-s-r-l/?originalSubdomain=ar | https://www.linkedin.com/company/saltapor-srl/?originalSubdomain=ar",
       "observacion": "https://www.linkedin.com/company/saltapor-srl/?originalSubdomain=ar; https://www.linkedin.com/company/transporte-sanchez-huerta-s-r-l/?originalSubdomain=ar",
       "id_parque": "guemes"
     },
@@ -610,8 +609,7 @@
       "contacto_nombre": "Juan Gutierrez",
       "cargo": "Socio - Gerente",
       "pagweb": "http://www.semix.com.ar/",
-      "instagram": "http://www.semix.com.ar/ | https://www.instagram.com/semix.arg/?hl=es",
-      "linkedin": "https://www.instagram.com/semix.arg/?hl=es",
+      "instagram": "https://www.instagram.com/semix.arg/?hl=es",
       "id_parque": "guemes"
     },
     {
@@ -625,7 +623,6 @@
       "contacto_nombre": "Jose Diaz",
       "cargo": "Socio - Gerente",
       "pagweb": "https://www.serviciosandinos.com.ar/",
-      "instagram": "https://www.serviciosandinos.com.ar/",
       "linkedin": "https://www.linkedin.com/in/jose-diaz-12237641/?originalSubdomain=ar",
       "id_parque": "guemes"
     },
@@ -665,8 +662,8 @@
       "contacto_nombre": "Diero Hernan Pino",
       "cargo": "Representante",
       "pagweb": "http://www.transclor.com.ar/",
-      "instagram": "http://www.transclor.com.ar/ | https://www.instagram.com/accounts/login/?next=%2Ftransclor%2F&source=omni_redirect",
-      "linkedin": "https://www.instagram.com/accounts/login/?next=%2Ftransclor%2F&source=omni_redirect | https://www.linkedin.com/company/transclor-s.a./?originalSubdomain=ar",
+      "instagram": "https://www.instagram.com/transclor/",
+      "linkedin": "https://www.linkedin.com/company/transclor-s.a./?originalSubdomain=ar",
       "observacion": "https://www.linkedin.com/in/jose-diaz-12237641/?originalSubdomain=ar",
       "id_parque": "guemes"
     },
@@ -681,7 +678,6 @@
       "contacto_nombre": "Juliana Leanza",
       "cargo": "Encargada",
       "pagweb": "https://productos-y-servicios.ypf.com/YPF-Gas.html",
-      "instagram": "https://productos-y-servicios.ypf.com/YPF-Gas.html",
       "observacion_contactos_2024": "confirmado",
       "id_parque": "guemes"
     },
@@ -696,8 +692,8 @@
       "contacto_nombre": "Juan Gomez Naar",
       "cargo": "Representante",
       "pagweb": "https://cn-grupo.com/",
-      "instagram": "https://cn-grupo.com/ | https://www.instagram.com/cngrupo/?hl=es",
-      "linkedin": "https://www.instagram.com/cngrupo/?hl=es | https://www.linkedin.com/company/combustibles-del-norte-sa/?originalSubdomain=ar",
+      "instagram": "https://www.instagram.com/cngrupo/?hl=es",
+      "linkedin": "https://www.linkedin.com/company/transclor-s.a./?originalSubdomain=ar | https://www.linkedin.com/company/combustibles-del-norte-sa/?originalSubdomain=ar",
       "observacion": "https://www.linkedin.com/company/transclor-s.a./?originalSubdomain=ar",
       "observacion_contactos_2024": "Confirmado",
       "id_parque": "guemes"
@@ -1126,7 +1122,6 @@
       "telefono": "4287096 | 4281952 | 3874026780 | 387046321",
       "contacto_nombre": "Leonardo Juárez",
       "instagram": "https://www.instagram.com/concivisalta/",
-      "facebook": "No dispnible",
       "ubicacion": "Av. Rodríguez Durañona 151",
       "situacion": "Activa",
       "es_ocupante_sin_registro": false,
@@ -1810,7 +1805,7 @@
       "telefono": "4280373",
       "contacto_nombre": "Darío Herlein",
       "ubicacion": "Avenida Rodríguez Durañona 1620",
-      "observacion": "Origen, dato sin columna propia: «Pablo Moncholi/Panificadora SAN PABLO S.R.L».",
+      "observacion": "Origen, dato sin columna propia: «Pablo Moncholi/Panificadora SAN PABLO S.R.L». Origen, dato sin columna propia: «Pablo Moncholi/Panificadora SAN PABLO S.R.L».",
       "es_ocupante_sin_registro": false,
       "id_parque": "salta"
     },
