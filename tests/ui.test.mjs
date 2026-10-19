@@ -344,12 +344,12 @@ async function testPendienteAlAbrir() {
 async function testCampoNumero() {
   console.log('\n=== CAMPO NÚMERO (pegado y teclas) ===');
   const ctx = levantarServer(8794);
-  await new Promise((r) => ctx.server.listen(8794, r));
+  await new Promise((r) => ctx.server.listen(8790, r));
   const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
   const context = await browser.newContext();
   await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: 'http://localhost:8794' });
   const page = await context.newPage();
-  await page.goto('http://localhost:8794/', { waitUntil: 'networkidle' });
+  await page.goto('http://localhost:8790/', { waitUntil: 'networkidle' });
   await page.click('#fabNuevo');
   await page.click('#numero');
 
@@ -1622,6 +1622,101 @@ async function testUniformidad(puerto) {
   server.close();
 }
 
+// ---------------------------------------------------------------------------
+// Transición entre pantallas
+// ---------------------------------------------------------------------------
+// El usuario pidió (2026-10-19) que el cambio de pantalla no fuera brusco.
+// Como es un MPA, lo resuelve la API de View Transitions entre documentos.
+//
+// Se mide por comportamiento y no mirando el CSS, porque el modo de fallar de
+// esto NO es "la regla no está": es que la regla esté y el navegador la
+// ignore por llegar tarde al primer render. Con el opt-in en design-system.css
+// la transición salía en 5 de 8 navegaciones; inline en el <head>, en 8 de 8.
+// Un test que leyera el CSS habría dado verde en los dos casos.
+//
+// OJO si tocás esto: no se puede sacar screenshots durante la navegación —
+// hacerlo interfiere con la transición y da falsos negativos. Se escucha el
+// evento `pagereveal`, que es el que dice si el documento nuevo entró con
+// transición o sin ella.
+async function testTransiciones() {
+  console.log('\n=== TRANSICIÓN ENTRE PANTALLAS ===');
+  const paginas = ['index', 'seguimiento', 'proyectos', 'resoluciones', 'parques'];
+  const htmls = {};
+  for (const p of paginas) htmls[p] = fs.readFileSync(path.join(RAIZ, `public/${p}.html`), 'utf8');
+
+  const server = http.createServer((req, res) => {
+    if (req.url.startsWith('/api/')) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end('{}');
+    }
+    if (servirHeaderJs(req, res)) return;
+    const cual = paginas.find((p) => req.url.startsWith('/' + p)) || 'index';
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(htmls[cual]);
+  });
+  await new Promise((r) => server.listen(8780, r));
+
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  // Recorrido por las cuatro apps y vuelta: así entra y sale de cada pantalla,
+  // que es como se usa la barra de abajo. La landing queda afuera del
+  // recorrido porque la barra no enlaza a ella (se llega por el icono de la
+  // app), pero sí entra en el chequeo de la barra quieta, más abajo.
+  const RECORRIDO = ['parques', 'resoluciones', 'seguimiento', 'proyectos', 'parques'];
+
+  for (const reducido of [false, true]) {
+    const ctx = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      reducedMotion: reducido ? 'reduce' : 'no-preference'
+    });
+    const page = await ctx.newPage();
+    const vistos = [];
+    page.on('console', (m) => { if (m.text().startsWith('VT|')) vistos.push(m.text().slice(3) === '1'); });
+    await page.addInitScript(() => {
+      addEventListener('pagereveal', (e) => console.log('VT|' + (e.viewTransition ? '1' : '0')));
+    });
+    await page.goto('http://localhost:8780/proyectos.html', { waitUntil: 'networkidle' });
+    await page.waitForTimeout(250);
+    vistos.length = 0;
+    for (const destino of RECORRIDO) {
+      await page.click(`a[href="/${destino}.html"]`);
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(300);
+    }
+    const conTransicion = vistos.filter(Boolean).length;
+    if (reducido) {
+      ok(conTransicion === 0,
+         `con "menos movimiento" activado no se anima ninguna de las ${vistos.length} navegaciones (${conTransicion} animadas)`);
+    } else {
+      ok(vistos.length === RECORRIDO.length && conTransicion === RECORRIDO.length,
+         `las ${RECORRIDO.length} navegaciones entre pantallas entran con transición (${conTransicion}/${vistos.length})`);
+    }
+    await ctx.close();
+  }
+
+  // La barra de abajo no se desvanece con el contenido: tiene nombre propio,
+  // así que el navegador la trata como el mismo elemento en las dos pantallas.
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await ctx.newPage();
+  for (const p of paginas) {
+    await page.goto(`http://localhost:8780/${p}.html`, { waitUntil: 'domcontentloaded' });
+    const r = await page.evaluate(() => {
+      const barras = document.querySelectorAll('.bottom-nav');
+      return {
+        cuantas: barras.length,
+        nombre: barras[0] ? getComputedStyle(barras[0]).viewTransitionName : null
+      };
+    });
+    // Dos elementos con el mismo view-transition-name hacen que el navegador
+    // descarte la transición ENTERA, sin avisar.
+    ok(r.cuantas === 1 && r.nombre === 'ds-barra-apps',
+       `en ${p} la barra de abajo se queda quieta durante el cambio (${r.cuantas} barra/s, nombre "${r.nombre}")`);
+  }
+  await ctx.close();
+
+  await browser.close();
+  server.close();
+}
+
 await recorrido('DESKTOP', { width: 1440, height: 900 }, 8799);
 await recorrido('MOBILE', { width: 390, height: 844 }, 8798);
 await testFechas();
@@ -1639,6 +1734,7 @@ await testProyectos({ width: 390, height: 844 }, 8794);
 await testParques({ width: 1440, height: 900 }, 8793);
 await testParques({ width: 390, height: 844 }, 8792);
 await testUniformidad(8791);
+await testTransiciones();
 
 console.log(fallas === 0 ? '\nUI OK en desktop y mobile' : `\n${fallas} fallas`);
 process.exit(fallas === 0 ? 0 : 1);
