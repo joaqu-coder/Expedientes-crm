@@ -7,7 +7,7 @@
  *
  * Cambiar CACHE_VERSION cuando hay cambios incompatibles.
  */
-const CACHE_VERSION = 'expedientes-crm-v7';
+const CACHE_VERSION = 'expedientes-crm-v8';
 const ASSETS = ['/manifest.json'];
 
 self.addEventListener('install', (event) => {
@@ -45,12 +45,15 @@ self.addEventListener('fetch', (event) => {
     url.pathname === '/' ||
     url.pathname === '';
 
-  // header.js y ui-kit.css van con la misma estrategia que el HTML, no con la
-  // de los assets: son el header, el menú, el botón de alta y los botones de
-  // acción de las cuatro apps, así que una copia vieja servida desde el cache
-  // deja la pantalla sin cabecera o con los botones sin estilo. Network-first
-  // = siempre la última si hay red, y la cacheada solo cuando no la hay.
-  const esCritico = isHTML || url.pathname === '/header.js' || url.pathname === '/ui-kit.css';
+  // header.js, design-system.css y ui-kit.css van con la misma estrategia que
+  // el HTML, no con la de los assets: son el header, el menú, el botón de alta
+  // y TODOS los colores y medidas de las cuatro apps, así que una copia vieja
+  // servida desde el cache deja la pantalla sin cabecera, sin estilo en los
+  // botones o —desde que las páginas no declaran sus propios colores— con los
+  // tokens sin resolver. Network-first = siempre la última si hay red, y la
+  // cacheada solo cuando no la hay.
+  const CRITICOS = ['/header.js', '/design-system.css', '/ui-kit.css'];
+  const esCritico = isHTML || CRITICOS.includes(url.pathname);
 
   if (esCritico) {
     // Network-first: intenta red, si falla usa cache

@@ -1,0 +1,262 @@
+/* design-system.css — la fuente única de los valores visuales de la suite
+ * ============================================================================
+ *
+ * Pedido del usuario (2026-10-19): "un sistema de diseño en cuanto a botones y
+ * pantalla, compartido, con herencia controlada, clases comunes y variantes por
+ * acción. Así, si modificás el radio de los botones o el color principal, el
+ * cambio se aplica en todas las pantallas sin editar cada una por separado".
+ *
+ * Este archivo son los VALORES. `ui-kit.css` son los COMPONENTES que los usan.
+ * Los dos se cargan, en ese orden, en las cinco páginas:
+ *
+ *     <link rel="stylesheet" href="/design-system.css">   ← valores (este)
+ *     <link rel="stylesheet" href="/ui-kit.css">          ← componentes
+ *     <style> … </style>                                  ← lo propio de la página
+ *
+ * ---------------------------------------------------------------------------
+ * DÓNDE TOCAR
+ * ---------------------------------------------------------------------------
+ * - ¿Cambiar el color principal de toda la app?  → `--ds-accent`, acá abajo.
+ * - ¿Cambiar el radio de todos los botones?      → `--ds-radius-button`.
+ * - ¿Cambiar el alto de todos los controles?     → `--ds-control-height`.
+ *
+ * Una línea y cambian las cinco pantallas. No hay que abrir ningún .html.
+ * `tests/ui.test.mjs` lo verifica de verdad: pisa esos dos tokens en caliente
+ * y comprueba que el botón de las cuatro apps cambió. Si alguien vuelve a
+ * clavar un color en una página, ese test se pone en rojo.
+ *
+ * ---------------------------------------------------------------------------
+ * LAS TRES CAPAS (en este orden, y el orden importa)
+ * ---------------------------------------------------------------------------
+ * 1. PRIMITIVAS (`--ds-c-*`, `--ds-space-*`…): la paleta cruda. Un color sin
+ *    significado todavía. NADIE las usa fuera de este archivo — ni ui-kit.css
+ *    ni las páginas. Si una página escribe `var(--ds-c-gray-200)` está saltando
+ *    la capa semántica y el cambio deja de propagarse.
+ * 2. SEMÁNTICAS (`--ds-accent`, `--ds-border`, `--ds-radius-button`…): qué
+ *    significa cada valor. ESTA es la capa que se edita.
+ * 3. ALIAS: los nombres que las páginas ya venían usando (`--accent`, `--fg`,
+ *    `--primary`, `--gray-200`, `--c1`…), apuntados a la capa semántica. Están
+ *    para no tener que reescribir las ~900 llamadas a `var(--…)` que ya hay en
+ *    los cinco documentos. Son nombres viejos con valores nuevos, no una
+ *    segunda fuente de verdad.
+ *
+ * ---------------------------------------------------------------------------
+ * HERENCIA CONTROLADA
+ * ---------------------------------------------------------------------------
+ * Una página PUEDE desviarse de un token, pero solo así:
+ *
+ *   - redeclarando UN token puntual en su propio `:root`, con un comentario
+ *     que diga por qué (su `<style>` va después de este archivo, así que gana
+ *     por orden de cascada, no por `!important`);
+ *   - nunca copiando la paleta entera, que es exactamente lo que había antes
+ *     de este archivo y el motivo de que sacar el índigo costara tocar cinco
+ *     documentos.
+ *
+ * Hoy hay una sola desviación viva, y está anotada donde ocurre:
+ * seguimiento.html pisa `--orange` porque su naranja es el del semáforo de
+ * urgencia (#f97316, más saturado) y no el de las categorías (#b05a1a).
+ *
+ * Para una app que algún día necesite su propio acento, el camino es
+ * `[data-app="…"]` (ver el final del bloque semántico), no volver a declarar
+ * `--accent` suelto.
+ */
+
+/* ===========================================================================
+ * CAPA 1 — PRIMITIVAS. Paleta cruda, sin significado. No usar afuera.
+ * ======================================================================== */
+:root {
+  /* Grises. La escala que ya usaba toda la suite. */
+  --ds-c-white:     #ffffff;
+  --ds-c-black:     #000000;  /* solo como operando de color-mix, nunca como fondo */
+  --ds-c-gray-50:   #f9fafb;
+  --ds-c-gray-100:  #f3f4f6;
+  --ds-c-gray-200:  #e5e7eb;
+  --ds-c-gray-300:  #d1d5db;
+  --ds-c-ink:       #1f2937;
+  --ds-c-ink-soft:  #6b7280;
+
+  /* Colores con carga semántica: estados. */
+  --ds-c-red:       #a1392c;  --ds-c-red-soft:    #f7e2dd;
+  --ds-c-green:     #2f7a3c;  --ds-c-green-soft:  #e4f3e5;
+  --ds-c-amber:     #a8650f;  --ds-c-amber-soft:  #fbead0;
+  --ds-c-clay:      #b05a1a;  --ds-c-clay-soft:   #fbe9d8;
+  --ds-c-stone:     #746d57;  --ds-c-stone-soft:  #e8e5d9;
+  --ds-c-teal:      #1f6f78;  --ds-c-teal-soft:   #dcf0f1;
+  --ds-c-periwinkle:#667eea;  --ds-c-periwinkle-soft:#e7e9fb;
+
+  /* Paleta categórica de los gráficos. Orden fijo: no ciclar, no reordenar —
+     el lector asocia un color a un parque y reordenarlos le cambia el dato. */
+  --ds-c-cat-1: #2a78d6;
+  --ds-c-cat-2: #eb6834;
+  --ds-c-cat-3: #1baf7a;
+  --ds-c-cat-4: #eda100;
+  --ds-c-cat-5: #e87ba4;
+  --ds-c-cat-6: #008300;
+  --ds-c-cat-7: #8c5ccc;
+  --ds-c-cat-8: #0aa2b0;
+
+  /* Tipografía. Un solo stack para las cinco páginas: antes Proyectos usaba
+     uno sin BlinkMacSystemFont y con "Helvetica Neue"/Arial al final, y las
+     otras cuatro otro. En cualquier sistema real las dos resuelven a la misma
+     fuente, pero eran dos listas que había que mantener sincronizadas a mano. */
+  --ds-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                  "Helvetica Neue", Arial, sans-serif;
+  --ds-font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono",
+                  "Courier New", monospace;
+}
+
+/* ===========================================================================
+ * CAPA 2 — SEMÁNTICAS. Qué significa cada valor. ESTA es la capa que se edita.
+ * ======================================================================== */
+:root {
+  color-scheme: light;
+
+  /* --- Color principal -----------------------------------------------------
+     Cambiar esta línea cambia el FAB, Guardar, Resolver, la pestaña activa, el
+     item activo de la barra inferior y el anillo de foco, en las 5 pantallas.
+
+     Hoy es un neutro, no un color de marca: el 2026-10-19 el usuario pidió
+     sacar el índigo (#667eea, que usaban Seguimiento/Resoluciones/Parques) y
+     el ámbar (#a8650f, de Proyectos) y dejar la pantalla blanca entera. */
+  --ds-accent:    var(--ds-c-ink);
+  --ds-accent-fg: var(--ds-c-white);
+
+  /* --- Superficies y texto --- */
+  --ds-bg:         var(--ds-c-white);
+  --ds-surface:    var(--ds-c-white);
+  --ds-surface-2:  var(--ds-c-gray-100);  /* relleno de la búsqueda y los chips */
+  --ds-border:     var(--ds-c-gray-200);
+  --ds-border-strong: var(--ds-c-gray-300);
+  --ds-fg:         var(--ds-c-ink);
+  --ds-fg-muted:   var(--ds-c-ink-soft);
+
+  /* --- Estados. Tienen color a propósito: codifican información, no marca.
+         Sacárselos no "normaliza" nada, borra el dato que el badge transmite. */
+  --ds-danger:    var(--ds-c-red);     --ds-danger-bg: var(--ds-c-red-soft);
+  --ds-ok:        var(--ds-c-green);   --ds-ok-bg:     var(--ds-c-green-soft);
+  --ds-warn:      var(--ds-c-amber);   --ds-warn-bg:   var(--ds-c-amber-soft);
+  --ds-idle:      var(--ds-c-stone);   --ds-idle-bg:   var(--ds-c-stone-soft);
+
+  /* --- Forma. El radio de botón es de pastilla desde el 2026-10-19: el
+         usuario pidió el de la pestaña "Análisis" de Proyectos, que ya era
+         999px. Botón y pastilla comparten token para que no se puedan separar. */
+  --ds-radius-pill:   999px;
+  --ds-radius-button: var(--ds-radius-pill);
+  --ds-radius-card:   10px;
+  --ds-radius-panel:  12px;
+  --ds-radius-nav:    10px;
+
+  /* --- Medida. 40px de control es la especificación del usuario (2026-10-18);
+         44px es el objetivo táctil mínimo. Son las dos cosas, no una u otra:
+         el botón mide 40 y un ::after le estira el área al dedo hasta 44. */
+  --ds-control-height: 40px;
+  --ds-touch-min:      44px;
+  --ds-search-height:  48px;
+  --ds-icon-size:      18px;
+  --ds-gap:            8px;
+  --ds-padding-x:      14px;
+
+  /* --- Movimiento --- */
+  --ds-transition: 160ms ease;
+
+  /* --- Gancho de herencia controlada ---------------------------------------
+     Si alguna vez una app necesita su propio acento, va acá y NO suelto en su
+     `:root`, para que siga habiendo un solo lugar donde mirar quién se desvía
+     y por qué. Se activa con <body data-app="…"> (hoy no lo usa nadie):
+
+         [data-app="proyectos"] { --ds-accent: #a8650f; }
+  */
+}
+
+/* ===========================================================================
+ * CAPA 3 — ALIAS. Los nombres que las páginas ya usaban, apuntados a la capa
+ * semántica. No agregues valores literales acá: un `#hex` en esta sección es
+ * una segunda fuente de verdad, que es justo lo que este archivo vino a matar.
+ * ======================================================================== */
+:root {
+  /* Vocabulario de proyectos / resoluciones / parques */
+  --bg:         var(--ds-bg);
+  --surface:    var(--ds-surface);
+  --surface-2:  var(--ds-surface-2);
+  --border:     var(--ds-border);
+  --fg:         var(--ds-fg);
+  --muted:      var(--ds-fg-muted);
+  --accent:     var(--ds-accent);
+  --accent-fg:  var(--ds-accent-fg);
+
+  --danger: var(--ds-danger);  --danger-bg: var(--ds-danger-bg);
+  --ok:     var(--ds-ok);      --ok-bg:     var(--ds-ok-bg);
+  --warn:   var(--ds-warn);    --warn-bg:   var(--ds-warn-bg);
+  --idle:   var(--ds-idle);    --idle-bg:   var(--ds-idle-bg);
+  --orange: var(--ds-c-clay);  --orange-bg: var(--ds-c-clay-soft);
+
+  /* Vocabulario de seguimiento / index: mismos colores, otros nombres. Existen
+     porque esas dos páginas nacieron antes y llaman a lo suyo --text/--gray-*. */
+  --primary:    var(--ds-accent);
+  --text:       var(--ds-fg);
+  --text-muted: var(--ds-fg-muted);
+  --gray-50:    var(--ds-c-gray-50);
+  --gray-100:   var(--ds-c-gray-100);
+  --gray-200:   var(--ds-c-gray-200);
+  --gray-300:   var(--ds-c-gray-300);
+  --red:        var(--ds-danger);
+  --green:      var(--ds-ok);
+
+  /* Colores de categoría (temas de Resoluciones, rubros de Parques). */
+  --c1: var(--ds-c-periwinkle); --c1-bg: var(--ds-c-periwinkle-soft);
+  --c2: var(--ds-c-green);      --c2-bg: var(--ds-c-green-soft);
+  --c3: var(--ds-c-amber);      --c3-bg: var(--ds-c-amber-soft);
+  --c4: var(--ds-c-clay);       --c4-bg: var(--ds-c-clay-soft);
+  --c5: var(--ds-c-stone);      --c5-bg: var(--ds-c-stone-soft);
+  --c6: var(--ds-c-teal);       --c6-bg: var(--ds-c-teal-soft);
+
+  /* Serie categórica de los gráficos. */
+  --s1: var(--ds-c-cat-1); --s2: var(--ds-c-cat-2);
+  --s3: var(--ds-c-cat-3); --s4: var(--ds-c-cat-4);
+  --s5: var(--ds-c-cat-5); --s6: var(--ds-c-cat-6);
+  --s7: var(--ds-c-cat-7); --s8: var(--ds-c-cat-8);
+
+  /* Tipografía: --font-display y --font-body son el mismo stack desde siempre;
+     se conservan los dos nombres porque hay reglas que usan uno y reglas que
+     usan el otro, y separarlos algún día (un display distinto) sigue siendo
+     posible sin tocar ninguna página. */
+  --font-display: var(--ds-font-sans);
+  --font-body:    var(--ds-font-sans);
+  --font-mono:    var(--ds-font-mono);
+}
+
+/* ===========================================================================
+ * BASE COMPARTIDA DE PANTALLA
+ * ---------------------------------------------------------------------------
+ * "Sistema de diseño en cuanto a botones Y PANTALLA": el fondo blanco, el
+ * color del texto y la fuente dejan de estar escritos en cada documento.
+ *
+ * Antes cada página declaraba su propio `body{background:…}` — por eso sacar
+ * el fondo gris costó cinco ediciones.
+ *
+ * El ESPACIADO no se unifica y es a propósito: seguimiento maneja el suyo con
+ * `.app`, las otras tres con `padding-inline` en el body, y la landing centra
+ * todo con `.landing`. Las tres reservan distinto lugar para la barra inferior
+ * fija. Un `padding` acá descolocaría dos de las tres.
+ * ======================================================================== */
+* { box-sizing: border-box; }
+
+body {
+  background: var(--ds-bg);
+  color: var(--ds-fg);
+  font-family: var(--ds-font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Un solo anillo de foco para toda la suite. Los `<a>` quedan afuera a
+   propósito: los de la barra inferior ya traen el suyo desde ui-kit.css, con
+   el offset hacia adentro que necesitan para no salirse de la barra. */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--ds-accent);
+  outline-offset: 2px;
+}
+
+button { font-family: inherit; cursor: pointer; }

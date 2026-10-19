@@ -1,12 +1,19 @@
-/* ui-kit.css — sistema visual compartido por las 5 páginas
+/* ui-kit.css — los COMPONENTES compartidos por las 5 páginas
  *
- * Segunda (y por ahora última) excepción a "cada app es un documento
- * autónomo", junto con header.js: acá vive SOLO lo que tiene que verse
- * idéntico en las cuatro apps — botones de acción, barra de búsqueda y los
- * estados de la barra de navegación. Todo lo demás sigue inline en cada HTML.
+ * La otra mitad del sistema de diseño: `design-system.css` tiene los VALORES
+ * (colores, radios, medidas) y este archivo las CLASES que los consumen —
+ * botones de acción, barra de búsqueda y los estados de la barra inferior.
+ * Se cargan en ese orden y el orden importa: sin el primero, las variables de
+ * acá no resuelven.
  *
- * Se carga ANTES del <style> de cada página, así que una página todavía puede
- * pisar algo puntual; si lo hace, es un bug a mirar, no la forma de trabajar.
+ *     <link rel="stylesheet" href="/design-system.css">
+ *     <link rel="stylesheet" href="/ui-kit.css">
+ *     <style> … </style>   ← lo propio de la página, puede pisar algo puntual
+ *
+ * ACÁ NO VAN VALORES LITERALES. Ni un `#hex`, ni un `8px` de radio: si hace
+ * falta uno nuevo, se agrega como token en design-system.css y se usa desde
+ * acá. Es lo único que garantiza que cambiar el acento o el radio en un solo
+ * lugar llegue a las cinco pantallas.
  *
  * Antes de esto convivían cinco vocabularios de botón: .btn-neutral/.btn-small
  * en Seguimiento, .btn-ghost/.btn-edit/.btn-view-action en las otras tres, con
@@ -16,52 +23,39 @@
  */
 
 :root {
-  /* Los colores NO se redefinen acá. Cada app declara su acento y el kit lo
-     toma como está: estos tokens solo le ponen un nombre común a lo que la
-     página ya define. El valor de respaldo es para una página que no declare
-     el token, no para pisar al que sí lo hace.
+  /* Este bloque NO decide nada: solo le pone al componente el nombre corto de
+     un token de design-system.css. Si querés cambiar un color o una medida,
+     se cambia allá y llega acá solo.
 
-     Desde el 2026-10-19 ese acento es el MISMO en las cuatro apps y es un
-     neutro (la tinta del texto, #1f2937): se eliminaron el índigo de
-     Seguimiento/Resoluciones/Parques y el ámbar de Proyectos a pedido del
-     usuario — pantalla blanca entera, sin color de marca. El respaldo de acá
-     acompaña ese cambio; si vuelve a decir #667eea, quedó desincronizado con
-     las páginas. */
-  --ui-accent: var(--accent, #1f2937);
-  --ui-accent-fg: var(--accent-fg, #ffffff);
+     Los `--ui-*` existen para que las reglas de abajo se lean (`var(--ui-accent)`
+     en vez de `var(--ds-accent)`) y para que un componente nuevo no tenga que
+     saber de qué capa del sistema viene cada valor. No son una segunda fuente
+     de verdad: ninguno tiene un literal del lado derecho. */
+  --ui-accent: var(--ds-accent);
+  --ui-accent-fg: var(--ds-accent-fg);
   --ui-accent-soft: color-mix(in srgb, var(--ui-accent) 16%, transparent);
-  --ui-accent-hover: color-mix(in srgb, var(--ui-accent) 86%, #000);
+  --ui-accent-hover: color-mix(in srgb, var(--ui-accent) 86%, var(--ds-c-black));
 
-  --ui-text: var(--fg, #1f2937);
-  --ui-muted: var(--muted, #6b7280);
-  --ui-surface: var(--surface, #ffffff);
-  --ui-surface-soft: var(--surface-2, #f3f4f6);
-  --ui-border: var(--border, #e5e7eb);
+  --ui-text: var(--ds-fg);
+  --ui-muted: var(--ds-fg-muted);
+  --ui-surface: var(--ds-surface);
+  --ui-surface-soft: var(--ds-surface-2);
+  --ui-border: var(--ds-border);
 
-  --ui-danger: var(--danger, #a1392c);
+  --ui-danger: var(--ds-danger);
   --ui-danger-soft: color-mix(in srgb, var(--ui-danger) 8%, transparent);
   --ui-danger-border: color-mix(in srgb, var(--ui-danger) 35%, transparent);
 
-  /* Dimensiones: las de la especificación del usuario (2026-10-18). */
-  --ui-control-height: 40px;
-  --ui-icon-size: 18px;
-  --ui-radius-pill: 999px;
-  /* Pastilla, no 8px: el usuario pidió (2026-10-19) que los cinco botones de
-     acción tengan el radio de la pestaña "Análisis" de Proyectos, que ya era
-     999px. Un solo valor para botón y pastilla, así no se pueden separar. */
-  --ui-radius-button: var(--ui-radius-pill);
-  --ui-radius-nav: 10px;
-  --ui-gap: 8px;
-  --ui-padding-x: 14px;
-  --ui-transition: 160ms ease;
-
-  /* Alto mínimo de un objetivo táctil. La especificación pide controles de
-     40px y el proyecto venía con 44px: no se elige entre uno y otro — el
-     botón mide 40 y el área que responde al dedo se estira a 44 con un
-     ::after, igual que los chips de filtro (38px visuales / 44px táctiles). */
-  --ui-touch-min: 44px;
-
-  --ui-search-height: 48px;
+  --ui-control-height: var(--ds-control-height);
+  --ui-icon-size: var(--ds-icon-size);
+  --ui-radius-pill: var(--ds-radius-pill);
+  --ui-radius-button: var(--ds-radius-button);
+  --ui-radius-nav: var(--ds-radius-nav);
+  --ui-gap: var(--ds-gap);
+  --ui-padding-x: var(--ds-padding-x);
+  --ui-transition: var(--ds-transition);
+  --ui-touch-min: var(--ds-touch-min);
+  --ui-search-height: var(--ds-search-height);
 }
 
 /* ============================ BOTONES ============================

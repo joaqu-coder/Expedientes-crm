@@ -24,7 +24,8 @@ public/proyectos.html    ← cartas de intención de parques industriales (EGPAI
 public/resoluciones.html ← resoluciones del Directorio (archivo histórico 2012-2025)
 public/parques.html      ← lotes y empresas instaladas en los parques (Güemes + Salta)
 public/header.js         ← compartido: header (título + ⋮), FAB, iconos y buscador
-public/ui-kit.css        ← compartido: botones de acción, barra de búsqueda y estados de la nav
+public/design-system.css ← compartido: TODOS los colores, radios y medidas (los valores)
+public/ui-kit.css        ← compartido: botones de acción, barra de búsqueda y nav (los componentes)
 
 Navegador (seguimiento)   Navegador (proyectos)      Navegador (resoluciones)  Navegador (parques)
     │  /api/sync              │  /api/sync-cartas         │  /api/sync-resoluciones  │  /api/sync-parques
@@ -450,7 +451,7 @@ El sidebar se eliminó por completo. Reglas que quedan:
 
 ## Lo compartido entre apps: `header.js` y `ui-kit.css`
 
-Son las **dos únicas** excepciones a "cada app es un documento autónomo". Todo
+Son las **tres únicas** excepciones a "cada app es un documento autónomo". Todo
 lo demás sigue inline en su HTML. La regla para decidir si algo va acá: ¿tiene
 que verse y comportarse idéntico en las cuatro pantallas? Si la respuesta es
 "más o menos", no va.
@@ -458,10 +459,12 @@ que verse y comportarse idéntico en las cuatro pantallas? Si la respuesta es
 | Archivo | Qué vive adentro |
 |---|---|
 | `public/header.js` | El header (título + ⋮), el FAB, el juego de iconos (`HeaderGlobal.icono`), el cableado de la barra de búsqueda y la vibración de la nav |
-| `public/ui-kit.css` | Los tokens `--ui-*`, el componente `.btn` con sus variantes, la barra de búsqueda y los estados de `.bottom-nav .nav-item` |
+| `public/design-system.css` | **Los valores**: la paleta, los tokens semánticos (`--ds-accent`, `--ds-radius-button`…), los alias del vocabulario viejo de cada página y la base de `body` |
+| `public/ui-kit.css` | **Los componentes**: `.btn` con sus variantes, la barra de búsqueda y los estados de `.bottom-nav .nav-item`. Sin un solo valor literal |
 
-Los dos se sirven **network-first** en `sw.js`: una copia vieja deja la app sin
-cabecera o con los botones sin estilo, que es peor que esperar la red.
+Los tres se sirven **network-first** en `sw.js`: una copia vieja deja la app sin
+cabecera, con los botones sin estilo o —desde que las páginas no declaran sus
+propios colores— con los tokens sin resolver, que es peor que esperar la red.
 
 ## Header global: el primer código compartido entre apps
 
@@ -502,6 +505,104 @@ HeaderGlobal.setSync("Al día", "ok");          // ok | pendiente | error
   que se estaba mirando si alguien lo tocaba. `testUniformidad()` lo prueba
   por comportamiento —abre el modal y pregunta qué recibe el toque en el
   centro del botón—, no comparando z-index entre archivos.
+
+## Sistema de diseño (`design-system.css` + `ui-kit.css`)
+
+Pedido del usuario (2026-10-19): *"un sistema de diseño en cuanto a botones y
+pantalla, compartido, con herencia controlada, clases comunes y variantes por
+acción. Así, si modificás el radio de los botones o el color principal, el
+cambio se aplica en todas las pantallas sin editar cada una por separado"*.
+
+**Dónde se toca algo:**
+
+| Querés cambiar… | Tocás | Archivos editados |
+|---|---|---|
+| El color principal de toda la app | `--ds-accent` | 1 |
+| El radio de todos los botones | `--ds-radius-button` | 1 |
+| El alto de todos los controles | `--ds-control-height` | 1 |
+| El fondo de las cinco pantallas | `--ds-bg` | 1 |
+
+Antes de esto eran **cinco** ediciones para cualquiera de esas cuatro filas, y
+es exactamente lo que costó sacar el índigo y el ámbar: cada `.html` traía su
+propia copia de la paleta.
+
+### Las tres capas
+
+1. **Primitivas** (`--ds-c-*`): la paleta cruda, sin significado. No se usan
+   fuera de `design-system.css`. Si una página escribe `var(--ds-c-gray-200)`
+   se saltó la capa semántica y el cambio deja de propagarse.
+2. **Semánticas** (`--ds-accent`, `--ds-border`, `--ds-radius-button`…): qué
+   significa cada valor. **Es la capa que se edita.**
+3. **Alias** (`--accent`, `--fg`, `--primary`, `--gray-200`, `--c1`…): los
+   nombres que las páginas ya usaban, apuntados a la capa semántica. Existen
+   para no reescribir las ~900 llamadas a `var(--…)` que hay en los cinco
+   documentos. Son nombres viejos con valores nuevos, **no** una segunda
+   fuente de verdad: ni un `#hex` del lado derecho.
+
+`ui-kit.css` consume la capa 2 y **no tiene ni un valor literal** — ni un
+color, ni un radio. Es dependencia dura: sus `--ui-*` ya no llevan valor de
+respaldo, así que el `<link>` de `design-system.css` tiene que ir **antes**.
+
+### Herencia controlada
+
+Una página puede desviarse, pero solo redeclarando **un token puntual** en su
+`:root`, con un comentario que diga por qué (su `<style>` va después del
+`<link>`, así que gana por cascada, no por `!important`). Nunca copiando la
+paleta entera.
+
+Hoy hay **una sola** desviación viva: `seguimiento.html` pisa `--orange` y
+`--yellow` porque su naranja es el del semáforo de urgencia (`#f97316`, más
+saturado) y no el de categorías (`#b05a1a`) que usan Proyectos y Parques. Está
+anotada en la página **y** en la lista `DESVIOS_PERMITIDOS` de
+`tests/ids.test.mjs`: una desviación que no esté en esa lista pone el test en
+rojo. Para una app que algún día necesite su propio acento, el camino es el
+gancho `[data-app="…"]` del final del bloque semántico, no un `--accent` suelto.
+
+### Variantes por acción
+
+Un solo componente `.btn` y una variante por tipo de acción. El tamaño nunca
+cambia entre variantes: Eliminar mide exactamente lo mismo que Guardar.
+
+| Acción | Variante | Icono | Se ve |
+|---|---|---|---|
+| Guardar | `.btn-primary` | `guardar` | Relleno con el acento |
+| Resolver | `.btn-success` | `resolver` | Relleno con el acento (no verde: ver abajo) |
+| Editar | `.btn-outline` | `editar` | Contorno, fondo transparente |
+| Cancelar | `.btn-secondary` | `cancelar` | Contorno sobre `--ds-surface` |
+| Eliminar | `.btn-danger` | `eliminar` | Contorno rojo, no rojo pleno |
+
+Los modificadores de ancho (`.btn-grow`, `.btn-full`) no son variantes: no
+cambian el botón, solo cómo se reparte la fila que lo contiene.
+
+Las variantes se nombran por **rol** y no por la etiqueta del botón a
+propósito: hay botones que no son ninguna de las cinco acciones ("Listo",
+"Aceptar", "Mostrar 50 más") y necesitan un rol igual. Lo que garantiza el
+"por acción" no es el nombre de la clase sino `testUniformidad()`, que compara
+las cinco acciones entre las cuatro apps.
+
+### Cómo se verifica (y por qué así)
+
+- `tests/ids.test.mjs` (rápido, sin navegador): las cinco páginas cargan los
+  dos archivos **y en ese orden**; `ui-kit.css` no tiene literales; ninguna
+  página redeclara un token del sistema fuera de `DESVIOS_PERMITIDOS`.
+- `tests/ui.test.mjs` → `testUniformidad()`: **pisa el token en caliente** y le
+  pregunta al navegador qué pinta. No alcanza con leer el CSS —eso solo diría
+  que el token existe—; lo que se prueba es que cambiar `--ds-accent`,
+  `--ds-radius-button`, `--ds-control-height`, `--ds-bg` o `--ds-fg` mueva de
+  verdad a las cinco pantallas. Si alguien vuelve a clavar un color en el
+  `<style>` de una página, esa página deja de moverse y el test la nombra.
+
+### Lo que el refactor destapó
+
+Pasar los tokens a un archivo común no cambió ni un pixel en Proyectos,
+Resoluciones, Parques ni la landing (comparación pixel a pixel antes/después:
+diferencias de ±1 en menos del 0,02% de los pixeles, antialiasing). **Sí**
+cambió una cosa en Seguimiento, y es un arreglo: sus chips (`.pestana-btn`,
+`.area-btn`) declaraban `font-size` pero no `font-family`, así que eran los
+únicos controles de la suite que se dibujaban con la fuente por defecto del
+navegador en vez de la de la app. Al heredar `button{font-family:inherit}` del
+sistema quedaron igual que la pestaña "Análisis" de Proyectos — que es lo que
+el usuario había pedido el día anterior.
 
 ## Sistema visual compartido (`ui-kit.css`)
 
