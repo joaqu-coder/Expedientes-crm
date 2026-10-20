@@ -746,8 +746,14 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     try{ var v = parseInt(localStorage.getItem(PLAZO_KEY),10); return (v>0) ? v : 90; }
     catch(e){ return 90; }
   }
+  // Plazo y umbrales son configuración: viajan en cada POST, así que un
+  // dispositivo con el valor viejo lo volvería a subir. `configSucia` marca
+  // que este dispositivo cambió la configuración y todavía no la subió; mientras
+  // esté puesto, lo remoto no la pisa (ver adoptarConfigRemota).
+  var configSucia = false;
   function savePlazo(v){
     try{ localStorage.setItem(PLAZO_KEY, String(v)); }catch(e){}
+    configSucia = true;
     marcarPendiente();
   }
   function loadUmbrales(){
@@ -766,7 +772,33 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   }
   function saveUmbrales(u){
     try{ localStorage.setItem(UMBRAL_KEY, JSON.stringify(u)); }catch(e){}
+    configSucia = true;
     marcarPendiente();
+  }
+  // Adopta el plazo y los umbrales del servidor, salvo que este dispositivo
+  // tenga cambios de configuración sin subir (en ese caso gana lo local, que es
+  // lo último que el usuario eligió). Antes, el camino del 409 y la primera
+  // subida fusionaban expedientes pero no la configuración: un POST con el
+  // plazo viejo lo revertía en el servidor.
+  function adoptarConfigRemota(datos){
+    if(configSucia || !datos) return false;
+    var cambio = false;
+    var p = Number(datos.plazoDias);
+    if(Number.isFinite(p) && p>0 && p!==state.plazoDias){
+      state.plazoDias = p;
+      plazoInput.value = p;
+      try{ localStorage.setItem(PLAZO_KEY, String(p)); }catch(e){}
+      cambio = true;
+    }
+    if(datos.umbrales){
+      var u = normalizarUmbrales(datos.umbrales);
+      if(u.alerta !== state.umbrales.alerta || u.critico !== state.umbrales.critico){
+        state.umbrales = u;
+        try{ localStorage.setItem(UMBRAL_KEY, JSON.stringify(u)); }catch(e){}
+        cambio = true;
+      }
+    }
+    return cambio;
   }
 
   // ---- Sync: GitHub-como-base-de-datos detrás del Worker (/api/sync-cartas) ----
@@ -889,6 +921,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
       var fus = fusionar(remoto, {expedientes: state.expedientes, eliminados: state.eliminados});
       state.expedientes = fus.expedientes;
       state.eliminados = fus.eliminados;
+      adoptarConfigRemota(remoto);
       persistirLocal();
       renderList();
     }
@@ -925,6 +958,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
           var fus = fusionar(remoto, {expedientes: state.expedientes, eliminados: state.eliminados});
           state.expedientes = fus.expedientes;
           state.eliminados = fus.eliminados;
+          adoptarConfigRemota(remoto);
           state.baseSha = remoto._meta ? remoto._meta.sha : null;
           ultimaVersion = state.baseSha;
           persistirLocal();
@@ -960,6 +994,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
       // enviaba, y la siguiente descarga la pisaba en el dispositivo.
       if(cambiosSeq === seqEnviado){
         try{ localStorage.removeItem(SYNC_PENDING_KEY); }catch(e){}
+        configSucia = false; // lo que se mandó era todo lo que había
       }
       fallosSeguidos = 0;
       marcarSyncOk();
@@ -997,6 +1032,25 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
       var datos = await resp.json();
       if(!datos || !Array.isArray(datos.expedientes)){
         throw new Error("El servidor devolvió datos con una forma inesperada.");
+      }
+
+      // Durante la espera del GET pudo haber una edición local. Antes la
+      // respuesta pisaba el estado en memoria y en localStorage mientras la
+      // bandera de pendiente seguía puesta: la edición se perdía y lo que se
+      // subía era la versión remota sin ella. Ahora se fusiona lo remoto con lo
+      // local (igual que el 409) y se sube sobre el sha nuevo.
+      if(haySyncPendiente()){
+        var fusAhora = fusionar(datos, {expedientes: state.expedientes, eliminados: state.eliminados});
+        state.expedientes = fusAhora.expedientes;
+        state.eliminados = fusAhora.eliminados;
+        adoptarConfigRemota(datos);
+        state.baseSha = (datos._meta && datos._meta.sha) || null;
+        ultimaVersion = state.baseSha;
+        baseConocida = true;
+        persistirLocal();
+        renderList();
+        programarSubida(0);
+        return;
       }
 
       // plazoDias se adopta por su cuenta. Antes estaba anidado dentro del if

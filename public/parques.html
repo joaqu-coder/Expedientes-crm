@@ -755,6 +755,14 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
       var resp = await HeaderGlobal.fetchApi(SYNC_ENDPOINT);
       if(!resp.ok) throw new Error("GET falló: "+resp.status);
       var datos = await resp.json();
+      // Durante la espera del GET pudo haber una edición local. Aplicar la
+      // respuesta ahora borraría esa edición con la bandera de pendiente
+      // todavía puesta. Se descarta la respuesta y se sube lo local; Parques
+      // no fusiona todavía (ver la pendiente de "última escritura gana").
+      if(haySyncPendiente()){
+        subirCambios();
+        return;
+      }
       if(datos && (Array.isArray(datos.lotes) || Array.isArray(datos.empresas))){
         var m = migrarParques({
           parques: Array.isArray(datos.parques) ? datos.parques : null,
