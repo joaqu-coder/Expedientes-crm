@@ -489,14 +489,14 @@
     }
 
     .expediente-expanded-tema {
-      font-size: 13px;
-      font-weight: 500;
+      font-size:var(--ds-text-title);line-height:var(--ds-text-title-lh);
+      font-weight: 700;
       color: var(--text);
       margin-bottom: 12px;
     }
 
     .expediente-expanded-meta {
-      font-size: 12px;
+      font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);
       color: var(--text-muted);
       margin-bottom: 12px;
       display: flex;
@@ -510,11 +510,12 @@
     }
 
     .expediente-expanded-meta strong {
-      color: var(--text);
+      font-weight: 400;
+      color: var(--text-muted);
     }
 
     .expediente-expanded-dates {
-      font-size: 12px;
+      font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);
       color: var(--text-muted);
       margin-bottom: 16px;
       padding-bottom: 16px;
@@ -528,7 +529,7 @@
     }
 
     .expediente-expanded-dates .label {
-      font-weight: 500;
+      font-weight: 700;
       color: var(--text);
       min-width: 70px;
     }
@@ -539,12 +540,12 @@
     }
 
     .notas-header {
-      font-size: 12px;
-      font-weight: 600;
+      font-size:var(--ds-text-subtitle);line-height:var(--ds-text-subtitle-lh);
+      font-weight: 700;
       color: var(--text);
       text-transform: uppercase;
-      margin-bottom: 8px;
-      letter-spacing: 0.5px;
+      margin-bottom: 9px;
+      letter-spacing: 0.04em;
     }
 
     .notas-list {
@@ -557,24 +558,24 @@
       padding: 8px;
       background: var(--gray-50);
       border-radius: 6px;
-      font-size: 12px;
+      font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);
     }
 
     .nota-hora {
-      font-size: 10px;
-      font-weight: 600;
-      color: var(--primary);
+      font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);
+      font-weight: 400;
+      color: var(--text-muted);
       display: block;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
 
     .nota-texto {
-      color: var(--text);
-      line-height: 1.4;
+      color: var(--text-muted);
+      font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);
     }
 
     .notas-empty {
-      font-size: 12px;
+      font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);
       color: var(--text-muted);
       font-style: italic;
       padding: 8px;
@@ -1692,7 +1693,7 @@
 
         ${expediente && expediente.intervenciones && expediente.intervenciones.length > 0 ? `
           <div class="form-group">
-            <label class="form-label">Historial de Intervenciones</label>
+            <label class="form-label">Notas</label>
             <div class="intervenciones-list">
               ${expediente.intervenciones.map(i => `
                 <div class="intervencion">

@@ -101,16 +101,16 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 
 /* ---- Modal: vista de lectura ---- */
 .view-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
-.view-title{font-size:16px;font-weight:700}
-.view-sub{font-family:var(--font-mono);font-size:11.5px;color:var(--muted);margin-top:2px}
+.view-title{font-size:var(--ds-text-title);line-height:var(--ds-text-title-lh);font-weight:700;color:var(--text)}
+.view-sub{font-family:var(--font-mono);font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums}
 .view-section{margin-top:14px;padding-top:13px;border-top:1px solid var(--border)}
-.view-section h3{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:9px;font-weight:700}
+.view-section h3{font-size:var(--ds-text-subtitle);line-height:var(--ds-text-subtitle-lh);letter-spacing:.04em;text-transform:uppercase;color:var(--text);margin-bottom:9px;font-weight:700}
 .view-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px 12px}
-.view-item label{display:block;color:var(--muted);font-size:12px}
-.view-item .v{margin-top:1px;font-size:13.5px;font-weight:600}
-.view-obs{font-size:13.5px;margin-top:11px;line-height:1.45;white-space:pre-wrap}
-.view-texto{font-size:13.5px;line-height:1.5;white-space:pre-wrap;margin:0}
-.view-empty{font-size:12.5px;color:var(--muted)}
+.view-item label{display:block;font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);font-weight:700;color:var(--text)}
+.view-item .v{margin-top:1px;font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);font-weight:400;color:var(--muted)}
+.view-obs{font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);margin-top:11px;color:var(--muted);white-space:pre-wrap}
+.view-texto{font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);color:var(--muted);white-space:pre-wrap;margin:0}
+.view-empty{font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);color:var(--muted)}
 .view-actions{display:flex;gap:8px;margin-top:16px}
 
 </style>

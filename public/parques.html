@@ -91,7 +91,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
    Güemes), no un error de la app — ámbar, no rojo. */
 .view-section.revisar{background:var(--warn-bg);border:1px solid var(--warn);border-radius:10px;padding:11px 12px;margin-top:14px}
 .view-section.revisar h3{color:var(--warn)}
-.view-section.revisar p{font-size:12.5px;line-height:1.5;margin:0 0 6px}
+.view-section.revisar p{font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);margin:0 0 6px}
 .view-section.revisar p:last-child{margin-bottom:0}
 .view-section.revisar a{color:inherit;font-weight:600}
 .tarjeta-title{font-size:15px;font-weight:700}
@@ -126,25 +126,25 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 
 /* ---- Modal: vista de lectura ---- */
 .view-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
-.view-title{font-size:16px;font-weight:700}
-.view-sub{font-family:var(--font-mono);font-size:11.5px;color:var(--muted);margin-top:2px}
+.view-title{font-size:var(--ds-text-title);line-height:var(--ds-text-title-lh);font-weight:700;color:var(--text)}
+.view-sub{font-family:var(--font-mono);font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums}
 .view-section{margin-top:14px;padding-top:13px;border-top:1px solid var(--border)}
-.view-section h3{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:9px;font-weight:700}
+.view-section h3{font-size:var(--ds-text-subtitle);line-height:var(--ds-text-subtitle-lh);letter-spacing:.04em;text-transform:uppercase;color:var(--text);margin-bottom:9px;font-weight:700}
 /* La ocupación es otra empresa, no una fila más de la ficha del lote: va en
    bloque propio con un filete al costado, para que no se lea como si
    matrícula, superficie y titular (arriba) fueran del ocupante. */
 .view-section.ocupacion{background:var(--surface-2);border-top:none;border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:12px}
 .view-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px 12px}
-.view-item label{display:block;color:var(--muted);font-size:12px}
-.view-item .v{margin-top:1px;font-size:13.5px;font-weight:600}
+.view-item label{display:block;font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);font-weight:700;color:var(--text)}
+.view-item .v{margin-top:1px;font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);font-weight:400;color:var(--muted)}
 .view-item .v a{color:inherit}
-.view-empty{font-size:12.5px;color:var(--muted)}
+.view-empty{font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);color:var(--muted)}
 .view-actions{display:flex;gap:8px;margin-top:16px}
 
 /* ---- Ficha de empresa: sub-tabs Empresa / Lotes / Contacto ----
    Usan el mismo patrón de pestañas que el resto (ui-kit.css); acá solo queda
    el margen que las separa del contenido de la ficha. */
-.emp-m2-hero{font-family:var(--font-display);font-size:19px;font-weight:700;color:var(--accent)}
+.emp-m2-hero{font-family:var(--font-display);font-size:var(--ds-text-title);line-height:var(--ds-text-title-lh);font-weight:700;color:var(--accent)}
 .subtabs{margin:12px 0 14px}
 
 /* ---- Ficha de empresa: lista de lotes/matrículas (una empresa puede tener
@@ -176,11 +176,11 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
    gris (al revés del .view-item de arriba), en el orden pedido:
    Representante, Cargo, Rubro, Actividad, CUIT. */
 .info-list{display:flex;flex-direction:column}
-.info-row{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13.5px}
+.info-row{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:9px 0;border-bottom:1px solid var(--border);font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);}
 .info-row:last-child{border-bottom:none}
 .info-row dt{font-weight:700;color:var(--fg);flex-shrink:0;margin:0}
 .info-row dd{margin:0;font-weight:400;color:var(--muted);text-align:right}
-.info-row .info-nota{display:block;font-size:11.5px;color:var(--muted);opacity:.8}
+.info-row .info-nota{display:block;font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);color:var(--muted);opacity:.8}
 .field-hint{font-size:11.5px;color:var(--muted);line-height:1.45;margin:5px 0 0}
 
 /* ---- Ficha de empresa: sub-tab Contacto — fila con ícono + label + valor.
@@ -195,8 +195,8 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 .contact-body{min-width:0;display:flex;flex-direction:column;gap:1px}
 /* Mismo criterio tipográfico que el resto de la ficha: título en negrita,
    contenido en gris (pedido explícito del usuario 2026-10-13). */
-.contact-label{font-size:12px;font-weight:700;color:var(--fg)}
-.contact-value{font-size:13.5px;font-weight:400;color:var(--muted);overflow-wrap:anywhere}
+.contact-label{font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);font-weight:700;color:var(--fg)}
+.contact-value{font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);font-weight:400;color:var(--muted);overflow-wrap:anywhere}
 
 /* ---- Dashboard ---- */
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:22px}
