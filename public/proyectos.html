@@ -376,6 +376,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 <div class="veil" id="veil" hidden><div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="Ficha de expediente"></div></div>
 
 <script src="/header.js"></script>
+<script src="/confirmar-cambios.js"></script>
 <script>
 (function(){
   "use strict";
@@ -2051,11 +2052,10 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 
   // ---- Modal: nuevo / editar ----
   var veil = document.getElementById("veil"), modal = document.getElementById("modal");
-  // Un formulario con texto sin guardar no se cierra con el clic de afuera ni
-  // con Escape: se perdía lo escrito sin aviso. Cerrar a propósito (× o
-  // Cancelar) sigue funcionando.
+  // Cualquier salida con texto sin guardar pasa por intentarSalir(): antes el
+  // clic afuera se ignoraba en silencio y la × perdía lo escrito sin aviso.
   veil.addEventListener("click", function(ev){
-    if(ev.target===veil && !state.formSucio) closeModal();
+    if(ev.target===veil) intentarSalir();
   });
   modal.addEventListener("input", function(){ state.formSucio = true; });
 
@@ -2101,10 +2101,40 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     else if(!ev.shiftKey && document.activeElement === ultimo){ ev.preventDefault(); primero.focus(); }
   });
 
-  // Escape cierra, que es lo que todo el mundo espera de un modal.
+  // Escape cierra, que es lo que todo el mundo espera de un modal. Si hay
+  // texto sin guardar, pregunta antes (la tarjeta corta su propio Escape).
   document.addEventListener("keydown", function(ev){
-    if(ev.key === "Escape" && !veil.hidden && !state.formSucio) closeModal();
+    if(ev.key === "Escape" && !veil.hidden && !ConfirmarCambios.abierto()) intentarSalir();
   });
+
+  // Única puerta de salida de la ficha. Sin texto sin guardar, cierra (o
+  // ejecuta despuesDescartar). Con texto, pregunta con la tarjeta:
+  //   guardar   → envía el formulario; si la validación falla, la ficha queda
+  //               abierta con los errores, igual que al tocar Guardar.
+  //   descartar → descarta lo escrito y ejecuta despuesDescartar.
+  //   seguir    → no hace nada: la ficha sigue como estaba.
+  // Recibe función o nada: si la llaman directo desde un listener, el primer
+  // argumento es el evento y no hay que tomarlo como acción.
+  function intentarSalir(despuesDescartar){
+    var accion = typeof despuesDescartar === "function" ? despuesDescartar : closeModal;
+    if(!state.formSucio){ accion(); return; }
+    ConfirmarCambios.pedir({
+      titulo: "¿Desea guardar los cambios?",
+      mensaje: "Hay cambios sin guardar en este expediente."
+    }).then(function(opcion){
+      if(opcion === "guardar"){
+        var form = document.getElementById("expForm");
+        if(!form) return;
+        // La tarjeta ya cerró: el submit va por onSave, que valida y mueve el
+        // foco al primer campo con error.
+        if(form.requestSubmit) form.requestSubmit();
+        else form.dispatchEvent(new Event("submit", {cancelable:true}));
+      } else if(opcion === "descartar"){
+        state.formSucio = false;
+        accion();
+      }
+    });
+  }
 
   function renderModal(){
     var id = state.editingId;
@@ -2168,7 +2198,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
         '<button type="button" class="btn btn-danger btn-grow" id="btnDeleteView">'+HeaderGlobal.icono("eliminar")+'Eliminar</button>'+
       '</div>';
 
-    document.getElementById("xCloseView").addEventListener("click", closeModal);
+    document.getElementById("xCloseView").addEventListener("click", function(){ intentarSalir(); });
     document.getElementById("btnEdit").addEventListener("click", function(){ state.modalMode="edit"; renderModal(); enfocarPrimero(); });
     document.getElementById("btnDeleteView").addEventListener("click", onDelete);
     if(e.archivado){
@@ -2199,12 +2229,14 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
       '</form>';
 
     veil.hidden = false;
-    document.getElementById("xClose").addEventListener("click", closeModal);
+    document.getElementById("xClose").addEventListener("click", function(){ intentarSalir(); });
     document.getElementById("expForm").addEventListener("submit", onSave);
     var delBtn = document.getElementById("btnDelete");
     if(delBtn) delBtn.addEventListener("click", onDelete);
     var cancelBtn = document.getElementById("btnCancelEdit");
-    if(cancelBtn) cancelBtn.addEventListener("click", function(){ state.modalMode="view"; renderModal(); });
+    if(cancelBtn) cancelBtn.addEventListener("click", function(){
+      intentarSalir(function(){ state.modalMode="view"; renderModal(); });
+    });
   }
 
   function field(name,label,type,e,placeholder,mono,requerido){

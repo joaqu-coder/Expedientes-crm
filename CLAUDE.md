@@ -910,6 +910,31 @@ HeaderGlobal.setSync("Al día", "ok");          // ok | pendiente | error
   por comportamiento —abre el modal y pregunta qué recibe el toque en el
   centro del botón—, no comparando z-index entre archivos.
 
+## Confirmar cambios: la tarjeta «¿Desea guardar los cambios?» (2026-10-20)
+
+Pedido del usuario: al salir de una ficha con texto sin guardar, preguntar
+antes de perderlo. Antes, el clic afuera y Escape se ignoraban en silencio y la
+× descartaba sin aviso. Probado primero en Proyectos.
+
+- **Componente compartido**: `public/confirmar-cambios.js` → `ConfirmarCambios.pedir({...})`
+  devuelve una Promise con `"guardar" | "descartar" | "seguir"`. No guarda ni
+  cierra nada: quien llama decide. Sin ids propios, así que no choca con los de
+  cada página. Para otra app: cargar el script y llamar a `pedir()`.
+- **Estilo**: clases `.cc-*` en `ui-kit.css`, sin valores literales. Tokens
+  `--ds-z-confirm`, `--ds-card-pad`, `--ds-scrim-alpha` en `design-system.css`.
+- **Proyectos**: toda salida con `state.formSucio` pasa por `intentarSalir()`
+  (×, Cancelar, Escape, clic en el fondo). «Guardar» dispara el submit normal, así
+  que los errores de validación siguen apareciendo en la ficha.
+- **Escape dentro de la tarjeta = seguir editando**, y corta la propagación; si
+  no, el Escape de la ficha de atrás la reabriría.
+- **Pendiente**: sumar el flujo a Seguimiento, Resoluciones y Parques. Hoy solo
+  Proyectos pregunta al salir con texto sin guardar.
+- **Tests**: `tests/ui.test.mjs` sirve el archivo en sus servidores de prueba
+  (si no, cae al HTML y la página tira `SyntaxError`) y cubre la tarjeta en el
+  flujo de Proyectos.
+
+---
+
 ## Sistema de diseño (`design-system.css` + `ui-kit.css`)
 
 Pedido del usuario (2026-10-19): *"un sistema de diseño en cuanto a botones y

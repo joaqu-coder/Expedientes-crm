@@ -35,6 +35,9 @@ const HTML = fs.readFileSync(path.join(RAIZ, 'public/seguimiento.html'), 'utf8')
 const HEADER_JS = fs.readFileSync(path.join(RAIZ, 'public/header.js'), 'utf8');
 const UI_KIT = fs.readFileSync(path.join(RAIZ, 'public/ui-kit.css'), 'utf8');
 const DESIGN_SYSTEM = fs.readFileSync(path.join(RAIZ, 'public/design-system.css'), 'utf8');
+// La tarjeta «¿Desea guardar los cambios?» también es compartida: sin este
+// archivo, el <script> cae al HTML de relleno y la página tira SyntaxError.
+const CONFIRMAR_JS = fs.readFileSync(path.join(RAIZ, 'public/confirmar-cambios.js'), 'utf8');
 // Los dos archivos compartidos por las 5 páginas. Si el server de un test no
 // los sirve, esa pantalla corre sin header, sin botones con estilo y sin la
 // lupa de la búsqueda — y el test falla por una razón que no es la que
@@ -52,6 +55,11 @@ function servirHeaderJs(req, res) {
   if (req.url.startsWith('/ui-kit.css')) {
     res.writeHead(200, { 'Content-Type': 'text/css; charset=utf-8' });
     res.end(UI_KIT);
+    return true;
+  }
+  if (req.url.startsWith('/confirmar-cambios.js')) {
+    res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8' });
+    res.end(CONFIRMAR_JS);
     return true;
   }
   if (!req.url.startsWith('/header.js')) return false;
@@ -1249,7 +1257,11 @@ async function testProyectosValidacionYOrden() {
   ok(posts.length === 0, 'y tampoco sale POST');
 
   // 3c) Editar un registro viejo con otra forma sin tocar su número: se guarda.
+  // Quedó texto sin guardar del 3b: la × ahora pregunta con la tarjeta, y el
+  // test elige «No guardar» para seguir con el registro viejo.
   await page.click('#xClose');
+  await page.waitForTimeout(200);
+  await page.click('.cc-card [data-opcion="descartar"]');
   await page.waitForTimeout(200);
   await page.locator('.exp-card', { hasText: legacy.nombre_empresa }).first().click();
   await page.click('#btnEdit');
@@ -1266,11 +1278,17 @@ async function testProyectosValidacionYOrden() {
   await page.fill('#f_nombre_empresa', 'TEXTO QUE NO SE PIERDE');
   await page.keyboard.press('Escape');
   await page.waitForTimeout(150);
-  ok(await modalAbierto(), 'Escape no cierra un formulario con texto sin guardar');
+  ok(await modalAbierto(), 'Escape con texto sin guardar no cierra la ficha');
+  ok(await page.isVisible('.cc-card'), 'Escape con texto sin guardar muestra la tarjeta «¿Desea guardar los cambios?»');
   ok((await page.inputValue('#f_nombre_empresa')) === 'TEXTO QUE NO SE PIERDE', 'y lo escrito sigue ahí');
-  await page.click('#xClose'); // cerrar a propósito sí descarta
+  await page.click('.cc-card [data-opcion="seguir"]'); // seguir editando: no pierde nada
   await page.waitForTimeout(150);
-  ok(!(await modalAbierto()), 'la × sigue cerrando (descarte explícito)');
+  ok(await modalAbierto() && !(await page.isVisible('.cc-card')), 'Seguir editando deja la ficha abierta y cierra la tarjeta');
+  await page.click('#xClose'); // la × pregunta de nuevo
+  await page.waitForTimeout(150);
+  await page.click('.cc-card [data-opcion="descartar"]'); // no guardar: descarte explícito
+  await page.waitForTimeout(150);
+  ok(!(await modalAbierto()), 'la × + «No guardar» descarta y cierra la ficha');
 
   // 4) Orden dentro del rojo: el vencido hace más tiempo va antes.
   await page.waitForSelector('#expList .exp-card');

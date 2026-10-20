@@ -156,6 +156,14 @@
   --ds-gap:            8px;
   --ds-padding-x:      14px;
 
+  /* --- Diálogos de confirmación (tarjeta «¿Desea guardar los cambios?») ---
+     Van por encima de los modales (z 20) y con un fondo más oscuro que el de
+     la ficha, para que se lea como una pregunta aparte y no como parte del
+     formulario. */
+  --ds-z-confirm:      30;
+  --ds-card-pad:       18px;
+  --ds-scrim-alpha:    55%;
+
   /* --- Movimiento --- */
   --ds-transition: 160ms ease;
   /* El cambio de pantalla. Corto a propósito: lo que el usuario pidió

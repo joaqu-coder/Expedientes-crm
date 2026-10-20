@@ -56,6 +56,10 @@
   --ui-transition: var(--ds-transition);
   --ui-touch-min: var(--ds-touch-min);
   --ui-search-height: var(--ds-search-height);
+  --ui-radius-card: var(--ds-radius-card);
+  --ui-z-confirm: var(--ds-z-confirm);
+  --ui-card-pad: var(--ds-card-pad);
+  --ui-scrim: color-mix(in srgb, var(--ds-c-black) var(--ds-scrim-alpha), transparent);
 }
 
 /* ============================ BOTONES ============================
@@ -312,4 +316,57 @@
 @media (prefers-reduced-motion: reduce) {
   .bottom-nav .nav-item { transition: none; }
   .bottom-nav .nav-item:active { transform: none; }
+}
+
+/* ============================ CONFIRMAR CAMBIOS ============================
+ * Tarjeta de confirmación («¿Desea guardar los cambios?»). La arma y la abre
+ * confirmar-cambios.js; acá solo están las clases. Mismo criterio que el resto
+ * del archivo: nada de valores literales, todo sale de los tokens.
+ */
+.cc-veil {
+  position: fixed;
+  inset: 0;
+  background: var(--ui-scrim);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: var(--ui-z-confirm);
+  padding: var(--ui-card-pad);
+}
+.cc-veil[hidden] { display: none; }
+@media (min-width: 640px) {
+  .cc-veil { align-items: center; }
+}
+
+.cc-card {
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-card);
+  width: 100%;
+  max-width: 420px;
+  padding: var(--ui-card-pad);
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--ds-c-black) 22%, transparent);
+}
+.cc-title {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0 0 var(--ui-gap);
+}
+.cc-msg {
+  font-size: 14px;
+  color: var(--ui-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+.cc-actions {
+  display: flex;
+  flex-direction: column;   /* en celular, una opción por línea: no entran las tres */
+  gap: var(--ui-gap);
+  margin-top: var(--ui-card-pad);
+}
+.cc-actions .btn { width: 100%; }
+@media (min-width: 640px) {
+  .cc-actions { flex-direction: row; }
+  .cc-actions .btn { flex: 1 1 0; min-width: 0; width: auto; }
 }
