@@ -3697,25 +3697,31 @@
     {
       "id": "exp_imp152",
       "nro_expediente": "363-19951/2019-0",
-      "fecha_inicio": "",
+      "fecha_inicio": "15/04/2025",
       "anio_inicio_expediente": "2019",
       "nombre_empresa": "NUBICOM S.R.L",
       "parque_industrial": "Olacapato",
       "rubro": "Manufactura",
       "superficie_solicitada_m2": 10000,
       "actividad_empresa": "Ensamblado de equipos de comunicaciónes",
-      "situacion": "Sin_tratamiento",
+      "situacion": "Desestimada",
       "representante_nombre": "Emanuel Salinas",
       "contacto_tel": "",
       "contacto_mail": "",
-      "fecha_ultimo_movimiento": "",
+      "fecha_ultimo_movimiento": "20/10/2026 13:35",
       "intervenciones": [
         {
           "hora": "01/01/2019",
           "texto": "29/08/2019. Informe generado por el programa de evaluación. Pendiente de Ser retirado.",
           "tipo": "manual"
+        },
+        {
+          "hora": "20/10/2026 13:35",
+          "texto": "Cambio de situación: Sin tratamiento → Desestimada",
+          "tipo": "sistema"
         }
-      ]
+      ],
+      "actualizado_en": "2026-10-20T16:35:20.659Z"
     },
     {
       "id": "exp_imp153",
