@@ -646,11 +646,11 @@
       "rubro": "Manufactura",
       "superficie_solicitada_m2": "",
       "actividad_empresa": "",
-      "situacion": "En_tratamiento",
+      "situacion": "Adjudicada",
       "representante_nombre": "",
       "contacto_tel": "",
       "contacto_mail": "",
-      "fecha_ultimo_movimiento": "12/10/2026 21:02",
+      "fecha_ultimo_movimiento": "20/10/2026 13:46",
       "intervenciones": [
         {
           "hora": "12/10/2026 20:54",
@@ -661,10 +661,20 @@
           "hora": "12/10/2026 21:02",
           "texto": "Rescatado del archivo: corrección de la regla — En tratamiento no debe archivarse automáticamente por falta de nota, solo Sin tratamiento.",
           "tipo": "sistema"
+        },
+        {
+          "hora": "20/10/2026 13:46",
+          "texto": "Cambio de situación: En tratamiento → Adjudicada",
+          "tipo": "sistema"
+        },
+        {
+          "hora": "20/10/2026 13:46",
+          "texto": "Se adjudica por un comodato. Regimen de promoción industrial de R.D.L.F",
+          "tipo": "manual"
         }
       ],
       "archivado": false,
-      "actualizado_en": "2026-10-20T16:36:42.483Z"
+      "actualizado_en": "2026-10-20T16:46:03.903Z"
     },
     {
       "id": "exp_imp029",
