@@ -1041,20 +1041,35 @@
       "rubro": "Servicios",
       "superficie_solicitada_m2": "",
       "actividad_empresa": "",
-      "situacion": "Sin_tratamiento",
+      "situacion": "Desestimada",
       "representante_nombre": "",
       "contacto_tel": "",
       "contacto_mail": "",
-      "fecha_ultimo_movimiento": "18/12/2024",
+      "fecha_ultimo_movimiento": "20/10/2026 13:44",
       "intervenciones": [
         {
           "hora": "12/10/2026 20:54",
           "texto": "Archivado automáticamente: superó los 6 meses hábiles sin tratamiento.",
           "tipo": "sistema"
+        },
+        {
+          "hora": "20/10/2026 13:44",
+          "texto": "Cambio de situación: Sin tratamiento → Desestimada",
+          "tipo": "sistema"
+        },
+        {
+          "hora": "20/10/2026 13:44",
+          "texto": "No responde, ni presenta documentación. Fslts de interes",
+          "tipo": "manual"
+        },
+        {
+          "hora": "20/10/2026 13:44",
+          "texto": "Rescatado del archivo (editado).",
+          "tipo": "sistema"
         }
       ],
-      "archivado": true,
-      "fecha_archivado": "12/10/2026 20:54"
+      "archivado": false,
+      "actualizado_en": "2026-10-20T16:44:50.818Z"
     },
     {
       "id": "exp_imp046",
