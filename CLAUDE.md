@@ -9,6 +9,48 @@ lo que quedó pendiente. Actualizalo al cerrar.
 
 ---
 
+## Mandato de mantenimiento (2026-10-20)
+
+La persona que usa la app **solo la opera**. No tiene que vigilar la sincronización,
+ni las actualizaciones, ni los pasos de fondo. Eso es responsabilidad del agente:
+
+- **Sincronización confiable por defecto.** Ninguna pantalla debe mostrar datos
+  viejos como si fueran actuales, ni perder una edición en silencio. Si algo
+  no puede garantizarse, la app lo dice con un aviso claro y no con un "Al día".
+- **Robustez y respuesta.** Lo que se muestra tiene que responder al instante
+  desde localStorage; la red va en background y nunca bloquea la pantalla.
+- **Cada cambio de sincronización lleva un test que lo reproduce.** Primero se
+  escribe el test que falla con el código actual, después el arreglo, y el
+  test tiene que pasar. `tests/concurrencia.test.mjs` es el lugar para los
+  casos entre dispositivos.
+- **`npm test` en verde antes de mergear a `main`.** El deploy es automático al
+  hacer push a `main` (Workers Builds), así que cada merge es un deploy en
+  producción. Los cambios se trabajan en ramas y se mergean solo con la suite
+  completa en verde.
+- **Lo que la persona tiene que ver** son solo cambios observables que mejoren
+  la eficiencia o la confiabilidad. Lo técnico se documenta acá y en
+  `.claude-state.json`, no en el chat.
+
+### Pendientes conocidos del mandato
+
+- **Parques: última escritura gana.** Un dispositivo con datos viejos puede pisar
+  lotes u ocupaciones editados en otro. Solución: llevar Parques al protocolo de
+  Proyectos (sha base + 409 + fusión por registro), con marca de tiempo por registro.
+- **Parques: sin salida tras un 4xx.** Si el servidor rechaza los datos locales,
+  "Actualizar datos" no hace nada. No se arregla sin fusión: bajar sin fusionar
+  borraría las ediciones que están pendientes.
+- **Proyectos: deshacer una baja ya sincronizada** puede no sostenerse cuando hay
+  conflicto (la lápida remota vuelve a aplicarse en la fusión).
+- **Límite de 1 MB de la API de Contents de GitHub.** Hoy el archivo más grande
+  pesa ~322 KB (`resoluciones.json`). Hay que migrar antes de llegar, usando la API
+  de blobs o partiendo el archivo. `/api/health` debería avisar cuando un archivo
+  pase los 700 KB.
+- **Consumo de la API de GitHub.** Cada pestaña de Proyectos abierta consulta el
+  sondeo cada 25 s (~144 llamadas/h). Conviene `If-None-Match` (ETag) en el sondeo
+  y en los GET: una respuesta 304 no cuenta contra el límite.
+
+---
+
 ## Arquitectura (y por qué es así)
 
 Esto es un **MPA** (multi-page, documentos HTML separados), no una SPA con
