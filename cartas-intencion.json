@@ -687,7 +687,8 @@
           "tipo": "sistema"
         }
       ],
-      "archivado": false
+      "archivado": false,
+      "actualizado_en": "2026-10-20T15:58:55.164Z"
     },
     {
       "id": "exp_imp030",
