@@ -51,7 +51,10 @@ const APPS = {
   '/api/sync-parques': {
     archivo: 'parques.json',
     nombre: 'parques',
-    vacio: { parque: 'Güemes', empresas: [], lotes: [], ocupaciones: [], reservas: [] }
+    vacio: { parque: 'Güemes', empresas: [], lotes: [], ocupaciones: [], reservas: [] },
+    // Las bajas son permanentes hasta que alguien las deshaga a mano: una
+    // copia vieja de otro dispositivo no puede resucitar lo que se borró.
+    bajas: true
   }
 };
 
@@ -292,6 +295,30 @@ async function manejarSyncCartas(request, env) {
   return jsonResponse({ error: 'Método no soportado' }, 405);
 }
 
+// Une las bajas (`eliminados`) del archivo que llega con las que ya están
+// en GitHub, y saca del payload lo que alguna de las dos dio de baja.
+//
+// Parques reescribe el archivo entero (última escritura gana). Sin esto, un
+// dispositivo que todavía tenga una empresa borrada en su localStorage la
+// vuelve a subir en su próximo POST. Las bajas solo se suman: nunca se quitan
+// desde acá; deshacer una baja es un cambio explícito.
+function aplicarBajas(nuevos, remotos) {
+  const bajas = {
+    empresas: unirIds(remotos?.eliminados?.empresas, nuevos.eliminados?.empresas),
+    lotes: unirIds(remotos?.eliminados?.lotes, nuevos.eliminados?.lotes)
+  };
+  return Object.assign({}, nuevos, {
+    eliminados: bajas,
+    empresas: (nuevos.empresas || []).filter((e) => !bajas.empresas.includes(e.id_empresa)),
+    lotes: (nuevos.lotes || []).filter((l) => !bajas.lotes.includes(l.id_lote)),
+    ocupaciones: (nuevos.ocupaciones || []).filter((o) => !bajas.lotes.includes(o.id_lote) && !bajas.empresas.includes(o.id_empresa_ocupante))
+  });
+}
+
+function unirIds(a, b) {
+  return [...new Set([...(Array.isArray(a) ? a : []), ...(Array.isArray(b) ? b : [])])];
+}
+
 async function manejarSync(request, env, app) {
   if (!env.GITHUB_TOKEN) {
     return jsonResponse({
@@ -316,7 +343,8 @@ async function manejarSync(request, env, app) {
       const problema = validarFormaApp(nuevosDatos, app);
       if (problema) return jsonResponse({ error: 'Datos rechazados', detalle: problema }, 422);
 
-      const { sha } = await githubGetFile(env.GITHUB_TOKEN, app.archivo);
+      const { datos: remotos, sha } = await githubGetFile(env.GITHUB_TOKEN, app.archivo);
+      if (app.bajas) nuevosDatos = aplicarBajas(nuevosDatos, remotos || {});
       await githubPutFile(env.GITHUB_TOKEN, app.archivo, app.nombre, nuevosDatos, sha);
       return jsonResponse({ ok: true });
     }

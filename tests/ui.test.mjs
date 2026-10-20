@@ -1635,7 +1635,7 @@ async function testParques(viewport, puerto) {
   // Lo que se publica en el repo son datos, no el estado de la pantalla: el
   // POST mandaba `state` entero y dejó commiteado en parques.json hasta lo que
   // había tipeado alguien en el buscador (searchEmpresas: "b").
-  const camposPermitidos = ['parques', 'empresas', 'lotes', 'ocupaciones', 'reservas'];
+  const camposPermitidos = ['parques', 'empresas', 'lotes', 'ocupaciones', 'reservas', 'eliminados'];
   const colados = Object.keys(ultimoPost).filter((k) => !camposPermitidos.includes(k));
   ok(colados.length === 0,
      `el POST manda solo datos, sin estado de UI (filtros, búsqueda, modal abierto)${colados.length ? ': se colaron ' + colados.join(', ') : ''}`);
@@ -1885,6 +1885,34 @@ async function testParques(viewport, puerto) {
   ok((await page.locator('#empresasCount').textContent()).includes(String(empresasGuemes.length)),
      'al volver a Güemes el listado vuelve a sus empresas');
 
+  // Bajas permanentes: una empresa borrada en pantalla se declara como baja
+  // en el POST, y una copia vieja del dispositivo que todavía la tiene no la
+  // vuelve a mostrar. EGPAIS es la que se restauró el 2026-10-20.
+  await page.locator('#empresasList .tarjeta', { hasText: 'EGPAIS' }).first().click();
+  await page.locator('#btnDeleteViewEmp').click();
+  const bajaDeclarada = await (async () => {
+    const t0 = Date.now();
+    while (Date.now() - t0 < 5000) {
+      if (ultimoPost?.eliminados?.empresas?.includes('E014-2')) return true;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    return false;
+  })();
+  ok(bajaDeclarada, 'borrar EGPAIS en pantalla la declara como baja en el POST (eliminados.empresas)');
+  ok(!ultimoPost?.empresas?.some((e) => e.id_empresa === 'E014-2'), 'y el POST ya no la trae');
+
+  // Copia vieja: el dispositivo todavía tiene EGPAIS en su localStorage.
+  await page.evaluate(() => {
+    const s = JSON.parse(localStorage.getItem('parques_crm_v1'));
+    s.empresas.push({ id_empresa: 'E014-2', id_empresa_original: 'E014', nombre_empresa: 'EGPAIS', id_parque: 'guemes' });
+    s.eliminados = s.eliminados || { empresas: [], lotes: [] };
+    s.eliminados.empresas = s.eliminados.empresas.filter((id) => id !== 'E014-2');
+    localStorage.setItem('parques_crm_v1', JSON.stringify(s));
+  });
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForFunction(() => document.querySelectorAll('#empresasList .tarjeta').length > 0);
+  ok((await page.locator('#empresasList .tarjeta', { hasText: 'EGPAIS' }).count()) === 0,
+     'una copia vieja con EGPAIS no la vuelve a mostrar');
   ok(problemas.length === 0, 'sin errores de JS ni diálogos nativos' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
   await browser.close();
   server.close();

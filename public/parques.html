@@ -537,14 +537,17 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   function siguienteId(lista, campo, prefijo){
     var max = 0;
     var re = new RegExp("^"+prefijo+"(\\d+)$");
-    lista.forEach(function(x){
-      var m = re.exec(x[campo]||"");
+    // Los ids dados de baja cuentan igual: si el último se reusara, la
+    // empresa nueva nacería ya filtrada por su propia baja.
+    var bajas = campo==="id_empresa" ? state.eliminados.empresas : state.eliminados.lotes;
+    lista.concat(bajas.map(function(id){ return {id: id}; })).forEach(function(x){
+      var m = re.exec(x[campo]||x.id||"");
       if(m) max = Math.max(max, parseInt(m[1],10));
     });
     return prefijo + String(max+1).padStart(3,"0");
   }
 
-  function vacio(){ return { parques:[{id:"guemes",nombre:"Güemes"}], empresas:[], lotes:[], ocupaciones:[], reservas:[] }; }
+  function vacio(){ return { parques:[{id:"guemes",nombre:"Güemes"}], empresas:[], lotes:[], ocupaciones:[], reservas:[], eliminados:{ empresas:[], lotes:[] } }; }
 
   // Hasta el 2026-10-18 esto guardaba un solo parque, como un string
   // (`parque:"Güemes"`), porque solo existía Güemes. Al sumar Parque
@@ -569,6 +572,17 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     var primero = d.parques[0].id;
     d.empresas.forEach(function(e){ if(!e.id_parque) e.id_parque = primero; });
     d.lotes.forEach(function(l){ if(!l.id_parque) l.id_parque = primero; });
+    // Las bajas se aplican también al leer: una copia local vieja o un GET
+    // que todavía no las trae no pueden mostrar lo que ya se borró.
+    d.eliminados = {
+      empresas: Array.isArray(d.eliminados && d.eliminados.empresas) ? d.eliminados.empresas.slice() : [],
+      lotes: Array.isArray(d.eliminados && d.eliminados.lotes) ? d.eliminados.lotes.slice() : []
+    };
+    d.empresas = d.empresas.filter(function(e){ return d.eliminados.empresas.indexOf(e.id_empresa) < 0; });
+    d.lotes = d.lotes.filter(function(l){ return d.eliminados.lotes.indexOf(l.id_lote) < 0; });
+    d.ocupaciones = d.ocupaciones.filter(function(o){
+      return d.eliminados.lotes.indexOf(o.id_lote) < 0 && d.eliminados.empresas.indexOf(o.id_empresa_ocupante) < 0;
+    });
     delete d.parque;
     return d;
   }
@@ -586,6 +600,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
         lotes: Array.isArray(data.lotes) ? data.lotes : [],
         ocupaciones: Array.isArray(data.ocupaciones) ? data.ocupaciones : [],
         reservas: Array.isArray(data.reservas) ? data.reservas : [],
+        eliminados: data.eliminados,
         // Qué parque está elegido es estado de pantalla, no dato: se guarda
         // acá para que sobreviva a un refresh, pero NO viaja en datosParaSync.
         parqueActivo: data.parqueActivo || null
@@ -687,7 +702,8 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
       empresas: state.empresas,
       lotes: state.lotes,
       ocupaciones: state.ocupaciones,
-      reservas: state.reservas
+      reservas: state.reservas,
+      eliminados: state.eliminados
     };
   }
 
@@ -746,13 +762,15 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
           empresas: Array.isArray(datos.empresas) ? datos.empresas : [],
           lotes: Array.isArray(datos.lotes) ? datos.lotes : [],
           ocupaciones: Array.isArray(datos.ocupaciones) ? datos.ocupaciones : [],
-          reservas: Array.isArray(datos.reservas) ? datos.reservas : []
+          reservas: Array.isArray(datos.reservas) ? datos.reservas : [],
+          eliminados: datos.eliminados
         });
         state.parques = m.parques;
         state.empresas = m.empresas;
         state.lotes = m.lotes;
         state.ocupaciones = m.ocupaciones;
         state.reservas = m.reservas;
+        state.eliminados = m.eliminados;
         resolverParqueActivo();
         try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
         renderParqueSwitch();
@@ -1435,6 +1453,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     if(!state.editingId || state.editingTipo!=="lote") return;
     var id = state.editingId;
     state.lotes = state.lotes.filter(function(x){return x.id_lote!==id;});
+    state.eliminados.lotes.push(id);
     // Sin lote no hay ocupación posible: si quedaran, la ficha de la empresa
     // ocupante mostraría un lote que ya no existe.
     state.ocupaciones = state.ocupaciones.filter(function(o){ return o.id_lote!==id; });
@@ -1679,6 +1698,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     if(!state.editingId || state.editingTipo!=="empresa") return;
     var id = state.editingId;
     state.empresas = state.empresas.filter(function(x){return x.id_empresa!==id;});
+    state.eliminados.empresas.push(id);
     // Un lote cuya empresa se borró queda libre, nunca con una referencia colgada.
     state.lotes.forEach(function(l){ if(l.id_empresa===id) l.id_empresa=null; });
     // Lo mismo del lado del vínculo: sin la empresa ocupante la ocupación no

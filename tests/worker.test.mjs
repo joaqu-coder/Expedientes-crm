@@ -280,6 +280,49 @@ async function testParquesPostEscribeArchivoPropio() {
   assert(resp.status === 200 && data.ok === true, 'POST /api/sync-parques responde ok:true');
 }
 
+// Las bajas de Parques son permanentes: una copia vieja no resucita lo borrado.
+async function testParquesBajasSeUnenYNoResucitan() {
+  llamadas = [];
+  const remoto = {
+    parques: [{ id: 'guemes', nombre: 'Güemes' }],
+    empresas: [{ id_empresa: 'E001', nombre_empresa: 'V8' }],
+    lotes: [{ id_lote: 'L001', id_empresa: 'E001' }],
+    ocupaciones: [{ id: 1, id_lote: 'L002', id_empresa_ocupante: 'E009' }],
+    eliminados: { empresas: ['E009'], lotes: [] }
+  };
+  let escrito = null;
+  mockFetch(async (url, opts) => {
+    if (!opts || opts.method === undefined || opts.method === 'GET') {
+      const content = Buffer.from(JSON.stringify(remoto), 'utf8').toString('base64');
+      return new Response(JSON.stringify({ sha: 'sha-base', content }), { status: 200 });
+    }
+    if (opts.method === 'PUT') {
+      escrito = JSON.parse(Buffer.from(JSON.parse(opts.body).content, 'base64').toString('utf8'));
+      return new Response(JSON.stringify({ content: { sha: 'nuevo' } }), { status: 201 });
+    }
+    throw new Error('metodo inesperado: ' + opts.method);
+  });
+  // Lo que manda un dispositivo viejo: todavía tiene E009 y L002 (ocupado por E009)
+  // y, en cambio, acaba de dar de baja L001.
+  const payload = {
+    parques: [{ id: 'guemes', nombre: 'Güemes' }],
+    empresas: [{ id_empresa: 'E001' }, { id_empresa: 'E009' }],
+    lotes: [{ id_lote: 'L001' }, { id_lote: 'L002' }],
+    ocupaciones: [{ id: 1, id_lote: 'L002', id_empresa_ocupante: 'E009' }],
+    reservas: [],
+    eliminados: { empresas: [], lotes: ['L001'] }
+  };
+  const env = { GITHUB_TOKEN: 'fake-token', ASSETS: { fetch: async () => new Response('x') } };
+  const resp = await worker.fetch(new Request('https://x.workers.dev/api/sync-parques', { method: 'POST', body: JSON.stringify(payload) }), env);
+  assert(resp.status === 200, 'POST con bajas responde 200');
+  assert(!escrito.empresas.some((e) => e.id_empresa === 'E009'), 'E009 (dada de baja en GitHub) no vuelve con la copia vieja');
+  assert(!escrito.lotes.some((l) => l.id_lote === 'L001'), 'L001 (baja del dispositivo) sale del archivo');
+  assert(escrito.lotes.some((l) => l.id_lote === 'L002'), 'un lote que no fue dado de baja se conserva');
+  assert(escrito.ocupaciones.length === 0, 'la ocupación de una empresa dada de baja tampoco vuelve');
+  assert(escrito.eliminados.empresas.includes('E009') && escrito.eliminados.lotes.includes('L001'), 'las bajas se unen y quedan guardadas');
+  assert(escrito.empresas.some((e) => e.id_empresa === 'E001'), 'lo que no se dio de baja queda intacto');
+}
+
 async function testParquesNoSeMezclaConOtrasApps() {
   llamadas = [];
   mockFetch(async () => new Response('Not Found', { status: 404 }));
@@ -432,6 +475,7 @@ async function main() {
   await testSyncYCartasNoSeMezclan();
   await testParquesGetSinArchivoTodavia();
   await testParquesPostEscribeArchivoPropio();
+  await testParquesBajasSeUnenYNoResucitan();
   await testParquesNoSeMezclaConOtrasApps();
   await testValidacionDeFormaEnLasTresApps();
   await testClaveCompartida();

@@ -183,6 +183,14 @@
       "id_parque": "guemes"
     },
     {
+      "id_empresa": "E014-2",
+      "id_empresa_original": "E014",
+      "nombre_empresa": "EGPAIS",
+      "rubro": "Oficina de Ente de Parques y Areas Industriales",
+      "propietario_matricula": "Ente General de Parques y Areas Industriales de Salta",
+      "id_parque": "guemes"
+    },
+    {
       "id_empresa": "E015",
       "id_empresa_original": "E015",
       "nombre_empresa": "ELÁSTICOS MARTINEZ",
@@ -3270,7 +3278,7 @@
     },
     {
       "id_lote": "L054",
-      "id_empresa": null,
+      "id_empresa": "E014-2",
       "manzana": "10",
       "parcela": "X",
       "superficie_m2": 1396,
@@ -7936,5 +7944,9 @@
       "observacion": "Columna «Alquilada» del Sistema Salta (2026-10-18)"
     }
   ],
-  "reservas": []
+  "reservas": [],
+  "eliminados": {
+    "empresas": [],
+    "lotes": []
+  }
 }
