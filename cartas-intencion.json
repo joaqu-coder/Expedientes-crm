@@ -3848,6 +3848,29 @@
       ],
       "archivado": true,
       "fecha_archivado": "12/10/2026 20:54"
+    },
+    {
+      "id": "exp_mvgr7zskplsep",
+      "intervenciones": [
+        {
+          "hora": "20/10/2026 11:04",
+          "texto": "Reunión 20/10/2026. Comenta su proyecto, necesidad de m² entre (1000 - 8000)",
+          "tipo": "manual"
+        }
+      ],
+      "nro_expediente": "363-185099/2026-0",
+      "nombre_empresa": "DON JUAN CATERING - Comercial",
+      "fecha_inicio": "17/09/2026",
+      "parque_industrial": "Güemes",
+      "rubro": "Servicios",
+      "superficie_solicitada_m2": 1000,
+      "actividad_empresa": "Fábrica de alimentos",
+      "situacion": "En_tratamiento",
+      "representante_nombre": "Lucia Rivadeo",
+      "contacto_tel": "387-4897603",
+      "contacto_mail": "Luciariva2@hotmail.com",
+      "fecha_ultimo_movimiento": "20/10/2026 11:04",
+      "actualizado_en": "2026-10-20T14:04:03.956Z"
     }
   ],
   "plazoDias": 90,
