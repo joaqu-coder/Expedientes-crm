@@ -2052,25 +2052,31 @@
     {
       "id": "exp_imp086",
       "nro_expediente": "363-44102/2023",
-      "fecha_inicio": "",
+      "fecha_inicio": "06/6/2023",
       "anio_inicio_expediente": "2023",
       "nombre_empresa": "DAKAR SERVICE",
       "parque_industrial": "Mosconi",
       "rubro": "Servicios",
       "superficie_solicitada_m2": 10000,
       "actividad_empresa": "Obras civiles en gral, obras industriales, y fabricación de TKS de diferentes capacidades",
-      "situacion": "Sin_tratamiento",
+      "situacion": "Desestimada",
       "representante_nombre": "Daniel Olima",
       "contacto_tel": "",
       "contacto_mail": "",
-      "fecha_ultimo_movimiento": "",
+      "fecha_ultimo_movimiento": "20/10/2026 18:57",
       "intervenciones": [
         {
           "hora": "01/01/2023",
           "texto": "06/03/2023sub programa de evaluación realiza la evaluacion del proyecto. No se comunica al empresario.",
           "tipo": "manual"
+        },
+        {
+          "hora": "20/10/2026 18:57",
+          "texto": "Cambio de situación: Sin tratamiento → Desestimada",
+          "tipo": "sistema"
         }
-      ]
+      ],
+      "actualizado_en": "2026-10-20T21:57:05.069Z"
     },
     {
       "id": "exp_imp087",
