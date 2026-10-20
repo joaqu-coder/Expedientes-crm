@@ -914,6 +914,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
           state.expedientes = fus.expedientes;
           state.eliminados = fus.eliminados;
           state.baseSha = remoto._meta ? remoto._meta.sha : null;
+          ultimaVersion = state.baseSha;
           persistirLocal();
           renderList();
           if(!viewDash.hidden) renderDashboard();
@@ -1216,6 +1217,13 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     });
   }
 
+  // Número más chico = más urgente. Rojo: días vencidos en negativo, así que
+  // el más vencido queda primero.
+  function claveDentroDeColor(u){
+    if(!u) return 0;
+    return u.plazo.vencido ? -u.plazo.diasVencido : u.plazo.diasRestantes;
+  }
+
   // ---- Listado (tarjetas: frente = nro + empresa, el resto al abrir) ----
   function renderList(){
     var cont = document.getElementById("expList");
@@ -1242,9 +1250,12 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     tabList.innerHTML = 'Listado <span class="count">'+totalActivos+'</span>';
     var totalArchivados = state.expedientes.filter(function(e){ return e.archivado; }).length;
     tabArchivo.innerHTML = 'Archivo <span class="count">'+totalArchivados+'</span>';
+    // Dentro de cada color, lo más urgente primero: en rojo, el que más días
+    // hábiles lleva vencido; en los demás, el que menos días le quedan. Sin
+    // esto el rojo mezclaba un vencido hace un mes con uno de hace seis años.
     filtrados.sort(function(a,b){
       var oa = a.urg ? a.urg.orden : 9, ob = b.urg ? b.urg.orden : 9;
-      return oa - ob;
+      return (oa - ob) || (claveDentroDeColor(a.urg) - claveDentroDeColor(b.urg));
     });
     if(!filtrados.length){
       var vacio = totalActivos
@@ -2040,7 +2051,13 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 
   // ---- Modal: nuevo / editar ----
   var veil = document.getElementById("veil"), modal = document.getElementById("modal");
-  veil.addEventListener("click", function(ev){ if(ev.target===veil) closeModal(); });
+  // Un formulario con texto sin guardar no se cierra con el clic de afuera ni
+  // con Escape: se perdía lo escrito sin aviso. Cerrar a propósito (× o
+  // Cancelar) sigue funcionando.
+  veil.addEventListener("click", function(ev){
+    if(ev.target===veil && !state.formSucio) closeModal();
+  });
+  modal.addEventListener("input", function(){ state.formSucio = true; });
 
   var focoPrevio = null;
 
@@ -2048,6 +2065,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     focoPrevio = document.activeElement;
     state.editingId = id;
     state.modalMode = id ? "view" : "edit";
+    state.formSucio = false;
     veil.hidden = false;
     // El fondo scrolleaba detrás del modal, sobre todo en iOS.
     document.body.style.overflow = "hidden";
@@ -2085,7 +2103,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 
   // Escape cierra, que es lo que todo el mundo espera de un modal.
   document.addEventListener("keydown", function(ev){
-    if(ev.key === "Escape" && !veil.hidden) closeModal();
+    if(ev.key === "Escape" && !veil.hidden && !state.formSucio) closeModal();
   });
 
   function renderModal(){
@@ -2200,8 +2218,25 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 
   // Validación en un solo lugar, para que el formulario y cualquier dato que
   // entre por sync se midan con la misma vara.
+  // Mismo formato que Seguimiento (validarNumeroExpediente): mesa-número/año-sufijo.
+  var PATRON_NRO = /^\d{3}-\d{1,6}\/\d{4}-\d{1,2}$/;
+  // Unifica guiones y espacios antes de comparar o guardar: "363 – 1254/2026-01"
+  // y "363-1254/2026-01" son el mismo expediente.
+  function normalizarNumero(s){
+    return String(s||"").trim().replace(/\s*[-–—]\s*/g,"-").replace(/\s*\/\s*/g,"/");
+  }
+  // v.nro_previo: número que ya tenía el expediente. Solo se valida formato y
+  // duplicado cuando el número es nuevo o cambió: hay expedientes cargados
+  // antes con otra forma, y bloquearlos al editar otra cosa sería peor.
+  // v.duplicado: empresa que ya usa ese número en otro expediente, si hay.
   function validarExpediente(v){
     var errores = {};
+    var nroCambio = v.nro_expediente !== normalizarNumero(v.nro_previo);
+    if(nroCambio){
+      if(!v.nro_expediente) errores.nro_expediente = "Poné el número de expediente.";
+      else if(!PATRON_NRO.test(v.nro_expediente)) errores.nro_expediente = "Formato: 363-1254/2025-01 (mesa-número/año-sufijo).";
+      else if(v.duplicado) errores.nro_expediente = "Ya existe un expediente con ese número: "+v.duplicado+".";
+    }
     if(!v.nombre_empresa) errores.nombre_empresa = "Poné el nombre de la empresa.";
     if(!v.fecha_inicio) errores.fecha_inicio = "Poné la fecha de inicio: sin ella no hay semáforo de plazo.";
     else if(!parseFechaLocal(v.fecha_inicio)) errores.fecha_inicio = "Fecha inválida. Usá dd/mm/aaaa (por ejemplo 09/10/2026).";
@@ -2252,6 +2287,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     veil.hidden = true;
     state.editingId = null;
     state.modalMode = null;
+    state.formSucio = false;
     document.body.style.overflow = "";
     if(focoPrevio && focoPrevio.focus) focoPrevio.focus();
     focoPrevio = null;
@@ -2270,7 +2306,14 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     // Validar ANTES de mutar nada: antes el formulario se podía enviar
     // completamente vacío y creaba un expediente en blanco, y una fecha
     // inválida se guardaba corrida o dejaba el semáforo mudo.
+    var nroNuevo = normalizarNumero(g("nro_expediente"));
+    var otro = state.expedientes.find(function(x){
+      return x.id!==id && normalizarNumero(x.nro_expediente)===nroNuevo && nroNuevo!=="";
+    });
     var candidato = {
+      nro_expediente: nroNuevo,
+      nro_previo: existing ? existing.nro_expediente : "",
+      duplicado: otro ? (otro.nombre_empresa || "otra empresa") : "",
       nombre_empresa: g("nombre_empresa").trim(),
       fecha_inicio: g("fecha_inicio").trim(),
       superficie_solicitada_m2: g("superficie_solicitada_m2").trim()
@@ -2280,7 +2323,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 
     var exp = existing || {id:uid(), intervenciones:[]};
 
-    exp.nro_expediente = g("nro_expediente").trim();
+    exp.nro_expediente = nroNuevo;
     exp.nombre_empresa = g("nombre_empresa").trim();
     exp.fecha_inicio = g("fecha_inicio").trim();
     exp.parque_industrial = g("parque_industrial");

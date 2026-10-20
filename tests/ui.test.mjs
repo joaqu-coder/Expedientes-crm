@@ -1171,6 +1171,121 @@ async function testProyectosArranqueYArchivo() {
 }
 
 /*
+ * Proyectos, puntos de la auditoría 3 a 6:
+ *  3. El número de expediente se valida (formato y duplicado) cuando es nuevo
+ *     o cambió; los registros viejos con otra forma se pueden editar.
+ *  4. Dentro de un color del semáforo, lo más urgente va primero.
+ *  5. Escape y el clic afuera no cierran un formulario con texto sin guardar.
+ */
+async function testProyectosValidacionYOrden() {
+  console.log('\n=== PROYECTOS: NÚMERO, ORDEN DEL SEMÁFORO Y FORMULARIO SUCIO ===');
+  const html = fs.readFileSync(path.join(RAIZ, 'public/proyectos.html'), 'utf8');
+  const inicial = JSON.parse(fs.readFileSync(path.join(RAIZ, 'cartas-intencion.json'), 'utf8'));
+  const formato = /^\d{3}\s*[-–—]\s*\d{1,6}\/\d{4}\s*[-–—]\s*\d{1,2}$/;
+  const valido = inicial.expedientes.find((e) => formato.test(e.nro_expediente));
+  const legacy = inicial.expedientes.find((e) =>
+    !/^\d{3}-\d{1,6}\/\d{4}-\d{1,2}$/.test(e.nro_expediente) &&
+    inicial.expedientes.filter((x) => x.nombre_empresa === e.nombre_empresa).length === 1);
+  const store = JSON.parse(JSON.stringify(inicial));
+  // Dos vencidos en rojo con fechas distintas: el de 2020 tiene que ir primero.
+  const vencidoViejo = { id: 'exp_rojo_2020', nro_expediente: '999-00001/2020-0', nombre_empresa: 'ROJO DE 2020 S.A.',
+    fecha_inicio: '01/01/2020', situacion: 'Sin_tratamiento', intervenciones: [] };
+  const vencidoReciente = { id: 'exp_rojo_2025', nro_expediente: '999-00002/2025-0', nombre_empresa: 'ROJO DE 2025 S.A.',
+    fecha_inicio: '01/06/2025', situacion: 'Sin_tratamiento', intervenciones: [] };
+  store.expedientes.push(vencidoReciente, vencidoViejo);
+  let sha = 'sha-0';
+  const posts = [];
+
+  const server = http.createServer((req, res) => {
+    const json = (code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
+    if (req.url.startsWith('/api/version-cartas')) return json(200, { version: sha });
+    if (req.url.startsWith('/api/sync-cartas')) {
+      if (req.method === 'GET') return json(200, Object.assign({}, store, { _meta: { existe: true, sha } }));
+      let body = '';
+      req.on('data', (c) => (body += c));
+      req.on('end', () => {
+        const p = JSON.parse(body);
+        posts.push(p);
+        if (p._baseSha && p._baseSha !== sha) return json(409, { error: 'conflicto', actual: Object.assign({}, store, { _meta: { existe: true, sha } }) });
+        store.expedientes = p.expedientes;
+        sha = 'sha-' + (posts.length + 1);
+        json(200, { ok: true, sha });
+      });
+      return;
+    }
+    if (servirHeaderJs(req, res)) return;
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(html);
+  });
+  await new Promise((r) => server.listen(8788, r));
+
+  const problemas = [];
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  page.on('pageerror', (e) => problemas.push('pageerror: ' + e.message));
+  page.on('dialog', async (d) => { await d.dismiss(); });
+  await page.goto('http://localhost:8788/', { waitUntil: 'networkidle' });
+  await page.waitForSelector('.app-fab');
+  const modalTexto = () => page.locator('#modal').textContent();
+  const modalAbierto = async () => !(await page.locator('#veil').evaluate((v) => v.hidden));
+
+  // 3a) Alta con formato inválido: no se guarda y lo dice.
+  await page.click('.app-fab');
+  await page.waitForSelector('#f_nro_expediente');
+  await page.fill('#f_nro_expediente', '123');
+  await page.fill('#f_nombre_empresa', 'ALTA CON NRO MAL');
+  await page.fill('#f_fecha_inicio', '09/10/2026');
+  await page.click('#expForm button[type=submit]');
+  await page.waitForTimeout(2000);
+  ok((await modalTexto()).includes('Formato: 363-1254/2025-01'), 'un número mal formado se rechaza con el formato esperado');
+  ok(posts.length === 0, 'y no sale ningún POST con ese número');
+
+  // 3b) Alta con un número que ya existe, escrito con otros guiones y espacios.
+  await page.fill('#f_nro_expediente', valido.nro_expediente.replace('-', ' – '));
+  await page.click('#expForm button[type=submit]');
+  await page.waitForTimeout(300);
+  ok((await modalTexto()).includes('Ya existe un expediente con ese número'),
+     'un número repetido se rechaza aunque venga con otros guiones o espacios');
+  ok(posts.length === 0, 'y tampoco sale POST');
+
+  // 3c) Editar un registro viejo con otra forma sin tocar su número: se guarda.
+  await page.click('#xClose');
+  await page.waitForTimeout(200);
+  await page.locator('.exp-card', { hasText: legacy.nombre_empresa }).first().click();
+  await page.click('#btnEdit');
+  await page.waitForSelector('#f_nombre_empresa');
+  await page.fill('#f_nombre_empresa', legacy.nombre_empresa + ' EDITADO');
+  await page.click('#expForm button[type=submit]');
+  await page.waitForTimeout(2200);
+  ok(posts.length === 1 && posts[0].expedientes.some((e) => e.nombre_empresa === legacy.nombre_empresa + ' EDITADO' && e.nro_expediente === legacy.nro_expediente),
+     'editar un expediente con número en otro formato guarda, sin tocar el número');
+
+  // 5) Escape con texto sin guardar no cierra ni descarta.
+  await page.click('.app-fab');
+  await page.waitForSelector('#f_nombre_empresa');
+  await page.fill('#f_nombre_empresa', 'TEXTO QUE NO SE PIERDE');
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(150);
+  ok(await modalAbierto(), 'Escape no cierra un formulario con texto sin guardar');
+  ok((await page.inputValue('#f_nombre_empresa')) === 'TEXTO QUE NO SE PIERDE', 'y lo escrito sigue ahí');
+  await page.click('#xClose'); // cerrar a propósito sí descarta
+  await page.waitForTimeout(150);
+  ok(!(await modalAbierto()), 'la × sigue cerrando (descarte explícito)');
+
+  // 4) Orden dentro del rojo: el vencido hace más tiempo va antes.
+  await page.waitForSelector('#expList .exp-card');
+  const nombres = await page.locator('#expList .exp-card').allTextContents();
+  const iViejo = nombres.findIndex((t) => t.includes('ROJO DE 2020'));
+  const iReciente = nombres.findIndex((t) => t.includes('ROJO DE 2025'));
+  ok(iViejo >= 0 && iReciente >= 0 && iViejo < iReciente,
+     'dentro del rojo, el vencido desde 2020 aparece antes que el de 2025');
+
+  ok(problemas.length === 0, 'sin errores de JS' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
+  await browser.close();
+  server.close();
+}
+
+/*
  * Parques: lotes y empresas de Güemes, importados de la base SQLite
  * normalizada que pasó el usuario (no de las planillas de Drive). Protocolo
  * simple, como Resoluciones. Existe porque los tests estáticos no ven el
@@ -2385,6 +2500,7 @@ await testProyectos({ width: 1440, height: 900 }, 8795);
 await testProyectos({ width: 390, height: 844 }, 8794);
 await testProyectosCargaSolapada();
 await testProyectosArranqueYArchivo();
+await testProyectosValidacionYOrden();
 await testParques({ width: 1440, height: 900 }, 8793);
 await testParques({ width: 390, height: 844 }, 8792);
 await testUniformidad(8791);
