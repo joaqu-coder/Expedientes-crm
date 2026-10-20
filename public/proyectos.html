@@ -154,6 +154,12 @@ svg text{font-family:var(--font-body)}
 .veil{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;z-index:20;padding-top:40px}
 @media (min-width:640px){.veil{align-items:center}}
 .veil[hidden]{display:none}
+/* Toast con Deshacer: confirma una eliminación sin bloquear con un popup. Mismo
+   criterio que Seguimiento: los colores salen de los tokens, no de literales. */
+.toast{position:fixed;left:16px;right:88px;bottom:calc(76px + env(safe-area-inset-bottom,0px));max-width:420px;z-index:1100;display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:8px;background:var(--accent);color:var(--accent-fg);font-size:14px;box-shadow:0 8px 20px -6px rgba(0,0,0,.3)}
+.toast[hidden]{display:none}
+.toast-mensaje{flex:1}
+.toast-accion{background:none;border:none;color:var(--accent-fg);font:inherit;font-weight:700;text-decoration:underline;min-height:44px;padding:0 4px;cursor:pointer}
 .modal{background:var(--surface);border:1px solid var(--border);border-radius:14px 14px 0 0;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;padding:18px}
 @media (min-width:640px){.modal{border-radius:14px}}
 .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px}
@@ -374,6 +380,11 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 </section>
 
 <div class="veil" id="veil" hidden><div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="Ficha de expediente"></div></div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden>
+  <span class="toast-mensaje" id="toastMensaje"></span>
+  <button type="button" class="toast-accion" id="toastAccion" hidden>Deshacer</button>
+</div>
 
 <script src="/header.js"></script>
 <script src="/confirmar-cambios.js"></script>
@@ -1138,8 +1149,12 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   // ---- Tabs / routing ----
   var tabList = document.getElementById("tabList"), tabDash = document.getElementById("tabDash"), tabArchivo = document.getElementById("tabArchivo");
   var viewList = document.getElementById("viewList"), viewDash = document.getElementById("viewDash"), viewArchivo = document.getElementById("viewArchivo");
+  var vistaActual = "list";
+  function vistaDeHash(h){ return h==="#dashboard" ? "dashboard" : h==="#archivo" ? "archivo" : "list"; }
+  function hashDeVista(name){ return name==="dashboard" ? "#dashboard" : name==="archivo" ? "#archivo" : "#listado"; }
   function showView(name, desdeHash){
     var isDash = name==="dashboard", isArchivo = name==="archivo";
+    vistaActual = name;
     viewList.hidden = isDash || isArchivo;
     viewArchivo.hidden = !isArchivo;
     viewDash.hidden = !isDash;
@@ -1152,7 +1167,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     if(isDash) renderDashboard();
     if(isArchivo) renderArchivo();
     if(desdeHash) return; // vino del hash: no lo reescribas, sería un bucle
-    var destino = isDash ? "#dashboard" : isArchivo ? "#archivo" : "#listado";
+    var destino = hashDeVista(name);
     if(location.hash !== destino) location.hash = destino;
   }
   tabList.addEventListener("click", function(){ showView("list"); });
@@ -1161,9 +1176,17 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 
   // Sin esto, el botón "atrás" del navegador cambiaba la URL y dejaba la
   // vista como estaba.
+  // Con la ficha abierta, el atrás no puede cambiar la vista a ciegas: pasa
+  // por la misma pregunta que la ×. Si se elige «Seguir editando», el hash
+  // vuelve a la vista que se ve (si no, la URL y la pantalla no coinciden).
   window.addEventListener("hashchange", function(){
-    var h = location.hash;
-    showView(h==="#dashboard" ? "dashboard" : h==="#archivo" ? "archivo" : "list", true);
+    var vista = vistaDeHash(location.hash);
+    if(vista === vistaActual) return;
+    if(veil.hidden){ showView(vista, true); return; }
+    intentarSalir(function(){ closeModal(); showView(vista, true); }, {
+      alGuardar: function(){ showView(vista, true); },
+      alSeguir: function(){ location.hash = hashDeVista(vistaActual); }
+    });
   });
 
   // ---- Filtros ----
@@ -2054,8 +2077,14 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   var veil = document.getElementById("veil"), modal = document.getElementById("modal");
   // Cualquier salida con texto sin guardar pasa por intentarSalir(): antes el
   // clic afuera se ignoraba en silencio y la × perdía lo escrito sin aviso.
+  // Solo cuenta si el gesto también empezó en el fondo: seleccionar texto dentro
+  // de la ficha y soltar afuera dispara un click sobre el fondo, y eso no es
+  // una intención de salir.
+  var pulsoEnFondo = false;
+  veil.addEventListener("pointerdown", function(ev){ pulsoEnFondo = ev.target===veil; });
   veil.addEventListener("click", function(ev){
-    if(ev.target===veil) intentarSalir();
+    if(ev.target===veil && pulsoEnFondo) intentarSalir();
+    pulsoEnFondo = false;
   });
   modal.addEventListener("input", function(){ state.formSucio = true; });
 
@@ -2115,25 +2144,43 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   //   seguir    → no hace nada: la ficha sigue como estaba.
   // Recibe función o nada: si la llaman directo desde un listener, el primer
   // argumento es el evento y no hay que tomarlo como acción.
-  function intentarSalir(despuesDescartar){
+  // `opciones` (opcional) dice qué hacer cuando la salida la decide la tarjeta
+  // y no el usuario directo: alGuardar si el guardado entra, alSeguir si la
+  // ficha queda abierta (por «Seguir editando» o por un error de validación).
+  function intentarSalir(despuesDescartar, opciones){
     var accion = typeof despuesDescartar === "function" ? despuesDescartar : closeModal;
     if(!state.formSucio){ accion(); return; }
     ConfirmarCambios.pedir({
       titulo: "¿Desea guardar los cambios?",
       mensaje: "Hay cambios sin guardar en este expediente."
     }).then(function(opcion){
+      var op = opciones || {};
       if(opcion === "guardar"){
         var form = document.getElementById("expForm");
-        if(!form) return;
+        if(!form){ if(op.alSeguir) op.alSeguir(); return; }
         // La tarjeta ya cerró: el submit va por onSave, que valida y mueve el
-        // foco al primer campo con error.
+        // foco al primer campo con error. onSave es síncrono, así que cuando
+        // vuelve ya consumió `tras`: no queda pendiente para un guardado futuro.
+        tras = { ok: op.alGuardar || null, fallo: op.alSeguir || null };
         if(form.requestSubmit) form.requestSubmit();
         else form.dispatchEvent(new Event("submit", {cancelable:true}));
+        tras = null;
       } else if(opcion === "descartar"){
         state.formSucio = false;
         accion();
+      } else if(op.alSeguir){
+        op.alSeguir();
       }
     });
+  }
+  // Qué hacer según cómo termine el guardado que pidió la tarjeta.
+  var tras = null;
+  function resolverTras(ok){
+    var t = tras;
+    tras = null;
+    if(!t) return;
+    if(ok){ if(t.ok) t.ok(); }
+    else if(t.fallo) t.fallo();
   }
 
   function renderModal(){
@@ -2351,7 +2398,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
       superficie_solicitada_m2: g("superficie_solicitada_m2").trim()
     };
     var errores = validarExpediente(candidato);
-    if(Object.keys(errores).length){ mostrarErrores(errores); return; }
+    if(Object.keys(errores).length){ mostrarErrores(errores); resolverTras(false); return; }
 
     var exp = existing || {id:uid(), intervenciones:[]};
 
@@ -2397,6 +2444,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     renderList();
     if(!viewDash.hidden) renderDashboard();
     if(!viewArchivo.hidden) renderArchivo();
+    resolverTras(true);
   }
 
   // Sin tocar ningún otro campo: vuelve al flujo normal y el reloj de los 6
@@ -2419,30 +2467,59 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     if(!viewDash.hidden) renderDashboard();
   }
   function labelSituacion(id){ var m=SITUACIONES.find(function(s){return s.id===id;}); return m?m.label:id; }
-  // Eliminar pide confirmación nombrando la empresa. Antes borraba en el
-  // acto: un toque de más y se iba el expediente con todo su historial. Se
-  // recupera del historial de git, pero hay que saber que pasó y pedirlo.
+  // Eliminar no pide confirmación nativa (bloquea y no se entiende): borra en
+  // el acto y ofrece Deshacer por unos segundos, como el resto de la suite. La
+  // lápida se escribe igual que siempre: sin ella la fusión no distingue "yo lo
+  // borré" de "el otro lo agregó", y el expediente reaparecería en el próximo
+  // sync desde otro dispositivo. Deshacer la saca de la lista de borrados.
   function onDelete(){
     if(!state.editingId) return;
-    var e = state.expedientes.find(function(x){return x.id===state.editingId;});
-    if(!e) return;
+    var idx = state.expedientes.findIndex(function(x){return x.id===state.editingId;});
+    if(idx < 0) return;
+    var e = state.expedientes[idx];
     var quien = e.nombre_empresa || e.nro_expediente || "este expediente";
-    var cuantas = (e.intervenciones||[]).length;
-    var aviso = "¿Eliminar el expediente de " + quien + "?" +
-      (cuantas ? "\n\nSe borran también sus " + cuantas + " nota" + (cuantas===1?"":"s") + " de historial." : "") +
-      "\n\nNo se puede deshacer desde la app.";
-    if(typeof confirm === "function" && !confirm(aviso)) return;
-    state.expedientes = state.expedientes.filter(function(x){return x.id!==state.editingId;});
-    // Lápida: sin esto la fusión no puede distinguir "yo lo borré" de "el
-    // otro lo agregó", y el expediente borrado reaparecería en el próximo
-    // sync desde el otro dispositivo.
+    var eliminadosAntes = state.eliminados;
+    state.expedientes.splice(idx, 1);
     state.eliminados = podarBorrados(state.eliminados.concat([
-      {id: state.editingId, en: new Date().toISOString()}
+      {id: e.id, en: new Date().toISOString()}
     ]));
     save(); closeModal(); renderList();
     if(!viewDash.hidden) renderDashboard();
     if(!viewArchivo.hidden) renderArchivo();
+    mostrarToast("Expediente de " + quien + " eliminado", function(){
+      deshacerEliminar(e, idx, eliminadosAntes);
+    });
   }
+  function deshacerEliminar(e, idx, eliminadosAntes){
+    state.expedientes.splice(Math.min(idx, state.expedientes.length), 0, e);
+    state.eliminados = eliminadosAntes;
+    save(); renderList();
+    if(!viewDash.hidden) renderDashboard();
+    if(!viewArchivo.hidden) renderArchivo();
+  }
+
+  // ---- Toast con Deshacer ----
+  var toastEl = document.getElementById("toast"), toastMsg = document.getElementById("toastMensaje"),
+      toastBtn = document.getElementById("toastAccion"), toastTimer = null, toastAccion = null;
+  function ocultarToast(){
+    clearTimeout(toastTimer);
+    toastTimer = null;
+    toastAccion = null;
+    toastEl.hidden = true;
+  }
+  function mostrarToast(mensaje, accion){
+    clearTimeout(toastTimer);
+    toastAccion = accion;
+    toastMsg.textContent = mensaje;
+    toastBtn.hidden = !accion;
+    toastEl.hidden = false;
+    toastTimer = setTimeout(ocultarToast, 6000);
+  }
+  toastBtn.addEventListener("click", function(){
+    var a = toastAccion;
+    ocultarToast();
+    if(a) a();
+  });
 
 
   // Header común a las 4 apps (título + ⋮) y botón flotante de alta.
@@ -2456,7 +2533,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 
   aplicarArchivadoAutomatico();
   renderList();
-  showView(location.hash === "#dashboard" ? "dashboard" : location.hash === "#archivo" ? "archivo" : "list", true);
+  showView(vistaDeHash(location.hash), true);
   bajarCambiosIniciales();
   programarPoll();
 

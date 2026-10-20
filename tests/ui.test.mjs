@@ -1187,6 +1187,152 @@ async function testProyectosArranqueYArchivo() {
  *  4. Dentro de un color del semáforo, lo más urgente va primero.
  *  5. Escape y el clic afuera no cierran un formulario con texto sin guardar.
  */
+/*
+ * Proyectos: las salidas de la ficha y el borrado con Deshacer. Cada caso
+ * existe por un defecto real que se encontró leyendo el código y se confirmó
+ * antes de tocarlo: (1) un clic sobre el fondo que nace de seleccionar texto
+ * dentro de la ficha abría la tarjeta sin que nadie quisiera salir; (2) el
+ * botón atrás cambiaba la vista con la ficha sucia, sin preguntar y con la URL
+ * desfasada de la pantalla; (3) Eliminar usaba confirm() nativo.
+ */
+async function testProyectosSalidasYDeshacer() {
+  console.log('\n=== PROYECTOS: SALIDAS DE LA FICHA Y DESHACER ===');
+  const html = fs.readFileSync(path.join(RAIZ, 'public/proyectos.html'), 'utf8');
+  const inicial = JSON.parse(fs.readFileSync(path.join(RAIZ, 'cartas-intencion.json'), 'utf8'));
+  const store = JSON.parse(JSON.stringify(inicial));
+  const objetivo = store.expedientes.find((e) => e.nombre_empresa && !e.archivado);
+  let sha = 'sha-0';
+  const posts = [];
+
+  const server = http.createServer((req, res) => {
+    const json = (code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
+    if (req.url.startsWith('/api/version-cartas')) return json(200, { version: sha });
+    if (req.url.startsWith('/api/sync-cartas')) {
+      if (req.method === 'GET') return json(200, Object.assign({}, store, { _meta: { existe: true, sha } }));
+      let body = '';
+      req.on('data', (c) => (body += c));
+      req.on('end', () => {
+        const p = JSON.parse(body);
+        posts.push(p);
+        if (p._baseSha && p._baseSha !== sha) return json(409, { error: 'conflicto', actual: Object.assign({}, store, { _meta: { existe: true, sha } }) });
+        store.expedientes = p.expedientes;
+        store.eliminados = p.eliminados || [];
+        sha = 'sha-' + (posts.length + 1);
+        json(200, { ok: true, sha });
+      });
+      return;
+    }
+    if (servirHeaderJs(req, res)) return;
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(html);
+  });
+  await new Promise((r) => server.listen(8785, r));
+
+  const problemas = [];
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  page.on('pageerror', (e) => problemas.push('pageerror: ' + e.message));
+  // Ningún diálogo nativo: ni confirm() ni alert(). Si aparece, es regresión.
+  page.on('dialog', async (d) => { problemas.push('dialog nativo: ' + d.message()); await d.dismiss(); });
+  await page.goto('http://localhost:8785/', { waitUntil: 'networkidle' });
+  await page.waitForSelector('.app-fab');
+  const modalAbierto = async () => !(await page.locator('#veil').evaluate((v) => v.hidden));
+  const tarjetaVisible = () => page.isVisible('.cc-card');
+  const esperar = (ms) => page.waitForTimeout(ms);
+  const abrirFicha = async () => {
+    await page.locator('.exp-card', { hasText: objetivo.nombre_empresa }).first().click();
+    await page.waitForSelector('#btnEdit');
+  };
+
+  // A) Clic sobre el fondo que nace de seleccionar texto dentro de la ficha:
+  // el gesto empieza en el campo y termina afuera. No debe abrir la tarjeta.
+  await abrirFicha();
+  await page.click('#btnEdit');
+  await page.waitForSelector('#f_nombre_empresa');
+  await page.fill('#f_nombre_empresa', 'TEXTO A SELECCIONAR');
+  const campo = await page.locator('#f_nombre_empresa').boundingBox();
+  await page.mouse.move(campo.x + 5, campo.y + campo.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(5, 5, { steps: 5 });   // arrastre hasta el fondo
+  await page.mouse.up();
+  await esperar(150);
+  ok(!(await tarjetaVisible()) && (await modalAbierto()),
+     'arrastrar desde la ficha hasta el fondo no abre la tarjeta (el gesto no empezó afuera)');
+
+  // B) Clic real en el fondo con texto sin guardar: sí pregunta.
+  await page.mouse.click(5, 5);
+  await esperar(150);
+  ok(await tarjetaVisible(), 'un clic que empieza y termina en el fondo sí pregunta con texto sin guardar');
+  await page.click('.cc-card [data-opcion="seguir"]');
+  await esperar(100);
+
+  // C) Botón atrás (hash) con la ficha sucia: pregunta, y «Seguir editando»
+  // deja la ficha abierta y la URL de vuelta en la vista que se ve.
+  await page.evaluate(() => { location.hash = '#archivo'; });
+  await esperar(200);
+  ok(await tarjetaVisible() && (await modalAbierto()), 'cambiar la vista con la ficha sucia pregunta antes de hacerlo');
+  await page.click('.cc-card [data-opcion="seguir"]');
+  await esperar(200);
+  ok((await page.evaluate(() => location.hash)) === '#listado' && (await modalAbierto()) &&
+     (await page.locator('#viewList').isVisible()),
+     'con «Seguir editando» la URL vuelve a #listado y la vista no cambia');
+
+  // D) Mismo caso, «No guardar»: la ficha se cierra y la vista cambia.
+  await page.evaluate(() => { location.hash = '#archivo'; });
+  await esperar(200);
+  await page.click('.cc-card [data-opcion="descartar"]');
+  await esperar(200);
+  ok(!(await modalAbierto()) && (await page.locator('#viewArchivo').isVisible()),
+     '«No guardar» cierra la ficha y muestra la vista pedida');
+  await page.evaluate(() => { location.hash = '#listado'; });
+  await esperar(200);
+
+  // E) Mismo caso, «Guardar» con un error de validación: la ficha queda
+  // abierta con el error y la URL vuelve a la vista que se ve.
+  await abrirFicha();
+  await page.click('#btnEdit');
+  await page.waitForSelector('#f_fecha_inicio');
+  await page.fill('#f_fecha_inicio', '31/31/2099');   // fecha inválida
+  await page.evaluate(() => { location.hash = '#dashboard'; });
+  await esperar(200);
+  await page.click('.cc-card [data-opcion="guardar"]');
+  await esperar(300);
+  ok((await modalAbierto()) && (await page.evaluate(() => location.hash)) === '#listado',
+     'Guardar con error de validación deja la ficha abierta y la URL en la vista que se ve');
+  await page.click('#xClose');
+  await esperar(150);
+  await page.click('.cc-card [data-opcion="descartar"]');
+  await esperar(150);
+
+  // F) Eliminar: sin confirm nativo, borra al instante y ofrece Deshacer.
+  const cantAntes = store.expedientes.length;
+  await abrirFicha();
+  await page.click('#btnEdit');
+  await page.waitForSelector('#btnDelete');
+  await page.click('#btnDelete');
+  await esperar(250);
+  // La subida va con debounce de 1500 ms (DEBOUNCE_MS): esperar al POST, no adivinarlo.
+  const toast = page.locator('#toast');
+  ok(!(await toast.isHidden()) && (await page.locator('#toastAccion').isVisible()),
+     'Eliminar muestra el toast con Deshacer');
+  await esperar(2200);
+  const ultimo = posts[posts.length - 1];
+  ok(ultimo && ultimo.expedientes.length === cantAntes - 1,
+     'el expediente sale de la lista y el resto de los datos queda igual');
+  ok(ultimo && !ultimo.expedientes.some((e) => e.id === objetivo.id) && ultimo.eliminados.some((t) => t.id === objetivo.id),
+     'el borrado sube con su lápida (eliminados), para que no reaparezca en otro dispositivo');
+  await page.click('#toastAccion');
+  await esperar(2200);
+  const restaurado = posts[posts.length - 1];
+  ok(restaurado && restaurado.expedientes.some((e) => e.id === objetivo.id) && !restaurado.eliminados.some((t) => t.id === objetivo.id),
+     'Deshacer restaura el expediente y saca su lápida; el POST lo lleva de vuelta');
+  ok(await toast.isHidden(), 'después de Deshacer el toast se oculta');
+
+  ok(problemas.length === 0, 'sin errores de JS ni diálogos nativos' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
+  await browser.close();
+  server.close();
+}
+
 async function testProyectosValidacionYOrden() {
   console.log('\n=== PROYECTOS: NÚMERO, ORDEN DEL SEMÁFORO Y FORMULARIO SUCIO ===');
   const html = fs.readFileSync(path.join(RAIZ, 'public/proyectos.html'), 'utf8');
@@ -2549,6 +2695,7 @@ await testProyectos({ width: 390, height: 844 }, 8794);
 await testProyectosCargaSolapada();
 await testProyectosArranqueYArchivo();
 await testProyectosValidacionYOrden();
+await testProyectosSalidasYDeshacer();
 await testParques({ width: 1440, height: 900 }, 8793);
 await testParques({ width: 390, height: 844 }, 8792);
 await testUniformidad(8791);
