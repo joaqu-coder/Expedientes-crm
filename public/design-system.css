@@ -83,6 +83,8 @@
   --ds-c-stone:     #746d57;  --ds-c-stone-soft:  #e8e5d9;
   --ds-c-teal:      #1f6f78;  --ds-c-teal-soft:   #dcf0f1;
   --ds-c-periwinkle:#667eea;  --ds-c-periwinkle-soft:#e7e9fb;
+  /* Gris azulado suave: solo para el fondo de la pestaña activa. */
+  --ds-c-blue-gray: #e2e8f0;
 
   /* Paleta categórica de los gráficos. Orden fijo: no ciclar, no reordenar —
      el lector asocia un color a un parque y reordenarlos le cambia el dato. */
@@ -125,6 +127,9 @@
   --ds-bg:         var(--ds-c-white);
   --ds-surface:    var(--ds-c-white);
   --ds-surface-2:  var(--ds-c-gray-100);  /* relleno de la búsqueda y los chips */
+  /* Pestañas: activa con gris azulado suave y texto oscuro; inactivas, neutras
+     (--ds-surface-2). Un único patrón para las cuatro apps. */
+  --ds-tab-active: var(--ds-c-blue-gray);
   --ds-border:     var(--ds-c-gray-200);
   --ds-border-strong: var(--ds-c-gray-300);
   --ds-fg:         var(--ds-c-ink);
@@ -152,6 +157,11 @@
   --ds-control-height: 40px;
   --ds-touch-min:      44px;
   --ds-search-height:  48px;
+  /* Búsqueda: 14px y Roboto, pedido del usuario (2026-10-20). Va por debajo
+     de los 16px que pide iOS para no hacer zoom al enfocar: se eligió lo
+     pedido y queda anotado en .claude-state.json como trade-off. */
+  --ds-search-font-size: 14px;
+  --ds-search-font: Roboto, Helvetica, sans-serif;
   --ds-icon-size:      18px;
   --ds-gap:            8px;
   --ds-padding-x:      14px;

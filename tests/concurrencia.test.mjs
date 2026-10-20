@@ -118,13 +118,14 @@ async function abrirPagina(browser, puerto) {
   return { page, errores };
 }
 
-// Cambia el plazo como lo haría el usuario (dispara el evento change del input).
+// Cambia el plazo como lo haría el usuario: Análisis → Urgencias → Guardar.
+// El plazo ya no está en el listado; vive en la configuración del semáforo.
 async function cambiarPlazo(page, dias) {
-  await page.evaluate((d) => {
-    const el = document.getElementById('plazoDias');
-    el.value = String(d);
-    el.dispatchEvent(new Event('change'));
-  }, dias);
+  await page.click('#tabDash');
+  await page.click('[data-sec="urgencias"]');
+  await page.fill('#uPlazo', String(dias));
+  await page.click('#cfgGuardar');
+  await page.click('#tabList');
 }
 
 async function escenarioCarrera(browser, puerto) {
