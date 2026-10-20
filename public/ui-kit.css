@@ -233,9 +233,10 @@
   background: transparent;
 
   color: var(--ui-text);
-  font-family: inherit;
-  /* 16px no es decorativo: con menos, iOS hace zoom al enfocar el campo. */
-  font-size: 16px;
+  font-family: var(--ds-search-font);
+  /* 14px y Roboto por pedido del usuario (2026-10-20). Con menos de 16px iOS
+     hace zoom al enfocar el campo; se acepta y queda anotado. */
+  font-size: var(--ds-search-font-size);
   line-height: 1.2;
 }
 
@@ -284,6 +285,66 @@
 
 @media (prefers-reduced-motion: reduce) {
   .search-bar, .search-clear { transition: none; }
+}
+
+/* ============================= PESTAÑAS =============================
+ * Un solo patrón para las cuatro apps: activa con gris azulado suave y texto
+ * oscuro; inactivas con fondo neutro. Lo usan las pestañas de vista, los
+ * chips de parque y las secciones del Análisis: se distinguen por su función,
+ * no por su aspecto. El estado activo es la clase `.active` (la que ya
+ * alternan los scripts de cada página).
+ */
+.app-tabs {
+  display: flex;
+  gap: var(--ui-gap);
+  overflow-x: auto;
+  padding: 4px 0;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.app-tabs::-webkit-scrollbar { display: none; }
+
+.app-tab {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  height: 38px;
+  padding: 0 var(--ui-padding-x);
+  border: none;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-surface-soft);
+  color: var(--ui-text);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--ui-transition), color var(--ui-transition);
+}
+.app-tab:hover { background: color-mix(in srgb, var(--ui-text) 6%, var(--ui-surface-soft)); }
+.app-tab.active,
+.app-tab[aria-selected="true"] { background: var(--ds-tab-active); color: var(--ui-text); }
+.app-tab:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+.app-tab .count { font-weight: 600; margin-left: 4px; }
+.app-tab[hidden] { display: none; }
+
+/* Objetivo táctil de 44px sin agrandar lo que se ve (ver .btn). */
+@media (pointer: coarse) {
+  .app-tab { position: relative; }
+  .app-tab::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: var(--ui-touch-min);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-tab { transition: none; }
 }
 
 /* ======================= BARRA DE NAVEGACIÓN =======================

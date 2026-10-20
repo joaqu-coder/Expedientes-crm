@@ -58,35 +58,8 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 .mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
 svg text{font-family:var(--font-body)}
 
-/* Barra de filtros superior, mismo lenguaje que la barra inferior: chips
-   redondeados en vez del subrayado de antes, scroll horizontal si no
-   entran todos — mismo concepto que los chips de "Todos/No leídos" de
-   WhatsApp. Medidas ajustadas a la referencia que pasó el usuario (Meta no
-   publica las suyas, son valores de implementación razonables): 38px de
-   alto, radio a pastilla (resuelve ~19px con este alto), 14px horizontal,
-   8px entre chips, texto 14px peso normal. El activo es un fondo SUAVE
-   (tinte del acento, no el color sólido) con texto en el color de acento —
-   no texto blanco sobre un bloque de color. */
-/* El padding vertical no es estético: el contenedor scrollea en horizontal y
-   overflow-x:auto también recorta en vertical, así que sin estos 4px el área
-   táctil extendida del chip (.tab::after, 44px) queda cortada y el borde del
-   chip deja de responder al toque. */
-.tabs{display:flex;gap:8px;overflow-x:auto;padding:4px 0;margin-bottom:14px;scrollbar-width:none}
-.tabs::-webkit-scrollbar{display:none}
-.tab{flex:0 0 auto;display:inline-flex;align-items:center;height:38px;background:var(--surface-2);border:none;color:var(--fg);font-size:14px;font-weight:400;padding:0 14px;border-radius:999px;white-space:nowrap;transition:background-color .15s ease,color .15s ease}
-.tab:hover{background:color-mix(in srgb, var(--accent) 8%, var(--surface-2))}
-.tab.active{background:color-mix(in srgb, var(--accent) 16%, transparent);color:var(--accent)}
-/* Contador integrado junto al nombre del filtro ("Listado 70"), en
-   seminegrita para distinguirlo del texto del filtro (peso normal). No va
-   en "Análisis": no es un listado, no tiene una cantidad que mostrar. */
-.tab .count{font-weight:600;margin-left:4px}
-/* El chip mide 38px, pero en pantalla táctil su objetivo de toque se extiende
-   a los 44px que piden las guías de iOS/Android sin agrandar lo que se ve
-   (mismo recurso en seguimiento.html y parques.html). */
-@media (pointer: coarse){
-  .tab,.dash-nav button{position:relative}
-  .tab::after,.dash-nav button::after{content:"";position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:44px}
-}
+/* Pestañas: el patrón compartido vive en ui-kit.css (.app-tabs / .app-tab).
+   Acá solo queda lo propio de esta pantalla. */
 .view[hidden]{display:none}
 
 /* ---- Dashboard: barra de sincronización ---- */
@@ -98,14 +71,10 @@ svg text{font-family:var(--font-body)}
 .sync-bar .aside.pend{color:var(--warn)}
 .sync-bar .ultmov{font-size:11px;color:var(--muted);margin-top:4px}
 
-/* ---- Dashboard: navegación de secciones (pestañas compactas, scroll en celular) ---- */
-.dash-nav{display:flex;gap:8px;overflow-x:auto;margin-bottom:13px;padding:4px 0;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-.dash-nav::-webkit-scrollbar{display:none}
-.dash-nav button{flex:0 0 auto;display:inline-flex;align-items:center;height:38px;background:var(--surface-2);border:none;color:var(--fg);border-radius:999px;padding:0 14px;font-size:14px;font-weight:400;white-space:nowrap;transition:background-color .15s ease,color .15s ease}
-.dash-nav button:hover{background:color-mix(in srgb, var(--accent) 8%, var(--surface-2))}
-.dash-nav button.active{background:color-mix(in srgb, var(--accent) 16%, transparent);color:var(--accent)}
+/* ---- Dashboard: secciones. Mismo patrón de pestañas (ui-kit.css). ---- */
+.dash-nav{margin-bottom:13px}
 .dash-nav .pill-n{font-family:var(--font-mono);font-size:10.5px;margin-left:5px;background:var(--danger);color:#fff;border-radius:999px;padding:1px 5px;vertical-align:1px;font-weight:600}
-.dash-nav button.active .pill-n{background:var(--accent-fg);color:var(--danger)}
+.dash-nav .app-tab.active .pill-n{background:var(--accent-fg);color:var(--danger)}
 
 /* ---- Dashboard stat tiles ---- */
 .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}
@@ -270,6 +239,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 .cfg{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:15px;margin-bottom:14px}
 .cfg-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px;font-size:12.5px}
 .cfg-row:last-of-type{margin-bottom:0}
+.cfg-acciones{display:flex;gap:8px;margin-top:14px}
 .cfg-row label{color:var(--muted);flex:1 1 180px;min-width:0}
 .cfg-row .inp{flex:0 0 auto;display:flex;align-items:center;gap:7px;margin-left:auto;font-size:11.5px;color:var(--muted);white-space:nowrap}
 .cfg-row input{width:68px;background:var(--surface-2);border:1px solid var(--border);color:var(--fg);border-radius:7px;padding:7px 8px;font-family:var(--font-mono);font-size:13px;text-align:right}
@@ -280,8 +250,15 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 .chip.c-naranja{background:var(--orange-bg);border-color:var(--orange-bg);color:var(--orange)}
 .chip.c-amarillo{background:var(--warn-bg);border-color:var(--warn-bg);color:var(--warn)}
 .chip.c-verde{background:var(--ok-bg);border-color:var(--ok-bg);color:var(--ok)}
-.settings-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin-bottom:16px;flex-wrap:wrap}
-.settings-row input{width:64px;background:var(--surface);border:1px solid var(--border);color:var(--fg);border-radius:6px;padding:5px 7px;font-family:var(--font-mono)}
+/* Búsqueda de la pantalla: debajo del título y encima de las pestañas.
+   Solo se muestra en el listado (ver showView). */
+.app-search{padding:12px 0 8px}
+.app-search[hidden]{display:none}
+/* Filtros avanzados: panel desplegable. El botón usa el chip de las pestañas. */
+.filtros-toggle{margin-bottom:8px}
+.filtros-toggle .count{font-weight:600}
+.filtros-toggle .count[hidden]{display:none}
+.toolbar[hidden]{display:none}
 
 /* Un error de sincronización tiene que verse, no esconderse en un texto de
    11px. Esto es lo que faltaba: el sync estuvo roto y la app decía
@@ -302,6 +279,19 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 <!-- El header (título + ⋮) lo monta header.js, común a las 4 apps.
      El alta vive ahora en el botón flotante (+), como en Seguimiento. -->
 
+<!-- Orden de la pantalla: título (header.js) → búsqueda → pestañas → contenido.
+     La búsqueda solo corre sobre el listado, así que se oculta en las otras
+     dos pestañas (ver showView). -->
+<div class="app-search" id="busquedaListado">
+  <div class="search-bar"><input type="search" id="search" placeholder="Buscar empresa, expediente o representante…"></div>
+</div>
+
+<div class="app-tabs" role="tablist" aria-label="Vistas">
+  <button class="app-tab tab" id="tabList" role="tab" aria-selected="true" aria-controls="viewList">Listado</button>
+  <button class="app-tab tab" id="tabArchivo" role="tab" aria-selected="false" aria-controls="viewArchivo">Archivo</button>
+  <button class="app-tab tab" id="tabDash" role="tab" aria-selected="false" aria-controls="viewDash">Análisis</button>
+</div>
+
 <div class="alerta" id="alertaSync" hidden>
   <div class="alerta-cuerpo">
     <div class="alerta-titulo" id="alertaTitulo"></div>
@@ -312,16 +302,10 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   </div>
 </div>
 
-<div class="tabs" role="tablist" aria-label="Vistas">
-  <button class="tab" id="tabList" role="tab" aria-selected="true" aria-controls="viewList">Listado</button>
-  <button class="tab" id="tabArchivo" role="tab" aria-selected="false" aria-controls="viewArchivo">Archivo</button>
-  <button class="tab" id="tabDash" role="tab" aria-selected="false" aria-controls="viewDash">Análisis</button>
-</div>
-
 <!-- ===== VISTA LISTADO ===== -->
 <section class="view" id="viewList" role="tabpanel" aria-labelledby="tabList">
-  <div class="toolbar">
-    <div class="search-bar"><input type="search" id="search" placeholder="Buscar empresa, expediente o representante…"></div>
+  <button type="button" class="app-tab filtros-toggle" id="filtrosToggle" aria-expanded="false" aria-controls="filtrosPanel">Filtros <span class="count" id="filtrosN" hidden></span></button>
+  <div class="toolbar" id="filtrosPanel" hidden>
     <select id="filterParque"><option value="">Todos los parques</option></select>
     <select id="filterRubro"><option value="">Todos los rubros</option></select>
     <select id="filterSituacion">
@@ -339,10 +323,6 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
       <option value="verde">🟢 En plazo</option>
       <option value="sinfecha">⚠️ Sin fecha de inicio</option>
     </select>
-  </div>
-  <div class="settings-row">
-    Plazo administrativo estimado (para el semáforo de urgencia):
-    <input type="number" id="plazoDias" min="1" max="3650" step="1"> días hábiles desde fecha de inicio
   </div>
   <!-- Con 157 expedientes y cuatro filtros combinables, sin esto no hay forma
        de saber cuántos quedaron. aria-live para que un lector de pantalla
@@ -374,7 +354,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     <div class="aside" id="dashSyncAside"></div>
   </div>
 
-  <nav class="dash-nav" id="dashNav" aria-label="Secciones del dashboard"></nav>
+  <nav class="app-tabs dash-nav" id="dashNav" aria-label="Secciones del dashboard"></nav>
   <div id="dashBody"></div>
 
 </section>
@@ -786,7 +766,6 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     var p = Number(datos.plazoDias);
     if(Number.isFinite(p) && p>0 && p!==state.plazoDias){
       state.plazoDias = p;
-      plazoInput.value = p;
       try{ localStorage.setItem(PLAZO_KEY, String(p)); }catch(e){}
       cambio = true;
     }
@@ -1060,7 +1039,6 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
       var plazoRemoto = Number(datos.plazoDias);
       if(Number.isFinite(plazoRemoto) && plazoRemoto > 0 && plazoRemoto !== state.plazoDias){
         state.plazoDias = plazoRemoto;
-        plazoInput.value = state.plazoDias;
         try{ localStorage.setItem(PLAZO_KEY, String(state.plazoDias)); }catch(e){}
         cambio = true;
       }
@@ -1218,6 +1196,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     tabList.setAttribute("aria-selected", String(!isDash && !isArchivo));
     tabArchivo.setAttribute("aria-selected", String(isArchivo));
     tabDash.setAttribute("aria-selected", String(isDash));
+    document.getElementById("busquedaListado").hidden = name!=="list";
     if(isDash) renderDashboard();
     if(isArchivo) renderArchivo();
     if(desdeHash) return; // vino del hash: no lo reescribas, sería un bucle
@@ -1244,6 +1223,23 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   });
 
   // ---- Filtros ----
+  // Los filtros avanzados viven en un panel desplegable. Cerrado, el botón
+  // muestra cuántos están puestos, así no se pierde un filtro activo.
+  var filtrosToggle = document.getElementById("filtrosToggle");
+  var filtrosPanel = document.getElementById("filtrosPanel");
+  function abrirFiltros(abrir){
+    filtrosPanel.hidden = !abrir;
+    filtrosToggle.setAttribute("aria-expanded", String(abrir));
+    filtrosToggle.classList.toggle("active", abrir);
+  }
+  function pintarFiltrosActivos(){
+    var n = [state.filterParque, state.filterRubro, state.filterSituacion, state.filterPlazo].filter(Boolean).length;
+    var marca = document.getElementById("filtrosN");
+    marca.hidden = !n;
+    marca.textContent = n;
+  }
+  filtrosToggle.addEventListener("click", function(){ abrirFiltros(filtrosPanel.hidden); });
+
   var selParque = document.getElementById("filterParque");
   PARQUES.forEach(function(p){ var o=document.createElement("option"); o.value=p; o.textContent=p; selParque.appendChild(o); });
   var selRubro = document.getElementById("filterRubro");
@@ -1253,18 +1249,6 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   document.getElementById("filterSituacion").addEventListener("change", function(){ state.filterSituacion=this.value; renderList(); });
   document.getElementById("filterPlazo").addEventListener("change", function(){ state.filterPlazo=this.value; renderList(); });
   document.getElementById("search").addEventListener("input", function(){ state.search=this.value.toLowerCase(); renderList(); });
-
-  var plazoInput = document.getElementById("plazoDias");
-  plazoInput.value = state.plazoDias;
-  plazoInput.addEventListener("change", function(){
-    var v = parseInt(this.value,10);
-    // Antes un valor inválido se descartaba en silencio y el input quedaba
-    // mostrando un número que la app no estaba usando.
-    if(!(v>0)){ this.value = state.plazoDias; return; }
-    if(v > PLAZO_MAX_DIAS) v = PLAZO_MAX_DIAS;
-    this.value = v;
-    state.plazoDias=v; savePlazo(v); renderList(); if(!viewDash.hidden) renderDashboard();
-  });
 
   function expedientesFiltrados(){
     return state.expedientes.filter(function(e){
@@ -1320,6 +1304,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
         : hayFiltro ? (filtrados.length + " de " + totalActivos + " expediente" + (totalActivos===1?"":"s"))
                     : (totalActivos + " expediente" + (totalActivos===1?"":"s"));
     }
+    pintarFiltrosActivos();
     // Contador en el chip de cada pestaña (no en "Análisis": no es un
     // listado, no tiene una cantidad de ítems que mostrar). El de Archivo
     // se actualiza acá, no en renderArchivo(), porque esa función solo
@@ -1867,7 +1852,11 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
         '<span class="inp"><input id="uAlerta" type="number" min="1" step="1" value="'+state.umbrales.alerta+'"> días hábiles o menos</span></div>'+
       '<div class="cfg-row"><label for="uCritico">Pasa a <b>crítico</b> (naranja) cuando quedan</label>'+
         '<span class="inp"><input id="uCritico" type="number" min="0" step="1" value="'+state.umbrales.critico+'"> días hábiles o menos</span></div>'+
-      src('El plazo es <b>estimado</b>, no un plazo legal fijo: cambialo acá y todo el semáforo (y el listado) se recalcula. '+
+      '<div class="cfg-acciones">'+
+        '<button type="button" class="btn btn-primary btn-grow" id="cfgGuardar">'+HeaderGlobal.icono('guardar')+' Guardar</button>'+
+        '<button type="button" class="btn btn-secondary btn-grow" id="cfgCancelar">'+HeaderGlobal.icono('cancelar')+' Cancelar</button>'+
+      '</div>'+
+      src('El plazo es <b>estimado</b>, no un plazo legal fijo: cambialo acá, tocá Guardar y todo el semáforo (y el listado) se recalcula. '+
           'Se guarda en datos.json, así que vale para todos los dispositivos. '+
           'Rojo = plazo vencido o vence hoy.')+
       '</div>';
@@ -1976,12 +1965,14 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     if(state.dashSection==="urgencias") bindCfgUrgencias();
   }
 
+  // Configuración del semáforo con Guardar y Cancelar: nada se aplica mientras
+  // no se toque Guardar. Cancelar vuelve los campos a lo guardado.
   function bindCfgUrgencias(){
     var plazo = document.getElementById("uPlazo");
     var alerta = document.getElementById("uAlerta");
     var critico = document.getElementById("uCritico");
     if(!plazo) return;
-    function aplicar(ev){
+    document.getElementById("cfgGuardar").addEventListener("click", function(){
       var p = parseInt(plazo.value,10);
       var a = parseInt(alerta.value,10);
       var c = parseInt(critico.value,10);
@@ -1993,16 +1984,16 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
       state.umbrales = {alerta:a, critico:c};
       savePlazo(p);
       saveUmbrales(state.umbrales);
-      plazoInput.value = p;
       renderList();
-      // el input que disparó esto vive dentro de #dashBody: si lo reemplazamos
+      // el botón que disparó esto vive dentro de #dashBody: si lo reemplazamos
       // en el mismo handler, Chrome tira "node is no longer a child".
-      if(ev && ev.target && ev.target.blur) ev.target.blur();
       setTimeout(renderDashboard, 0);
-    }
-    plazo.addEventListener("change", aplicar);
-    alerta.addEventListener("change", aplicar);
-    critico.addEventListener("change", aplicar);
+    });
+    document.getElementById("cfgCancelar").addEventListener("click", function(){
+      plazo.value = state.plazoDias;
+      alerta.value = state.umbrales.alerta;
+      critico.value = state.umbrales.critico;
+    });
   }
 
   // ---- Clicks del dashboard (delegados: el cuerpo se re-renderiza entero) ----
@@ -2034,6 +2025,8 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
       document.getElementById("filterRubro").value = "";
       document.getElementById("filterSituacion").value = "";
       document.getElementById("search").value = "";
+      // Se abre el panel para que se vea qué filtro quedó puesto.
+      abrirFiltros(true);
       renderList();
       showView("list");
       return;

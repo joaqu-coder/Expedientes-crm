@@ -51,6 +51,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 .nav-item.active .nav-icon{background:color-mix(in srgb, var(--accent) 16%, transparent)}
 
 /* ---- Toolbar: búsqueda siempre visible + filtros ---- */
+.toolbar-search{padding:12px 0 8px}
 .toolbar-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:20px;display:flex;flex-direction:column;gap:12px}
 /* El campo de búsqueda lo dibuja .search-bar de ui-kit.css: acá quedan
    solo los desplegables de filtro. */
@@ -119,10 +120,12 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 <!-- El header (título + ⋮) lo monta header.js, común a las 4 apps.
      El alta vive ahora en el botón flotante (+), como en Seguimiento. -->
 
+<!-- La búsqueda va directo debajo del título, fuera de la tarjeta de filtros:
+     mismo orden que las otras apps (título → búsqueda → contenido). -->
+<div class="toolbar-search">
+  <div class="search-bar"><input type="search" id="search" placeholder="Buscar por N° de resolución, expediente, autoridad o texto de la resolución…"></div>
+</div>
 <div class="toolbar-card">
-  <div class="toolbar-search">
-    <div class="search-bar"><input type="search" id="search" placeholder="Buscar por N° de resolución, expediente, autoridad o texto de la resolución…"></div>
-  </div>
   <div class="toolbar-filters">
     <select id="filterTema"><option value="">Todos los temas</option></select>
     <select id="filterAnio"><option value="">Todos los años</option></select>

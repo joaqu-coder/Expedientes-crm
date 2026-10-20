@@ -50,59 +50,20 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 .nav-item.active{color:var(--accent)}
 .nav-item.active .nav-icon{background:color-mix(in srgb, var(--accent) 16%, transparent)}
 
-.sticky-top{position:sticky;top:0;background:var(--bg);z-index:10;padding-top:2px;margin-bottom:4px}
+.sticky-top{position:sticky;top:0;background:var(--bg);z-index:10;padding-top:2px;border-bottom:1px solid var(--border)}
+.sticky-top-search{padding:12px 0 8px}
+.sticky-top-search[hidden]{display:none}
+.sticky-top .app-tabs{padding-bottom:8px}
 
 /* Selector de parque. No es un filtro más del listado: cambia el alcance de
-   TODA la pantalla (lotes, empresas y análisis), así que va arriba de las
-   pestañas y con menos peso visual — misma pastilla y mismo tinte suave para
-   el activo, pero 34px en vez de 38 y texto gris cuando no está elegido. Con
-   dos parques los chips se reparten el ancho (nada de scroll para dos
-   botones); si en algún momento hay más, aparece el scroll horizontal como en
-   .tabs. Si solo hay un parque cargado, la fila no se dibuja. */
-.parque-switch{display:flex;gap:8px;overflow-x:auto;padding:4px 0;margin-bottom:8px;scrollbar-width:none}
-.parque-switch::-webkit-scrollbar{display:none}
+   TODA la pantalla (lotes, empresas y análisis). Usa el mismo patrón de
+   pestañas que el resto de las apps (ui-kit.css, .app-tabs / .app-tab). Va
+   debajo de las pestañas, al principio del contenido, y con dos parques cada
+   chip ocupa la mitad del ancho. Si solo hay un parque, la fila no se dibuja. */
+.parque-switch{margin-bottom:8px}
 .parque-switch[hidden]{display:none}
-.parque-chip{flex:1 1 auto;min-width:0;display:inline-flex;align-items:center;justify-content:center;height:34px;background:var(--surface-2);border:none;color:var(--muted);font-size:13px;font-weight:400;padding:0 12px;border-radius:999px;white-space:nowrap;transition:background-color .15s ease,color .15s ease}
-.parque-chip:hover{background:color-mix(in srgb, var(--accent) 8%, var(--surface-2))}
-.parque-chip.active{background:color-mix(in srgb, var(--accent) 16%, transparent);color:var(--accent)}
+.parque-chip{flex:1 1 0;min-width:0;justify-content:center}
 .parque-chip .count{font-weight:600;margin-left:4px}
-@media (pointer: coarse){
-  .parque-chip{position:relative}
-  .parque-chip::after{content:"";position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:44px}
-}
-
-/* Barra de filtros superior, mismo lenguaje que la barra inferior: chips
-   redondeados en vez del subrayado de antes, scroll horizontal si no
-   entran todos — mismo concepto que los chips de "Todos/No leídos" de
-   WhatsApp. Medidas ajustadas a la referencia que pasó el usuario (Meta no
-   publica las suyas, son valores de implementación razonables): 38px de
-   alto, radio a pastilla (resuelve ~19px con este alto), 14px horizontal,
-   8px entre chips, texto 14px peso normal. El activo es un fondo SUAVE
-   (tinte del acento, no el color sólido) con texto en el color de acento —
-   no texto blanco sobre un bloque de color. */
-/* El padding vertical no es estético: el contenedor scrollea en horizontal y
-   overflow-x:auto también recorta en vertical, así que sin estos 4px el área
-   táctil extendida del chip (.tab::after, 44px) queda cortada y el borde del
-   chip deja de responder al toque. */
-.tabs{display:flex;gap:8px;overflow-x:auto;padding:4px 0;margin-bottom:14px;scrollbar-width:none}
-.tabs::-webkit-scrollbar{display:none}
-.tab{flex:0 0 auto;display:inline-flex;align-items:center;height:38px;background:var(--surface-2);border:none;color:var(--fg);font-size:14px;font-weight:400;padding:0 14px;border-radius:999px;white-space:nowrap;transition:background-color .15s ease,color .15s ease}
-.tab:hover{background:color-mix(in srgb, var(--accent) 8%, var(--surface-2))}
-.tab.active{background:color-mix(in srgb, var(--accent) 16%, transparent);color:var(--accent)}
-/* display:inline-flex le gana a [hidden], así que una pestaña oculta
-   (hoy "Análisis", en stand by) seguiría viéndose sin esta línea. */
-.tab[hidden]{display:none}
-/* Contador integrado junto al nombre del filtro ("Empresas 55"), en
-   seminegrita para distinguirlo del texto del filtro (peso normal). No va
-   en "Análisis": no es un listado, no tiene una cantidad que mostrar. */
-.tab .count{font-weight:600;margin-left:4px}
-/* El chip mide 38px, pero en pantalla táctil su objetivo de toque se extiende
-   a los 44px que piden las guías de iOS/Android sin agrandar lo que se ve
-   (mismo recurso en seguimiento.html y proyectos.html). */
-@media (pointer: coarse){
-  .tab{position:relative}
-  .tab::after{content:"";position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:44px}
-}
 .view[hidden]{display:none}
 
 /* ---- Toolbar ---- */
@@ -181,13 +142,10 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 .view-actions{display:flex;gap:8px;margin-top:16px}
 
 /* ---- Ficha de empresa: sub-tabs Empresa / Lotes / Contacto ----
-   Mismo patrón visual que .tabs/.tab de arriba, pero escalado para vivir
-   dentro del modal (más chico, sin sticky, con scroll horizontal en mobile
-   si hace falta). */
+   Usan el mismo patrón de pestañas que el resto (ui-kit.css); acá solo queda
+   el margen que las separa del contenido de la ficha. */
 .emp-m2-hero{font-family:var(--font-display);font-size:19px;font-weight:700;color:var(--accent)}
-.subtabs{display:flex;gap:16px;border-bottom:1px solid var(--border);margin:12px 0 14px;overflow-x:auto}
-.subtab{background:none;border:none;color:var(--muted);font-weight:600;font-size:13px;padding:8px 2px;margin:0;border-bottom:2px solid transparent;white-space:nowrap;min-height:40px}
-.subtab.active{color:var(--fg);border-bottom-color:var(--accent)}
+.subtabs{margin:12px 0 14px}
 
 /* ---- Ficha de empresa: lista de lotes/matrículas (una empresa puede tener
    muchas: ALIMENTOS SOFIA, E007, tiene 22) — por eso lista scrolleable con
@@ -257,21 +215,29 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 </head>
 <body>
 
-<div class="sticky-top">
 <!-- El header (título + ⋮) lo monta header.js, común a las 4 apps.
      El alta de lotes vive ahora en el botón flotante (+), como en Seguimiento. -->
 
-<div class="parque-switch" id="parqueSwitch" role="tablist" aria-label="Parque industrial" hidden></div>
+<div class="sticky-top">
+  <div class="sticky-top-search">
+    <div class="toolbar-search" data-buscador="empresas">
+      <div class="search-bar"><input type="search" id="searchEmpresas" placeholder="Buscar por empresa, rubro o contacto…"></div>
+    </div>
+    <div class="toolbar-search" data-buscador="comercial" hidden>
+      <div class="search-bar"><input type="search" id="searchComercial" placeholder="Buscar por lote, manzana, parcela o matrícula…"></div>
+    </div>
+  </div>
+  <div class="app-tabs" role="tablist" aria-label="Vistas">
+    <button class="app-tab tab" id="tabEmpresas" role="tab" aria-selected="true" aria-controls="viewEmpresas">Empresas</button>
+    <button class="app-tab tab" id="tabComercial" role="tab" aria-selected="false" aria-controls="viewComercial">Comercial</button>
+    <!-- "Análisis" arranca oculto: está en stand by hasta definir los KPIs
+         (ver DASH_STANDBY en el script). El atributo acá evita que la pestaña
+         parpadee antes de que corra el JS; el interruptor real es la constante. -->
+    <button class="app-tab tab" id="tabDash" role="tab" aria-selected="false" aria-controls="viewDash" hidden>Análisis</button>
+  </div>
+</div>
 
-<div class="tabs" role="tablist" aria-label="Vistas">
-  <button class="tab" id="tabEmpresas" role="tab" aria-selected="true" aria-controls="viewEmpresas">Empresas</button>
-  <button class="tab" id="tabComercial" role="tab" aria-selected="false" aria-controls="viewComercial">Comercial</button>
-  <!-- "Análisis" arranca oculto: está en stand by hasta definir los KPIs
-       (ver DASH_STANDBY en el script). El atributo acá evita que la pestaña
-       parpadee antes de que corra el JS; el interruptor real es la constante. -->
-  <button class="tab" id="tabDash" role="tab" aria-selected="false" aria-controls="viewDash" hidden>Análisis</button>
-</div>
-</div>
+<div class="app-tabs parque-switch" id="parqueSwitch" role="tablist" aria-label="Parque industrial" hidden></div>
 
 <!-- ===== VISTA EMPRESAS ===== -->
 <!-- Lo operativo por lote (estado, filtros de manzana, etc.) vive dentro
@@ -279,9 +245,6 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
      pestaña "Lotes" suelta a este nivel. -->
 <section class="view" id="viewEmpresas" role="tabpanel" aria-labelledby="tabEmpresas">
   <div class="toolbar-card">
-    <div class="toolbar-search">
-      <div class="search-bar"><input type="search" id="searchEmpresas" placeholder="Buscar por empresa, rubro o contacto…"></div>
-    </div>
     <div class="toolbar-filters">
       <!-- Filtra por la situación de la EMPRESA (`situacion`: Activa / Sin
            actividad / En construcción), que es distinta del estado del lote:
@@ -298,9 +261,6 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
      (ex "LIBRE: ...") y los pendientes de revisión ===== -->
 <section class="view" id="viewComercial" role="tabpanel" aria-labelledby="tabComercial" hidden>
   <div class="toolbar-card">
-    <div class="toolbar-search">
-      <div class="search-bar"><input type="search" id="searchComercial" placeholder="Buscar por lote, manzana, parcela o matrícula…"></div>
-    </div>
     <div class="toolbar-filters">
       <select id="filterEstadoComercial"><option value="">Todos los estados</option></select>
       <select id="filterManzanaComercial"><option value="">Todas las manzanas</option></select>
@@ -1029,7 +989,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     parqueSwitch.innerHTML = state.parques.map(function(p){
       var activo = p.id===state.parqueActivo;
       var cuantos = state.lotes.filter(function(l){ return parqueDe(l)===p.id; }).length;
-      return '<button type="button" class="parque-chip'+(activo?" active":"")+'" role="tab" '+
+      return '<button type="button" class="app-tab parque-chip'+(activo?" active":"")+'" role="tab" '+
         'aria-selected="'+activo+'" data-parque="'+esc(p.id)+'">'+esc(p.nombre)+
         '<span class="count">'+cuantos+'</span></button>';
     }).join("");
@@ -1707,11 +1667,11 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     var similares = empresasSimilares(e);
     var tab = state.empresaSubTab || "empresa";
 
-    var tabsHtml = '<div class="subtabs" role="tablist" aria-label="Detalle de la empresa">'+
+    var tabsHtml = '<div class="app-tabs subtabs" role="tablist" aria-label="Detalle de la empresa">'+
       ["empresa","lote","contacto"].map(function(t){
         var etiqueta = t==="empresa" ? "Empresa" : (t==="lote" ? "Lotes ("+(lotes.length+ocupados.length)+")" : "Contacto");
         var activa = t===tab;
-        return '<button type="button" class="subtab'+(activa?" active":"")+'" role="tab" aria-selected="'+activa+'" data-subtab="'+t+'">'+etiqueta+'</button>';
+        return '<button type="button" class="app-tab subtab'+(activa?" active":"")+'" role="tab" aria-selected="'+activa+'" data-subtab="'+t+'">'+etiqueta+'</button>';
       }).join("")+
       '</div>';
 
@@ -2030,6 +1990,10 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     tabEmpresas.setAttribute("aria-selected", String(isEmpresas));
     tabComercial.setAttribute("aria-selected", String(isComercial));
     tabDash.setAttribute("aria-selected", String(isDash));
+    // La búsqueda va debajo del título, arriba de las pestañas: muestra la de
+    // la vista activa. El Análisis no tiene buscador.
+    document.querySelector('[data-buscador="empresas"]').hidden = !isEmpresas;
+    document.querySelector('[data-buscador="comercial"]').hidden = !isComercial;
     if(isDash) renderDashboard();
     if(desdeHash) return;
     var destino = isComercial ? "#comercial" : isDash ? "#dashboard" : "#empresas";

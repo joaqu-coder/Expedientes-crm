@@ -487,9 +487,10 @@ async function testMovilTactil() {
   await page.goto('http://localhost:8792/', { waitUntil: 'networkidle' });
   await page.evaluate(SEMBRAR);
 
-  // iOS Safari hace zoom al enfocar un campo con fuente < 16px.
+  // Búsqueda: 14px y Roboto por pedido del usuario (2026-10-20). Antes era
+  // ≥16px para que iOS no hiciera zoom; el pedido lo cambia y queda anotado.
   const fuente = (sel) => page.evaluate((s) => parseFloat(getComputedStyle(document.querySelector(s)).fontSize), sel);
-  ok((await fuente('#searchInput')) >= 16, `el buscador tiene fuente ≥16px (${await fuente('#searchInput')}px)`);
+  ok((await fuente('#searchInput')) === 14, `el buscador tiene fuente de 14px (${await fuente('#searchInput')}px)`);
 
   // Objetivos táctiles de 44px.
   await page.locator('.expediente-header-urgencia').first().click();
@@ -555,10 +556,14 @@ async function testMovilTactil() {
     return { top: r.top, alto: r.height };
   });
   ok(fija.top === 0, `header + pestañas siguen fijos arriba tras scrollear (top=${fija.top})`);
+  // El contenido que queda justo debajo de la barra fija tiene que ser
+  // contenido, no la barra: si la barra se hace más alta, el punto de prueba
+  // se corre con ella.
   const tapado = await page.evaluate(() => {
     const primera = document.querySelector('.expediente-card-new');
     const r = primera.getBoundingClientRect();
-    const el = document.elementFromPoint(r.x + r.width / 2, Math.max(r.y, 100) + 10);
+    const barra = document.querySelector('.sticky-top').getBoundingClientRect();
+    const el = document.elementFromPoint(r.x + r.width / 2, Math.max(r.y, barra.bottom) + 10);
     return el ? !!el.closest('.sticky-top') : false;
   });
   ok(!tapado, 'ningún panel fijo tapa el contenido al scrollear');
@@ -1458,6 +1463,100 @@ async function testProyectosValidacionYOrden() {
  * cruce lote<->empresa (titularidad, sublocación vía ocupaciones) ni el
  * guardado por el modal.
  */
+// Proyectos: orden de la pantalla, filtros desplegables y configuración del
+// semáforo con Guardar / Cancelar. Pedido del usuario (2026-10-20): el plazo
+// sale del encabezado y vive en Análisis › Urgencias.
+async function testProyectosLayoutYFiltros() {
+  console.log('\n=== PROYECTOS: ORDEN DE LA PANTALLA, FILTROS Y CONFIGURACIÓN ===');
+  const html = fs.readFileSync(path.join(RAIZ, 'public/proyectos.html'), 'utf8');
+  const store = JSON.parse(fs.readFileSync(path.join(RAIZ, 'cartas-intencion.json'), 'utf8'));
+  let sha = 'sha-fil-1';
+  const posts = [];
+
+  const server = http.createServer((req, res) => {
+    const json = (code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
+    if (req.url.startsWith('/api/version-cartas')) return json(200, { version: sha });
+    if (req.url.startsWith('/api/sync-cartas')) {
+      if (req.method === 'GET') return json(200, Object.assign({}, store, { _meta: { existe: true, sha } }));
+      let body = '';
+      req.on('data', (c) => (body += c));
+      req.on('end', () => {
+        const p = JSON.parse(body);
+        posts.push(p);
+        sha = 'sha-fil-' + (posts.length + 1);
+        json(200, { ok: true, sha });
+      });
+      return;
+    }
+    if (servirHeaderJs(req, res)) return;
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(html);
+  });
+  await new Promise((r) => server.listen(8788, r));
+
+  const problemas = [];
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  page.on('pageerror', (e) => problemas.push('pageerror: ' + e.message));
+  await page.goto('http://localhost:8788/proyectos.html', { waitUntil: 'networkidle' });
+
+  // Orden: título → búsqueda → pestañas → contenido.
+  const orden = await page.evaluate(() => {
+    const y = (sel) => document.querySelector(sel).getBoundingClientRect().top;
+    return { titulo: y('.app-header__titulo'), busqueda: y('#busquedaListado'), pestanas: y('.app-tabs'), contenido: y('#viewList') };
+  });
+  ok(orden.titulo < orden.busqueda && orden.busqueda < orden.pestanas && orden.pestanas < orden.contenido,
+    `el orden es título → búsqueda → pestañas → contenido (${JSON.stringify(orden)})`);
+
+  // La búsqueda filtra el listado: se muestra solo en Listado.
+  ok(await page.locator('#busquedaListado').isVisible(), 'la búsqueda se ve en el listado');
+  await page.click('#tabArchivo');
+  ok(!(await page.locator('#busquedaListado').isVisible()), 'la búsqueda se oculta en Archivo');
+  await page.click('#tabList');
+  ok(await page.locator('#busquedaListado').isVisible(), 'la búsqueda vuelve al listado');
+
+  // Ningún control de plazo queda en el encabezado del listado.
+  ok(await page.locator('#plazoDias').count() === 0 && await page.locator('.settings-row').count() === 0,
+    'el plazo ya no está en el listado');
+
+  // Filtros avanzados: cerrados por defecto, se abren desde el botón.
+  ok(await page.locator('#filtrosPanel').isHidden(), 'los filtros avanzados arrancan plegados');
+  ok((await page.getAttribute('#filtrosToggle', 'aria-expanded')) === 'false', 'el botón Filtros dice que está cerrado');
+  await page.click('#filtrosToggle');
+  ok(await page.locator('#filtrosPanel').isVisible(), 'el botón Filtros despliega el panel');
+  ok((await page.getAttribute('#filtrosToggle', 'aria-expanded')) === 'true', 'el botón Filtros dice que está abierto');
+  await page.selectOption('#filterSituacion', 'Adjudicada');
+  ok((await page.textContent('#filtrosN')).trim() === '1', 'el botón muestra cuántos filtros hay puestos (1)');
+  await page.click('#filtrosToggle');
+  ok(await page.locator('#filtrosPanel').isHidden(), 'el botón Filtros vuelve a plegar el panel');
+  ok((await page.textContent('#filtrosN')).trim() === '1', 'con el panel cerrado sigue viéndose el filtro puesto');
+  await page.click('#filtrosToggle');
+  await page.selectOption('#filterSituacion', '');
+
+  // Configuración en Análisis › Urgencias: nada se aplica sin Guardar.
+  await page.click('#tabDash');
+  await page.click('[data-sec="urgencias"]');
+  const original = await page.inputValue('#uPlazo');
+  const nuevo = original === '45' ? '60' : '45';
+  await page.fill('#uPlazo', nuevo);
+  ok((await page.evaluate(() => localStorage.getItem('cartas_intencion_plazo_v1'))) !== nuevo,
+    'cambiar el plazo sin Guardar no lo aplica');
+  await page.click('#cfgCancelar');
+  ok((await page.inputValue('#uPlazo')) === original, 'Cancelar vuelve el plazo al valor guardado');
+
+  await page.fill('#uPlazo', nuevo);
+  await page.click('#cfgGuardar');
+  ok((await page.evaluate(() => localStorage.getItem('cartas_intencion_plazo_v1'))) === nuevo,
+    `Guardar aplica el plazo (${nuevo} días hábiles)`);
+  // La subida va en background, con debounce: se espera a que llegue al servidor.
+  for (let i = 0; i < 40 && !posts.some((p) => p.plazoDias === Number(nuevo)); i++) await page.waitForTimeout(150);
+  ok(posts.some((p) => p.plazoDias === Number(nuevo)), 'el plazo guardado llega al servidor en el POST');
+
+  ok(problemas.length === 0, 'sin errores de JS (' + problemas.join(' | ') + ')');
+  await browser.close();
+  server.close();
+}
+
 async function testParques(viewport, puerto) {
   console.log(`\n=== PARQUES (${viewport.width}x${viewport.height}) ===`);
   const html = fs.readFileSync(path.join(RAIZ, 'public/parques.html'), 'utf8');
@@ -2134,6 +2233,7 @@ async function testUniformidad(puerto) {
         alto: Math.round(barra.getBoundingClientRect().height),
         radio: cs.borderTopLeftRadius,
         fuente: Math.round(parseFloat(getComputedStyle(input).fontSize)),
+        familia: getComputedStyle(input).fontFamily,
         lupa: !!barra.querySelector('svg.search-icon'),
         limpiar: !!barra.querySelector('.search-clear'),
         emoji: /[\u{1F300}-\u{1FAFF}\u{2190}-\u{2BFF}]/u.test(input.placeholder || '')
@@ -2333,7 +2433,9 @@ async function testUniformidad(puerto) {
     const s = buscadores[p];
     ok(s.alto === busRef.alto && s.radio === busRef.radio && s.fuente === busRef.fuente,
        `la búsqueda de ${p} mide y se ve igual que la de ${conBusqueda[0]} (${s.alto}px, radio ${s.radio}, ${s.fuente}px)`);
-    ok(s.fuente >= 16, `la búsqueda de ${p} usa fuente ≥16px, para que iOS no haga zoom al enfocar (${s.fuente}px)`);
+    // 14px y Roboto en las cuatro, por pedido del usuario (2026-10-20).
+    ok(s.fuente === 14, `la búsqueda de ${p} usa fuente de 14px (${s.fuente}px)`);
+    ok(s.familia.startsWith('Roboto'), `la búsqueda de ${p} usa Roboto, Helvetica, sans-serif (${s.familia})`);
     ok(s.lupa && !s.emoji, `la búsqueda de ${p} tiene lupa SVG y ningún emoji en el placeholder`);
     ok(s.limpiar, `la búsqueda de ${p} tiene botón para limpiar`);
   }
@@ -2697,6 +2799,7 @@ await testProyectosCargaSolapada();
 await testProyectosArranqueYArchivo();
 await testProyectosValidacionYOrden();
 await testProyectosSalidasYDeshacer();
+await testProyectosLayoutYFiltros();
 await testParques({ width: 1440, height: 900 }, 8793);
 await testParques({ width: 390, height: 844 }, 8792);
 await testUniformidad(8791);

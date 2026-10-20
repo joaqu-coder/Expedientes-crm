@@ -138,74 +138,32 @@
     @media (max-width: 480px) {
     }
 
-    /* Pestañas */
-    /* Barra de filtros superior, mismo lenguaje que la barra inferior: chips
-       redondeados (antes era un subrayado), con scroll horizontal si no
-       entran todos — mismo concepto que los chips de "Todos/No leídos" de
-       WhatsApp. Medidas ajustadas a la referencia que pasó el usuario (Meta
-       no publica las suyas, son valores de implementación razonables):
-       38px de alto, radio a pastilla, 14px horizontal, 8px entre chips,
-       texto 14px peso normal, contador seminegrita (ver .count). El activo
-       es un fondo SUAVE (tinte del acento), no el color sólido. */
-    .pestanas {
-      /* El contenido se centra en pantallas anchas; en móvil ocupa todo el
-         ancho. Antes esta variable se declaraba junto con el header viejo. */
-      --gutter: max(16px, calc((100% - 960px) / 2));
-      background: white;
-      padding: 10px var(--gutter);
+    /* Cabecera fija: búsqueda y pestañas en un solo bloque, debajo del título
+       que monta header.js (título → búsqueda → pestañas → contenido). Va
+       sticky para que las pestañas sigan a la vista al desplazar la lista,
+       como antes. */
+    .sticky-top {
+      background: var(--surface);
       border-bottom: 1px solid var(--gray-300);
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      scrollbar-width: none;
     }
-    .pestanas::-webkit-scrollbar { display: none; }
-
-    .pestana-btn {
-      flex: 0 0 auto;
-      display: inline-flex;
-      align-items: center;
-      height: 38px;
-      padding: 0 14px;
-      background: var(--gray-200);
-      border: none;
-      border-radius: 999px;
-      cursor: pointer;
-      font-weight: 400;
-      font-size: 14px;
-      color: var(--text);
-      transition: background-color 0.15s ease, color 0.15s ease;
-      white-space: nowrap;
+    .sticky-top-inner {
+      width: 100%;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 12px;
     }
+    /* Pestañas: el patrón compartido está en ui-kit.css (.app-tabs / .app-tab). */
+    .sticky-top .app-tabs { padding-bottom: 8px; }
 
-    .pestana-btn:hover {
-      background: color-mix(in srgb, var(--primary) 8%, var(--gray-200));
-    }
-
-    .pestana-btn.active {
-      background: color-mix(in srgb, var(--primary) 16%, transparent);
-      color: var(--primary);
-    }
-
-    /* Contador integrado junto al nombre del filtro ("Activos 3"), en
-       seminegrita para distinguirlo del texto del filtro (peso normal).
-       El margen NO es decorativo: dentro de un contenedor inline-flex el
-       espacio de texto que queda pegado al borde de un hijo se colapsa, así
-       que sin esto se lee "Activos3". Mismo criterio que .tab .count en
-       parques.html y proyectos.html. */
-    .pestana-btn .count,
+    /* Los chips de Áreas son filtros, no pestañas: conservan su estilo. */
     .area-btn .count {
       font-weight: 600;
       margin-left: 4px;
     }
 
-    /* El chip mide 38px (igual que en Parques y Proyectos), pero en pantalla
-       táctil su objetivo de toque se extiende a los 44px que piden las guías
-       de iOS/Android sin agrandar lo que se ve. */
+    /* El chip de área mide 38px pero su objetivo táctil llega a 44px. */
     @media (pointer: coarse) {
-      .pestana-btn,
       .area-btn { position: relative; }
-      .pestana-btn::after,
       .area-btn::after {
         content: "";
         position: absolute;
@@ -277,11 +235,9 @@
       border: none;
     }
 
-    /* Búsqueda */
+    /* Búsqueda: el campo lo dibuja ui-kit.css. Acá solo el espaciado. */
     .search-box {
-      padding: 12px;
-      background: white;
-      border-bottom: 1px solid var(--gray-300);
+      padding: 12px 0 8px;
     }
 
     /* El campo de búsqueda (pastilla, lupa, foco y botón de limpiar) vive en
@@ -1074,9 +1030,18 @@
        configuración y el estado de sincronización viven ahora en ese menú. -->
   <div class="app">
     <div class="sticky-top">
-      <div class="pestanas" role="tablist" aria-label="Estado de los expedientes">
-        <button class="pestana-btn active" role="tab" aria-selected="true" data-pestana="activos" onclick="cambiarPestana('activos')">Activos</button>
-        <button class="pestana-btn" role="tab" aria-selected="false" data-pestana="archivados" onclick="cambiarPestana('archivados')">Archivados</button>
+      <div class="sticky-top-inner">
+        <!-- La lupa la dibuja header.js como SVG: el emoji 🔍 del placeholder
+             se veía distinto en cada sistema y no es un icono del juego. -->
+        <div class="search-box">
+          <div class="search-bar">
+            <input type="search" class="search-input" id="searchInput" placeholder="Buscar expedientes" aria-label="Buscar expedientes" oninput="filtrarBusqueda()">
+          </div>
+        </div>
+        <div class="app-tabs" role="tablist" aria-label="Estado de los expedientes">
+          <button class="app-tab pestana-btn active" role="tab" aria-selected="true" data-pestana="activos" onclick="cambiarPestana('activos')">Activos</button>
+          <button class="app-tab pestana-btn" role="tab" aria-selected="false" data-pestana="archivados" onclick="cambiarPestana('archivados')">Archivados</button>
+        </div>
       </div>
     </div>
 
@@ -1085,14 +1050,6 @@
       <div class="panel-areas">
         <div class="panel-areas-title">Áreas Responsables</div>
         <div class="area-buttons" id="areaBotones"></div>
-      </div>
-
-      <div class="search-box">
-        <!-- La lupa la dibuja header.js como SVG: el emoji 🔍 del placeholder
-             se veía distinto en cada sistema y no es un icono del juego. -->
-        <div class="search-bar">
-          <input type="search" class="search-input" id="searchInput" placeholder="Buscar expedientes" aria-label="Buscar expedientes" oninput="filtrarBusqueda()">
-        </div>
       </div>
 
       <div class="expedientes-list" id="expedientesList" role="tabpanel"></div>
