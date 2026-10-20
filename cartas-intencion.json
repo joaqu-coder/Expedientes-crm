@@ -395,11 +395,11 @@
       "rubro": "Servicios",
       "superficie_solicitada_m2": 3000,
       "actividad_empresa": "Servicio de alquiler de grúas de gran porte",
-      "situacion": "En_tratamiento",
+      "situacion": "Desestimada",
       "representante_nombre": "Eduardo Lagname",
       "contacto_tel": "",
       "contacto_mail": "",
-      "fecha_ultimo_movimiento": "12/10/2026 21:02",
+      "fecha_ultimo_movimiento": "20/10/2026 13:47",
       "intervenciones": [
         {
           "hora": "12/10/2026 20:54",
@@ -410,9 +410,20 @@
           "hora": "12/10/2026 21:02",
           "texto": "Rescatado del archivo: corrección de la regla — En tratamiento no debe archivarse automáticamente por falta de nota, solo Sin tratamiento.",
           "tipo": "sistema"
+        },
+        {
+          "hora": "20/10/2026 13:47",
+          "texto": "Cambio de situación: En tratamiento → Desestimada",
+          "tipo": "sistema"
+        },
+        {
+          "hora": "20/10/2026 13:47",
+          "texto": "Se acuerda q renovará alquiler en el predio de Güemes (6.000 m²)",
+          "tipo": "manual"
         }
       ],
-      "archivado": false
+      "archivado": false,
+      "actualizado_en": "2026-10-20T16:47:14.047Z"
     },
     {
       "id": "exp_imp020",
