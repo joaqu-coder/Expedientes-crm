@@ -280,8 +280,10 @@ async function manejarSyncCartas(request, env) {
       delete aEscribir._baseSha;
       delete aEscribir._meta;
 
-      await githubPutFile(env.GITHUB_TOKEN, ARCHIVO_CARTAS, 'cartas', aEscribir, sha);
-      return jsonResponse({ ok: true });
+      const escrito = await githubPutFile(env.GITHUB_TOKEN, ARCHIVO_CARTAS, 'cartas', aEscribir, sha);
+      // El sha nuevo vuelve al cliente: sin él, su próximo POST manda el
+      // _baseSha viejo y recibe un 409 contra su propia escritura.
+      return jsonResponse({ ok: true, sha: escrito.content.sha });
     } catch (e) {
       return jsonResponse({ error: e.message }, 500);
     }

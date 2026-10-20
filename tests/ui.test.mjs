@@ -993,6 +993,85 @@ async function testProyectos(viewport, puerto) {
 }
 
 /*
+ * Proyectos: dos cargas manuales seguidas, la segunda mientras la primera
+ * todavía sube. Antes la segunda se perdía: el POST que terminaba borraba la
+ * marca de pendiente sin mirar si había llegado algo nuevo, nunca se enviaba,
+ * y la descarga siguiente la pisaba en el dispositivo. Además el POST no
+ * devolvía su sha, así que cada guardado posterior daba 409 contra sí mismo.
+ */
+async function testProyectosCargaSolapada() {
+  console.log('\n=== PROYECTOS: CARGAS SOLAPADAS NO SE PIERDEN ===');
+  const html = fs.readFileSync(path.join(RAIZ, 'public/proyectos.html'), 'utf8');
+  const inicial = JSON.parse(fs.readFileSync(path.join(RAIZ, 'cartas-intencion.json'), 'utf8'));
+  const POST_MS = 1500;
+  let store = JSON.parse(JSON.stringify(inicial));
+  let sha = 'sha-0';
+  const respuestas = [];
+
+  const server = http.createServer((req, res) => {
+    const json = (code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
+    if (req.url.startsWith('/api/version-cartas')) return json(200, { version: sha });
+    if (req.url.startsWith('/api/sync-cartas')) {
+      if (req.method === 'GET') return json(200, Object.assign({}, store, { _meta: { existe: true, sha } }));
+      let body = '';
+      req.on('data', (c) => (body += c));
+      req.on('end', () => {
+        const p = JSON.parse(body);
+        // Mismo contrato que el Worker: 409 si la base cambió desde _baseSha.
+        if (p._baseSha && p._baseSha !== sha) {
+          respuestas.push(409);
+          return json(409, { error: 'conflicto', actual: Object.assign({}, store, { _meta: { existe: true, sha } }) });
+        }
+        setTimeout(() => {
+          const nuevo = Object.assign({}, p);
+          delete nuevo._baseSha; delete nuevo._meta;
+          store = nuevo;
+          sha = 'sha-' + (respuestas.length + 1);
+          respuestas.push(200);
+          json(200, { ok: true, sha });
+        }, POST_MS);
+      });
+      return;
+    }
+    if (servirHeaderJs(req, res)) return;
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(html);
+  });
+  await new Promise((r) => server.listen(8791, r));
+
+  const problemas = [];
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  page.on('pageerror', (e) => problemas.push('pageerror: ' + e.message));
+  page.on('dialog', async (d) => { await d.dismiss(); });
+  await page.goto('http://localhost:8791/', { waitUntil: 'networkidle' });
+  await page.waitForSelector('.app-fab');
+
+  const cargar = async (nombre) => {
+    await page.click('.app-fab');
+    await page.waitForSelector('#f_nombre_empresa');
+    await page.fill('#f_nombre_empresa', nombre);
+    await page.fill('#f_fecha_inicio', '09/10/2026');
+    await page.click('#expForm button[type=submit]');
+  };
+  const enServidor = (n) => store.expedientes.some((e) => e.nombre_empresa === n);
+
+  await cargar('CARGA SOLAPADA A');
+  await page.waitForTimeout(2000); // A ya está subiendo (arranca a los 1500 ms)
+  await cargar('CARGA SOLAPADA B'); // se guarda mientras A vuela
+
+  for (let i = 0; i < 20 && !enServidor('CARGA SOLAPADA B'); i++) await page.waitForTimeout(500);
+  ok(enServidor('CARGA SOLAPADA A'), 'la carga A llega al servidor');
+  ok(enServidor('CARGA SOLAPADA B'), 'la carga hecha mientras A subía llega al servidor (antes se perdía)');
+  ok(await page.evaluate(() => localStorage.getItem('cartas_intencion_parques_v3')).then((r) => JSON.parse(r).some((e) => e.nombre_empresa === 'CARGA SOLAPADA B')),
+     'y sigue en el dispositivo');
+  ok(!respuestas.includes(409), 'ningún 409 espurio: el POST devuelve el sha y el siguiente lo usa como base');
+  ok(problemas.length === 0, 'sin errores de JS' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
+  await browser.close();
+  server.close();
+}
+
+/*
  * Parques: lotes y empresas de Güemes, importados de la base SQLite
  * normalizada que pasó el usuario (no de las planillas de Drive). Protocolo
  * simple, como Resoluciones. Existe porque los tests estáticos no ven el
@@ -2205,6 +2284,7 @@ await testResoluciones({ width: 1440, height: 900 }, 8797);
 await testResoluciones({ width: 390, height: 844 }, 8796);
 await testProyectos({ width: 1440, height: 900 }, 8795);
 await testProyectos({ width: 390, height: 844 }, 8794);
+await testProyectosCargaSolapada();
 await testParques({ width: 1440, height: 900 }, 8793);
 await testParques({ width: 390, height: 844 }, 8792);
 await testUniformidad(8791);

@@ -755,6 +755,9 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   // La subida real va en background, debounced, y nunca bloquea al usuario.
   var SYNC_PENDING_KEY = "cartas_intencion_sync_pendiente_v2";
   var syncTimer = null, syncEnProgreso = false;
+  // Cuenta cada cambio local. Sirve para saber, al terminar un POST, si algo
+  // se guardó mientras volaba: en ese caso la marca de pendiente no se borra.
+  var cambiosSeq = 0;
 
   // Backoff exponencial. Antes el catch dejaba SYNC_PENDING_KEY en "1" y al
   // final llamaba a subirCambios() de nuevo sin delay: mientras el POST
@@ -771,6 +774,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   }
 
   function marcarPendiente(){
+    cambiosSeq++;
     try{ localStorage.setItem(SYNC_PENDING_KEY, "1"); }catch(e){}
     errorPermanente = false; // hay datos nuevos: vale volver a intentar
     setSyncStatus("pendiente");
@@ -849,6 +853,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     if(syncEnProgreso || !haySyncPendiente() || errorPermanente) return;
     syncEnProgreso = true;
     setSyncStatus("subiendo");
+    var seqEnviado = cambiosSeq; // lo que este POST realmente lleva
     try{
       var resp = await HeaderGlobal.fetchApi("/api/sync-cartas", {
         method:"POST",
@@ -900,10 +905,15 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
         var ok = await resp.json();
         if(ok && ok.sha){ state.baseSha = ok.sha; ultimaVersion = ok.sha; }
       }catch(e){}
-      try{ localStorage.removeItem(SYNC_PENDING_KEY); }catch(e){}
+      // Solo se limpia si nada cambió durante el vuelo. Antes se borraba
+      // siempre: la carga hecha mientras subía quedaba sin marca, nunca se
+      // enviaba, y la siguiente descarga la pisaba en el dispositivo.
+      if(cambiosSeq === seqEnviado){
+        try{ localStorage.removeItem(SYNC_PENDING_KEY); }catch(e){}
+      }
       fallosSeguidos = 0;
       marcarSyncOk();
-      setSyncStatus("sincronizado");
+      setSyncStatus(haySyncPendiente() ? "pendiente" : "sincronizado");
     }catch(e){
       fallosSeguidos++;
       var sinRed = (typeof navigator !== "undefined" && navigator.onLine === false);

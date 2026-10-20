@@ -157,6 +157,7 @@ async function testCartasPostEscribeArchivoPropio() {
   const resp = await worker.fetch(req, env);
   const data = await resp.json();
   assert(resp.status === 200 && data.ok === true, 'POST /api/sync-cartas responde ok:true');
+  assert(data.sha === 'nuevo-sha', 'POST /api/sync-cartas devuelve el sha nuevo para que el cliente no mande un _baseSha viejo');
 }
 
 async function testCartasConflicto409() {
