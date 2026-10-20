@@ -233,8 +233,8 @@
   background: transparent;
 
   color: var(--ui-text);
-  font-family: var(--ds-search-font);
-  /* 14px y Roboto por pedido del usuario (2026-10-20). Con menos de 16px iOS
+  font-family: var(--ds-font-sans);
+  /* 14px por pedido del usuario (2026-10-20). Con menos de 16px iOS
      hace zoom al enfocar el campo; se acepta y queda anotado. */
   font-size: var(--ds-search-font-size);
   line-height: 1.2;

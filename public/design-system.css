@@ -157,11 +157,11 @@
   --ds-control-height: 40px;
   --ds-touch-min:      44px;
   --ds-search-height:  48px;
-  /* Búsqueda: 14px y Roboto, pedido del usuario (2026-10-20). Va por debajo
-     de los 16px que pide iOS para no hacer zoom al enfocar: se eligió lo
-     pedido y queda anotado en .claude-state.json como trade-off. */
+  /* Búsqueda: 14px, pedido del usuario (2026-10-20). Va por debajo de los 16px
+     que pide iOS para no hacer zoom al enfocar: se eligió lo pedido y queda
+     anotado en .claude-state.json como trade-off. La fuente NO se define acá:
+     es --ds-font-sans, la misma de toda la app. */
   --ds-search-font-size: 14px;
-  --ds-search-font: Roboto, Helvetica, sans-serif;
   --ds-icon-size:      18px;
   --ds-gap:            8px;
   --ds-padding-x:      14px;

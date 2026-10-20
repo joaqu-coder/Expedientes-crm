@@ -103,6 +103,29 @@ ok(literalesKit.length === 0,
    literalesKit.length ? `ui-kit.css tiene colores literales (${literalesKit.join(', ')}): van como token en design-system.css`
                        : 'ui-kit.css no tiene ni un color literal: todo sale de los tokens');
 
+// 2b. La familia tipográfica es UNA sola configuración global: vive en
+//     design-system.css (--ds-font-sans). Ningún otro archivo de public/ puede
+//     declarar una familia con nombre (Roboto, Arial…); solo heredar o leer un
+//     token (inherit, var(--…)). Si alguien pone una fuente literal en una
+//     página o en un componente, cambiar la familia global deja de alcanzarla.
+const ARCHIVOS_FUENTE = ['ui-kit.css', 'header.js', 'confirmar-cambios.js',
+  ...PAGINAS.map((p) => `${p}.html`)];
+const familiasLiterales = [];
+for (const archivo of ARCHIVOS_FUENTE) {
+  const ruta = path.join(RAIZ, 'public', archivo);
+  if (!fs.existsSync(ruta)) continue;
+  const texto = fs.readFileSync(ruta, 'utf8');
+  for (const m of texto.matchAll(/font-family\s*:\s*([^;}"'<>]+)/g)) {
+    const valor = m[1].trim();
+    if (valor === 'inherit' || valor.startsWith('var(')) continue;
+    familiasLiterales.push(`${archivo}: ${valor}`);
+  }
+}
+ok(familiasLiterales.length === 0,
+   familiasLiterales.length
+     ? `familias tipográficas declaradas fuera de design-system.css (${familiasLiterales.join(' | ')}): usar var(--ds-font-sans) o heredar`
+     : 'la familia tipográfica sale solo de design-system.css (las demás heredan o leen un token)');
+
 // 3. Ninguna página redeclara un token que el sistema ya posee. La excepción
 //    viva está declarada acá, no en el aire: seguimiento pisa --orange y
 //    --yellow porque su naranja es el del semáforo de urgencia, no el de las
