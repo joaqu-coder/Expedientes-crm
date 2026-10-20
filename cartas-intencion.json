@@ -578,7 +578,7 @@
       "representante_nombre": "Emilio Marras",
       "contacto_tel": "",
       "contacto_mail": "",
-      "fecha_ultimo_movimiento": "12/10/2026 21:02",
+      "fecha_ultimo_movimiento": "20/10/2026 13:48",
       "intervenciones": [
         {
           "hora": "12/10/2026 20:54",
@@ -589,9 +589,15 @@
           "hora": "12/10/2026 21:02",
           "texto": "Rescatado del archivo: corrección de la regla — En tratamiento no debe archivarse automáticamente por falta de nota, solo Sin tratamiento.",
           "tipo": "sistema"
+        },
+        {
+          "hora": "20/10/2026 13:48",
+          "texto": "No presenta documentación se realizan llamados. Pierde interés.",
+          "tipo": "manual"
         }
       ],
-      "archivado": false
+      "archivado": false,
+      "actualizado_en": "2026-10-20T16:48:36.042Z"
     },
     {
       "id": "exp_imp026",
