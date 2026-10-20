@@ -472,6 +472,13 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     return dd+"/"+mo+"/"+ahora.getFullYear()+" "+hh+":"+mm;
   }
 
+  // "dd/mm/aaaa hh:mm" -> "aaaa-mm-dd hh:mm". Ordenar el texto original es
+  // ordenar por día y mes antes que por año ("20/12/2025" > "15/01/2026").
+  function claveFechaHora(s){
+    var m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?: (\d{1,2}:\d{2}))?/.exec(String(s||"").trim());
+    if(!m) return "";
+    return m[3]+"-"+m[2].padStart(2,"0")+"-"+m[1].padStart(2,"0")+" "+(m[4]||"00:00");
+  }
   // Estricta a propósito. La versión anterior aceptaba "31/02/2026" y devolvía
   // el 3 de marzo sin avisar, y "99/99/9999" daba el año 10007. Como
   // fecha_inicio es la entrada de la que depende TODO el semáforo, una fecha
@@ -758,6 +765,10 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   // Cuenta cada cambio local. Sirve para saber, al terminar un POST, si algo
   // se guardó mientras volaba: en ese caso la marca de pendiente no se borra.
   var cambiosSeq = 0;
+  // true cuando ya leímos del servidor y sabemos sobre qué versión escribimos.
+  // Sin eso, el POST va con _baseSha null y el Worker no puede detectar un
+  // choque: la copia de este dispositivo pisa lo que otro cargó.
+  var baseConocida = false;
 
   // Backoff exponencial. Antes el catch dejaba SYNC_PENDING_KEY en "1" y al
   // final llamaba a subirCambios() de nuevo sin delay: mientras el POST
@@ -849,12 +860,38 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     return partes.join(" — ");
   }
 
+  // Lee el servidor y fusiona lo local con lo remoto ANTES de subir. Lo que
+  // hay en localStorage puede ser una copia vieja (la app se abrió sin red,
+  // o quedó una marca de sesión anterior): subirla tal cual pisaría cargas
+  // hechas en otro dispositivo. La fusión conserva lo más reciente de cada
+  // lado, igual que el 409.
+  async function tomarBase(){
+    var resp = await HeaderGlobal.fetchApi("/api/sync-cartas");
+    if(!resp.ok) throw new Error(await leerError(resp));
+    var remoto = await resp.json();
+    if(!remoto || !Array.isArray(remoto.expedientes)){
+      throw new Error("El servidor devolvió datos con una forma inesperada.");
+    }
+    var existe = !(remoto._meta && remoto._meta.existe === false);
+    if(existe){
+      var fus = fusionar(remoto, {expedientes: state.expedientes, eliminados: state.eliminados});
+      state.expedientes = fus.expedientes;
+      state.eliminados = fus.eliminados;
+      persistirLocal();
+      renderList();
+    }
+    state.baseSha = (remoto._meta && remoto._meta.sha) || null;
+    ultimaVersion = state.baseSha;
+    baseConocida = true;
+  }
+
   async function subirCambios(){
     if(syncEnProgreso || !haySyncPendiente() || errorPermanente) return;
     syncEnProgreso = true;
     setSyncStatus("subiendo");
     var seqEnviado = cambiosSeq; // lo que este POST realmente lleva
     try{
+      if(!baseConocida) await tomarBase();
       var resp = await HeaderGlobal.fetchApi("/api/sync-cartas", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
@@ -990,6 +1027,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
       // mismo número, así que no hace falta ninguna lectura de referencia.
       state.baseSha = (datos._meta && datos._meta.sha) || null;
       ultimaVersion = state.baseSha;
+      baseConocida = true;
 
       // Re-chequear el archivado automático contra los datos recién bajados:
       // si otro dispositivo cargó este expediente hace rato y nadie abrió la
@@ -1224,7 +1262,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   function renderArchivo(){
     var cont = document.getElementById("archivoList");
     var lista = state.expedientes.filter(function(e){ return e.archivado; });
-    lista.sort(function(a,b){ return (b.fecha_archivado||"").localeCompare(a.fecha_archivado||""); });
+    lista.sort(function(a,b){ return claveFechaHora(b.fecha_archivado).localeCompare(claveFechaHora(a.fecha_archivado)); });
 
     var cuenta = document.getElementById("archivoCount");
     if(cuenta){

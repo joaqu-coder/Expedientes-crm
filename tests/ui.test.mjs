@@ -1072,6 +1072,105 @@ async function testProyectosCargaSolapada() {
 }
 
 /*
+ * Proyectos, dos casos de pérdida o desorden de datos:
+ *  - Arranque con copia vieja: el dispositivo tiene una marca de pendiente y
+ *    una copia local sin la carga que otro dispositivo ya subió. Antes subía
+ *    esa copia con _baseSha null y el servidor perdía la carga ajena.
+ *  - Archivo: ordenado por fecha de archivado de verdad, no por texto
+ *    dd/mm/aaaa (20/12/2025 quedaba antes que 15/01/2026).
+ */
+async function testProyectosArranqueYArchivo() {
+  console.log('\n=== PROYECTOS: ARRANQUE CON COPIA VIEJA Y ORDEN DEL ARCHIVO ===');
+  const html = fs.readFileSync(path.join(RAIZ, 'public/proyectos.html'), 'utf8');
+  const inicial = JSON.parse(fs.readFileSync(path.join(RAIZ, 'cartas-intencion.json'), 'utf8'));
+  const store = JSON.parse(JSON.stringify(inicial));
+  store.expedientes.push({
+    id: 'exp_otro_dispositivo', nro_expediente: '363-99999/2026-01',
+    nombre_empresa: 'CARGA DEL OTRO DISPOSITIVO', fecha_inicio: '09/10/2026',
+    situacion: 'Sin_tratamiento', intervenciones: [],
+    actualizado_en: new Date().toISOString()
+  });
+  let sha = 'sha-7';
+  const posts = [];
+
+  const server = http.createServer((req, res) => {
+    const json = (code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
+    if (req.url.startsWith('/api/version-cartas')) return json(200, { version: sha });
+    if (req.url.startsWith('/api/sync-cartas')) {
+      if (req.method === 'GET') return json(200, Object.assign({}, store, { _meta: { existe: true, sha } }));
+      let body = '';
+      req.on('data', (c) => (body += c));
+      req.on('end', () => {
+        const p = JSON.parse(body);
+        posts.push({ baseSha: p._baseSha, tieneOtro: p.expedientes.some((e) => e.id === 'exp_otro_dispositivo') });
+        // Mismo contrato que el Worker: 409 si la base cambió desde _baseSha.
+        if (p._baseSha && p._baseSha !== sha) {
+          return json(409, { error: 'conflicto', actual: Object.assign({}, store, { _meta: { existe: true, sha } }) });
+        }
+        store.expedientes = p.expedientes;
+        sha = 'sha-' + (posts.length + 7);
+        json(200, { ok: true, sha });
+      });
+      return;
+    }
+    if (servirHeaderJs(req, res)) return;
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(html);
+  });
+  await new Promise((r) => server.listen(8789, r));
+
+  const problemas = [];
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  page.on('pageerror', (e) => problemas.push('pageerror: ' + e.message));
+  page.on('dialog', async (d) => { await d.dismiss(); });
+  const url = 'http://localhost:8789/';
+
+  // 1) Copia vieja + pendiente, sin la carga ajena.
+  await page.goto(url, { waitUntil: 'networkidle' });
+  await page.evaluate((base) => {
+    localStorage.setItem('cartas_intencion_parques_v3', JSON.stringify(base));
+    localStorage.setItem('cartas_intencion_sync_pendiente_v2', '1');
+  }, inicial.expedientes);
+  await page.reload({ waitUntil: 'networkidle' });
+  for (let i = 0; i < 16 && !store.expedientes.some((e) => e.id === 'exp_otro_dispositivo'); i++) await page.waitForTimeout(500);
+  ok(store.expedientes.some((e) => e.id === 'exp_otro_dispositivo'),
+     'la carga que otro dispositivo ya subió sobrevive al arranque con copia vieja');
+  ok(posts.length > 0 && posts.every((p) => p.baseSha === 'sha-7'),
+     'el POST del arranque lleva el sha del servidor como base, no null');
+  ok(await page.evaluate(() => JSON.parse(localStorage.getItem('cartas_intencion_parques_v3')).some((e) => e.id === 'exp_otro_dispositivo')),
+     'y el dispositivo también la tiene después de fusionar');
+
+  // 2) Orden del Archivo con fechas que cruzan años.
+  const archivados = [
+    ['ARCH 20 DIC 2025', '20/12/2025 10:00'],
+    ['ARCH 05 ENE 2026', '05/01/2026 09:00'],
+    ['ARCH 01 DIC 2025', '01/12/2025 08:00'],
+    ['ARCH 15 ENE 2026', '15/01/2026 09:00']
+  ].map(([nombre, fecha], i) => ({
+    id: 'exp_arch_' + i, nro_expediente: '999-0000' + i + '/2025-0', nombre_empresa: nombre,
+    fecha_inicio: '01/01/2025', situacion: 'Sin_tratamiento', archivado: true,
+    fecha_archivado: fecha, intervenciones: []
+  }));
+  store.expedientes.push(...archivados);
+  sha = 'sha-8';
+  await page.evaluate(() => { localStorage.clear(); });
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForFunction(() => document.querySelectorAll('.exp-card').length > 0);
+  await page.click('#tabArchivo');
+  await page.waitForSelector('#archivoList .exp-card');
+  const orden = await page.locator('#archivoList .exp-card').allTextContents();
+  const posiciones = ['ARCH 15 ENE 2026', 'ARCH 05 ENE 2026', 'ARCH 20 DIC 2025', 'ARCH 01 DIC 2025']
+    .map((n) => orden.findIndex((t) => t.includes(n)));
+  ok(posiciones.every((p) => p >= 0) && posiciones.every((p, i) => i === 0 || p > posiciones[i - 1]),
+     'el Archivo muestra el más reciente primero: 15/01/2026, 05/01/2026, 20/12/2025, 01/12/2025');
+
+  ok(problemas.length === 0, 'sin errores de JS' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
+  await browser.close();
+  server.close();
+}
+
+/*
  * Parques: lotes y empresas de Güemes, importados de la base SQLite
  * normalizada que pasó el usuario (no de las planillas de Drive). Protocolo
  * simple, como Resoluciones. Existe porque los tests estáticos no ven el
@@ -2285,6 +2384,7 @@ await testResoluciones({ width: 390, height: 844 }, 8796);
 await testProyectos({ width: 1440, height: 900 }, 8795);
 await testProyectos({ width: 390, height: 844 }, 8794);
 await testProyectosCargaSolapada();
+await testProyectosArranqueYArchivo();
 await testParques({ width: 1440, height: 900 }, 8793);
 await testParques({ width: 390, height: 844 }, 8792);
 await testUniformidad(8791);
