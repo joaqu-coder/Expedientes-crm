@@ -3938,7 +3938,7 @@
       "actualizado_en": "2026-10-20T14:04:03.956Z"
     }
   ],
-  "plazoDias": 90,
+  "plazoDias": 20,
   "umbrales": {
     "alerta": 30,
     "critico": 15
