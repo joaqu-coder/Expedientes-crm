@@ -160,14 +160,16 @@ svg text{font-family:var(--font-body)}
 @media (max-width:420px){.row2{grid-template-columns:1fr}}
 
 .hist{margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
-/* Títulos de sección (Expediente, Contacto, Historial): mismo estilo en las tres. */
-.hist h3,.view-section h3{font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--text);margin-bottom:9px;font-weight:700}
-.hist-empty{font-size:12.5px;color:var(--muted)}
+/* Escala de la ficha: los tamaños y altos vienen de design-system.css
+   (--ds-text-*). Subtítulo = secciones; información = rótulos, datos, fechas
+   y notas, todos al mismo nivel. */
+.hist h3,.view-section h3{font-size:var(--ds-text-subtitle);line-height:var(--ds-text-subtitle-lh);letter-spacing:.04em;text-transform:uppercase;color:var(--text);margin-bottom:9px;font-weight:700}
+.hist-empty{font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);color:var(--muted)}
 .hist-list{display:flex;flex-direction:column;gap:10px;max-height:220px;overflow-y:auto}
 .hist-item{display:flex;flex-direction:column;gap:2px}
-.hist-time{font-family:var(--font-mono);font-size:10.5px;color:var(--muted)}
-.hist-time .sys{color:var(--accent);text-transform:uppercase;letter-spacing:.04em;font-size:9px;border:1px solid var(--accent);border-radius:4px;padding:0 4px;margin-left:6px}
-.hist-text{font-size:13px;line-height:1.4;color:var(--muted)}
+.hist-time{font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);color:var(--muted)}
+.hist-time .sys{color:var(--accent);text-transform:uppercase;letter-spacing:.04em;font-size:inherit;line-height:inherit;border:1px solid var(--accent);border-radius:4px;padding:0 5px;margin-left:6px}
+.hist-text{font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);color:var(--muted)}
 
 /* Los botones de acción (Guardar/Cancelar/Eliminar/Editar) viven en
    /ui-kit.css, compartidos con las otras tres apps. */
@@ -175,15 +177,17 @@ svg text{font-family:var(--font-body)}
 
 /* ---- Modal: vista de lectura ---- */
 .view-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
-.view-empresa{font-size:16px;font-weight:700}
-.view-exp{font-family:var(--font-mono);font-size:11.5px;color:var(--muted);margin-top:2px}
+.view-empresa{font-size:var(--ds-text-title);line-height:var(--ds-text-title-lh);font-weight:700;color:var(--text)}
+.view-exp{font-family:var(--font-mono);font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums}
 .view-urg{margin-top:10px}
 .view-section{margin-top:14px;padding-top:13px;border-top:1px solid var(--border)}
 .view-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px 12px}
-.view-item label{display:block;color:var(--muted);font-size:12px}
-.view-item .v{margin-top:1px;font-size:13.5px;font-weight:400;color:var(--muted)}
-.view-actividad{font-size:13.5px;margin-top:11px;line-height:1.45;color:var(--muted)}
-.view-empty{font-size:12.5px;color:var(--muted)}
+/* Rótulo en negrita (información, color de texto) y respuesta en gris: mismo
+   nivel de tamaño y de alto de línea, para que la fila quede pareja. */
+.view-item label{display:block;font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);font-weight:700;color:var(--text)}
+.view-item .v{margin-top:1px;font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);font-weight:400;color:var(--muted)}
+.view-actividad{font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);margin-top:11px;color:var(--muted)}
+.view-empty{font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);color:var(--muted)}
 .view-actions{display:flex;gap:8px;margin-top:16px}
 
 /* ---- Dashboard: gráficos ---- */

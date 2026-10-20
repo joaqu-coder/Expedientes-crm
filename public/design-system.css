@@ -168,6 +168,22 @@
   --ds-gap:            8px;
   --ds-padding-x:      14px;
 
+  /* --- Escala tipográfica de fichas (2026-10-20) ---------------------------
+     Tres niveles y nada más, en píxeles, con su alto de línea. Una línea de
+     datos y una fecha o nota del mismo bloque comparten nivel: se leen a la
+     misma altura, como las notas de Seguimiento.
+       título    → nombre de la empresa (lo primero que se lee)
+       subtítulo → secciones: EXPEDIENTE, CONTACTO, HISTORIAL
+       información → rótulos en negrita, datos, fechas y textos de nota
+     El color lo decide el rol, no el tamaño: rótulos y títulos en --ds-fg,
+     respuestas y datos complementarios en --ds-fg-muted (gris). */
+  --ds-text-title:       18px;
+  --ds-text-title-lh:    24px;
+  --ds-text-subtitle:    14px;
+  --ds-text-subtitle-lh: 20px;
+  --ds-text-info:        13px;
+  --ds-text-info-lh:     18px;
+
   /* --- Diálogos de confirmación (tarjeta «¿Desea guardar los cambios?») ---
      Van por encima de los modales (z 20) y con un fondo más oscuro que el de
      la ficha, para que se lea como una pregunta aparte y no como parte del

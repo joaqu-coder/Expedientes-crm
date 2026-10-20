@@ -1557,6 +1557,83 @@ async function testProyectosLayoutYFiltros() {
   server.close();
 }
 
+/* Escala tipográfica de la ficha de Proyectos (design-system.css, --ds-text-*).
+   Se mide en el navegador: el CSS puede declarar un token y la página no usarlo.
+   Lo que se exige: títulos 18, subtítulos 14 y el resto de la ficha 13, nunca
+   otro tamaño; rótulos en negrita; respuestas en el gris global (--muted). */
+async function testProyectosEscalaFicha(viewport) {
+  console.log(`\n=== PROYECTOS: ESCALA TIPOGRÁFICA DE LA FICHA (${viewport.nombre}) ===`);
+  const html = fs.readFileSync(path.join(RAIZ, 'public/proyectos.html'), 'utf8');
+  const store = JSON.parse(fs.readFileSync(path.join(RAIZ, 'cartas-intencion.json'), 'utf8'));
+  const sha = 'sha-escala-1';
+
+  const server = http.createServer((req, res) => {
+    const json = (code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
+    if (req.url.startsWith('/api/version-cartas')) return json(200, { version: sha });
+    if (req.url.startsWith('/api/sync-cartas')) return json(200, Object.assign({}, store, { _meta: { existe: true, sha } }));
+    if (servirHeaderJs(req, res)) return;
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(html);
+  });
+  await new Promise((r) => server.listen(8789, r));
+
+  const problemas = [];
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const page = await browser.newPage({ viewport: { width: viewport.ancho, height: viewport.alto } });
+  page.on('pageerror', (e) => problemas.push('pageerror: ' + e.message));
+  await page.goto('http://localhost:8789/proyectos.html', { waitUntil: 'networkidle' });
+  await page.waitForFunction(() => document.querySelectorAll('.exp-card').length > 0);
+  await page.locator('.exp-card').first().click();
+  await page.waitForSelector('#modal .view-section');
+
+  const medidas = await page.evaluate(() => {
+    const cs = (sel) => getComputedStyle(document.querySelector(sel));
+    const probe = document.createElement('i');
+    probe.style.color = 'var(--muted)';
+    document.body.appendChild(probe);
+    const grisGlobal = getComputedStyle(probe).color;
+    probe.remove();
+
+    // Todo texto propio de la ficha (no el de los badges de urgencia ni de situación).
+    const zonas = ['.view-empresa', '.view-exp', '.view-section', '.hist'];
+    const tamanos = new Set();
+    const fuera = [];
+    for (const z of zonas) {
+      document.querySelectorAll('#modal ' + z + ', #modal ' + z + ' *').forEach((el) => {
+        const tieneTexto = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+        if (!tieneTexto) return;
+        const st = getComputedStyle(el);
+        tamanos.add(st.fontSize);
+        if (!['18px', '14px', '13px'].includes(st.fontSize)) fuera.push(el.className + ' ' + st.fontSize);
+      });
+    }
+    return {
+      grisGlobal,
+      titulo: { size: cs('#modal .view-empresa').fontSize, weight: cs('#modal .view-empresa').fontWeight },
+      subtitulo: { size: cs('#modal .view-section h3').fontSize, weight: cs('#modal .view-section h3').fontWeight },
+      rotulo: { size: cs('#modal .view-item label').fontSize, weight: cs('#modal .view-item label').fontWeight },
+      respuesta: { size: cs('#modal .view-item .v').fontSize, color: cs('#modal .view-item .v').color },
+      nota: { size: cs('#modal .hist-text').fontSize, lh: cs('#modal .hist-text').lineHeight, color: cs('#modal .hist-text').color },
+      tamanos: [...tamanos],
+      fuera,
+    };
+  });
+
+  ok(medidas.titulo.size === '18px' && medidas.titulo.weight === '700', `título primario: 18px en negrita (${medidas.titulo.size}/${medidas.titulo.weight})`);
+  ok(medidas.subtitulo.size === '14px' && medidas.subtitulo.weight === '700', `subtítulo de sección: 14px en negrita (${medidas.subtitulo.size}/${medidas.subtitulo.weight})`);
+  ok(medidas.rotulo.size === '13px' && medidas.rotulo.weight === '700', `rótulo (Parque, Rubro…): 13px en negrita (${medidas.rotulo.size}/${medidas.rotulo.weight})`);
+  ok(medidas.respuesta.size === '13px' && medidas.respuesta.color === medidas.grisGlobal,
+    `respuesta: 13px en el gris global (${medidas.respuesta.size}, ${medidas.respuesta.color} vs ${medidas.grisGlobal})`);
+  ok(medidas.nota.size === '13px' && medidas.nota.lh === '18px' && medidas.nota.color === medidas.grisGlobal,
+    `texto de nota: 13px, alto 18px, gris global (${medidas.nota.size}/${medidas.nota.lh})`);
+  ok(medidas.fuera.length === 0 && medidas.tamanos.every((t) => ['18px', '14px', '13px'].includes(t)),
+    `ningún texto de la ficha sale de la escala 18/14/13 (encontrados: ${medidas.tamanos.join(', ')}; fuera: ${medidas.fuera.join(' | ') || 'ninguno'})`);
+
+  ok(problemas.length === 0, 'sin errores de JS (' + problemas.join(' | ') + ')');
+  await browser.close();
+  server.close();
+}
+
 async function testParques(viewport, puerto) {
   console.log(`\n=== PARQUES (${viewport.width}x${viewport.height}) ===`);
   const html = fs.readFileSync(path.join(RAIZ, 'public/parques.html'), 'utf8');
@@ -2800,6 +2877,8 @@ await testProyectosArranqueYArchivo();
 await testProyectosValidacionYOrden();
 await testProyectosSalidasYDeshacer();
 await testProyectosLayoutYFiltros();
+await testProyectosEscalaFicha({ nombre: 'mobile', ancho: 390, alto: 844 });
+await testProyectosEscalaFicha({ nombre: 'desktop', ancho: 1280, alto: 800 });
 await testParques({ width: 1440, height: 900 }, 8793);
 await testParques({ width: 390, height: 844 }, 8792);
 await testUniformidad(8791);
