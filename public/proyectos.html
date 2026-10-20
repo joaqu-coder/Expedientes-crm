@@ -99,8 +99,23 @@ svg text{font-family:var(--font-body)}
 .exp-card-main{min-width:0;flex:1 1 190px}
 .exp-card-exp{font-family:var(--font-mono);font-size:11.5px;color:var(--muted)}
 .exp-card-empresa{font-size:15px;font-weight:700;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.exp-card-aside{flex:0 1 auto;display:flex;align-items:center;flex-wrap:wrap;gap:6px}
 .exp-card-sub{font-size:11.5px;color:var(--muted);margin-top:3px}
+/* Línea de estado (opción B): plazo y situación van como texto con un punto de
+   color, no como pastillas. El color sale de los mismos tokens que el semáforo. */
+.exp-estado{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;font-size:12px;line-height:16px;margin-top:7px}
+.exp-plazo{display:inline-flex;align-items:center;gap:6px;font-weight:600;white-space:nowrap}
+.exp-dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex:0 0 auto}
+.exp-sep{color:var(--muted)}
+.exp-sit{font-weight:600;white-space:nowrap}
+.c-rojo{color:var(--danger)}
+.c-naranja{color:var(--orange)}
+.c-amarillo{color:var(--warn)}
+.c-verde{color:var(--ok)}
+.c-na{color:var(--muted)}
+.exp-sit.b-ok{color:var(--ok)}
+.exp-sit.b-warn{color:var(--warn)}
+.exp-sit.b-idle{color:var(--idle)}
+.exp-sit.b-danger{color:var(--danger)}
 .empty-state{padding:30px 14px;text-align:center;color:var(--muted);font-size:13px;background:var(--surface);border:1px solid var(--border);border-radius:10px}
 
 .badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;border-radius:6px;padding:3px 8px;white-space:nowrap}
@@ -1364,11 +1379,12 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
         '<div class="exp-card-empresa">'+esc(e.nombre_empresa||"(sin nombre de empresa)")+'</div>'+
         (sub?'<div class="exp-card-sub">'+esc(sub)+'</div>':'')+
         (subExtra?'<div class="exp-card-sub">'+esc(subExtra)+'</div>':'')+
-      '</div>'+
-      '<div class="exp-card-aside">'+
-        (urg?'<span class="urg urg-'+urg.color+'"'+(urg.aviso?' title="'+esc(urg.aviso)+'"':'')+
-             '>'+esc(urg.texto)+'</span>':'')+
-        '<span class="badge '+(SIT_BADGE[e.situacion]||"b-idle")+'">'+esc(labelSituacion(e.situacion))+'</span>'+
+        '<div class="exp-estado">'+
+          (urg?'<span class="exp-plazo c-'+urg.color+'"'+(urg.aviso?' title="'+esc(urg.aviso)+'"':'')+
+               '><i class="exp-dot"></i>'+esc(urg.texto)+'</span>'+
+               '<span class="exp-sep" aria-hidden="true">·</span>':'')+
+          '<span class="exp-sit '+(SIT_BADGE[e.situacion]||"b-idle")+'">'+esc(labelSituacion(e.situacion))+'</span>'+
+        '</div>'+
       '</div>'+
       '</button>';
   }
