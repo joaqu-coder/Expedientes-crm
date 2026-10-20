@@ -2429,7 +2429,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
           return '<div class="hist-item"><div class="hist-time">'+esc(n.hora)+(n.tipo==="sistema"?'<span class="sys">sistema</span>':'')+'</div><div class="hist-text">'+esc(n.texto)+'</div></div>';
         }).join("")+'</div>'
       : '<div class="hist-empty">Sin notas aún.</div>';
-    return '<div class="hist"><h3>Historial ('+notas.length+')</h3>'+body+'</div>';
+    return '<div class="hist"><h3>Notas ('+notas.length+')</h3>'+body+'</div>';
   }
   function closeModal(){
     veil.hidden = true;

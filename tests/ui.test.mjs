@@ -1634,6 +1634,158 @@ async function testProyectosEscalaFicha(viewport) {
   server.close();
 }
 
+/* La misma escala (design-system.css, --ds-text-*) en las otras tres fichas.
+   Cada chequeo mide un elemento real de la pantalla; si el selector no
+   existe, el test falla: no hay forma de "pasar" una ficha que no se abrió. */
+const ESCALA_NIVELES = {
+  titulo:    { size: '18px', weight: '700', color: 'text' },
+  subtitulo: { size: '14px', weight: '700', color: 'text' },
+  rotulo:    { size: '13px', weight: '700', color: 'text' },
+  respuesta: { size: '13px', weight: '400', color: 'muted' },
+  info:      { size: '13px', weight: '400', color: 'muted' },
+};
+
+async function verificarEscala(page, pantalla, chequeos, zonas) {
+  const medidas = await page.evaluate(({ chequeos, zonas }) => {
+    const color = (v) => { const p = document.createElement('i'); p.style.color = `var(--${v})`; document.body.appendChild(p); const c = getComputedStyle(p).color; p.remove(); return c; };
+    const colores = { text: color('text'), muted: color('muted') };
+    const elementos = chequeos.map((c) => {
+      const el = document.querySelector(c.sel);
+      if (!el) return { nombre: c.nombre, ausente: true };
+      const st = getComputedStyle(el);
+      return { nombre: c.nombre, nivel: c.nivel, size: st.fontSize, weight: st.fontWeight, color: st.color };
+    });
+    // Ningún texto propio de la zona sale de la escala. Botones, badges y
+    // avisos de urgencia tienen sus propios componentes: quedan afuera.
+    const tamanos = new Set();
+    const fuera = [];
+    for (const z of zonas) {
+      document.querySelectorAll(z + ' *, ' + z).forEach((el) => {
+        // El avatar (iniciales) es un componente con su propio tamaño, como los badges.
+        if (el.closest('.btn, .badge, .urg, .view-actions, .expediente-actions, .modal-head, .avatar')) return;
+        if (![...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) return;
+        const fs = getComputedStyle(el).fontSize;
+        tamanos.add(fs);
+        if (!['18px', '14px', '13px'].includes(fs)) fuera.push((el.className || el.tagName) + ' ' + fs);
+      });
+    }
+    return { colores, elementos, tamanos: [...tamanos], fuera };
+  }, { chequeos, zonas });
+
+  for (const e of medidas.elementos) {
+    if (e.ausente) { ok(false, `${pantalla}: ${e.nombre} existe en la ficha`); continue; }
+    const esperado = ESCALA_NIVELES[e.nivel];
+    const colorOk = e.color === medidas.colores[esperado.color];
+    ok(e.size === esperado.size && e.weight === esperado.weight && colorOk,
+      `${pantalla}: ${e.nombre} es ${esperado.size}/${esperado.weight} en ${esperado.color === 'muted' ? 'gris' : 'texto'} (${e.size}/${e.weight}, ${e.color})`);
+  }
+  ok(medidas.fuera.length === 0,
+    `${pantalla}: ningún texto de la ficha sale de la escala 18/14/13 (encontrados: ${medidas.tamanos.join(', ')}; fuera: ${medidas.fuera.join(' | ') || 'ninguno'})`);
+}
+
+async function testEscalaOtrasFichas() {
+  console.log('\n=== ESCALA TIPOGRÁFICA: RESOLUCIONES, PARQUES Y SEGUIMIENTO ===');
+  const problemas = [];
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+
+  // Resoluciones: ficha de una resolución.
+  {
+    const html = fs.readFileSync(path.join(RAIZ, 'public/resoluciones.html'), 'utf8');
+    const datos = JSON.parse(fs.readFileSync(path.join(RAIZ, 'resoluciones.json'), 'utf8'));
+    const server = http.createServer((req, res) => {
+      if (req.url.startsWith('/api/')) { res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify(datos)); }
+      if (servirHeaderJs(req, res)) return;
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(html);
+    });
+    await new Promise((r) => server.listen(8782, r));
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    page.on('pageerror', (e) => problemas.push('resoluciones: ' + e.message));
+    await page.goto('http://localhost:8782/', { waitUntil: 'networkidle' });
+    await page.waitForFunction(() => document.querySelectorAll('.res-card').length > 0);
+    await page.locator('.res-card').first().click();
+    await page.waitForSelector('#modal .view-texto');
+    await verificarEscala(page, 'Resoluciones', [
+      { nombre: 'título (N° de resolución)', sel: '#modal .view-title', nivel: 'titulo' },
+      { nombre: 'subtítulo (Datos)', sel: '#modal .view-section h3', nivel: 'subtitulo' },
+      { nombre: 'rótulo (Tema)', sel: '#modal .view-item label', nivel: 'rotulo' },
+      { nombre: 'respuesta (valor del dato)', sel: '#modal .view-item .v', nivel: 'respuesta' },
+      { nombre: 'texto resolutivo', sel: '#modal .view-texto', nivel: 'info' },
+    ], ['#modal .view-head', '#modal .view-section']);
+    await page.close();
+    server.close();
+  }
+
+  // Parques: ficha de empresa (Empresa) y ficha de lote.
+  {
+    const html = fs.readFileSync(path.join(RAIZ, 'public/parques.html'), 'utf8');
+    const datos = JSON.parse(fs.readFileSync(path.join(RAIZ, 'parques.json'), 'utf8'));
+    const server = http.createServer((req, res) => {
+      if (req.url.startsWith('/api/')) {
+        if (req.method === 'POST') { req.resume(); req.on('end', () => { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end('{"ok":true}'); }); return; }
+        res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify(datos));
+      }
+      if (servirHeaderJs(req, res)) return;
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(html);
+    });
+    await new Promise((r) => server.listen(8783, r));
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    page.on('pageerror', (e) => problemas.push('parques: ' + e.message));
+    await page.goto('http://localhost:8783/', { waitUntil: 'networkidle' });
+    await page.waitForFunction(() => document.querySelectorAll('#empresasList .tarjeta').length > 0);
+
+    await page.locator('#empresasList .tarjeta', { hasText: 'AGSOF S.A' }).first().click();
+    await page.waitForSelector('#btnEditEmp');
+    await verificarEscala(page, 'Parques (empresa)', [
+      { nombre: 'título (nombre de la empresa)', sel: '#modal .view-title', nivel: 'titulo' },
+      { nombre: 'rótulo (Representante)', sel: '#modal .info-row dt', nivel: 'rotulo' },
+      { nombre: 'respuesta (dato de la empresa)', sel: '#modal .info-row dd', nivel: 'respuesta' },
+    ], ['#modal .view-head', '#modal .info-list']);
+    await page.click('#xCloseViewEmp');
+    await page.waitForTimeout(200);
+
+    await page.click('#tabComercial');
+    await page.waitForSelector('[data-open-lote]');
+    await page.locator('[data-open-lote]').first().click();
+    await page.waitForSelector('#modal .view-section h3');
+    await verificarEscala(page, 'Parques (lote)', [
+      { nombre: 'título (N° de lote)', sel: '#modal .view-title', nivel: 'titulo' },
+      { nombre: 'subtítulo (Ubicación)', sel: '#modal .view-section h3', nivel: 'subtitulo' },
+      { nombre: 'rótulo (Manzana)', sel: '#modal .view-item label', nivel: 'rotulo' },
+      { nombre: 'respuesta (valor del lote)', sel: '#modal .view-item .v', nivel: 'respuesta' },
+    ], ['#modal .view-head', '#modal .view-section']);
+    await page.close();
+    server.close();
+  }
+
+  // Seguimiento: tarjeta expandida, con notas.
+  {
+    const ctx = levantarServer(8781);
+    await new Promise((r) => ctx.server.listen(8781, r));
+    ctx.ctl.datos = { expedientes: [{ id: 'esc', numero: '363-9/2026-01', tema: 'Tema de prueba de escala', area: 'Jurídica', responsable: 'Ana', estado: 'activo', intervenciones: [{ hora: '20/10/2026 13:44', texto: 'Nota de prueba para medir la escala de la tarjeta.', tipo: 'nota' }], fechaInicio: '2099-01-05', diasPlazo: 30 }], areas: ['Jurídica'], responsables: ['Ana'] };
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    page.on('pageerror', (e) => problemas.push('seguimiento: ' + e.message));
+    await page.goto('http://localhost:8781/', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.expediente-header-urgencia');
+    await page.locator('.expediente-header-urgencia').first().click();
+    await page.waitForSelector('.nota-texto');
+    await verificarEscala(page, 'Seguimiento (tarjeta)', [
+      { nombre: 'título (tema)', sel: '.expediente-expanded-tema', nivel: 'titulo' },
+      { nombre: 'subtítulo (Notas)', sel: '.notas-header', nivel: 'subtitulo' },
+      { nombre: 'rótulo (Inicio:)', sel: '.expediente-expanded-dates .label', nivel: 'rotulo' },
+      { nombre: 'respuesta (fecha de inicio)', sel: '.expediente-expanded-dates > div > span:last-child', nivel: 'respuesta' },
+      { nombre: 'fecha de la nota', sel: '.nota-hora', nivel: 'info' },
+      { nombre: 'texto de la nota', sel: '.nota-texto', nivel: 'info' },
+    ], ['.expediente-expanded-tema', '.expediente-expanded-meta', '.expediente-expanded-dates', '.expediente-notas-section']);
+    await page.close();
+    ctx.server.close();
+  }
+
+  ok(problemas.length === 0, 'sin errores de JS (' + problemas.join(' | ') + ')');
+  await browser.close();
+}
+
 async function testParques(viewport, puerto) {
   console.log(`\n=== PARQUES (${viewport.width}x${viewport.height}) ===`);
   const html = fs.readFileSync(path.join(RAIZ, 'public/parques.html'), 'utf8');
@@ -2879,6 +3031,7 @@ await testProyectosSalidasYDeshacer();
 await testProyectosLayoutYFiltros();
 await testProyectosEscalaFicha({ nombre: 'mobile', ancho: 390, alto: 844 });
 await testProyectosEscalaFicha({ nombre: 'desktop', ancho: 1280, alto: 800 });
+await testEscalaOtrasFichas();
 await testParques({ width: 1440, height: 900 }, 8793);
 await testParques({ width: 390, height: 844 }, 8792);
 await testUniformidad(8791);
