@@ -103,8 +103,10 @@
      fuente, pero eran dos listas que había que mantener sincronizadas a mano. */
   --ds-font-sans: Roboto, Helvetica, -apple-system, BlinkMacSystemFont,
                   "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-  --ds-font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono",
-                  "Courier New", monospace;
+  /* Números (expediente, totales, matrículas): misma familia global que el
+     resto de la app. Se mantiene el token para no reescribir las páginas; los
+     dígitos alineados salen de font-variant-numeric: tabular-nums. */
+  --ds-font-mono: var(--ds-font-sans);
 }
 
 /* ===========================================================================

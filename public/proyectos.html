@@ -97,7 +97,7 @@ svg text{font-family:var(--font-body)}
 .exp-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px 12px;cursor:pointer;text-align:left;width:100%;flex-wrap:wrap}
 .exp-card:hover{border-color:var(--accent)}
 .exp-card-main{min-width:0;flex:1 1 190px}
-.exp-card-exp{font-family:var(--font-mono);font-size:11.5px;color:var(--muted)}
+.exp-card-exp{font-size:11.5px;line-height:16px;color:var(--muted);margin-top:6px;font-variant-numeric:tabular-nums}
 .exp-card-empresa{font-size:15px;font-weight:700;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .exp-card-sub{font-size:11.5px;color:var(--muted);margin-top:3px}
 /* Línea de estado (opción B): plazo y situación van como texto con un punto de
@@ -1375,7 +1375,6 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     var sub = [e.parque_industrial, e.rubro].filter(Boolean).join(" · ");
     return '<button class="exp-card" data-open="'+esc(e.id)+'">'+
       '<div class="exp-card-main">'+
-        '<div class="exp-card-exp">'+esc(e.nro_expediente||"s/n")+'</div>'+
         '<div class="exp-card-empresa">'+esc(e.nombre_empresa||"(sin nombre de empresa)")+'</div>'+
         (sub?'<div class="exp-card-sub">'+esc(sub)+'</div>':'')+
         (subExtra?'<div class="exp-card-sub">'+esc(subExtra)+'</div>':'')+
@@ -1385,6 +1384,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
                '<span class="exp-sep" aria-hidden="true">·</span>':'')+
           '<span class="exp-sit '+(SIT_BADGE[e.situacion]||"b-idle")+'">'+esc(labelSituacion(e.situacion))+'</span>'+
         '</div>'+
+        '<div class="exp-card-exp">'+esc(e.nro_expediente||"s/n")+'</div>'+
       '</div>'+
       '</button>';
   }
