@@ -485,11 +485,11 @@
       "rubro": "Manufactura",
       "superficie_solicitada_m2": "",
       "actividad_empresa": "",
-      "situacion": "Sin_tratamiento",
+      "situacion": "En_tratamiento",
       "representante_nombre": "",
       "contacto_tel": "",
       "contacto_mail": "",
-      "fecha_ultimo_movimiento": "20/10/2026 13:43",
+      "fecha_ultimo_movimiento": "20/10/2026 19:10",
       "intervenciones": [
         {
           "hora": "12/10/2026 20:54",
@@ -500,10 +500,15 @@
           "hora": "20/10/2026 13:43",
           "texto": "Rescatado del archivo.",
           "tipo": "sistema"
+        },
+        {
+          "hora": "20/10/2026 19:10",
+          "texto": "Cambio de situación: Sin tratamiento → En tratamiento",
+          "tipo": "sistema"
         }
       ],
       "archivado": false,
-      "actualizado_en": "2026-10-20T16:43:34.513Z"
+      "actualizado_en": "2026-10-20T22:10:11.054Z"
     },
     {
       "id": "exp_imp023",
