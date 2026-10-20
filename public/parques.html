@@ -655,6 +655,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   }
 
   function marcarPendiente(){
+    cambiosSeq++;
     try{ localStorage.setItem(SYNC_PENDING_KEY, "1"); }catch(e){}
     setSyncStatus("pendiente");
     // Un cambio nuevo es señal de que el usuario sigue trabajando: se limpia
@@ -707,87 +708,284 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     };
   }
 
+  // ---- Fusión de dos versiones (concurrencia optimista, como Proyectos) ----
+  // Este dispositivo guarda el sha y el contenido que el servidor tenía la
+  // última vez que lo leyó: la "base". Con la base se sabe qué cambió de cada
+  // lado, registro por registro, y lo del otro dispositivo no se pisa.
+  var SYNC_BASE_KEY = "parques_crm_base_v1";
+  var syncBase = cargarBase();
+  // Cuenta cada cambio local: si algo se edita mientras un POST vuela, la
+  // marca de pendiente no se borra al terminar.
+  var cambiosSeq = 0;
+
+  function cargarBase(){
+    try{
+      var v = JSON.parse(localStorage.getItem(SYNC_BASE_KEY));
+      if(v && typeof v.sha === "string" && v.datos && typeof v.datos === "object") return v;
+    }catch(e){}
+    return {sha:null, datos:null};
+  }
+  function copiar(x){ return x==null ? x : JSON.parse(JSON.stringify(x)); }
+  function guardarBase(sha, datos){
+    syncBase = {sha: sha, datos: copiar(datos)};
+    try{ localStorage.setItem(SYNC_BASE_KEY, JSON.stringify(syncBase)); }catch(e){}
+  }
+  // Comparación sin importar el orden de las claves: el servidor y este
+  // dispositivo no las serializan igual, y eso no es un cambio.
+  function canon(x){
+    if(Array.isArray(x)) return x.map(canon);
+    if(x && typeof x === "object"){
+      var o = {};
+      Object.keys(x).sort().forEach(function(k){ if(x[k] !== undefined) o[k] = canon(x[k]); });
+      return o;
+    }
+    return x;
+  }
+  function mismo(a, b){ return JSON.stringify(canon(a)) === JSON.stringify(canon(b)); }
+  function indexar(lista, clave){
+    var m = {};
+    (lista||[]).forEach(function(x){ if(x && x[clave] != null) m[String(x[clave])] = x; });
+    return m;
+  }
+  function idsDe(lista, campo){
+    return (lista||[]).map(function(x){ return x ? x[campo] : null; }).filter(function(v){ return v != null; });
+  }
+  // Próximo id libre con ese prefijo, mirando todos los ids conocidos (las
+  // bajas incluidas, para no reusar uno que otro dispositivo ya conoce).
+  function proximoId(usados, prefijo){
+    var re = new RegExp("^" + prefijo + "(\\d+)$"), max = 0;
+    usados.forEach(function(id){ var m = re.exec(String(id)); if(m) max = Math.max(max, parseInt(m[1], 10)); });
+    return prefijo + String(max + 1).padStart(3, "0");
+  }
+
+  // Fusiona `local` y `remoto` contra `base`. Un registro cambiado de un solo
+  // lado gana ese cambio. Si cambió en los dos, gana este dispositivo y se
+  // cuenta como conflicto. Las altas independientes que chocan por id se
+  // renumeran en la copia local (con sus referencias), así no se pierde ninguna.
+  function fusionarParques(base, local, remoto){
+    var b = base || {parques:[], empresas:[], lotes:[], ocupaciones:[], reservas:[], eliminados:{empresas:[], lotes:[]}};
+    var eliminados = {
+      empresas: unirIds(remoto.eliminados.empresas, local.eliminados.empresas),
+      lotes: unirIds(remoto.eliminados.lotes, local.eliminados.lotes)
+    };
+    var L = copiar(local);
+    var conflictos = 0;
+
+    // Altas que chocan por id: se renumera la local.
+    var usadosEmp = idsDe(b.empresas,"id_empresa").concat(idsDe(L.empresas,"id_empresa"),
+                          idsDe(remoto.empresas,"id_empresa"), eliminados.empresas);
+    var bEmp = indexar(b.empresas,"id_empresa"), rEmp = indexar(remoto.empresas,"id_empresa");
+    var renEmp = {};
+    L.empresas.forEach(function(e){
+      var id = e.id_empresa;
+      if(bEmp[id] || !rEmp[id] || mismo(rEmp[id], e)) return;
+      var nuevo = proximoId(usadosEmp, prefijoDe(e.id_parque, "E"));
+      usadosEmp.push(nuevo); renEmp[id] = nuevo; e.id_empresa = nuevo;
+    });
+    if(Object.keys(renEmp).length){
+      L.lotes.forEach(function(l){ if(renEmp[l.id_empresa]) l.id_empresa = renEmp[l.id_empresa]; });
+      L.ocupaciones.forEach(function(o){
+        ["id_empresa_titular","id_empresa_ocupante"].forEach(function(c){ if(renEmp[o[c]]) o[c] = renEmp[o[c]]; });
+      });
+    }
+
+    var usadosLot = idsDe(b.lotes,"id_lote").concat(idsDe(L.lotes,"id_lote"),
+                          idsDe(remoto.lotes,"id_lote"), eliminados.lotes);
+    var bLot = indexar(b.lotes,"id_lote"), rLot = indexar(remoto.lotes,"id_lote");
+    var renLot = {};
+    L.lotes.forEach(function(l){
+      var id = l.id_lote;
+      if(bLot[id] || !rLot[id] || mismo(rLot[id], l)) return;
+      var nuevo = proximoId(usadosLot, prefijoDe(l.id_parque, "L"));
+      usadosLot.push(nuevo); renLot[id] = nuevo; l.id_lote = nuevo;
+    });
+    if(Object.keys(renLot).length){
+      L.ocupaciones.forEach(function(o){ if(renLot[o.id_lote]) o.id_lote = renLot[o.id_lote]; });
+    }
+
+    // Ocupaciones usan id numérico: mismo criterio.
+    var usadosOcu = idsDe(b.ocupaciones,"id").concat(idsDe(L.ocupaciones,"id"), idsDe(remoto.ocupaciones,"id"));
+    var bOcu = indexar(b.ocupaciones,"id"), rOcu = indexar(remoto.ocupaciones,"id");
+    L.ocupaciones.forEach(function(o){
+      var id = String(o.id);
+      if(bOcu[id] || !rOcu[id] || mismo(rOcu[id], o)) return;
+      var nuevo = Math.max.apply(null, [0].concat(usadosOcu.map(Number))) + 1;
+      usadosOcu.push(nuevo); o.id = nuevo;
+    });
+
+    function fusionarColeccion(bl, ll, rl, clave){
+      var B = indexar(bl, clave), Lm = indexar(ll, clave), R = indexar(rl, clave);
+      var claves = {};
+      [B, Lm, R].forEach(function(m){ Object.keys(m).forEach(function(k){ claves[k] = true; }); });
+      var out = [];
+      Object.keys(claves).forEach(function(k){
+        var bk = B[k], lk = Lm[k], rk = R[k];
+        var lCambio = !mismo(lk, bk), rCambio = !mismo(rk, bk);
+        var elegido;
+        if(lCambio && rCambio && !mismo(lk, rk)){ conflictos++; elegido = lk; }
+        else if(lCambio){ elegido = lk; }
+        else { elegido = rk; }
+        if(elegido !== undefined) out.push(elegido);
+      });
+      return out;
+    }
+
+    var empresas = fusionarColeccion(b.empresas, L.empresas, remoto.empresas, "id_empresa");
+    var lotes = fusionarColeccion(b.lotes, L.lotes, remoto.lotes, "id_lote");
+    var ocupaciones = fusionarColeccion(b.ocupaciones, L.ocupaciones, remoto.ocupaciones, "id");
+    // Las bajas se aplican después: la fusión no puede resucitar lo borrado.
+    empresas = empresas.filter(function(e){ return eliminados.empresas.indexOf(e.id_empresa) < 0; });
+    lotes = lotes.filter(function(l){ return eliminados.lotes.indexOf(l.id_lote) < 0; });
+    ocupaciones = ocupaciones.filter(function(o){
+      return eliminados.lotes.indexOf(o.id_lote) < 0 && eliminados.empresas.indexOf(o.id_empresa_ocupante) < 0;
+    });
+
+    return {
+      conflictos: conflictos,
+      merged: {
+        parques: mismo(L.parques, b.parques) ? remoto.parques : L.parques,
+        empresas: empresas,
+        lotes: lotes,
+        ocupaciones: ocupaciones,
+        reservas: mismo(L.reservas, b.reservas) ? remoto.reservas : L.reservas,
+        eliminados: eliminados
+      }
+    };
+  }
+  function unirIds(a, b){
+    return Array.from(new Set([].concat(Array.isArray(a) ? a : [], Array.isArray(b) ? b : [])));
+  }
+
+  // Lo que llega del servidor, con el mismo formato que usa la app.
+  function normalizarRemoto(datos){
+    var arr = function(x){ return Array.isArray(x) ? x : []; };
+    var m = migrarParques({
+      parques: Array.isArray(datos.parques) ? datos.parques : null,
+      parque: datos.parque,
+      empresas: arr(datos.empresas), lotes: arr(datos.lotes),
+      ocupaciones: arr(datos.ocupaciones), reservas: arr(datos.reservas),
+      eliminados: datos.eliminados
+    });
+    return {parques: m.parques, empresas: m.empresas, lotes: m.lotes,
+            ocupaciones: m.ocupaciones, reservas: m.reservas, eliminados: m.eliminados};
+  }
+
+  function aplicarDatos(d){
+    state.parques = d.parques; state.empresas = d.empresas; state.lotes = d.lotes;
+    state.ocupaciones = d.ocupaciones; state.reservas = d.reservas; state.eliminados = d.eliminados;
+    resolverParqueActivo();
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+    renderParqueSwitch();
+    renderFiltros();
+    renderComercial();
+    renderEmpresas();
+    if(!viewDash.hidden) renderDashboard();
+  }
+
+  // Adopta lo que tiene el servidor. Si hay cambios sin subir, los fusiona
+  // con él (nunca los descarta). Devuelve true si todavía hay algo que subir.
+  function adoptarRemoto(datos, sha){
+    var remoto = normalizarRemoto(datos);
+    var pendientes = haySyncPendiente();
+    var final = remoto;
+    if(pendientes){
+      var f = fusionarParques(syncBase.datos, datosParaSync(), remoto);
+      final = f.merged;
+      if(f.conflictos) console.warn("[sync] " + f.conflictos + " registro(s) editados en dos dispositivos: se conservó la versión de este dispositivo.");
+    }
+    guardarBase(sha, remoto);
+    aplicarDatos(final);
+    if(pendientes && mismo(final, remoto)){
+      // Nada que subir: lo local ya estaba en el servidor.
+      try{ localStorage.removeItem(SYNC_PENDING_KEY); }catch(e){}
+      return false;
+    }
+    return pendientes;
+  }
+
+  // Pide el archivo al servidor y lo adopta. Devuelve true si hay que subir.
+  async function descargar(){
+    var resp = await HeaderGlobal.fetchApi(SYNC_ENDPOINT);
+    if(!resp.ok) throw new Error("GET falló: " + resp.status);
+    var datos = await resp.json();
+    if(!datos || !(Array.isArray(datos.lotes) || Array.isArray(datos.empresas))){
+      throw new Error("El servidor devolvió datos con una forma inesperada.");
+    }
+    return adoptarRemoto(datos, (datos._meta && datos._meta.sha) || null);
+  }
+
   async function subirCambios(){
     if(syncEnProgreso || !haySyncPendiente() || errorPermanente) return;
     syncEnProgreso = true;
     setSyncStatus("subiendo");
+    var seqEnviado = cambiosSeq;
     try{
+      // Sin base no hay forma de detectar un choque: se trae primero.
+      if(!syncBase.sha) await descargar();
+      var enviado = datosParaSync();
       var resp = await HeaderGlobal.fetchApi(SYNC_ENDPOINT, {
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body: JSON.stringify(datosParaSync())
+        body: JSON.stringify(Object.assign({}, enviado, {_baseSha: syncBase.sha}))
       });
+
+      // 409: otro dispositivo escribió después de nuestra base. Se fusiona
+      // con lo que hay y se vuelve a intentar sobre el sha nuevo.
+      if(resp.status === 409){
+        var choque = null;
+        try{ choque = await resp.json(); }catch(e){}
+        if(!choque || !choque.actual || !Array.isArray(choque.actual.empresas)){
+          throw new Error("Conflicto con otro dispositivo y no se pudo fusionar. Recargá la página.");
+        }
+        var quedaAlgo = adoptarRemoto(choque.actual, (choque.actual._meta && choque.actual._meta.sha) || null);
+        syncEnProgreso = false;
+        if(quedaAlgo) programarSubida(0);
+        return;
+      }
+
       if(!resp.ok){
         // 4xx (salvo 429) es culpa del payload o de la configuración:
         // reintentar en loop no lo arregla y esconde el problema.
         if(resp.status >= 400 && resp.status < 500 && resp.status !== 429) errorPermanente = true;
-        throw new Error("POST falló: "+resp.status);
+        throw new Error("POST falló: " + resp.status);
       }
-      try{ localStorage.removeItem(SYNC_PENDING_KEY); }catch(e){}
+      var ok = null;
+      try{ ok = await resp.json(); }catch(e){}
+      // Lo que el servidor tiene ahora es lo enviado: pasa a ser la base.
+      guardarBase(ok && ok.sha ? ok.sha : null, enviado);
+      // Si se editó algo mientras volaba el POST, la marca se queda.
+      if(cambiosSeq === seqEnviado){
+        try{ localStorage.removeItem(SYNC_PENDING_KEY); }catch(e){}
+      }
       fallosSeguidos = 0;
-      setSyncStatus("sincronizado");
+      setSyncStatus(haySyncPendiente() ? "pendiente" : "sincronizado");
     }catch(e){
       fallosSeguidos++;
       setSyncStatus(errorPermanente ? "rechazado" : "offline");
       if(!errorPermanente){
         var espera = proximoBackoff();
-        console.warn("[sync] intento "+fallosSeguidos+" falló; reintento en "+(espera/1000)+"s:", e.message||e);
+        console.warn("[sync] intento " + fallosSeguidos + " falló; reintento en " + (espera/1000) + "s:", e.message || e);
         programarSubida(espera);
       } else {
-        console.error("[sync] el servidor rechaza los datos, no se reintenta:", e.message||e);
+        console.error("[sync] el servidor rechaza los datos, no se reintenta:", e.message || e);
       }
       syncEnProgreso = false;
       return;
     }
     syncEnProgreso = false;
-    // Llegó algo nuevo mientras el POST estaba en vuelo: se manda agendado,
-    // nunca por recursión inmediata.
+    // Llegó algo nuevo mientras el POST estaba en vuelo: se manda agendado.
     if(haySyncPendiente()) programarSubida(100);
   }
 
+  // Traer el servidor no depende de que no haya cambios locales: si los hay,
+  // se fusionan. Así "Actualizar datos" y la vuelta a la pantalla siempre
+  // muestran lo último, sin perder nada.
   async function bajarCambiosIniciales(){
-    if(haySyncPendiente()){
-      subirCambios(); // no pisar trabajo local sin subir
-      return;
-    }
     setSyncStatus("cargando");
     try{
-      var resp = await HeaderGlobal.fetchApi(SYNC_ENDPOINT);
-      if(!resp.ok) throw new Error("GET falló: "+resp.status);
-      var datos = await resp.json();
-      // Durante la espera del GET pudo haber una edición local. Aplicar la
-      // respuesta ahora borraría esa edición con la bandera de pendiente
-      // todavía puesta. Se descarta la respuesta y se sube lo local; Parques
-      // no fusiona todavía (ver la pendiente de "última escritura gana").
-      if(haySyncPendiente()){
-        subirCambios();
-        return;
-      }
-      if(datos && (Array.isArray(datos.lotes) || Array.isArray(datos.empresas))){
-        var m = migrarParques({
-          parques: Array.isArray(datos.parques) ? datos.parques : null,
-          parque: datos.parque,
-          empresas: Array.isArray(datos.empresas) ? datos.empresas : [],
-          lotes: Array.isArray(datos.lotes) ? datos.lotes : [],
-          ocupaciones: Array.isArray(datos.ocupaciones) ? datos.ocupaciones : [],
-          reservas: Array.isArray(datos.reservas) ? datos.reservas : [],
-          eliminados: datos.eliminados
-        });
-        state.parques = m.parques;
-        state.empresas = m.empresas;
-        state.lotes = m.lotes;
-        state.ocupaciones = m.ocupaciones;
-        state.reservas = m.reservas;
-        state.eliminados = m.eliminados;
-        resolverParqueActivo();
-        try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
-        renderParqueSwitch();
-        renderFiltros();
-        renderComercial();
-        renderEmpresas();
-        if(!viewDash.hidden) renderDashboard();
-      }
-      setSyncStatus("sincronizado");
+      var subir = await descargar();
+      if(subir) programarSubida(0);
+      setSyncStatus(haySyncPendiente() ? "pendiente" : "sincronizado");
     }catch(e){
       setSyncStatus("offline");
     }
@@ -1860,6 +2058,19 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   renderEmpresas();
   showView(vistaDeHash(location.hash), true);
   bajarCambiosIniciales();
+
+  // Sin que nadie tenga que tocar nada: al volver a la pestaña (si no hay un
+  // modal abierto) se trae lo último, y al recuperar la red se sube lo pendiente.
+  var ultimoRefrescoParques = Date.now();
+  document.addEventListener("visibilitychange", function(){
+    if(document.hidden || !veil.hidden) return;
+    if(Date.now() - ultimoRefrescoParques < 30000) return;
+    ultimoRefrescoParques = Date.now();
+    bajarCambiosIniciales();
+  });
+  window.addEventListener("online", function(){
+    if(haySyncPendiente()) programarSubida(0); else bajarCambiosIniciales();
+  });
 
   if('serviceWorker' in navigator){
     navigator.serviceWorker.register('sw.js').catch(function(){});

@@ -33,12 +33,6 @@ ni las actualizaciones, ni los pasos de fondo. Eso es responsabilidad del agente
 
 ### Pendientes conocidos del mandato
 
-- **Parques: última escritura gana.** Un dispositivo con datos viejos puede pisar
-  lotes u ocupaciones editados en otro. Solución: llevar Parques al protocolo de
-  Proyectos (sha base + 409 + fusión por registro), con marca de tiempo por registro.
-- **Parques: sin salida tras un 4xx.** Si el servidor rechaza los datos locales,
-  "Actualizar datos" no hace nada. No se arregla sin fusión: bajar sin fusionar
-  borraría las ediciones que están pendientes.
 - **Proyectos: deshacer una baja ya sincronizada** puede no sostenerse cuando hay
   conflicto (la lápida remota vuelve a aplicarse en la fusión).
 - **Límite de 1 MB de la API de Contents de GitHub.** Hoy el archivo más grande
@@ -48,6 +42,27 @@ ni las actualizaciones, ni los pasos de fondo. Eso es responsabilidad del agente
 - **Consumo de la API de GitHub.** Cada pestaña de Proyectos abierta consulta el
   sondeo cada 25 s (~144 llamadas/h). Conviene `If-None-Match` (ETag) en el sondeo
   y en los GET: una respuesta 304 no cuenta contra el límite.
+- **Parques: el registro editado en los dos dispositivos a la vez** gana la versión
+  de este dispositivo (y se registra en consola). Una fusión por campo sería mejor.
+
+### Parques: fusión por registro (2026-10-20)
+
+Parques usa el mismo protocolo concurrente que Proyectos: el POST lleva `_baseSha`
+y el Worker responde 409 con el contenido actual si el archivo cambió.
+
+- **Base**: cada dispositivo guarda el sha y el contenido que el servidor tenía la
+  última vez (`parques_crm_base_v1`). Con esa base se sabe qué cambió de cada lado.
+- **Regla por registro**: cambió de un lado → gana ese. Cambió en los dos y difiere
+  → gana este dispositivo. Eso es lo único que puede perder un cambio ajeno.
+- **Altas con el mismo id** (E900 creado en dos dispositivos): la que llega tarde
+  se renumera con su siguiente id libre, y se actualizan sus referencias.
+- **Comparación canónica** (claves ordenadas): el servidor y el cliente no serializan
+  igual, y eso no puede contarse como cambio.
+- **Actualizar datos y volver a la pantalla siempre traen lo último** y fusionan lo
+  pendiente; ya no se descartan cambios locales para leer.
+- **Tests**: `tests/concurrencia-parques.test.mjs` (dos dispositivos reales, con
+  verificación de que el código anterior los hace fallar) y el test de 409 en
+  `tests/worker.test.mjs`.
 
 ---
 

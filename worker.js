@@ -54,7 +54,11 @@ const APPS = {
     vacio: { parque: 'Güemes', empresas: [], lotes: [], ocupaciones: [], reservas: [] },
     // Las bajas son permanentes hasta que alguien las deshaga a mano: una
     // copia vieja de otro dispositivo no puede resucitar lo que se borró.
-    bajas: true
+    bajas: true,
+    // Concurrencia optimista (como Proyectos): el cliente manda el sha sobre
+    // el que trabajó; si el archivo cambió, se responde 409 con el contenido
+    // actual para que el cliente fusione en vez de pisarlo.
+    conflictos: true
   }
 };
 
@@ -329,8 +333,10 @@ async function manejarSync(request, env, app) {
 
   try {
     if (request.method === 'GET') {
-      const { datos } = await githubGetFile(env.GITHUB_TOKEN, app.archivo);
-      return jsonResponse(datos || app.vacio);
+      const { sha, datos } = await githubGetFile(env.GITHUB_TOKEN, app.archivo);
+      if (!app.conflictos) return jsonResponse(datos || app.vacio);
+      // _meta viaja solo en la respuesta, nunca se escribe en el archivo.
+      return jsonResponse(Object.assign({}, datos || app.vacio, { _meta: { existe: !!datos, sha } }));
     }
 
     if (request.method === 'POST') {
@@ -343,10 +349,22 @@ async function manejarSync(request, env, app) {
       const problema = validarFormaApp(nuevosDatos, app);
       if (problema) return jsonResponse({ error: 'Datos rechazados', detalle: problema }, 422);
 
+      // _baseSha y _meta son protocolo: nunca se escriben en el archivo.
+      const base = nuevosDatos._baseSha;
+      delete nuevosDatos._baseSha;
+      delete nuevosDatos._meta;
+
       const { datos: remotos, sha } = await githubGetFile(env.GITHUB_TOKEN, app.archivo);
+      if (app.conflictos && base && sha && base !== sha) {
+        return jsonResponse({
+          error: 'conflicto',
+          detalle: 'Otro dispositivo guardó cambios mientras editabas. Se fusionan y se reintenta.',
+          actual: Object.assign({}, remotos || app.vacio, { _meta: { existe: !!remotos, sha } })
+        }, 409);
+      }
       if (app.bajas) nuevosDatos = aplicarBajas(nuevosDatos, remotos || {});
-      await githubPutFile(env.GITHUB_TOKEN, app.archivo, app.nombre, nuevosDatos, sha);
-      return jsonResponse({ ok: true });
+      const escrito = await githubPutFile(env.GITHUB_TOKEN, app.archivo, app.nombre, nuevosDatos, sha);
+      return jsonResponse(app.conflictos ? { ok: true, sha: escrito.content.sha } : { ok: true });
     }
 
     return jsonResponse({ error: 'Método no soportado' }, 405);

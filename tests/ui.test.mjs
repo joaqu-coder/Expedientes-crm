@@ -1781,7 +1781,8 @@ async function testParques(viewport, puerto) {
   // Lo que se publica en el repo son datos, no el estado de la pantalla: el
   // POST mandaba `state` entero y dejó commiteado en parques.json hasta lo que
   // había tipeado alguien en el buscador (searchEmpresas: "b").
-  const camposPermitidos = ['parques', 'empresas', 'lotes', 'ocupaciones', 'reservas', 'eliminados'];
+  // _baseSha es protocolo (la versión del servidor sobre la que se editó), no estado de UI.
+  const camposPermitidos = ['parques', 'empresas', 'lotes', 'ocupaciones', 'reservas', 'eliminados', '_baseSha'];
   const colados = Object.keys(ultimoPost).filter((k) => !camposPermitidos.includes(k));
   ok(colados.length === 0,
      `el POST manda solo datos, sin estado de UI (filtros, búsqueda, modal abierto)${colados.length ? ': se colaron ' + colados.join(', ') : ''}`);

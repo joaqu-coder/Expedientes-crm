@@ -461,6 +461,44 @@ async function testClaveCompartida() {
   assert(estatico.status === 200, 'los archivos estáticos se sirven sin clave');
 }
 
+// Parques usa concurrencia optimista (como Proyectos): si el archivo cambió
+// desde la base que mandó el cliente, responde 409 con el contenido actual y
+// NO escribe. Sin esto, dos dispositivos se pisaban en silencio.
+async function testParquesConflicto409() {
+  llamadas = [];
+  const remoto = { parques: [{ id: 'guemes', nombre: 'Güemes' }], empresas: [{ id_empresa: 'E001', nombre_empresa: 'REMOTA' }], lotes: [], ocupaciones: [], reservas: [], eliminados: { empresas: [], lotes: [] } };
+  let putHecho = false;
+  mockFetch(async (url, opts) => {
+    if (!opts || opts.method === undefined || opts.method === 'GET') {
+      const contenido = Buffer.from(JSON.stringify(remoto)).toString('base64');
+      return new Response(JSON.stringify({ sha: 'sha-nuevo', content: contenido }), { status: 200 });
+    }
+    if (opts.method === 'PUT') { putHecho = true; return new Response(JSON.stringify({ content: { sha: 'sha-escrito' } }), { status: 200 }); }
+    throw new Error('metodo inesperado: ' + opts.method);
+  });
+  const env = { GITHUB_TOKEN: 'fake-token', ASSETS: { fetch: async () => new Response('no') } };
+
+  const req = new Request('https://x.workers.dev/api/sync-parques', {
+    method: 'POST',
+    body: JSON.stringify({ parques: [], empresas: [], lotes: [], ocupaciones: [], reservas: [], _baseSha: 'sha-viejo' })
+  });
+  const resp = await worker.fetch(req, env);
+  const data = await resp.json();
+  assert(resp.status === 409, 'POST con base vieja responde 409');
+  assert(data.actual && data.actual.empresas[0].nombre_empresa === 'REMOTA', 'el 409 trae el contenido actual para fusionar');
+  assert(data.actual._meta && data.actual._meta.sha === 'sha-nuevo', 'el 409 trae el sha actual');
+  assert(!putHecho, 'con conflicto no se escribe nada en GitHub');
+
+  // Con la base correcta, sí escribe y devuelve el sha nuevo.
+  putHecho = false;
+  const req2 = new Request('https://x.workers.dev/api/sync-parques', {
+    method: 'POST',
+    body: JSON.stringify({ parques: [], empresas: [], lotes: [], ocupaciones: [], reservas: [], _baseSha: 'sha-nuevo' })
+  });
+  const resp2 = await worker.fetch(req2, env);
+  assert(resp2.status === 200 && putHecho, 'con la base actual escribe y responde 200');
+}
+
 async function main() {
   await testGetSinArchivoTodavia();
   await testPostCreaArchivoNuevo();
@@ -476,6 +514,7 @@ async function main() {
   await testParquesGetSinArchivoTodavia();
   await testParquesPostEscribeArchivoPropio();
   await testParquesBajasSeUnenYNoResucitan();
+  await testParquesConflicto409();
   await testParquesNoSeMezclaConOtrasApps();
   await testValidacionDeFormaEnLasTresApps();
   await testClaveCompartida();
