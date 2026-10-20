@@ -36,9 +36,9 @@ ni las actualizaciones, ni los pasos de fondo. Eso es responsabilidad del agente
 - **Proyectos: deshacer una baja ya sincronizada** puede no sostenerse cuando hay
   conflicto (la lápida remota vuelve a aplicarse en la fusión).
 - **Límite de 1 MB de la API de Contents de GitHub.** Hoy el archivo más grande
-  pesa ~322 KB (`resoluciones.json`). Hay que migrar antes de llegar, usando la API
-  de blobs o partiendo el archivo. `/api/health` debería avisar cuando un archivo
-  pase los 700 KB.
+  pesa ~322 KB (`resoluciones.json`). `/api/health` ya avisa en `alerta_tamano`
+  cuando un archivo pasa los 700 KB y reporta `tamanos_kb`. Cuando aparezca un
+  aviso, hay que migrar, usando la API de blobs o partiendo el archivo.
 - **Consumo de la API de GitHub.** Cada pestaña de Proyectos abierta consulta el
   sondeo cada 25 s (~144 llamadas/h). Conviene `If-None-Match` (ETag) en el sondeo
   y en los GET: una respuesta 304 no cuenta contra el límite.

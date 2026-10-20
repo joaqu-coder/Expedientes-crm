@@ -499,6 +499,37 @@ async function testParquesConflicto409() {
   assert(resp2.status === 200 && putHecho, 'con la base actual escribe y responde 200');
 }
 
+// /api/health avisa antes del límite de 1 MB de la API de Contents de GitHub:
+// un archivo por encima de 700 KB aparece en alerta_tamano.
+async function testHealthAvisaArchivoGrande() {
+  const listado = (tamResol) => [
+    { type: 'file', name: 'expedientes.json', size: 6000 },
+    { type: 'file', name: 'resoluciones.json', size: tamResol },
+    { type: 'file', name: 'cartas-intencion.json', size: 130000 },
+    { type: 'file', name: 'parques.json', size: 240000 },
+    { type: 'file', name: 'README.md', size: 100 }
+  ];
+  const env = { GITHUB_TOKEN: 'fake', ASSETS: { fetch: async () => new Response('x') } };
+
+  mockFetch(async (url) => {
+    if (String(url).endsWith('/contents?ref=main')) return new Response(JSON.stringify(listado(322000)), { status: 200 });
+    throw new Error('url inesperada: ' + url);
+  });
+  const normal = await (await worker.fetch(new Request('https://x.workers.dev/api/health'), env)).json();
+  assert(Array.isArray(normal.alerta_tamano) && normal.alerta_tamano.length === 0,
+    'con resoluciones de 322 KB no hay alerta de tamaño');
+  assert(normal.tamanos_kb && normal.tamanos_kb['resoluciones.json'] === 314,
+    'reporta el tamaño en KB de cada archivo de datos');
+
+  mockFetch(async (url) => {
+    if (String(url).endsWith('/contents?ref=main')) return new Response(JSON.stringify(listado(750 * 1024)), { status: 200 });
+    throw new Error('url inesperada: ' + url);
+  });
+  const grande = await (await worker.fetch(new Request('https://x.workers.dev/api/health'), env)).json();
+  assert(grande.alerta_tamano.includes('resoluciones.json'),
+    'con resoluciones de 750 KB aparece en alerta_tamano');
+}
+
 async function main() {
   await testGetSinArchivoTodavia();
   await testPostCreaArchivoNuevo();
@@ -515,6 +546,7 @@ async function main() {
   await testParquesPostEscribeArchivoPropio();
   await testParquesBajasSeUnenYNoResucitan();
   await testParquesConflicto409();
+  await testHealthAvisaArchivoGrande();
   await testParquesNoSeMezclaConOtrasApps();
   await testValidacionDeFormaEnLasTresApps();
   await testClaveCompartida();

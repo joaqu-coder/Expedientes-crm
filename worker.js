@@ -373,13 +373,46 @@ async function manejarSync(request, env, app) {
   }
 }
 
+// Tamaño de cada archivo de datos, leído del listado del repo (una sola
+// llamada a la API). La API de Contents de GitHub deja de devolver el
+// contenido arriba de 1 MB: hay que migrar antes de llegar, así que el
+// diagnóstico avisa mucho antes (700 KB).
+const UMBRAL_TAMANO_KB = 700;
+async function tamanosDeArchivos(token) {
+  const resp = await fetch(
+    `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents?ref=${GITHUB_BRANCH}`,
+    { headers: { 'Authorization': `token ${token}`, 'User-Agent': 'expedientes-crm-worker', 'Accept': 'application/vnd.github+json' } }
+  );
+  if (!resp.ok) throw new Error(`GitHub GET falló: ${resp.status}`);
+  const entradas = await resp.json();
+  const tamanos = {};
+  for (const e of Array.isArray(entradas) ? entradas : []) {
+    if (e && e.type === 'file' && e.name.endsWith('.json')) tamanos[e.name] = e.size;
+  }
+  return tamanos;
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
     // Diagnóstico: confirma qué ve el Worker en runtime sin exponer valores.
     if (url.pathname === '/api/health') {
+      let tamanos = null;
+      let errorTamanos = null;
+      if (env.GITHUB_TOKEN) {
+        try { tamanos = await tamanosDeArchivos(env.GITHUB_TOKEN); }
+        catch (e) { errorTamanos = String(e.message || e); }
+      }
+      const archivosDatos = Object.values(APPS).map((a) => a.archivo).concat([ARCHIVO_CARTAS]);
+      const alertaTamano = tamanos
+        ? archivosDatos.filter((f) => tamanos[f] > UMBRAL_TAMANO_KB * 1024)
+        : [];
       return jsonResponse({
+        tamanos_kb: tamanos ? Object.fromEntries(archivosDatos.map((f) => [f, tamanos[f] != null ? Math.round(tamanos[f] / 1024) : null])) : null,
+        error_tamanos: errorTamanos,
+        // Archivos por encima de 700 KB: hay que migrarlos antes del límite de 1 MB de GitHub.
+        alerta_tamano: alertaTamano,
         version_worker: WORKER_VERSION,
         tiene_github_token: Boolean(env.GITHUB_TOKEN),
         // false = cualquiera con la URL puede leer y borrar. Cargá el secret
