@@ -159,6 +159,11 @@
   --ds-control-height: 40px;
   --ds-touch-min:      44px;
   --ds-search-height:  48px;
+  /* Ancho del contenido en escritorio: el mismo límite en las cuatro apps
+     (pedido 2026-10-21). Seguimiento ya lo tenía; el resto se estiraba de
+     borde a borde. Va en el body, así el header, las pestañas y el listado
+     comparten el mismo ancho. */
+  --ds-content-max:    960px;
   /* Búsqueda: 14px, pedido del usuario (2026-10-20). Va por debajo de los 16px
      que pide iOS para no hacer zoom al enfocar: se eligió lo pedido y queda
      anotado en .claude-state.json como trade-off. La fuente NO se define acá:
@@ -300,6 +305,9 @@
 * { box-sizing: border-box; }
 
 body {
+  max-width: var(--ds-content-max);
+  margin-left: auto;
+  margin-right: auto;
   background: var(--ds-bg);
   color: var(--ds-fg);
   font-family: var(--ds-font-sans);

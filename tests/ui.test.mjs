@@ -3202,6 +3202,90 @@ await testParques({ width: 390, height: 844 }, 8792);
  * su + y se compara, por comportamiento, cada tipo de control: etiqueta, campo
  * de texto, fecha, selector y área de texto. Si una app difiere, se nombra.
  */
+// Espaciado y ancho iguales en las cuatro apps (2026-10-21). Las filas de
+// chips o pestañas quedan a 8px de lo que sigue, y en escritorio el contenido
+// se limita al mismo ancho y se centra. Seguimiento es la referencia: todo lo
+// demás se mide contra ella, no contra su propio CSS.
+async function testEspaciadoYAncho(puerto) {
+  console.log('\n=== ESPACIADO Y ANCHO UNIFORMES (chips a 8px, escritorio con el mismo límite) ===');
+  const paginas = ['seguimiento', 'proyectos', 'resoluciones', 'parques'];
+  const htmls = {};
+  for (const p of paginas) htmls[p] = fs.readFileSync(path.join(RAIZ, `public/${p}.html`), 'utf8');
+  const datos = {
+    '/api/sync': fs.readFileSync(path.join(RAIZ, 'expedientes.json'), 'utf8'),
+    '/api/sync-cartas': fs.readFileSync(path.join(RAIZ, 'cartas-intencion.json'), 'utf8'),
+    '/api/sync-resoluciones': fs.readFileSync(path.join(RAIZ, 'resoluciones.json'), 'utf8'),
+    '/api/sync-parques': fs.readFileSync(path.join(RAIZ, 'parques.json'), 'utf8'),
+    '/api/version-cartas': JSON.stringify({ sha: 'x' }),
+  };
+  const server = http.createServer((req, res) => {
+    const u = new URL(req.url, 'http://x');
+    if (u.pathname.startsWith('/api/')) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(datos[u.pathname] || '{}');
+      return;
+    }
+    if (servirHeaderJs(req, res)) return;
+    const cual = paginas.find((p) => u.pathname.startsWith('/' + p)) || 'seguimiento';
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(htmls[cual]);
+  });
+  await new Promise((r) => server.listen(puerto, r));
+
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+
+  // 1) Móvil: cada fila de chips o pestañas que tiene contenido debajo queda a 8px.
+  const contextoMovil = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const movil = await contextoMovil.newPage();
+  const espacios = {
+    seguimiento: { ref: '.area-btn', sig: '#expedientesList' },
+    proyectos: { ref: '.app-tabs', sig: null },
+    parques: { ref: '.app-tabs', sig: null },
+    // Resoluciones no tiene fila de chips: la tarjeta de filtros es lo que va sobre el listado.
+    resoluciones: { ref: '.toolbar-card', sig: null },
+  };
+  for (const p of Object.keys(espacios)) {
+    await movil.goto(`http://localhost:${puerto}/${p}.html`, { waitUntil: 'networkidle' });
+    await movil.waitForTimeout(200);
+    const medidas = await movil.evaluate((cfg) => {
+      const visible = (el) => el && el.offsetParent !== null && el.getBoundingClientRect().height > 0;
+      const filas = [...document.querySelectorAll(cfg.ref)].filter((f) => visible(f) && !f.closest('.sticky-top'));
+      return filas.map((f) => {
+        let s = cfg.sig ? document.querySelector(cfg.sig) : f.nextElementSibling;
+        while (s && !visible(s)) s = s.nextElementSibling;
+        if (!s) return null;
+        // La fila de chips de Seguimiento termina en el último chip, no en su contenedor.
+        const bajaFila = cfg.ref === '.area-btn'
+          ? Math.max(...[...document.querySelectorAll('.area-btn')].map((b) => b.getBoundingClientRect().bottom))
+          : f.getBoundingClientRect().bottom;
+        return Math.round((s.getBoundingClientRect().top - bajaFila) * 10) / 10;
+      }).filter((g) => g !== null);
+    }, espacios[p]);
+    for (const gap of medidas) {
+      ok(Math.abs(gap - 8) < 0.6, `${p} (390px): la fila de chips queda a 8px de lo que sigue (${gap}px)`);
+    }
+    if (medidas.length === 0) ok(false, `${p} (390px): no se encontró la fila de chips para medir`);
+  }
+  await contextoMovil.close();
+
+  // 2) Escritorio: el contenido se limita a 960px y se centra, igual en las cuatro.
+  const contextoEscritorio = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const escritorio = await contextoEscritorio.newPage();
+  for (const p of paginas) {
+    await escritorio.goto(`http://localhost:${puerto}/${p}.html`, { waitUntil: 'networkidle' });
+    await escritorio.waitForTimeout(200);
+    const ancho = await escritorio.evaluate(() => {
+      const b = document.body.getBoundingClientRect();
+      return { ancho: Math.round(b.width), centrado: Math.abs(b.left - (window.innerWidth - b.width) / 2) < 1 };
+    });
+    ok(ancho.ancho <= 961 && ancho.centrado,
+       `${p} (1440px): el contenido ocupa como máximo 960px y va centrado (${ancho.ancho}px)`);
+  }
+  await contextoEscritorio.close();
+  await browser.close();
+  server.close();
+}
+
 async function testFormulariosUniformes(puerto) {
   console.log('\n=== FORMULARIOS UNIFORMES ENTRE PANTALLAS (390x844, táctil) ===');
   const paginas = ['seguimiento', 'proyectos', 'resoluciones', 'parques'];
@@ -3281,6 +3365,7 @@ async function testFormulariosUniformes(puerto) {
 
 await testUniformidad(8791);
 await testFormulariosUniformes(8792);
+await testEspaciadoYAncho(8793);
 await testTransiciones();
 await testReintentoSyncNoSeDesboca();
 await testClaveCompartidaEnElNavegador();

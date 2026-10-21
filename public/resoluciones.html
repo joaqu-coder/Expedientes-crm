@@ -32,7 +32,7 @@
    (--c1..--c6) viven en design-system.css: esta pantalla los hereda. Si algo
    de acá necesita desviarse, se redeclara ESE token y se explica por qué —
    no se vuelve a copiar la paleta entera. */
-body{margin:0;padding-inline:16px;padding-top:20px;padding-bottom:calc(84px + env(safe-area-inset-bottom, 0px))}
+body{margin:0 auto;padding-inline:16px;padding-top:20px;padding-bottom:calc(84px + env(safe-area-inset-bottom, 0px))}
 h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 .mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
 
@@ -52,7 +52,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 
 /* ---- Toolbar: búsqueda siempre visible + filtros ---- */
 .toolbar-search{padding:12px 0 8px}
-.toolbar-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:20px;display:flex;flex-direction:column;gap:12px}
+.toolbar-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:var(--ds-gap);display:flex;flex-direction:column;gap:12px}
 /* El campo de búsqueda lo dibuja .search-bar de ui-kit.css: acá quedan
    solo los desplegables de filtro. */
 .toolbar-card select{background:var(--surface-2);border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:8px 10px;font-size:13px}

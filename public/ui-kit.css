@@ -299,6 +299,7 @@
   gap: var(--ui-gap);
   overflow-x: auto;
   padding: 4px 0;
+  margin-bottom: var(--ui-gap);
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
 }
