@@ -22,7 +22,8 @@
           "texto": "Bosh habla con Leiva. Se solicita que se mantenga la reserva del lote. Realizará la op. comercial para el 2027, No quiere afrontar las obras en etaba de lluvia."
         }
       ],
-      "estado": "activo"
+      "estado": "archivado",
+      "fechaResolucion": "2026-10-21"
     },
     {
       "id": "1790642909884",
@@ -249,5 +250,5 @@
     "Karina Merino",
     "Joaquín Fernández Castro"
   ],
-  "timestamp": "2026-10-21T13:40:01.530Z"
+  "timestamp": "2026-10-21T15:05:44.212Z"
 }
