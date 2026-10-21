@@ -418,7 +418,6 @@
       color: var(--text-muted);
     }
     .expediente-card-new.archivado { opacity: 0.85; }
-    .expediente-card-new.archivado .expediente-expanded-tema,
 
     .expediente-header-urgencia.verde {
       background: var(--urgencia-verde-bg);
@@ -489,13 +488,6 @@
       display: block;
     }
 
-    .expediente-expanded-tema {
-      font-size:var(--ds-text-title);line-height:var(--ds-text-title-lh);
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 12px;
-    }
-
     .expediente-expanded-dates {
       font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);
       color: var(--text-muted);
@@ -510,12 +502,12 @@
       margin-bottom: 4px;
     }
 
-    /* "Coordinación" y "Agente" comparten la lista con las fechas: el rótulo
-       más ancho ("Coordinación:") fija la columna de los valores. */
+    /* "Área responsable" y "Agente" comparten la lista con las fechas: el rótulo
+       más ancho ("Área responsable:", ~113px) fija la columna de los valores. */
     .expediente-expanded-dates .label {
       font-weight: 700;
       color: var(--text);
-      min-width: 112px;
+      min-width: 120px;
     }
 
     /* Sección de Notas: el bloque es el mismo que en Proyectos (ui-kit.css, NOTAS). */
@@ -1812,13 +1804,11 @@
             </button>
 
             <div id="${esc(expandId)}" class="expediente-expanded-content${abierto ? ' expanded' : ''}">
-              <div class="expediente-expanded-tema">${esc(exp.tema)}</div>
               <div class="expediente-expanded-dates">
-                <div><span class="label">Coordinación:</span><span>${esc(exp.area)}</span></div>
+                <div><span class="label">Área responsable:</span><span>${esc(exp.area)}</span></div>
                 <div><span class="label">Agente:</span><span>${esc(exp.responsable)}</span></div>
                 <div><span class="label">Inicio:</span><span>${esc(formatearFechaCorta(parsearFecha(exp.fechaInicio)))}</span></div>
                 ${archivado ? '' : `<div><span class="label">Vence:</span><span>${esc(formatearFechaCorta(plazo.fechaFin))}</span></div>`}
-                <div><span class="label">Número:</span><span>${exp.numero ? esc(exp.numero) : 'Sin expediente'}</span></div>
               </div>
 
               <div class="notas-seccion">

@@ -1932,13 +1932,12 @@ async function testEscalaOtrasFichas() {
     await page.locator('.expediente-header-urgencia').first().click();
     await page.waitForSelector('.nota-texto');
     await verificarEscala(page, 'Seguimiento (tarjeta)', [
-      { nombre: 'título (tema)', sel: '.expediente-expanded-tema', nivel: 'titulo' },
       { nombre: 'subtítulo (Notas)', sel: '.notas-header', nivel: 'subtitulo' },
       { nombre: 'rótulo (Inicio:)', sel: '.expediente-expanded-dates .label', nivel: 'rotulo' },
       { nombre: 'respuesta (fecha de inicio)', sel: '.expediente-expanded-dates > div > span:last-child', nivel: 'respuesta' },
       { nombre: 'fecha de la nota', sel: '.nota-hora', nivel: 'info' },
       { nombre: 'texto de la nota', sel: '.nota-texto', nivel: 'info' },
-    ], ['.expediente-expanded-tema', '.expediente-expanded-dates', '.notas-seccion']);
+    ], ['.expediente-expanded-dates', '.notas-seccion']);
     await page.close();
     ctx.server.close();
   }
@@ -3291,8 +3290,9 @@ async function testEspaciadoYAncho(puerto) {
 
 // Notas y etiquetas compartidas (2026-10-21). Las notas de Proyectos (ficha) se
 // ven como las de Seguimiento (tarjeta): mismo encabezado, mismo fondo, mismo
-// relleno y mismo tamaño. Y la tarjeta de Seguimiento muestra Coordinación (el
-// área) y Agente (el responsable) con su rótulo, igual que las fechas de abajo.
+// relleno y mismo tamaño. Y la tarjeta de Seguimiento muestra Área responsable
+// (el área) y Agente (el responsable) con su rótulo, igual que las fechas de
+// abajo. Ni el número ni el título se repiten adentro: ya están en el encabezado.
 async function testNotasYEtiquetas(puerto) {
   console.log('\n=== NOTAS COMPARTIDAS Y ETIQUETAS DE LA TARJETA ===');
   const htmls = {
@@ -3360,11 +3360,15 @@ async function testNotasYEtiquetas(puerto) {
     ...(await seg.evaluate(medirNota, '.expediente-expanded-content')),
     // Las etiquetas viven en la misma lista de filas que las fechas.
     meta: await seg.evaluate(() => document.querySelector('.expediente-expanded-dates').textContent.replace(/\s+/g, ' ').trim()),
+    // Todo lo expandido, notas incluidas: el título del expediente no debe volver a aparecer.
+    expandido: await seg.evaluate(() => document.querySelector('.expediente-expanded-content').textContent),
   };
   ok(notasSeg.encabezado === 'uppercase' && notasSeg.encabezadoTexto === 'Notas (2)',
      `Seguimiento: las notas tienen encabezado "NOTAS (2)" en mayúsculas (${notasSeg.encabezadoTexto}, ${notasSeg.encabezado})`);
-  ok(/Coordinación/.test(notasSeg.meta) && /Agente/.test(notasSeg.meta) && !/Área responsable/.test(notasSeg.meta),
-     `la tarjeta de Seguimiento rotula el área como Coordinación y el responsable como Agente ("${notasSeg.meta}")`);
+  ok(/Área responsable:/.test(notasSeg.meta) && /Agente:/.test(notasSeg.meta) && !/Coordinación/.test(notasSeg.meta),
+     `la tarjeta de Seguimiento rotula el área como Área responsable y el responsable como Agente ("${notasSeg.meta}")`);
+  ok(!/Número/.test(notasSeg.meta) && !/Tema con notas/.test(notasSeg.expandido),
+     `la tarjeta no repite el número ni el título (ya están en el encabezado) ("${notasSeg.meta}")`);
 
   const proy = await contexto.newPage();
   proy.on('pageerror', (e) => problemas.push('proyectos: ' + e.message));
