@@ -176,6 +176,12 @@
   --ds-field-border:      var(--ds-border);
   --ds-field-fg:          var(--ds-fg);
   --ds-textarea-min-height: 70px;
+  /* Tarjetas de listado: el diseño de Proyectos, compartido con Parques. */
+  --ds-list-card-pad-y:   13px;
+  --ds-list-card-pad-x:   14px;
+  --ds-list-card-title:   15px;
+  --ds-list-card-small:   11.5px;
+  --ds-list-card-estado:  12px;
   --ds-icon-size:      18px;
   --ds-gap:            8px;
   --ds-padding-x:      14px;
