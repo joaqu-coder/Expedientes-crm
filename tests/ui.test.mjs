@@ -1778,9 +1778,9 @@ async function testEscalaOtrasFichas() {
     const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
     page.on('pageerror', (e) => problemas.push('parques: ' + e.message));
     await page.goto('http://localhost:8783/', { waitUntil: 'networkidle' });
-    await page.waitForFunction(() => document.querySelectorAll('#empresasList .tarjeta').length > 0);
+    await page.waitForFunction(() => document.querySelectorAll('#empresasList .ui-card').length > 0);
 
-    await page.locator('#empresasList .tarjeta', { hasText: 'AGSOF S.A' }).first().click();
+    await page.locator('#empresasList .ui-card', { hasText: 'AGSOF S.A' }).first().click();
     await page.waitForSelector('#btnEditEmp');
     await verificarEscala(page, 'Parques (empresa)', [
       { nombre: 'título (nombre de la empresa)', sel: '#modal .view-title', nivel: 'titulo' },
@@ -1868,7 +1868,7 @@ async function testParques(viewport, puerto) {
   page.on('dialog', async (d) => { problemas.push('alert: ' + d.message()); await d.dismiss(); });
   await page.goto(`http://localhost:${puerto}/`, { waitUntil: 'networkidle' });
   // Empresas es la vista por defecto — ya no hay una pestaña "Lotes" suelta.
-  await page.waitForFunction(() => document.querySelectorAll('#empresasList .tarjeta').length > 0);
+  await page.waitForFunction(() => document.querySelectorAll('#empresasList .ui-card').length > 0);
 
   const totalLotes = datos.lotes.length;
   const totalEmpresas = datos.empresas.length;
@@ -1936,7 +1936,7 @@ async function testParques(viewport, puerto) {
   };
   for (const [parque, empresasDel] of [['guemes', empresasGuemes], ['salta', empresasSalta]]) {
     await page.locator(`#parqueSwitch [data-parque="${parque}"]`).click();
-    await page.waitForFunction(() => document.querySelectorAll('#empresasList .tarjeta').length > 0);
+    await page.waitForFunction(() => document.querySelectorAll('#empresasList .ui-card').length > 0);
     const opciones = await page.locator('#filterEstadoEmpresas option').evaluateAll((os) =>
       os.map((o) => o.value).filter(Boolean));
     const presentes = ['Activa', 'Sin actividad', 'En construcción']
@@ -1949,12 +1949,12 @@ async function testParques(viewport, puerto) {
       await page.selectOption('#filterEstadoEmpresas', valor);
       await page.waitForTimeout(120);
       const esperadas = empresasDel.filter((e) => situacionEsperada(e) === valor).length;
-      ok((await page.locator('#empresasList .tarjeta').count()) === esperadas,
+      ok((await page.locator('#empresasList .ui-card').count()) === esperadas,
          `${parque}: filtrar por "${valor}" deja las ${esperadas} empresas que corresponden`);
     }
     await page.selectOption('#filterEstadoEmpresas', '');
     await page.waitForTimeout(120);
-    ok((await page.locator('#empresasList .tarjeta').count()) === empresasDel.length,
+    ok((await page.locator('#empresasList .ui-card').count()) === empresasDel.length,
        `${parque}: volver a "Todos los estados" muestra las ${empresasDel.length} empresas otra vez`);
   }
 
@@ -1968,8 +1968,8 @@ async function testParques(viewport, puerto) {
     localStorage.setItem('parques_crm_v1', JSON.stringify(s));
   });
   await page.reload({ waitUntil: 'networkidle' });
-  await page.waitForFunction(() => document.querySelectorAll('#empresasList .tarjeta').length > 0);
-  ok((await page.locator('#empresasList .tarjeta').count()) === empresasGuemes.length,
+  await page.waitForFunction(() => document.querySelectorAll('#empresasList .ui-card').length > 0);
+  ok((await page.locator('#empresasList .ui-card').count()) === empresasGuemes.length,
      'un filtro guardado que este parque no ofrece se descarta en vez de recortar la lista a ciegas');
 
   // El chip es una etiqueta corta al lado de "Güemes" (pedido del usuario
@@ -1992,7 +1992,7 @@ async function testParques(viewport, puerto) {
 
   // Escape cierra la ficha, igual que en Seguimiento y Proyectos: hasta el
   // 2026-10-19 acá la única salida era la × o el clic afuera.
-  await page.locator('#empresasList .tarjeta').first().click();
+  await page.locator('#empresasList .ui-card').first().click();
   await page.waitForSelector('#btnEditEmp');
   await page.keyboard.press('Escape');
   await page.waitForTimeout(150);
@@ -2003,7 +2003,7 @@ async function testParques(viewport, puerto) {
   await page.waitForTimeout(150);
   const esperadoAgsof = datos.empresas.filter((e) => e.nombre_empresa.toUpperCase().includes('AGSOF')).length;
   ok(esperadoAgsof === 1, 'AGSOF S.A. quedó fusionada en un solo registro en los datos');
-  ok((await page.locator('#empresasList .tarjeta').count()) === esperadoAgsof,
+  ok((await page.locator('#empresasList .ui-card').count()) === esperadoAgsof,
      `la búsqueda encuentra ${esperadoAgsof} tarjeta de AGSOF (sin duplicado)`);
   await page.fill('#searchEmpresas', '');
   await page.waitForTimeout(150);
@@ -2014,7 +2014,7 @@ async function testParques(viewport, puerto) {
   // usuario): AGSOF sirve de caso porque SÍ tiene `observacion` cargada
   // (la nota de la fusión con E004), así que si el bloque volviera, este
   // test lo ve.
-  await page.locator('#empresasList .tarjeta', { hasText: 'AGSOF S.A' }).first().click();
+  await page.locator('#empresasList .ui-card', { hasText: 'AGSOF S.A' }).first().click();
   await page.waitForSelector('#btnEditEmp');
   const fichaEmpresa = await page.locator('#modal').textContent();
   ok(fichaEmpresa.includes('Guillermo Frisch'), 'la ficha de la empresa muestra su contacto (Representante)');
@@ -2054,7 +2054,7 @@ async function testParques(viewport, puerto) {
     await page.click('#xCloseViewEmp');
     await page.fill('#searchEmpresas', emp.nombre_empresa);
     await page.waitForTimeout(200);
-    await page.locator('#empresasList .tarjeta').first().click();
+    await page.locator('#empresasList .ui-card').first().click();
     await page.waitForSelector('#btnEditEmp');
     await page.click('[data-subtab="contacto"]');
     const fila = page.locator('#empSubpanel .contact-row', { hasText: emp[campo].slice(0, 18) }).first();
@@ -2080,7 +2080,7 @@ async function testParques(viewport, puerto) {
     await page.click('#xCloseViewEmp');
     await page.fill('#searchEmpresas', mailFalso.nombre_empresa);
     await page.waitForTimeout(200);
-    await page.locator('#empresasList .tarjeta').first().click();
+    await page.locator('#empresasList .ui-card').first().click();
     await page.waitForSelector('#btnEditEmp');
     await page.click('[data-subtab="contacto"]');
     ok((await page.locator('#empSubpanel a[href=""]').count()) === 0,
@@ -2089,7 +2089,7 @@ async function testParques(viewport, puerto) {
   await page.click('#xCloseViewEmp');
   await page.fill('#searchEmpresas', 'AGSOF S.A');
   await page.waitForTimeout(200);
-  await page.locator('#empresasList .tarjeta').first().click();
+  await page.locator('#empresasList .ui-card').first().click();
   await page.waitForSelector('#btnEditEmp');
   await page.click('[data-subtab="contacto"]');
   const contactoHTML = await page.locator('#empSubpanel').innerHTML();
@@ -2133,7 +2133,7 @@ async function testParques(viewport, puerto) {
   const alisan = datos.empresas.find((e) => e.id_empresa === 'E008');
   await page.fill('#searchEmpresas', alisan.nombre_empresa);
   await page.waitForTimeout(150);
-  await page.locator('#empresasList .tarjeta', { hasText: alisan.nombre_empresa }).first().click();
+  await page.locator('#empresasList .ui-card', { hasText: alisan.nombre_empresa }).first().click();
   await page.waitForSelector('#btnEditEmp');
   await page.click('[data-subtab="lote"]');
   await page.click('[data-goto-lote="L038"]');
@@ -2167,7 +2167,7 @@ async function testParques(viewport, puerto) {
   // revisión) — ya no hay una pestaña "Lotes" general, esto reemplaza lo
   // que ahí se podía hacer con los lotes libres.
   await page.click('#tabComercial');
-  await page.waitForSelector('#comercialList .tarjeta');
+  await page.waitForSelector('#comercialList .ui-card');
   ok((await page.locator('#comercialCount').textContent()).includes(String(sinEmpresa.length)),
      `el contador de Comercial muestra los ${sinEmpresa.length} lotes sin empresa`);
   await page.click('#filterDisponibleComercial');
@@ -2179,7 +2179,7 @@ async function testParques(viewport, puerto) {
 
   // Abrir un lote comercial también entra a la ficha estándar de lote
   // (view/edit) — no se perdió esa funcionalidad al sacar la pestaña Lotes.
-  await page.locator('#comercialList .tarjeta').first().click();
+  await page.locator('#comercialList .ui-card').first().click();
   await page.waitForSelector('#btnEditLote');
   ok((await page.locator('#modal').textContent()).includes('Titularidad'),
      'un lote comercial abre la misma ficha de lote (con su sección Titularidad)');
@@ -2193,11 +2193,11 @@ async function testParques(viewport, puerto) {
   // prueba de KPIs de arriba.
   ok(await page.locator('#tabDash').isHidden(), 'la pestaña Análisis está oculta (stand by)');
   await page.evaluate(() => { location.hash = '#dashboard'; });
-  await page.waitForSelector('#empresasList .tarjeta');
+  await page.waitForSelector('#empresasList .ui-card');
   ok(await page.locator('#viewDash').isHidden() && await page.locator('#viewEmpresas').isVisible(),
      'un #dashboard viejo cae en Empresas, no en una pantalla vacía');
   await page.evaluate(() => { location.hash = '#empresas'; });
-  await page.waitForSelector('#empresasList .tarjeta');
+  await page.waitForSelector('#empresasList .ui-card');
 
   // ======================================================================
   // Columna «Alquilada»: titularidad y ocupación son dos vínculos distintos
@@ -2207,7 +2207,7 @@ async function testParques(viewport, puerto) {
   // origen los mails de tradelog.com.ar estaban cargados sobre la fila del
   // titular, que es exactamente la confusión que hay que no repetir.
   await page.locator('#parqueSwitch [data-parque="salta"]').click();
-  await page.waitForFunction(() => document.querySelectorAll('#empresasList .tarjeta').length > 0);
+  await page.waitForFunction(() => document.querySelectorAll('#empresasList .ui-card').length > 0);
   ok((await page.locator('#empresasCount').textContent()).includes(String(empresasSalta.length)),
      'al cambiar de parque el listado pasa a las empresas de Salta');
 
@@ -2221,7 +2221,7 @@ async function testParques(viewport, puerto) {
 
   await page.fill('#searchEmpresas', titularSL010.nombre_empresa);
   await page.waitForTimeout(150);
-  await page.locator('#empresasList .tarjeta', { hasText: titularSL010.nombre_empresa }).first().click();
+  await page.locator('#empresasList .ui-card', { hasText: titularSL010.nombre_empresa }).first().click();
   await page.waitForSelector('#btnEditEmp');
   await page.click('[data-subtab="lote"]');
   ok((await page.locator('#empSubpanel').textContent()).includes('Alquilado a TRADELOG'),
@@ -2245,10 +2245,10 @@ async function testParques(viewport, puerto) {
   await page.click('#xCloseViewLote');
   await page.fill('#searchEmpresas', 'TRADELOG');
   await page.waitForTimeout(150);
-  ok((await page.locator('#empresasList .tarjeta', { hasText: 'TRADELOG' }).first().textContent())
+  ok((await page.locator('#empresasList .ui-card', { hasText: 'TRADELOG' }).first().textContent())
        .includes('Ocupa 1 lote por alquiler'),
      'la tarjeta de una empresa sin lotes propios dice qué ocupa, en vez de "0 m² totales"');
-  await page.locator('#empresasList .tarjeta', { hasText: 'TRADELOG' }).first().click();
+  await page.locator('#empresasList .ui-card', { hasText: 'TRADELOG' }).first().click();
   await page.waitForSelector('#btnEditEmp');
   ok((await page.locator('#modal .subtabs').textContent()).includes('Lotes (1)'),
      'el contador de la pestaña Lotes cuenta también el lote que ocupa por alquiler');
@@ -2313,7 +2313,7 @@ async function testParques(viewport, puerto) {
     const nombre = datos.empresas.find((e) => e.id_empresa === emp).nombre_empresa;
     await page.fill('#searchEmpresas', nombre);
     await page.waitForTimeout(200);
-    await page.locator('#empresasList .tarjeta').first().click();
+    await page.locator('#empresasList .ui-card').first().click();
     await page.waitForSelector('#btnEditEmp');
     await page.click('[data-subtab="lote"]');
     await page.click(`[data-goto-lote="${idLote}"]`);
@@ -2401,14 +2401,14 @@ async function testParques(viewport, puerto) {
 
   // Vuelta a Güemes: el cambio de parque no deja estado del otro colgado.
   await page.locator('#parqueSwitch [data-parque="guemes"]').click();
-  await page.waitForFunction(() => document.querySelectorAll('#empresasList .tarjeta').length > 0);
+  await page.waitForFunction(() => document.querySelectorAll('#empresasList .ui-card').length > 0);
   ok((await page.locator('#empresasCount').textContent()).includes(String(empresasGuemes.length)),
      'al volver a Güemes el listado vuelve a sus empresas');
 
   // Bajas permanentes: una empresa borrada en pantalla se declara como baja
   // en el POST, y una copia vieja del dispositivo que todavía la tiene no la
   // vuelve a mostrar. EGPAIS es la que se restauró el 2026-10-20.
-  await page.locator('#empresasList .tarjeta', { hasText: 'EGPAIS' }).first().click();
+  await page.locator('#empresasList .ui-card', { hasText: 'EGPAIS' }).first().click();
   await page.locator('#btnDeleteViewEmp').click();
   const bajaDeclarada = await (async () => {
     const t0 = Date.now();
@@ -2430,8 +2430,8 @@ async function testParques(viewport, puerto) {
     localStorage.setItem('parques_crm_v1', JSON.stringify(s));
   });
   await page.reload({ waitUntil: 'networkidle' });
-  await page.waitForFunction(() => document.querySelectorAll('#empresasList .tarjeta').length > 0);
-  ok((await page.locator('#empresasList .tarjeta', { hasText: 'EGPAIS' }).count()) === 0,
+  await page.waitForFunction(() => document.querySelectorAll('#empresasList .ui-card').length > 0);
+  ok((await page.locator('#empresasList .ui-card', { hasText: 'EGPAIS' }).count()) === 0,
      'una copia vieja con EGPAIS no la vuelve a mostrar');
   ok(problemas.length === 0, 'sin errores de JS ni diálogos nativos' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
   await browser.close();

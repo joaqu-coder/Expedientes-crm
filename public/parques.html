@@ -77,10 +77,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 
 /* ---- Listado de tarjetas ---- */
 .lista{display:flex;flex-direction:column;gap:8px}
-.tarjeta{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;cursor:pointer;text-align:left;width:100%}
-.tarjeta:hover{border-color:var(--accent)}
 .tarjeta-row{display:flex;align-items:center;gap:10px;min-width:0}
-.tarjeta-main{min-width:0}
 
 /* Avatar con iniciales: no hay logos reales cargados, así que es texto,
    no una imagen. Mismo color de acento que el resto de la suite. */
@@ -94,10 +91,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 .view-section.revisar p{font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);margin:0 0 6px}
 .view-section.revisar p:last-child{margin-bottom:0}
 .view-section.revisar a{color:inherit;font-weight:600}
-.tarjeta-title{font-size:15px;font-weight:700}
-.tarjeta-sub{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.4}
 .tarjeta-count{font-size:12px;color:var(--muted);margin-bottom:12px;font-variant-numeric:tabular-nums}
-.tarjeta-aside{flex:0 0 auto;display:flex;align-items:center;gap:6px;flex-direction:column;align-items:flex-end}
 .empty-state{padding:30px 14px;text-align:center;color:var(--muted);font-size:13px;background:var(--surface);border:1px solid var(--border);border-radius:10px}
 
 .badge{display:inline-flex;align-items:center;font-size:11.5px;font-weight:600;border-radius:6px;padding:3px 8px;white-space:nowrap}
@@ -1197,17 +1191,16 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
       return;
     }
     cont.innerHTML = filtrados.map(function(l){
-      var sub = "Mz "+esc(l.manzana||"—")+" · Parcela "+esc(l.parcela||"—")+" · "+fmtM2(l.superficie_m2);
       var nombre = l.disponible ? "Disponible para la venta" : "Libre / pendiente de revisión";
-      return '<button class="tarjeta" data-open-lote="'+esc(l.id_lote)+'">'+
-        '<div class="tarjeta-main">'+
-          '<div class="tarjeta-title">'+esc(l.id_lote)+' · '+esc(nombre)+'</div>'+
-          '<div class="tarjeta-sub">'+sub+'</div>'+
-        '</div>'+
-        '<div class="tarjeta-aside">'+
-          (l.estado?'<span class="badge" style="background:var(--'+claseEstado(l.estado)+'-bg);color:var(--'+claseEstado(l.estado)+')">'+esc(l.estado)+'</span>':'')+
-          (l.disponible?'<span class="badge" style="background:var(--c2-bg);color:var(--c2)">en venta</span>':'')+
-        '</div>'+
+      var id = "Mz "+(l.manzana||"—")+" · Parcela "+(l.parcela||"—");
+      var estado = l.estado
+        ? '<div class="ui-card-estado" style="color:var(--'+claseEstado(l.estado)+')"><i class="ui-dot"></i>'+esc(l.estado)+(l.disponible?' · en venta':'')+'</div>'
+        : (l.disponible ? '<div class="ui-card-estado is-ok"><i class="ui-dot"></i>En venta</div>' : '');
+      return '<button class="ui-card" data-open-lote="'+esc(l.id_lote)+'">'+
+        '<div class="ui-card-title">'+esc(nombre)+'</div>'+
+        '<div class="ui-card-id">'+esc(l.id_lote)+' · '+esc(id)+'</div>'+
+        estado+
+        '<div class="ui-card-id">'+fmtM2(l.superficie_m2)+'</div>'+
         '</button>';
     }).join("");
     cont.querySelectorAll("[data-open-lote]").forEach(function(btn){
@@ -1236,17 +1229,14 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     }
     cont.innerHTML = filtradas.map(function(e){
       var totalM2 = empresaTotalM2(e.id_empresa);
-      var sub = [e.rubro, e.contacto_nombre].filter(Boolean).join(" · ");
-      return '<button class="tarjeta" data-open-empresa="'+esc(e.id_empresa)+'">'+
-        '<div class="tarjeta-row">'+
-          '<div class="avatar">'+esc(iniciales(e.nombre_empresa))+'</div>'+
-          '<div class="tarjeta-main">'+
-            '<div class="tarjeta-title">'+esc(e.nombre_empresa)+'</div>'+
-            '<div class="tarjeta-sub emp-m2-hero">'+
-              resumenSuperficie(lotesDeEmpresa(e.id_empresa), lotesOcupadosPor(e.id_empresa), totalM2)+'</div>'+
-            (sub?'<div class="tarjeta-sub">'+esc(sub)+'</div>':'')+
-          '</div>'+
-        '</div>'+
+      var situ = situacionDe(e);
+      var tono = {"Activa":"is-ok","En construcción":"is-warn","Sin actividad":"is-idle"}[situ] || "";
+      var estado = situ ? '<div class="ui-card-estado '+tono+'"><i class="ui-dot"></i>'+esc(situ)+'</div>' : '';
+      return '<button class="ui-card" data-open-empresa="'+esc(e.id_empresa)+'">'+
+        '<div class="ui-card-title">'+esc(e.nombre_empresa)+'</div>'+
+        '<div class="ui-card-id">'+esc(e.id_empresa)+'</div>'+
+        estado+
+        '<div class="ui-card-id">'+resumenSuperficie(lotesDeEmpresa(e.id_empresa), lotesOcupadosPor(e.id_empresa), totalM2)+'</div>'+
         '</button>';
     }).join("");
     cont.querySelectorAll("[data-open-empresa]").forEach(function(btn){

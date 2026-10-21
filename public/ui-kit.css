@@ -471,3 +471,57 @@
   min-height: var(--ds-textarea-min-height);
   resize: vertical;
 }
+
+/* ========================= TARJETAS DE LISTADO =========================
+   Una fila por registro: nombre, identificador, estado y datos. Es el diseño
+   de Proyectos, compartido con Parques. Los estados usan los tonos del
+   sistema (ok, warn, idle); no hay color propio. */
+.ui-card {
+  display: block;
+  width: 100%;
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-card);
+  padding: var(--ds-list-card-pad-y) var(--ds-list-card-pad-x);
+  font-family: inherit;
+  color: var(--ds-fg);
+  text-align: left;
+  cursor: pointer;
+}
+.ui-card:hover { border-color: var(--ds-accent); }
+.ui-card-title {
+  font-size: var(--ds-list-card-title);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ui-card-id {
+  font-size: var(--ds-list-card-small);
+  line-height: 1.4;
+  color: var(--ds-fg-muted);
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+.ui-card-estado {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-top: 7px;
+  font-size: var(--ds-list-card-estado);
+  line-height: 1.4;
+  font-weight: 600;
+  color: var(--ds-fg-muted);
+}
+.ui-card-estado.is-ok { color: var(--ds-ok); }
+.ui-card-estado.is-warn { color: var(--ds-warn); }
+.ui-card-estado.is-idle { color: var(--ds-idle); }
+.ui-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 auto;
+}
+
