@@ -214,6 +214,22 @@
       "diasPlazo": 5,
       "estado": "activo",
       "intervenciones": []
+    },
+    {
+      "id": "1792589539622",
+      "numero": "363-168293/2026-0",
+      "tema": "A.P.I.S Informa irregularidades Ambientales. firma AGENOR S.A",
+      "area": "Coordinación",
+      "responsable": "Joaquín Fernández Castro",
+      "fechaInicio": "2026-10-21",
+      "diasPlazo": 5,
+      "estado": "activo",
+      "intervenciones": [
+        {
+          "hora": "21/10/2026 10:32",
+          "texto": "Se cooridna reunion con Cecilia Borla 6/10/2026. Su presenta su representante (Su hijo) explicando la sutiacion. Se compromete a enviar los estudios ambientales"
+        }
+      ]
     }
   ],
   "areas": [
@@ -229,5 +245,5 @@
     "Karina Merino",
     "Joaquín Fernández Castro"
   ],
-  "timestamp": "2026-10-20T23:07:30.237Z"
+  "timestamp": "2026-10-21T13:32:19.723Z"
 }
