@@ -1234,9 +1234,8 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
       var estado = situ ? '<div class="ui-card-estado '+tono+'"><i class="ui-dot"></i>'+esc(situ)+'</div>' : '';
       return '<button class="ui-card" data-open-empresa="'+esc(e.id_empresa)+'">'+
         '<div class="ui-card-title">'+esc(e.nombre_empresa)+'</div>'+
-        '<div class="ui-card-id">'+esc(e.id_empresa)+'</div>'+
-        estado+
         '<div class="ui-card-id">'+resumenSuperficie(lotesDeEmpresa(e.id_empresa), lotesOcupadosPor(e.id_empresa), totalM2)+'</div>'+
+        estado+
         '</button>';
     }).join("");
     cont.querySelectorAll("[data-open-empresa]").forEach(function(btn){
