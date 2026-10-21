@@ -415,7 +415,14 @@
       "pagweb": "https://nikron.com.ar/",
       "linkedin": "https://www.linkedin.com/company/nikron/",
       "observacion_contactos_2024": "Sigue estando?",
-      "id_parque": "guemes"
+      "id_parque": "guemes",
+      "telefono": "",
+      "contacto_nombre": "",
+      "situacion": null,
+      "mail": "proveedores@nikron.com.ar",
+      "ubicacion": "",
+      "instagram": "",
+      "facebook": ""
     },
     {
       "id_empresa": "E046",
