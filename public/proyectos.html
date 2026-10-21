@@ -124,14 +124,10 @@ svg text{font-family:var(--font-body)}
 .badge.b-danger{background:var(--danger-bg);color:var(--danger)}
 .badge-dot{width:7px;height:7px;border-radius:50%;display:inline-block}
 
-/* semáforo: unico "sólido" el rojo (acción inmediata); el resto, fondo suave */
-.urg{display:inline-flex;align-items:center;gap:6px;font-size:12px;border-radius:6px;padding:3px 8px;white-space:nowrap}
-.urg-rojo{background:var(--danger);color:#fff;font-weight:700}
-.urg-naranja{background:var(--orange-bg);color:var(--orange)}
-.urg-amarillo{background:var(--warn-bg);color:var(--warn)}
-.urg-verde{background:var(--ok-bg);color:var(--ok)}
-.urg-na{color:var(--muted)}
-.urg-aviso{font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.4}
+/* El semáforo de color vive en la tarjeta del listado (.exp-plazo + .c-*).
+   La ficha muestra el plazo como un dato más de la grilla; lo único que
+   quedó acá es el aviso de cálculo estimado. */
+.urg-aviso{font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);color:var(--muted);margin-top:8px}
 
 /* ---- Modal ---- */
 .veil{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;z-index:20;padding-top:40px}
@@ -164,7 +160,6 @@ svg text{font-family:var(--font-body)}
 .hist-list{display:flex;flex-direction:column;gap:10px;max-height:220px;overflow-y:auto}
 .hist-item{display:flex;flex-direction:column;gap:2px}
 .hist-time{font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);color:var(--muted)}
-.hist-time .sys{color:var(--accent);text-transform:uppercase;letter-spacing:.04em;font-size:inherit;line-height:inherit;border:1px solid var(--accent);border-radius:4px;padding:0 5px;margin-left:6px}
 .hist-text{font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);color:var(--muted)}
 
 /* Los botones de acción (Guardar/Cancelar/Eliminar/Editar) viven en
@@ -172,10 +167,12 @@ svg text{font-family:var(--font-body)}
 .modal-actions{display:flex;gap:8px;margin-top:16px}
 
 /* ---- Modal: vista de lectura ---- */
-.view-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
-.view-empresa{font-size:var(--ds-text-title);line-height:var(--ds-text-title-lh);font-weight:700;color:var(--text)}
-.view-exp{font-family:var(--font-mono);font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums}
-.view-urg{margin-top:10px}
+/* Primer panel: el nombre de la empresa y el número de expediente, nada más.
+   Los dos a 16px (pedido del usuario, 2026-10-21) y alineados al mismo borde
+   izquierdo: sin el badge a la derecha, la fila ya no necesita ser flex. */
+.view-head{display:block}
+.view-empresa{font-size:16px;line-height:22px;font-weight:700;color:var(--text)}
+.view-exp{font-family:var(--font-mono);font-size:16px;line-height:22px;color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums}
 .view-section{margin-top:14px;padding-top:13px;border-top:1px solid var(--border)}
 .view-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px 12px}
 /* Rótulo en negrita (información, color de texto) y respuesta en gris: mismo
@@ -2292,18 +2289,20 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 
     modal.innerHTML =
       '<div class="modal-head"><button class="x-close" id="xCloseView">&times;</button></div>'+
+      // Pedido del usuario (2026-10-21): el primer panel muestra el nombre de la
+      // empresa y el número de expediente, y nada más. La situación, el plazo y la
+      // fecha de archivado no se borraron: bajaron a la grilla de "Expediente",
+      // con los demás datos. El semáforo de color sigue en la tarjeta del
+      // listado, que es donde un expediente se compara contra los otros.
       '<div class="view-head">'+
-        '<div><div class="view-empresa">'+esc(e.nombre_empresa||"(sin nombre de empresa)")+'</div>'+
-          '<div class="view-exp">'+esc(e.nro_expediente||"s/n")+'</div></div>'+
-        '<span class="badge '+(SIT_BADGE[e.situacion]||"b-idle")+'">'+esc(labelSituacion(e.situacion))+'</span>'+
+        '<div class="view-empresa">'+esc(e.nombre_empresa||"(sin nombre de empresa)")+'</div>'+
+        '<div class="view-exp">'+esc(e.nro_expediente||"s/n")+'</div>'+
       '</div>'+
-      (e.archivado?'<div class="view-urg"><span class="badge b-idle">📦 Archivado el '+
-           esc((e.fecha_archivado||"").split(" ")[0])+'</span></div>':'')+
-      (urg?'<div class="view-urg"><span class="urg urg-'+urg.color+'">'+esc(urg.texto)+'</span>'+
-           (urg.aviso?'<div class="urg-aviso">'+esc(urg.aviso)+'</div>':'')+'</div>':'')+
 
       '<div class="view-section"><h3>Expediente</h3>'+
         '<div class="view-grid">'+
+          viewItem("Situación", labelSituacion(e.situacion))+
+          viewItem("Plazo", urg ? urg.texto : "")+
           viewItem("Parque", e.parque_industrial)+
           viewItem("Superficie", e.superficie_solicitada_m2 ? (Number(e.superficie_solicitada_m2).toLocaleString("es-AR")+" m²") : "")+
           viewItem("Rubro", e.rubro)+
@@ -2312,7 +2311,11 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
           // mostraba: para saber cuándo se tocó por última vez un expediente
           // había que abrir el historial y mirar la nota más nueva.
           viewItem("Último movimiento", e.fecha_ultimo_movimiento)+
+          (e.archivado?viewItem("Archivado el", (e.fecha_archivado||"").split(" ")[0]):"")+
         '</div>'+
+        // El plazo puede venir estimado (faltan feriados de ese año): el aviso
+        // va bajo la grilla, no dentro de la celda, para no romper la fila.
+        (urg && urg.aviso?'<p class="urg-aviso">'+esc(urg.aviso)+'</p>':'')+
         (e.actividad_empresa?'<p class="view-actividad">'+esc(e.actividad_empresa)+'</p>':'')+
       '</div>'+
 
@@ -2452,7 +2455,11 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     var notas = (e && e.intervenciones) || [];
     var body = notas.length
       ? '<div class="hist-list">'+notas.slice().reverse().map(function(n){
-          return '<div class="hist-item"><div class="hist-time">'+esc(n.hora)+(n.tipo==="sistema"?'<span class="sys">sistema</span>':'')+'</div><div class="hist-text">'+esc(n.texto)+'</div></div>';
+          // Sin el cartel "SISTEMA" (pedido del usuario, 2026-10-21): el texto
+          // de la nota ya dice que la escribió la app ("Archivado
+          // automáticamente…", "Rescatado del archivo."). `n.tipo` se sigue
+          // guardando en el dato, así que reponerlo es volver a dibujarlo.
+          return '<div class="hist-item"><div class="hist-time">'+esc(n.hora)+'</div><div class="hist-text">'+esc(n.texto)+'</div></div>';
         }).join("")+'</div>'
       : '<div class="hist-empty">Sin notas aún.</div>';
     return '<div class="hist"><h3>Notas ('+notas.length+')</h3>'+body+'</div>';

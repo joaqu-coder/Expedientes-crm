@@ -1007,6 +1007,29 @@ async function testProyectos(viewport, puerto) {
   await page.waitForSelector('#btnRescatar');
   ok((await page.locator('#modal').textContent()).includes('Archivado el'),
      'la ficha del expediente archivado muestra cuándo se archivó');
+  // Pedido del usuario (2026-10-21). Este expediente es el caso completo: está
+  // archivado, tiene situación y tiene la nota automática de archivado, así que
+  // si alguno de los tres vuelve al primer panel o el cartel "SISTEMA" vuelve a
+  // dibujarse, el test lo ve.
+  const panel = await page.evaluate(() => {
+    const head = document.querySelector('#modal .view-head');
+    return {
+      extra: [...head.querySelectorAll('*')].filter((el) => !el.matches('.view-empresa, .view-exp')).length,
+      texto: head.textContent.replace(/\s+/g, ' ').trim(),
+      empresa: document.querySelector('#modal .view-empresa').textContent.trim(),
+      nro: document.querySelector('#modal .view-exp').textContent.trim(),
+      sys: document.querySelectorAll('#modal .hist .sys').length,
+      notas: document.querySelector('#modal .hist').textContent,
+      grilla: document.querySelector('#modal .view-section').textContent,
+    };
+  });
+  const sinEspacios = (t) => t.replace(/\s+/g, '');
+  ok(panel.extra === 0 && sinEspacios(panel.texto) === sinEspacios(panel.empresa + panel.nro),
+     `el primer panel de la ficha muestra la empresa y el número, nada más ("${panel.texto}")`);
+  ok(panel.grilla.includes('Situación') && panel.grilla.includes('Archivado el'),
+     'la situación y la fecha de archivado bajaron a la grilla de Expediente, no se perdieron');
+  ok(panel.sys === 0 && !/SISTEMA/i.test(panel.notas) && panel.notas.includes('Archivado automáticamente'),
+     'la nota de archivado automático se lee sin el cartel "SISTEMA"');
   await page.click('#btnRescatar');
   await page.waitForTimeout(2000); // debounce de la subida
   ok(ultimoPost?.expedientes?.find((e) => e.id === 'exp_archivo_test' && e.archivado === false) != null,
@@ -1604,8 +1627,11 @@ async function testProyectosLayoutYFiltros() {
 
 /* Escala tipográfica de la ficha de Proyectos (design-system.css, --ds-text-*).
    Se mide en el navegador: el CSS puede declarar un token y la página no usarlo.
-   Lo que se exige: títulos 18, subtítulos 14 y el resto de la ficha 13, nunca
-   otro tamaño; rótulos en negrita; respuestas en el gris global (--muted). */
+   Lo que se exige: el primer panel (empresa + número de expediente) a 16px y
+   alineado al mismo borde izquierdo, subtítulos 14 y el resto de la ficha 13,
+   nunca otro tamaño; rótulos en negrita; respuestas en el gris global (--muted).
+   El primer panel queda fuera de la escala 14/13 a propósito: es un pedido
+   explícito del usuario (2026-10-21), anotado acá para que no se "corrija". */
 async function testProyectosEscalaFicha(viewport) {
   console.log(`\n=== PROYECTOS: ESCALA TIPOGRÁFICA DE LA FICHA (${viewport.nombre}) ===`);
   const html = fs.readFileSync(path.join(RAIZ, 'public/proyectos.html'), 'utf8');
@@ -1639,8 +1665,9 @@ async function testProyectosEscalaFicha(viewport) {
     const grisGlobal = getComputedStyle(probe).color;
     probe.remove();
 
-    // Todo texto propio de la ficha (no el de los badges de urgencia ni de situación).
-    const zonas = ['.view-empresa', '.view-exp', '.view-section', '.hist'];
+    // Todo texto del cuerpo de la ficha. El primer panel va aparte: tiene su
+    // propio tamaño (16px) pedido por el usuario.
+    const zonas = ['.view-section', '.hist'];
     const tamanos = new Set();
     const fuera = [];
     for (const z of zonas) {
@@ -1649,12 +1676,26 @@ async function testProyectosEscalaFicha(viewport) {
         if (!tieneTexto) return;
         const st = getComputedStyle(el);
         tamanos.add(st.fontSize);
-        if (!['18px', '14px', '13px'].includes(st.fontSize)) fuera.push(el.className + ' ' + st.fontSize);
+        if (!['14px', '13px'].includes(st.fontSize)) fuera.push(el.className + ' ' + st.fontSize);
       });
     }
+    const head = document.querySelector('#modal .view-head');
+    const empresa = document.querySelector('#modal .view-empresa');
+    const nro = document.querySelector('#modal .view-exp');
     return {
       grisGlobal,
-      titulo: { size: cs('#modal .view-empresa').fontSize, weight: cs('#modal .view-empresa').fontWeight },
+      // Qué hay en el primer panel, además de los dos textos pedidos: cualquier
+      // badge, pastilla de urgencia o fecha de archivado contaría acá.
+      headExtra: [...head.querySelectorAll('*')]
+        .filter((el) => !el.matches('.view-empresa, .view-exp'))
+        .map((el) => el.className || el.tagName),
+      headTexto: head.textContent.replace(/\s+/g, ' ').trim(),
+      headIzquierda: Math.abs(empresa.getBoundingClientRect().left - nro.getBoundingClientRect().left),
+      empresa: { size: cs('#modal .view-empresa').fontSize, weight: cs('#modal .view-empresa').fontWeight },
+      nro: { size: cs('#modal .view-exp').fontSize },
+      // El cartel "SISTEMA" de las notas automáticas se sacó (2026-10-21).
+      sys: document.querySelectorAll('#modal .hist .sys').length,
+      histTexto: document.querySelector('#modal .hist').textContent,
       subtitulo: { size: cs('#modal .view-section h3').fontSize, weight: cs('#modal .view-section h3').fontWeight },
       rotulo: { size: cs('#modal .view-item label').fontSize, weight: cs('#modal .view-item label').fontWeight },
       respuesta: { size: cs('#modal .view-item .v').fontSize, color: cs('#modal .view-item .v').color },
@@ -1664,15 +1705,24 @@ async function testProyectosEscalaFicha(viewport) {
     };
   });
 
-  ok(medidas.titulo.size === '18px' && medidas.titulo.weight === '700', `título primario: 18px en negrita (${medidas.titulo.size}/${medidas.titulo.weight})`);
+  ok(medidas.empresa.size === '16px' && medidas.empresa.weight === '700' && medidas.nro.size === '16px',
+    `primer panel: empresa y número de expediente a 16px (${medidas.empresa.size}/${medidas.empresa.weight} y ${medidas.nro.size})`);
+  ok(medidas.headIzquierda === 0,
+    `primer panel: las dos líneas arrancan en el mismo borde izquierdo (diferencia ${medidas.headIzquierda}px)`);
+  ok(medidas.headExtra.length === 0,
+    `primer panel: solo el nombre de la empresa y el número, nada más (sobra: ${medidas.headExtra.join(' | ') || 'nada'})`);
+  ok(!/d háb|Archivado|Sin tratamiento|En tratamiento/.test(medidas.headTexto),
+    `primer panel: sin situación, plazo ni fecha de archivado (dice: "${medidas.headTexto}")`);
   ok(medidas.subtitulo.size === '14px' && medidas.subtitulo.weight === '700', `subtítulo de sección: 14px en negrita (${medidas.subtitulo.size}/${medidas.subtitulo.weight})`);
   ok(medidas.rotulo.size === '13px' && medidas.rotulo.weight === '700', `rótulo (Parque, Rubro…): 13px en negrita (${medidas.rotulo.size}/${medidas.rotulo.weight})`);
   ok(medidas.respuesta.size === '13px' && medidas.respuesta.color === medidas.grisGlobal,
     `respuesta: 13px en el gris global (${medidas.respuesta.size}, ${medidas.respuesta.color} vs ${medidas.grisGlobal})`);
   ok(medidas.nota.size === '13px' && medidas.nota.lh === '18px' && medidas.nota.color === medidas.grisGlobal,
     `texto de nota: 13px, alto 18px, gris global (${medidas.nota.size}/${medidas.nota.lh})`);
-  ok(medidas.fuera.length === 0 && medidas.tamanos.every((t) => ['18px', '14px', '13px'].includes(t)),
-    `ningún texto de la ficha sale de la escala 18/14/13 (encontrados: ${medidas.tamanos.join(', ')}; fuera: ${medidas.fuera.join(' | ') || 'ninguno'})`);
+  ok(medidas.fuera.length === 0 && medidas.tamanos.every((t) => ['14px', '13px'].includes(t)),
+    `ningún texto del cuerpo de la ficha sale de la escala 14/13 (encontrados: ${medidas.tamanos.join(', ')}; fuera: ${medidas.fuera.join(' | ') || 'ninguno'})`);
+  ok(medidas.sys === 0 && !/SISTEMA/i.test(medidas.histTexto),
+    `las notas no llevan el cartel "SISTEMA" (${medidas.sys} encontrados)`);
 
   ok(problemas.length === 0, 'sin errores de JS (' + problemas.join(' | ') + ')');
   await browser.close();
