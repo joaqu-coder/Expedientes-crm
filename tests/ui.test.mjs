@@ -573,7 +573,21 @@ async function testMovilTactil() {
   await page.click('#fabNuevo');
   const caja = await page.locator('.modal-form').boundingBox();
   ok(Math.round(caja.width) === 390 && Math.round(caja.height) === 844, `el formulario es pantalla completa (${Math.round(caja.width)}x${Math.round(caja.height)})`);
-  ok((await fuente('#tema')) >= 16, 'los campos del formulario tienen fuente ≥16px');
+  // Formulario (pedido 2026-10-20): campo a 12px sobre --surface-2 y etiqueta a 14px
+  // en --text. Los tokens se comparan con un elemento de prueba, no con hex.
+  ok((await fuente('#tema')) === 12, `los campos del formulario tienen fuente de 12px (${await fuente('#tema')}px)`);
+  ok(await page.evaluate(() => {
+    const etiqueta = getComputedStyle(document.querySelector('label[for="tema"]'));
+    const campo = getComputedStyle(document.getElementById('tema'));
+    const prueba = document.createElement('i');
+    prueba.style.color = 'var(--text)';
+    prueba.style.background = 'var(--surface-2)';
+    document.body.appendChild(prueba);
+    const token = getComputedStyle(prueba);
+    const resultado = etiqueta.fontSize === '14px' && etiqueta.color === token.color && campo.backgroundColor === token.backgroundColor;
+    prueba.remove();
+    return resultado;
+  }), 'la etiqueta mide 14px en --text y el campo tiene fondo --surface-2');
   ok(await page.evaluate(() => document.activeElement.getAttribute('role') === 'dialog'),
      'en táctil el foco va al diálogo (no abre el teclado de golpe)');
   ok(await page.evaluate(() => document.getElementById('btnGuardar').getBoundingClientRect().bottom <= innerHeight),
@@ -1020,6 +1034,9 @@ async function testProyectosCargaSolapada() {
   const inicial = JSON.parse(fs.readFileSync(path.join(RAIZ, 'cartas-intencion.json'), 'utf8'));
   const POST_MS = 1500;
   let store = JSON.parse(JSON.stringify(inicial));
+  // Copia del servidor con el nombre anterior del parque: al cargar tiene que
+  // aparecer como Rosario, no como un parque que la lista no reconoce.
+  store.expedientes[0].parque_industrial = 'RDLF';
   let sha = 'sha-0';
   const respuestas = [];
 
@@ -1066,10 +1083,36 @@ async function testProyectosCargaSolapada() {
     await page.click('.app-fab');
     await page.waitForSelector('#f_nombre_empresa');
     await page.fill('#f_nombre_empresa', nombre);
-    await page.fill('#f_fecha_inicio', '09/10/2026');
+    await page.fill('#f_fecha_inicio', '2026-10-09');
     await page.click('#expForm button[type=submit]');
   };
   const enServidor = (n) => store.expedientes.some((e) => e.nombre_empresa === n);
+
+  const guardadoAlCargar = await page.evaluate(() => JSON.parse(localStorage.getItem('cartas_intencion_parques_v3') || '[]'));
+  ok(!guardadoAlCargar.some((e) => e.parque_industrial === 'RDLF') && guardadoAlCargar.some((e) => e.id === store.expedientes[0].id && e.parque_industrial === 'Rosario'),
+     'una copia del servidor con RDLF se lee como Rosario');
+
+  // Alta: calendario nativo igual que Expediente, arranca con la fecha de hoy,
+  // título «Nuevo proyecto» y el parque aparece como Rosario.
+  await page.click('.app-fab');
+  await page.waitForSelector('#f_nombre_empresa');
+  const formulario = await page.evaluate(() => {
+    const fecha = document.getElementById('f_fecha_inicio');
+    const hoy = new Date();
+    const iso = hoy.getFullYear() + '-' + String(hoy.getMonth() + 1).padStart(2, '0') + '-' + String(hoy.getDate()).padStart(2, '0');
+    const parques = [...document.getElementById('f_parque_industrial').options].map((o) => o.value);
+    return { tipo: fecha.type, valor: fecha.value, iso,
+      titulo: document.querySelector('.modal-head h2').textContent,
+      rosario: parques.includes('Rosario'), rdlf: parques.includes('RDLF'),
+      etiqueta: getComputedStyle(document.querySelector('label[for="f_nombre_empresa"]')).fontSize };
+  });
+  ok(formulario.tipo === 'date', 'la fecha de inicio usa el calendario nativo, igual que Expediente');
+  ok(formulario.valor === formulario.iso, `el alta arranca con la fecha de hoy (${formulario.valor})`);
+  ok(formulario.titulo === 'Nuevo proyecto', `el título del alta es «Nuevo proyecto» (${formulario.titulo})`);
+  ok(formulario.rosario && !formulario.rdlf, 'el parque aparece como Rosario, no como RDLF');
+  ok(formulario.etiqueta === '14px', `las etiquetas miden 14px (${formulario.etiqueta})`);
+  await page.click('#xClose');
+  await page.waitForTimeout(150);
 
   await cargar('CARGA SOLAPADA A');
   await page.waitForTimeout(2000); // A ya está subiendo (arranca a los 1500 ms)
@@ -1077,6 +1120,8 @@ async function testProyectosCargaSolapada() {
 
   for (let i = 0; i < 20 && !enServidor('CARGA SOLAPADA B'); i++) await page.waitForTimeout(500);
   ok(enServidor('CARGA SOLAPADA A'), 'la carga A llega al servidor');
+  ok(store.expedientes.find((e) => e.nombre_empresa === 'CARGA SOLAPADA A')?.fecha_inicio === '09/10/2026',
+     'la fecha del calendario se guarda en el formato dd/mm/aaaa de siempre');
   ok(enServidor('CARGA SOLAPADA B'), 'la carga hecha mientras A subía llega al servidor (antes se perdía)');
   ok(await page.evaluate(() => localStorage.getItem('cartas_intencion_parques_v3')).then((r) => JSON.parse(r).some((e) => e.nombre_empresa === 'CARGA SOLAPADA B')),
      'y sigue en el dispositivo');
@@ -1297,7 +1342,7 @@ async function testProyectosSalidasYDeshacer() {
   await abrirFicha();
   await page.click('#btnEdit');
   await page.waitForSelector('#f_fecha_inicio');
-  await page.fill('#f_fecha_inicio', '31/31/2099');   // fecha inválida
+  await page.fill('#f_fecha_inicio', '');   // sin fecha: el calendario no admite una inválida
   await page.evaluate(() => { location.hash = '#dashboard'; });
   await esperar(200);
   await page.click('.cc-card [data-opcion="guardar"]');
@@ -1395,7 +1440,7 @@ async function testProyectosValidacionYOrden() {
   await page.waitForSelector('#f_nro_expediente');
   await page.fill('#f_nro_expediente', '123');
   await page.fill('#f_nombre_empresa', 'ALTA CON NRO MAL');
-  await page.fill('#f_fecha_inicio', '09/10/2026');
+  await page.fill('#f_fecha_inicio', '2026-10-09');
   await page.click('#expForm button[type=submit]');
   await page.waitForTimeout(2000);
   ok((await modalTexto()).includes('Formato: 363-1254/2025-01'), 'un número mal formado se rechaza con el formato esperado');

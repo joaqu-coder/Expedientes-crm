@@ -150,8 +150,8 @@ svg text{font-family:var(--font-body)}
 .modal-head h2{font-size:17px}
 .x-close{background:none;border:none;color:var(--muted);font-size:20px;line-height:1;padding:4px}
 .field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
-.field label{font-size:12px;color:var(--muted)}
-.field input,.field select,.field textarea{background:var(--surface-2);border:1px solid var(--border);color:var(--fg);border-radius:7px;padding:9px 10px;font-size:14px;font-family:inherit;width:100%}
+.field label{font-size:14px;color:var(--text)}
+.field input,.field select,.field textarea{background:var(--surface-2);border:1px solid var(--border);color:var(--fg);border-radius:7px;padding:9px 10px;font-size:12px;font-family:inherit;width:100%}
 .field textarea{resize:vertical;min-height:60px}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .field-error{font-size:11.5px;color:var(--danger);margin-top:-1px}
@@ -391,8 +391,8 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 (function(){
   "use strict";
 
-  var PARQUES = ["Salta","Güemes","RDLF","Mosconi","Pichanal","SAC","Olacapato","Salar de Pocitos"];
-  var PARQUE_COLOR = {Salta:"--s1",Güemes:"--s2",RDLF:"--s3",Mosconi:"--s4",Pichanal:"--s5",SAC:"--s6",
+  var PARQUES = ["Salta","Güemes","Rosario","Mosconi","Pichanal","SAC","Olacapato","Salar de Pocitos"];
+  var PARQUE_COLOR = {Salta:"--s1",Güemes:"--s2",Rosario:"--s3",Mosconi:"--s4",Pichanal:"--s5",SAC:"--s6",
                       Olacapato:"--s7","Salar de Pocitos":"--s8"};
   var RUBROS = ["Manufactura","Servicios","Acopio","Logística","Química","Alimenticia",
                 "Metalmecánica","Metalúrgica","Comercio","Construcción","Textil",
@@ -511,6 +511,25 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     var mo = String(d.getMonth()+1).padStart(2,'0');
     var dd = String(d.getDate()).padStart(2,'0');
     return d.getFullYear()+"-"+mo+"-"+dd;
+  }
+
+  // El campo de fecha es el mismo calendario nativo que Expediente (yyyy-mm-dd).
+  // El dato se guarda como dd/mm/aaaa: se convierte por texto, sin pasar por Date,
+  // para que la fecha no se corra de día según la zona horaria.
+  function ddmmaaaaAIso(s){
+    var m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(s||"").trim());
+    if(!m) return "";
+    return m[3]+"-"+m[2].padStart(2,"0")+"-"+m[1].padStart(2,"0");
+  }
+  function isoADdmmaaaa(s){
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s||"").trim());
+    return m ? m[3]+"/"+m[2]+"/"+m[1] : "";
+  }
+  // Alta nueva: arranca con la fecha de hoy, igual que Expediente.
+  function fechaField(e){
+    var iso = e ? ddmmaaaaAIso(e.fecha_inicio) : fechaISO(new Date());
+    return '<div class="field" data-campo="fecha_inicio"><label for="f_fecha_inicio">Fecha de inicio<span class="req" aria-hidden="true">*</span></label>'+
+      '<input id="f_fecha_inicio" name="fecha_inicio" type="date" aria-required="true" value="'+esc(iso)+'"></div>';
   }
 
   function hoyLocal(){
@@ -666,8 +685,16 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
       var raw = localStorage.getItem(STORAGE_KEY);
       if(!raw) return [];
       var data = JSON.parse(raw);
-      return Array.isArray(data) ? data : [];
+      return Array.isArray(data) ? data.map(migrarParque) : [];
     }catch(e){ return []; }
+  }
+
+  // RDLF pasó a llamarse Rosario (2026-10-20). Se corrige al leer: un dispositivo
+  // con la versión vieja en localStorage, o una respuesta del servidor que todavía
+  // trae el nombre anterior, no deja un parque que la lista no reconoce.
+  function migrarParque(e){
+    if(e && e.parque_industrial === "RDLF") e.parque_industrial = "Rosario";
+    return e;
   }
 
   function persistirLocal(){
@@ -708,12 +735,12 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 
   function fusionar(remoto, local){
     var porId = {};
-    (remoto.expedientes||[]).forEach(function(e){ if(e && e.id) porId[e.id] = e; });
+    (remoto.expedientes||[]).forEach(function(e){ if(e && e.id) porId[e.id] = migrarParque(e); });
     (local.expedientes||[]).forEach(function(e){
       if(!e || !e.id) return;
       var prev = porId[e.id];
       // Sin previo es un alta nuestra; con previo gana el más reciente.
-      if(!prev || marcaDe(e) >= marcaDe(prev)) porId[e.id] = e;
+      if(!prev || marcaDe(e) >= marcaDe(prev)) porId[e.id] = migrarParque(e);
     });
 
     // Las lápidas de los dos lados, quedándose con la más nueva por id.
@@ -1079,7 +1106,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
       // sobrevivía para después subirse.
       var repoInicializado = !(datos._meta && datos._meta.existe === false);
       if(repoInicializado){
-        state.expedientes = datos.expedientes;
+        state.expedientes = (datos.expedientes||[]).map(migrarParque);
         state.eliminados = podarBorrados(datos.eliminados);
         persistirLocal();
         cambio = true;
@@ -1342,7 +1369,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     if(!filtrados.length){
       var vacio = totalActivos
         ? "Sin expedientes que coincidan con el filtro."
-        : "Todavía no hay expedientes cargados. Tocá « + Nuevo expediente » para empezar.";
+        : "Todavía no hay expedientes cargados. Tocá « + Nuevo Proyecto » para empezar.";
       cont.innerHTML = '<div class="empty-state">'+esc(vacio)+'</div>';
       return;
     }
@@ -2328,11 +2355,11 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 
   function renderModalEdit(e, isNew){
     modal.innerHTML =
-      '<div class="modal-head"><h2>'+(isNew?"Nuevo expediente":"Editar expediente")+'</h2><button class="x-close" id="xClose">&times;</button></div>'+
+      '<div class="modal-head"><h2>'+(isNew?"Nuevo proyecto":"Editar expediente")+'</h2><button class="x-close" id="xClose">&times;</button></div>'+
       '<form id="expForm">'+
         field("nro_expediente","Nro. de expediente","text",e,"363-65027/2026-0",true)+
         field("nombre_empresa","Nombre de la empresa","text",e,"Premoldeados del Norte S.A.",false,true)+
-        '<div class="row2">'+field("fecha_inicio","Fecha de inicio","text",e,"dd/mm/aaaa",false,true)+selectField("parque_industrial","Parque industrial",PARQUES,e)+'</div>'+
+        '<div class="row2">'+fechaField(e)+selectField("parque_industrial","Parque industrial",PARQUES,e)+'</div>'+
         '<div class="row2">'+field("superficie_solicitada_m2","Superficie solicitada (m²)","number",e)+selectField("rubro","Rubro",RUBROS,e)+'</div>'+
         selectField("situacion","Situación",SITUACIONES.map(function(s){return s.id;}),e,SITUACIONES)+
         field("actividad_empresa","Actividad de la empresa","text",e,"Fábrica de premoldeados de hormigón")+
@@ -2463,7 +2490,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
       nro_previo: existing ? existing.nro_expediente : "",
       duplicado: otro ? (otro.nombre_empresa || "otra empresa") : "",
       nombre_empresa: g("nombre_empresa").trim(),
-      fecha_inicio: g("fecha_inicio").trim(),
+      fecha_inicio: isoADdmmaaaa(g("fecha_inicio")),
       superficie_solicitada_m2: g("superficie_solicitada_m2").trim()
     };
     var errores = validarExpediente(candidato);
@@ -2473,7 +2500,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 
     exp.nro_expediente = nroNuevo;
     exp.nombre_empresa = g("nombre_empresa").trim();
-    exp.fecha_inicio = g("fecha_inicio").trim();
+    exp.fecha_inicio = isoADdmmaaaa(g("fecha_inicio"));
     exp.parque_industrial = g("parque_industrial");
     exp.rubro = g("rubro");
     exp.superficie_solicitada_m2 = g("superficie_solicitada_m2") ? Number(g("superficie_solicitada_m2")) : "";
@@ -2594,7 +2621,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   // Header común a las 4 apps (título + ⋮) y botón flotante de alta.
   HeaderGlobal.init({
     titulo: "Proyectos",
-    accion: { etiqueta: "Nuevo expediente", onClick: function(){ openModal(null); } },
+    accion: { etiqueta: "Nuevo Proyecto", onClick: function(){ openModal(null); } },
     menu: [
       { etiqueta: "Actualizar datos", onClick: function(){ bajarCambiosIniciales(); } }
     ]
