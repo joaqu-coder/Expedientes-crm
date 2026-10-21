@@ -16,6 +16,10 @@
         {
           "hora": "05/10/2026 08:56",
           "texto": "Solicita 7.413,93 m² (120.854.547,120)"
+        },
+        {
+          "hora": "21/10/2026 10:36",
+          "texto": "Bosh habla con Leiva. Se solicita que se mantenga la reserva del lote. Realizará la op. comercial para el 2027, No quiere afrontar las obras en etaba de lluvia."
         }
       ],
       "estado": "activo"
@@ -245,5 +249,5 @@
     "Karina Merino",
     "Joaquín Fernández Castro"
   ],
-  "timestamp": "2026-10-21T13:32:19.723Z"
+  "timestamp": "2026-10-21T13:36:46.386Z"
 }
