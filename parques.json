@@ -2084,15 +2084,19 @@
       "id_empresa": "SE103",
       "id_empresa_original": "6",
       "nombre_empresa": "SEPELIOS RIGO S.R.L",
-      "rubro": "FABRICACION DE ATAUDES",
+      "rubro": "Fabricación de Ataudes",
       "mail": "administracion@gruporigo.com.ar | emilce.rigo@gruporigo.com.ar",
-      "telefono": "4393681",
-      "contacto_nombre": "Emilce",
+      "telefono": "4393681/387-6836442",
+      "contacto_nombre": "Emilce Rigo",
       "pagweb": "https://gruporigo.com.ar/",
       "ubicacion": "Av. Delgadillo 2270",
       "situacion": "Activa",
       "es_ocupante_sin_registro": false,
-      "id_parque": "salta"
+      "id_parque": "salta",
+      "cargo": "Propietaria",
+      "instagram": "",
+      "facebook": "",
+      "linkedin": ""
     },
     {
       "id_empresa": "SE104",
