@@ -763,7 +763,7 @@
       "nro_expediente": "363-61316/2025",
       "fecha_inicio": "04/04/2025",
       "anio_inicio_expediente": "2025",
-      "nombre_empresa": "SAN JUAN SRL",
+      "nombre_empresa": "SAN JUAN S.R.L",
       "parque_industrial": "Salta",
       "rubro": "Servicios",
       "superficie_solicitada_m2": "",
@@ -786,7 +786,7 @@
         }
       ],
       "archivado": false,
-      "actualizado_en": "2026-10-20T22:00:50.264Z"
+      "actualizado_en": "2026-10-21T12:23:52.751Z"
     },
     {
       "id": "exp_imp032",
