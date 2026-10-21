@@ -7,7 +7,7 @@
       "area": "Operación",
       "responsable": "Alejandro Leiva",
       "fechaInicio": "2024-02-02",
-      "diasPlazo": 31,
+      "diasPlazo": 60,
       "intervenciones": [
         {
           "hora": "28/09 21:37",
@@ -249,5 +249,5 @@
     "Karina Merino",
     "Joaquín Fernández Castro"
   ],
-  "timestamp": "2026-10-21T13:36:46.386Z"
+  "timestamp": "2026-10-21T13:36:58.824Z"
 }
