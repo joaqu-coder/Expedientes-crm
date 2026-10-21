@@ -972,7 +972,7 @@
       </div>
       <div class="config-body">
         <div class="config-section">
-          <h3>📍 Áreas Responsables</h3>
+          <h3>📍 Áreas responsables</h3>
           <div class="config-list" id="areasConfigList"></div>
           <div class="config-input-group">
             <input type="text" id="inputArea" placeholder="Nueva área">
@@ -981,10 +981,10 @@
         </div>
 
         <div class="config-section">
-          <h3>👤 Responsables</h3>
+          <h3>👤 Agentes</h3>
           <div class="config-list" id="responsablesConfigList"></div>
           <div class="config-input-group">
-            <input type="text" id="inputResponsable" placeholder="Nuevo responsable">
+            <input type="text" id="inputResponsable" placeholder="Nuevo agente">
             <button onclick="agregarResponsableDesdeInput()">+</button>
           </div>
         </div>
@@ -1530,7 +1530,7 @@
     function eliminarResponsable(nombre) {
       const usos = expedientes.filter(e => e.responsable === nombre).length;
       if (usos > 0) {
-        mostrarAlerta('No se puede eliminar', `"${nombre}" es responsable de ${usos} expediente${usos !== 1 ? 's' : ''} (activos o archivados). Reasignalos antes de eliminarlo.`);
+        mostrarAlerta('No se puede eliminar', `"${nombre}" es agente de ${usos} expediente${usos !== 1 ? 's' : ''} (activos o archivados). Reasignalos antes de eliminarlo.`);
         return;
       }
       const indice = RESPONSABLES.indexOf(nombre);
@@ -1559,7 +1559,7 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label required" for="area">Área Responsable</label>
+          <label class="form-label required" for="area">Área responsable</label>
           <select class="form-select" id="area" aria-required="true">
             <option value="">Seleccionar área...</option>
             ${AREAS.map(a => `<option value="${esc(a)}" ${expediente?.area === a ? 'selected' : ''}>${esc(a)}</option>`).join('')}
@@ -1567,9 +1567,9 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label required" for="responsable">Responsable</label>
+          <label class="form-label required" for="responsable">Agente</label>
           <select class="form-select" id="responsable" aria-required="true">
-            <option value="">Seleccionar responsable...</option>
+            <option value="">Seleccionar agente...</option>
             ${RESPONSABLES.map(r => `<option value="${esc(r)}" ${expediente?.responsable === r ? 'selected' : ''}>${esc(r)}</option>`).join('')}
           </select>
         </div>
@@ -1628,10 +1628,10 @@
       const html = RESPONSABLES.map(r => `
         <div class="config-item">
           <span>${esc(r)}</span>
-          <button type="button" data-nombre="${esc(r)}" onclick="eliminarResponsable(this.dataset.nombre)" aria-label="Eliminar responsable ${esc(r)}">✕</button>
+          <button type="button" data-nombre="${esc(r)}" onclick="eliminarResponsable(this.dataset.nombre)" aria-label="Eliminar agente ${esc(r)}">✕</button>
         </div>
       `).join('');
-      document.getElementById('responsablesConfigList').innerHTML = html || '<p style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 20px 0;">No hay responsables</p>';
+      document.getElementById('responsablesConfigList').innerHTML = html || '<p style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 20px 0;">No hay agentes</p>';
     }
 
     function agregarAreaDesdeInput() {
@@ -1650,7 +1650,7 @@
         input.value = '';
         renderizarConfigResponsables();
       } else if (input.value.trim()) {
-        mostrarAlerta('ℹ️ Duplicado', 'El responsable ya existe');
+        mostrarAlerta('ℹ️ Duplicado', 'El agente ya existe');
       }
     }
 
@@ -2141,7 +2141,7 @@
       titulo: 'Seguimiento',
       accion: { etiqueta: 'Nuevo expediente', onClick: abrirNuevo },
       menu: [
-        { etiqueta: 'Áreas y responsables', onClick: abrirConfigModal },
+        { etiqueta: 'Áreas y agentes', onClick: abrirConfigModal },
         { etiqueta: 'Actualizar datos', onClick: reintentarSync }
       ]
     });

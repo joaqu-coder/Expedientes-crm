@@ -137,7 +137,7 @@ async function recorrido(nombre, viewport, puerto) {
   ok((await page.locator('text=Configuración').count()) === 1, 'hay un solo bloque "Configuración"');
   ok(!(await page.locator('#configOverlay').isVisible()), 'el popup arranca cerrado');
 
-  await abrirDesdeMenu(page, 'Áreas y responsables');
+  await abrirDesdeMenu(page, 'Áreas y agentes');
   ok(await page.locator('#configOverlay').isVisible(), 'el popup abre con el engranaje');
 
   const areasAntes = await page.locator('#areasConfigList .config-item').count();
@@ -257,7 +257,7 @@ async function testSyncYEscape() {
 
   // --- XSS / comillas ---
   const tema = `<img src=x onerror="window.__xss=1"> "comillas" & 'simples'`;
-  await abrirDesdeMenu(page, 'Áreas y responsables');
+  await abrirDesdeMenu(page, 'Áreas y agentes');
   await page.fill('#inputArea', "D'Angelo <b>");
   await page.locator('#areasConfigList + .config-input-group button').click();
   await page.click('#configClose');
@@ -276,7 +276,7 @@ async function testSyncYEscape() {
   ok((await page.inputValue('#tema')) === tema, 'al editar, el tema con comillas vuelve intacto');
   ok((await page.inputValue('#area')) === "D'Angelo <b>", 'al editar, el área con apóstrofe queda seleccionada');
   await page.click('#btnCancelar');
-  await abrirDesdeMenu(page, 'Áreas y responsables');
+  await abrirDesdeMenu(page, 'Áreas y agentes');
   // Un área en uso no se puede borrar: se avisa en vez de dejar expedientes huérfanos.
   await page.locator('#areasConfigList .config-item', { hasText: "D'Angelo" }).locator('button').click();
   ok(await page.locator('#alertOverlay').isVisible() && /1 expediente/.test(await page.locator('#alertMessage').textContent()),
@@ -740,7 +740,7 @@ async function testTecladoYFoco() {
   ok((await page.locator('#expedientesList').textContent()).includes('363-1254/2026-01'), 'el expediente guardado con Enter aparece en la lista');
 
   // Configuración: Escape cierra y devuelve el foco al engranaje
-  await abrirDesdeMenu(page, 'Áreas y responsables');
+  await abrirDesdeMenu(page, 'Áreas y agentes');
   ok(await page.evaluate(() => document.activeElement.id === 'inputArea'), 'al abrir configuración el foco va al campo de área');
   await page.keyboard.press('Escape');
   ok(!(await page.locator('#configOverlay').isVisible()), 'Escape cierra configuración');
@@ -797,7 +797,7 @@ async function testFlujo() {
   ok(await page.evaluate(() => expedientes.map(e => e.id).join() === 'a,b'), 'Deshacer restaura el expediente en su posición original');
 
   // Área sin uso: se borra con Deshacer
-  await abrirDesdeMenu(page, 'Áreas y responsables');
+  await abrirDesdeMenu(page, 'Áreas y agentes');
   await page.fill('#inputArea', 'Temporal');
   await page.locator('#areasConfigList + .config-input-group button').click();
   await page.locator('#areasConfigList .config-item', { hasText: 'Temporal' }).locator('button').click();
@@ -3367,6 +3367,14 @@ async function testNotasYEtiquetas(puerto) {
      `Seguimiento: las notas tienen encabezado "NOTAS (2)" en mayúsculas (${notasSeg.encabezadoTexto}, ${notasSeg.encabezado})`);
   ok(/Área responsable:/.test(notasSeg.meta) && /Agente:/.test(notasSeg.meta) && !/Coordinación/.test(notasSeg.meta),
      `la tarjeta de Seguimiento rotula el área como Área responsable y el responsable como Agente ("${notasSeg.meta}")`);
+  // El formulario y el popup de configuración usan el mismo vocabulario que la tarjeta.
+  const seguimientoHtml = htmls.seguimiento;
+  ok(/for="area">Área responsable</.test(seguimientoHtml) && /for="responsable">Agente</.test(seguimientoHtml),
+     'el formulario rotula el área como Área responsable y el responsable como Agente');
+  ok(/<h3>📍 Áreas responsables<\/h3>/.test(seguimientoHtml) && /<h3>👤 Agentes<\/h3>/.test(seguimientoHtml),
+     'el popup de configuración titula Áreas responsables y Agentes');
+  ok(!/Área Responsable|Responsable<\/label>/.test(seguimientoHtml),
+     'no quedan rótulos "Área Responsable" ni "Responsable" en el formulario');
   ok(!/Número/.test(notasSeg.meta) && !/Tema con notas/.test(notasSeg.expandido),
      `la tarjeta no repite el número ni el título (ya están en el encabezado) ("${notasSeg.meta}")`);
 
