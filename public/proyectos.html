@@ -140,7 +140,7 @@ svg text{font-family:var(--font-body)}
 .veil[hidden]{display:none}
 /* Toast con Deshacer: confirma una eliminación sin bloquear con un popup. Mismo
    criterio que Seguimiento: los colores salen de los tokens, no de literales. */
-.toast{position:fixed;left:16px;right:88px;bottom:calc(76px + env(safe-area-inset-bottom,0px));max-width:420px;z-index:1100;display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:8px;background:var(--accent);color:var(--accent-fg);font-size:14px;box-shadow:0 8px 20px -6px rgba(0,0,0,.3)}
+.toast{position:fixed;left:16px;right:16px;bottom:calc(136px + env(safe-area-inset-bottom,0px));max-width:420px;z-index:1100;display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:8px;background:var(--accent);color:var(--accent-fg);font-size:14px;box-shadow:0 8px 20px -6px rgba(0,0,0,.3)}
 .toast[hidden]{display:none}
 .toast-mensaje{flex:1}
 .toast-accion{background:none;border:none;color:var(--accent-fg);font:inherit;font-weight:700;text-decoration:underline;min-height:44px;padding:0 4px;cursor:pointer}
@@ -1369,7 +1369,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     if(!filtrados.length){
       var vacio = totalActivos
         ? "Sin expedientes que coincidan con el filtro."
-        : "Todavía no hay expedientes cargados. Tocá « + Nuevo Proyecto » para empezar.";
+        : "Todavía no hay expedientes cargados. Tocá « + Nuevo proyecto » para empezar.";
       cont.innerHTML = '<div class="empty-state">'+esc(vacio)+'</div>';
       return;
     }
@@ -2621,7 +2621,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   // Header común a las 4 apps (título + ⋮) y botón flotante de alta.
   HeaderGlobal.init({
     titulo: "Proyectos",
-    accion: { etiqueta: "Nuevo Proyecto", onClick: function(){ openModal(null); } },
+    accion: { etiqueta: "Nuevo proyecto", pastilla: true, onClick: function(){ openModal(null); } },
     menu: [
       { etiqueta: "Actualizar datos", onClick: function(){ bajarCambiosIniciales(); } }
     ]

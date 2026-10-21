@@ -127,7 +127,16 @@
       "box-shadow:0 4px 12px rgba(0,0,0,.22);transition:box-shadow .2s ease}",
     ".app-fab:hover{box-shadow:0 8px 18px rgba(0,0,0,.28)}",
     ".app-fab:focus-visible{outline:2px solid var(--accent);outline-offset:3px}",
-    ".app-fab svg{width:26px;height:26px;display:block}"
+    ".app-fab svg{width:26px;height:26px;display:block}",
+    /* Variante pastilla (accion.pastilla: true): «+ Nuevo seguimiento», igual
+       que «+ Nueva sesión» de la app de Claude. Color, familia y peso salen de
+       los mismos tokens que .btn (ui-kit.css), así que cambiar el acento o la
+       fuente de la app la cambia también acá. Alto 48px para que el toque
+       llegue a 44px sin área extra. */
+    ".app-fab--pastilla{width:auto;height:48px;padding:0 20px 0 16px;gap:8px;" +
+      "border-radius:var(--ds-radius-pill);font-family:var(--ds-font-sans);" +
+      "font-size:16px;font-weight:500;line-height:1;white-space:nowrap}",
+    ".app-fab--pastilla svg{width:20px;height:20px}"
   ].join("\n");
 
   var ICONO_MAS =
@@ -362,13 +371,20 @@
 
     // Acción principal de la app, como botón flotante.
     if (cfg.accion && typeof cfg.accion.onClick === "function") {
+      var etiquetaFab = cfg.accion.etiqueta || "Nuevo";
       var fab = document.createElement("button");
       fab.type = "button";
-      fab.className = "app-fab";
+      fab.className = cfg.accion.pastilla ? "app-fab app-fab--pastilla" : "app-fab";
       fab.id = "fabNuevo";
-      fab.title = cfg.accion.etiqueta || "Nuevo";
-      fab.setAttribute("aria-label", cfg.accion.etiqueta || "Nuevo");
+      fab.title = etiquetaFab;
+      fab.setAttribute("aria-label", etiquetaFab);
       fab.innerHTML = ICONO_MAS;
+      // La etiqueta va como texto (no en innerHTML): puede venir de una página.
+      if (cfg.accion.pastilla) {
+        var textoFab = document.createElement("span");
+        textoFab.textContent = etiquetaFab;
+        fab.appendChild(textoFab);
+      }
       fab.addEventListener("click", cfg.accion.onClick);
       document.body.appendChild(fab);
     }

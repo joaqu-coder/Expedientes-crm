@@ -2976,6 +2976,105 @@ async function testClaveCompartidaEnElNavegador() {
   server.close();
 }
 
+// El + de alta: en Seguimiento y Proyectos es una pastilla oscura con texto
+// (como «+ Nueva sesión»); en Resoluciones y Parques sigue siendo el círculo.
+// Se mide por computed style y por geometría, no por nombre de clase.
+async function testFabPastilla() {
+  console.log('\n=== FAB «+ NUEVO»: PASTILLA EN SEGUIMIENTO Y PROYECTOS ===');
+  const casos = [
+    { pagina: 'seguimiento.html', datos: 'expedientes.json', etiqueta: 'Nuevo seguimiento' },
+    { pagina: 'proyectos.html', datos: 'cartas-intencion.json', etiqueta: 'Nuevo proyecto' },
+    { pagina: 'resoluciones.html', datos: 'resoluciones.json', etiqueta: null },
+    { pagina: 'parques.html', datos: 'parques.json', etiqueta: null }
+  ];
+  const viewports = [
+    { nombre: 'desktop', ancho: 1440, alto: 900 },
+    { nombre: 'mobile', ancho: 390, alto: 844 }
+  ];
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  let puerto = 8770;
+
+  for (const vp of viewports) {
+    for (const caso of casos) {
+      const html = fs.readFileSync(path.join(RAIZ, 'public', caso.pagina), 'utf8');
+      const datos = JSON.parse(fs.readFileSync(path.join(RAIZ, caso.datos), 'utf8'));
+      const server = http.createServer((req, res) => {
+        const json = (obj) => { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
+        if (req.url.startsWith('/api/version-cartas')) return json({ version: 'v-fab' });
+        if (req.url.startsWith('/api/')) return json(Object.assign({}, datos, { _meta: { existe: true, sha: 'v-fab' } }));
+        if (servirHeaderJs(req, res)) return;
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(html);
+      });
+      await new Promise((r) => server.listen(puerto, r));
+
+      const page = await browser.newPage({ viewport: { width: vp.ancho, height: vp.alto } });
+      await page.goto(`http://localhost:${puerto}/${caso.pagina}`, { waitUntil: 'networkidle' });
+      const m = await page.evaluate(() => {
+        const f = document.getElementById('fabNuevo');
+        if (!f) return null;
+        const colorDe = (valor) => { const p = document.createElement('i'); p.style.color = valor; document.body.appendChild(p); const c = getComputedStyle(p).color; p.remove(); return c; };
+        const fuenteDe = () => { const p = document.createElement('i'); p.style.fontFamily = 'var(--ds-font-sans)'; document.body.appendChild(p); const c = getComputedStyle(p).fontFamily; p.remove(); return c; };
+        const cs = getComputedStyle(f);
+        const r = f.getBoundingClientRect();
+        // Toast: el de Seguimiento y el de Proyectos comparten fila con el +.
+        // Se muestra a la fuerza para medir dónde cae; no depende de datos.
+        let toast = null;
+        const t = document.querySelector('.toast');
+        if (t) {
+          t.classList.remove('hidden');
+          t.hidden = false;
+          const tr = t.getBoundingClientRect();
+          toast = { top: tr.top, bottom: tr.bottom, left: tr.left, right: tr.right };
+        }
+        return {
+          texto: f.textContent.trim(),
+          tieneIcono: !!f.querySelector('svg'),
+          ancho: r.width,
+          alto: r.height,
+          radio: parseFloat(cs.borderRadius),
+          fondo: cs.backgroundColor,
+          colorTexto: cs.color,
+          fuente: cs.fontFamily,
+          tamano: cs.fontSize,
+          peso: cs.fontWeight,
+          acento: colorDe('var(--accent)'),
+          blanco: colorDe('var(--accent-fg)'),
+          fuenteEsperada: fuenteDe(),
+          fab: { top: r.top, bottom: r.bottom, left: r.left, right: r.right },
+          toast
+        };
+      });
+      const nombre = `${caso.pagina} (${vp.nombre})`;
+      if (!m) {
+        ok(false, `${nombre}: no existe #fabNuevo`);
+      } else if (caso.etiqueta) {
+        ok(m.texto === caso.etiqueta, `${nombre}: el botón dice «${caso.etiqueta}» (${m.texto})`);
+        ok(m.tieneIcono, `${nombre}: lleva el icono +`);
+        ok(m.alto === 48, `${nombre}: alto de 48px (${m.alto})`);
+        ok(m.radio >= m.alto / 2, `${nombre}: forma de pastilla (radio ${m.radio})`);
+        ok(m.fondo === m.acento, `${nombre}: fondo = acento de la app (${m.fondo} vs ${m.acento})`);
+        ok(m.colorTexto === m.blanco, `${nombre}: texto = --accent-fg (${m.colorTexto})`);
+        ok(m.fuente === m.fuenteEsperada, `${nombre}: familia de la app (${m.fuente})`);
+        ok(m.tamano === '16px' && m.peso === '500', `${nombre}: 16px / 500 (${m.tamano} / ${m.peso})`);
+        if (m.toast) {
+          const f = m.fab;
+          const t = m.toast;
+          const solapa = t.top < f.bottom && t.bottom > f.top && t.left < f.right && t.right > f.left;
+          ok(!solapa, `${nombre}: el toast no queda debajo de la pastilla`);
+        }
+      } else {
+        ok(m.texto === '', `${nombre}: sigue sin texto, es el + circular (${m.texto})`);
+        ok(m.ancho === 56 && m.alto === 56, `${nombre}: sigue de 56×56 (${m.ancho}×${m.alto})`);
+      }
+      await page.close();
+      server.close();
+      puerto++;
+    }
+  }
+  await browser.close();
+}
+
 async function testTransiciones() {
   console.log('\n=== TRANSICIÓN ENTRE PANTALLAS ===');
   const paginas = ['index', 'seguimiento', 'proyectos', 'resoluciones', 'parques'];
@@ -3080,6 +3179,7 @@ await testEscalaOtrasFichas();
 await testParques({ width: 1440, height: 900 }, 8793);
 await testParques({ width: 390, height: 844 }, 8792);
 await testUniformidad(8791);
+await testFabPastilla();
 await testTransiciones();
 await testReintentoSyncNoSeDesboca();
 await testClaveCompartidaEnElNavegador();

@@ -755,8 +755,9 @@
     .toast {
       position: fixed;
       left: 16px;
-      right: 88px; /* deja lugar al FAB */
-      bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+      right: 16px;
+      /* Encima de la pastilla «+ Nuevo seguimiento» (48px desde 76px). */
+      bottom: calc(136px + env(safe-area-inset-bottom, 0px));
       max-width: 420px;
       z-index: 1100;
       display: flex;
@@ -2237,7 +2238,7 @@
     // ahora en el menú ⋮ junto con el estado de sincronización.
     HeaderGlobal.init({
       titulo: 'Seguimiento',
-      accion: { etiqueta: 'Nuevo expediente', onClick: abrirNuevo },
+      accion: { etiqueta: 'Nuevo seguimiento', pastilla: true, onClick: abrirNuevo },
       menu: [
         { etiqueta: 'Áreas y responsables', onClick: abrirConfigModal },
         { etiqueta: 'Actualizar datos', onClick: reintentarSync }
