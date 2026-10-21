@@ -1200,7 +1200,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
         '<div class="ui-card-title">'+esc(nombre)+'</div>'+
         '<div class="ui-card-id">'+esc(l.id_lote)+' · '+esc(id)+'</div>'+
         estado+
-        '<div class="ui-card-meta">'+fmtM2(l.superficie_m2)+'</div>'+
+        '<div class="ui-card-id">'+fmtM2(l.superficie_m2)+'</div>'+
         '</button>';
     }).join("");
     cont.querySelectorAll("[data-open-lote]").forEach(function(btn){
@@ -1232,13 +1232,11 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
       var situ = situacionDe(e);
       var tono = {"Activa":"is-ok","En construcción":"is-warn","Sin actividad":"is-idle"}[situ] || "";
       var estado = situ ? '<div class="ui-card-estado '+tono+'"><i class="ui-dot"></i>'+esc(situ)+'</div>' : '';
-      var detalle = [e.rubro, e.contacto_nombre].filter(Boolean).join(" · ");
       return '<button class="ui-card" data-open-empresa="'+esc(e.id_empresa)+'">'+
         '<div class="ui-card-title">'+esc(e.nombre_empresa)+'</div>'+
         '<div class="ui-card-id">'+esc(e.id_empresa)+'</div>'+
         estado+
-        '<div class="ui-card-meta">'+resumenSuperficie(lotesDeEmpresa(e.id_empresa), lotesOcupadosPor(e.id_empresa), totalM2)+'</div>'+
-        (detalle?'<div class="ui-card-meta">'+esc(detalle)+'</div>':'')+
+        '<div class="ui-card-id">'+resumenSuperficie(lotesDeEmpresa(e.id_empresa), lotesOcupadosPor(e.id_empresa), totalM2)+'</div>'+
         '</button>';
     }).join("");
     cont.querySelectorAll("[data-open-empresa]").forEach(function(btn){

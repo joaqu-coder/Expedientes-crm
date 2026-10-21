@@ -524,9 +524,4 @@
   background: currentColor;
   flex: 0 0 auto;
 }
-.ui-card-meta {
-  font-size: var(--ds-list-card-small);
-  color: var(--ds-fg-muted);
-  margin-top: 6px;
-}
 
