@@ -575,7 +575,7 @@ async function testMovilTactil() {
   ok(Math.round(caja.width) === 390 && Math.round(caja.height) === 844, `el formulario es pantalla completa (${Math.round(caja.width)}x${Math.round(caja.height)})`);
   // Formulario (pedido 2026-10-20): campo a 12px sobre --surface-2 y etiqueta a 14px
   // en --text. Los tokens se comparan con un elemento de prueba, no con hex.
-  ok((await fuente('#tema')) === 12, `los campos del formulario tienen fuente de 12px (${await fuente('#tema')}px)`);
+  ok((await fuente('#tema')) === 16, `los campos del formulario tienen fuente de 16px, el criterio común (${await fuente('#tema')}px)`);
   ok(await page.evaluate(() => {
     const etiqueta = getComputedStyle(document.querySelector('label[for="tema"]'));
     const campo = getComputedStyle(document.getElementById('tema'));
@@ -3079,7 +3079,92 @@ await testProyectosEscalaFicha({ nombre: 'desktop', ancho: 1280, alto: 800 });
 await testEscalaOtrasFichas();
 await testParques({ width: 1440, height: 900 }, 8793);
 await testParques({ width: 390, height: 844 }, 8792);
+/*
+ * Formularios iguales en las cuatro apps. Pedido del usuario (2026-10-21):
+ * "tienen que ser idénticos… en el color de la letra, en el tamaño, en el
+ * background, en el calendario, en todo eso". Se abre el alta de cada app con
+ * su + y se compara, por comportamiento, cada tipo de control: etiqueta, campo
+ * de texto, fecha, selector y área de texto. Si una app difiere, se nombra.
+ */
+async function testFormulariosUniformes(puerto) {
+  console.log('\n=== FORMULARIOS UNIFORMES ENTRE PANTALLAS (390x844, táctil) ===');
+  const paginas = ['seguimiento', 'proyectos', 'resoluciones', 'parques'];
+  const MIME = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'application/javascript' };
+  const server = http.createServer((req, res) => {
+    const u = new URL(req.url, 'http://x');
+    if (u.pathname.startsWith('/api/')) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end('{}');
+      return;
+    }
+    const f = path.join(RAIZ, 'public', u.pathname === '/' ? 'seguimiento.html' : u.pathname);
+    if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); res.end(); return; }
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(f)] || 'application/octet-stream' });
+    res.end(fs.readFileSync(f));
+  });
+  await new Promise((r) => server.listen(puerto, r));
+
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const page = await context.newPage();
+
+  const CONTROLES = {
+    etiqueta: '.form-label, .field label',
+    texto: '.form-input[type=text], .field input[type=text]',
+    fecha: 'input[type=date]',
+    selector: '.form-select, .field select',
+    area: '.form-textarea, .field textarea',
+  };
+  const medidas = {};
+  for (const p of paginas) {
+    await page.goto(`http://localhost:${puerto}/${p}.html`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('.app-fab');
+    await page.click('.app-fab');
+    await page.waitForTimeout(250);
+    medidas[p] = await page.evaluate((controles) => {
+      const out = {};
+      for (const [nombre, sel] of Object.entries(controles)) {
+        const el = document.querySelector(sel);
+        if (!el) { out[nombre] = null; continue; }
+        const cs = getComputedStyle(el);
+        const r = el.getBoundingClientRect();
+        out[nombre] = {
+          fuente: cs.fontSize,
+          peso: cs.fontWeight,
+          color: cs.color,
+          fondo: cs.backgroundColor,
+          borde: cs.borderTopWidth + ' ' + cs.borderTopStyle + ' ' + cs.borderTopColor,
+          radio: cs.borderRadius,
+          relleno: cs.paddingTop + ' ' + cs.paddingRight + ' ' + cs.paddingBottom + ' ' + cs.paddingLeft,
+          tipografia: cs.fontFamily,
+          alto: Math.round(r.height),
+        };
+      }
+      return out;
+    }, CONTROLES);
+  }
+  await browser.close();
+  server.close();
+
+  // Se compara cada control contra la primera app que lo tiene. Una propiedad
+  // distinta se nombra con sus dos valores, para que el arreglo sea directo.
+  const ref = {};
+  for (const control of Object.keys(CONTROLES)) {
+    const conEsta = paginas.filter((p) => medidas[p][control]);
+    ok(conEsta.length >= 2, `${control}: al menos dos pantallas tienen este control (${conEsta.join(', ') || 'ninguna'})`);
+    const base = conEsta[0];
+    ref[control] = base;
+    for (const p of conEsta.slice(1)) {
+      const a = medidas[base][control];
+      const b = medidas[p][control];
+      const difs = Object.keys(a).filter((k) => a[k] !== b[k]).map((k) => `${k} ${a[k]} vs ${b[k]}`);
+      ok(difs.length === 0, `${control}: ${p} igual que ${base}` + (difs.length ? ` — difiere en ${difs.join('; ')}` : ''));
+    }
+  }
+}
+
 await testUniformidad(8791);
+await testFormulariosUniformes(8792);
 await testTransiciones();
 await testReintentoSyncNoSeDesboca();
 await testClaveCompartidaEnElNavegador();

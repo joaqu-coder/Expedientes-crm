@@ -431,3 +431,43 @@
   .cc-actions { flex-direction: row; }
   .cc-actions .btn { flex: 1 1 0; min-width: 0; width: auto; }
 }
+
+/* ============================ FORMULARIOS ============================
+   Etiqueta, campo, fecha, selector y área de texto: el mismo criterio en las
+   cuatro apps. Dos nombres de clase por la historia: `.field` (Proyectos,
+   Resoluciones, Parques) y `.form-*` (Seguimiento). Las dos reciben lo mismo.
+   Los estados (inválido, válido) siguen en cada app: son la única excepción. */
+.field label,
+.form-label {
+  display: block;
+  font-size: var(--ds-field-label-size);
+  line-height: 1.4;
+  font-weight: 600;
+  color: var(--ds-fg);
+}
+.field input,
+.field select,
+.field textarea,
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  background: var(--ds-field-bg);
+  border: 1px solid var(--ds-field-border);
+  border-radius: var(--ds-field-radius);
+  padding: var(--ds-field-pad-y) var(--ds-field-pad-x);
+  font-family: inherit;
+  font-size: var(--ds-field-font-size);
+  color: var(--ds-field-fg);
+}
+.field input,
+.field select,
+.form-input,
+.form-select {
+  min-height: var(--ds-field-min-height);
+}
+.field textarea,
+.form-textarea {
+  min-height: var(--ds-textarea-min-height);
+  resize: vertical;
+}

@@ -668,29 +668,12 @@
     }
 
     .form-label {
-      display: block;
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text);
       margin-bottom: 4px;
     }
 
     .form-label.required::after {
       content: " *";
       color: var(--red);
-    }
-
-    .form-input,
-    .form-select,
-    .form-textarea {
-      width: 100%;
-      padding: 8px;
-      border: 1px solid var(--gray-300);
-      border-radius: 6px;
-      font-size: 12px; /* pedido 2026-10-20: el zoom de iOS al enfocar se acepta */
-      font-family: inherit;
-      color: var(--text);
-      background: var(--surface-2);
     }
 
     .form-input:focus,
@@ -711,11 +694,6 @@
     .form-select.valid {
       border-color: var(--green);
       box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.1);
-    }
-
-    .form-textarea {
-      resize: vertical;
-      min-height: 60px;
     }
 
     .form-help {
