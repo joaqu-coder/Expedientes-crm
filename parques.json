@@ -540,7 +540,7 @@
       "nombre_empresa": "PRONTO PACK",
       "rubro": "Fábrica de envases de polipropileno para industria, minería y el agro",
       "propietario_matricula": "Ente General de Parques y Areas Industriales de Salta",
-      "mail": "fmazieres@prontomotos.com.ar\npaola@prontomotos.com.ar",
+      "mail": "fmazieres@prontomotos.com.ar /paola@prontomotos.com.ar",
       "telefono": "387-4630002",
       "contacto_nombre": "Paola Fainguersch",
       "cargo": "Socio - Gerente",
@@ -549,7 +549,9 @@
       "linkedin": "https://www.linkedin.com/company/posco-argentina/?originalSubdomain=ar | https://www.linkedin.com/in/leandro-etchezar/?originalSubdomain=ar",
       "ubicacion": "Parque Ind. Güemes, MANZANA 3 - PARCELA 15/16, A4430 Gral. Guemes, Salta",
       "observacion": "https://www.linkedin.com/company/posco-argentina/?originalSubdomain=ar",
-      "id_parque": "guemes"
+      "id_parque": "guemes",
+      "situacion": null,
+      "facebook": ""
     },
     {
       "id_empresa": "E054",
