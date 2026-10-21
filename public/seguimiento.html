@@ -183,7 +183,6 @@
     .panel-areas {
       background: white;
       padding: 12px 12px 0;
-      border-bottom: 1px solid var(--gray-300);
     }
 
     .panel-areas-title {
@@ -201,15 +200,16 @@
        quedaba cortada justo de ese lado. */
     /* La barra de desplazamiento se oculta: al tocar y arrastrar los chips
        aparecía una línea. El scroll horizontal sigue funcionando igual.
-       El margen negativo deja 3px (0,8 mm) entre el chip y la tarjeta: es el
-       mismo espacio que ocupa el área táctil de 44px (.area-btn::after). */
+       Entre el chip y la tarjeta quedan 8px: 4px de padding de abajo más 4px
+       de margen. El área táctil de 44px del chip (.area-btn::after) ocupa 3px
+       de ese espacio, así que no tapa la tarjeta. */
     .area-buttons {
       display: flex;
       flex-wrap: nowrap;
       gap: 8px;
       overflow-x: auto;
       padding: 4px 0;
-      margin-bottom: -2px;
+      margin-bottom: 4px;
       scrollbar-width: none;
     }
 

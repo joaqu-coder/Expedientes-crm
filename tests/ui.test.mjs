@@ -556,10 +556,10 @@ async function testMovilTactil() {
   ok(Math.max(...filaAcciones.anchos) - Math.min(...filaAcciones.anchos) <= 1,
      `Resolver y Editar miden lo mismo de ancho (${filaAcciones.anchos.join(' / ')}px)`);
 
-  // Distancias pedidas (2026-10-21), a 96 dpi: 0,5 mm entre el ⋮ y la búsqueda
-  // (2px) y 0,8 mm entre los chips y las tarjetas (3px). Esos 3px son el área
-  // táctil de 44px del chip (.area-btn::after): si la tarjeta los tapa, el chip
-  // deja de responder al borde de abajo.
+  // Distancias pedidas (2026-10-21): 0,5 mm entre el ⋮ y la búsqueda (2px) y
+  // 8px entre los chips y las tarjetas, sin línea divisoria. El área táctil de
+  // 44px del chip (.area-btn::after) ocupa 3px de esos 8px: si la tarjeta los
+  // tapa, el chip deja de responder al borde de abajo.
   const distancias = await page.evaluate(() => {
     // Arriba de todo: el test anterior bajó la página para medir Resolver, y
     // con la página bajada el ⋮ ya no está al lado de la búsqueda.
@@ -572,8 +572,10 @@ async function testMovilTactil() {
   });
   ok(Math.abs(distancias.menuBusqueda - 2) < 0.6,
      `el ⋮ y la búsqueda quedan a 2px, 0,5 mm (${distancias.menuBusqueda.toFixed(2)}px)`);
-  ok(Math.abs(distancias.chipTarjeta - 3) < 0.6,
-     `los chips de área y la primera tarjeta quedan a 3px, 0,8 mm (${distancias.chipTarjeta.toFixed(2)}px)`);
+  ok(Math.abs(distancias.chipTarjeta - 8) < 0.6,
+     `los chips de área y la primera tarjeta quedan a 8px (${distancias.chipTarjeta.toFixed(2)}px)`);
+  ok(await page.evaluate(() => getComputedStyle(document.querySelector('.panel-areas')).borderBottomWidth) === '0px',
+     'no hay línea divisoria entre los chips y las tarjetas');
   ok(await page.evaluate(() => getComputedStyle(document.getElementById('areaBotones')).scrollbarWidth) === 'none',
      'la barra de desplazamiento de los chips está oculta (no aparece la línea al arrastrarlos)');
 
