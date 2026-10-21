@@ -208,13 +208,18 @@
       "nombre_empresa": "FABRICA DE PASTAS LA FRANCISCA",
       "rubro": "Fábrica de pastas",
       "propietario_matricula": "Ente General de Parques y Areas Industriales de Salta",
-      "mail": "no",
+      "mail": "andresm@lafrancisca.com",
       "telefono": "no",
       "contacto_nombre": "no",
       "cargo": "Socio - Gerente",
       "instagram": "https://www.instagram.com/lafranciscaok/?hl=es",
       "observacion_contactos_2024": "Sigue estando?",
-      "id_parque": "guemes"
+      "id_parque": "guemes",
+      "situacion": "Activa",
+      "ubicacion": "",
+      "pagweb": "",
+      "facebook": "",
+      "linkedin": ""
     },
     {
       "id_empresa": "E017",
