@@ -576,8 +576,20 @@ async function testMovilTactil() {
      `los chips de área y la primera tarjeta quedan a 8px (${distancias.chipTarjeta.toFixed(2)}px)`);
   ok(await page.evaluate(() => getComputedStyle(document.querySelector('.panel-areas')).borderBottomWidth) === '0px',
      'no hay línea divisoria entre los chips y las tarjetas');
-  ok(await page.evaluate(() => getComputedStyle(document.getElementById('areaBotones')).scrollbarWidth) === 'none',
-     'la barra de desplazamiento de los chips está oculta (no aparece la línea al arrastrarlos)');
+  // La barra de desplazamiento de los chips queda debajo de un recorte de altura
+  // fija (4 + 38 + 4). Los chips entran completos (4px de aire arriba y abajo,
+  // que es el área táctil) y lo que pasa de esa altura se corta. No depende de
+  // que el navegador respete scrollbar-width (el del celular no lo respetó).
+  const recorte = await page.evaluate(() => {
+    const clip = document.querySelector('.area-buttons-clip');
+    if (!clip) return null;
+    const r = clip.getBoundingClientRect();
+    const chip = document.querySelector('.area-btn').getBoundingClientRect();
+    return { overflow: getComputedStyle(clip).overflow, alto: r.height, arriba: chip.top - r.top, abajo: r.bottom - chip.bottom };
+  });
+  ok(recorte && recorte.overflow === 'hidden' && Math.abs(recorte.alto - 46) < 0.6
+     && Math.abs(recorte.arriba - 4) < 0.6 && Math.abs(recorte.abajo - 4) < 0.6,
+     `la barra de desplazamiento de los chips queda cortada fuera del panel (recorte ${recorte ? `${recorte.alto}px, aire ${recorte.arriba}/${recorte.abajo}px` : 'inexistente'})`);
 
   // Orden de la presentación de la tarjeta: Tema, Expediente, Vencimiento. El
   // fondo de alarma se mantiene (el color del semáforo, no blanco).

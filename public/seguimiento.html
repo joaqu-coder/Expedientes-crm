@@ -198,24 +198,27 @@
        El padding va arriba Y abajo: overflow-x:auto también recorta en vertical,
        y sin los 4px de arriba el área táctil extendida del chip (.area-btn::after)
        quedaba cortada justo de ese lado. */
-    /* La barra de desplazamiento se oculta: al tocar y arrastrar los chips
-       aparecía una línea. El scroll horizontal sigue funcionando igual.
-       Entre el chip y la tarjeta quedan 8px: 4px de padding de abajo más 4px
-       de margen. El área táctil de 44px del chip (.area-btn::after) ocupa 3px
-       de ese espacio, así que no tapa la tarjeta. */
+    /* La barra de desplazamiento de los chips no se oculta con CSS (el navegador
+       del celular la seguía dibujando). Se corta: el recorte mide 46px (4 + 38
+       del chip + 4), y la barra cae debajo de ese borde. El scroll horizontal
+       sigue funcionando igual. Entre el chip y la tarjeta quedan 8px: 4px de
+       aire del recorte más 4px de margen. */
+    .area-buttons-clip {
+      height: 46px;
+      overflow: hidden;
+      margin-bottom: 4px;
+    }
+
     .area-buttons {
       display: flex;
       flex-wrap: nowrap;
       gap: 8px;
       overflow-x: auto;
       padding: 4px 0;
-      margin-bottom: 4px;
-      scrollbar-width: none;
     }
 
-    .area-buttons::-webkit-scrollbar { display: none; }
-
     @media (min-width: 900px) {
+      .area-buttons-clip { height: auto; overflow: visible; }
       .area-buttons { flex-wrap: wrap; overflow-x: visible; }
     }
 
@@ -1040,7 +1043,9 @@
 
       <div class="panel-areas">
         <div class="panel-areas-title">Áreas Responsables</div>
-        <div class="area-buttons" id="areaBotones"></div>
+        <div class="area-buttons-clip">
+          <div class="area-buttons" id="areaBotones"></div>
+        </div>
       </div>
 
       <div class="expedientes-list" id="expedientesList" role="tabpanel"></div>
