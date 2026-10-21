@@ -234,6 +234,22 @@
           "texto": "Se cooridna reunion con Cecilia Borla 6/10/2026. Su presenta su representante (Su hijo) explicando la sutiacion. Se compromete a enviar los estudios ambientales"
         }
       ]
+    },
+    {
+      "id": "1792596751813",
+      "numero": "",
+      "tema": "Comisión - Rosario",
+      "area": "Coordinación",
+      "responsable": "Joaquín Fernández Castro",
+      "fechaInicio": "2026-10-21",
+      "diasPlazo": 5,
+      "estado": "activo",
+      "intervenciones": [
+        {
+          "hora": "21/10/2026 12:32",
+          "texto": "Dante comenta, por msj (20/10/2026) que no se taparán zanjas aún, hasta realizá prueba hidráulica. Programar viaje (28/10/2026)."
+        }
+      ]
     }
   ],
   "areas": [
@@ -249,5 +265,5 @@
     "Karina Merino",
     "Joaquín Fernández Castro"
   ],
-  "timestamp": "2026-10-21T15:05:48.189Z"
+  "timestamp": "2026-10-21T15:32:31.917Z"
 }
