@@ -319,7 +319,7 @@
       "nombre_empresa": "GANFENG LITIUM LATAM",
       "rubro": "Planta industrial de polvo de polvo de fosfato de litio",
       "propietario_matricula": "Ente General de Parques y Areas Industriales de Salta",
-      "mail": "Juan.gilly@ganfenglithium-latam.com",
+      "mail": "Juan.gilly@ganfenglithium-latam.com / administracion@ganfenglithium-latam.com",
       "telefono": "011-63501330",
       "contacto_nombre": "Juan Gilly",
       "cargo": "Gerente de relación es institucionales",
@@ -327,7 +327,9 @@
       "instagram": "https://www.instagram.com/ganfenglithium.latam/?hl=es-la",
       "linkedin": "https://www.linkedin.com/company/ganfenglithium-latam/posts/?feedView=all",
       "ubicacion": "Juramento 80",
-      "id_parque": "guemes"
+      "id_parque": "guemes",
+      "situacion": null,
+      "facebook": ""
     },
     {
       "id_empresa": "E039",
