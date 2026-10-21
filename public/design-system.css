@@ -129,6 +129,7 @@
   --ds-bg:         var(--ds-c-white);
   --ds-surface:    var(--ds-c-white);
   --ds-surface-2:  var(--ds-c-gray-100);  /* relleno de la búsqueda y los chips */
+  --ds-surface-nota: var(--ds-c-gray-50); /* cada nota del historial (Seguimiento y Proyectos) */
   /* Pestañas: activa con gris azulado suave y texto oscuro; inactivas, neutras
      (--ds-surface-2). Un único patrón para las cuatro apps. */
   --ds-tab-active: var(--ds-c-blue-gray);
@@ -150,6 +151,7 @@
   --ds-radius-pill:   999px;
   --ds-radius-button: var(--ds-radius-pill);
   --ds-radius-card:   10px;
+  --ds-radius-nota:   6px;   /* notas del historial: más chico que una tarjeta */
   --ds-radius-panel:  12px;
   --ds-radius-nav:    10px;
 

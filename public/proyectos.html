@@ -151,16 +151,11 @@ svg text{font-family:var(--font-body)}
 .field .req{color:var(--danger);margin-left:2px}
 @media (max-width:420px){.row2{grid-template-columns:1fr}}
 
-.hist{margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
 /* Escala de la ficha: los tamaños y altos vienen de design-system.css
    (--ds-text-*). Subtítulo = secciones; información = rótulos, datos, fechas
-   y notas, todos al mismo nivel. */
-.hist h3,.view-section h3{font-size:var(--ds-text-subtitle);line-height:var(--ds-text-subtitle-lh);letter-spacing:.04em;text-transform:uppercase;color:var(--text);margin-bottom:9px;font-weight:700}
-.hist-empty{font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);color:var(--muted)}
-.hist-list{display:flex;flex-direction:column;gap:10px;max-height:220px;overflow-y:auto}
-.hist-item{display:flex;flex-direction:column;gap:2px}
-.hist-time{font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);color:var(--muted)}
-.hist-text{font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);color:var(--muted)}
+   y notas, todos al mismo nivel. Las notas (.notas-*, .nota-*) son las mismas
+   que en Seguimiento: ui-kit.css, sección NOTAS. */
+.view-section h3{font-size:var(--ds-text-subtitle);line-height:var(--ds-text-subtitle-lh);letter-spacing:.04em;text-transform:uppercase;color:var(--text);margin-bottom:9px;font-weight:700}
 
 /* Los botones de acción (Guardar/Cancelar/Eliminar/Editar) viven en
    /ui-kit.css, compartidos con las otras tres apps. */
@@ -2451,18 +2446,19 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     var blank = (!current) ? '<option value="" selected disabled>Seleccionar…</option>' : '';
     return '<div class="field"><label for="f_'+name+'">'+esc(label)+'</label><select id="f_'+name+'" name="'+name+'">'+blank+opts+'</select></div>';
   }
+  // Mismo bloque que Seguimiento (ui-kit.css, NOTAS): encabezado "NOTAS (n)" y
+  // las notas en el orden en que se cargaron, como las muestra Seguimiento.
+  // Sin el cartel "SISTEMA" (pedido del usuario, 2026-10-21): el texto de la
+  // nota ya dice que la escribió la app ("Archivado automáticamente…",
+  // "Rescatado del archivo."). `n.tipo` se sigue guardando en el dato.
   function historialHtml(e){
     var notas = (e && e.intervenciones) || [];
     var body = notas.length
-      ? '<div class="hist-list">'+notas.slice().reverse().map(function(n){
-          // Sin el cartel "SISTEMA" (pedido del usuario, 2026-10-21): el texto
-          // de la nota ya dice que la escribió la app ("Archivado
-          // automáticamente…", "Rescatado del archivo."). `n.tipo` se sigue
-          // guardando en el dato, así que reponerlo es volver a dibujarlo.
-          return '<div class="hist-item"><div class="hist-time">'+esc(n.hora)+'</div><div class="hist-text">'+esc(n.texto)+'</div></div>';
+      ? '<div class="notas-list">'+notas.map(function(n){
+          return '<div class="nota-item"><span class="nota-hora">'+esc(n.hora)+'</span><div class="nota-texto">'+esc(n.texto)+'</div></div>';
         }).join("")+'</div>'
-      : '<div class="hist-empty">Sin notas aún.</div>';
-    return '<div class="hist"><h3>Notas ('+notas.length+')</h3>'+body+'</div>';
+      : '<div class="notas-empty">Sin notas aún</div>';
+    return '<div class="notas-seccion"><div class="notas-header">Notas ('+notas.length+')</div>'+body+'</div>';
   }
   function closeModal(){
     veil.hidden = true;

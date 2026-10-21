@@ -557,9 +557,9 @@ async function testMovilTactil() {
      `Resolver y Editar miden lo mismo de ancho (${filaAcciones.anchos.join(' / ')}px)`);
 
   // Distancias pedidas (2026-10-21): 0,5 mm entre el ⋮ y la búsqueda (2px) y
-  // 8px entre los chips y las tarjetas, sin línea divisoria. El área táctil de
-  // 44px del chip (.area-btn::after) ocupa 3px de esos 8px: si la tarjeta los
-  // tapa, el chip deja de responder al borde de abajo.
+  // 16px entre los chips y las tarjetas, sin línea divisoria. Subió de 8 a 16
+  // porque en el celular los chips quedaban pegados a la primera tarjeta. El
+  // área táctil de 44px del chip (.area-btn::after) ocupa 3px de esos 16px.
   const distancias = await page.evaluate(() => {
     // Arriba de todo: el test anterior bajó la página para medir Resolver, y
     // con la página bajada el ⋮ ya no está al lado de la búsqueda.
@@ -572,8 +572,8 @@ async function testMovilTactil() {
   });
   ok(Math.abs(distancias.menuBusqueda - 2) < 0.6,
      `el ⋮ y la búsqueda quedan a 2px, 0,5 mm (${distancias.menuBusqueda.toFixed(2)}px)`);
-  ok(Math.abs(distancias.chipTarjeta - 8) < 0.6,
-     `los chips de área y la primera tarjeta quedan a 8px (${distancias.chipTarjeta.toFixed(2)}px)`);
+  ok(Math.abs(distancias.chipTarjeta - 16) < 0.6,
+     `los chips de área y la primera tarjeta quedan a 16px (${distancias.chipTarjeta.toFixed(2)}px)`);
   ok(await page.evaluate(() => getComputedStyle(document.querySelector('.panel-areas')).borderBottomWidth) === '0px',
      'no hay línea divisoria entre los chips y las tarjetas');
   // La barra de desplazamiento de los chips queda debajo de un recorte de altura
@@ -1084,8 +1084,8 @@ async function testProyectos(viewport, puerto) {
       texto: head.textContent.replace(/\s+/g, ' ').trim(),
       empresa: document.querySelector('#modal .view-empresa').textContent.trim(),
       nro: document.querySelector('#modal .view-exp').textContent.trim(),
-      sys: document.querySelectorAll('#modal .hist .sys').length,
-      notas: document.querySelector('#modal .hist').textContent,
+      sys: document.querySelectorAll('#modal .notas-seccion .sys').length,
+      notas: document.querySelector('#modal .notas-seccion').textContent,
       grilla: document.querySelector('#modal .view-section').textContent,
     };
   });
@@ -1733,7 +1733,7 @@ async function testProyectosEscalaFicha(viewport) {
 
     // Todo texto del cuerpo de la ficha. El primer panel va aparte: tiene su
     // propio tamaño (16px) pedido por el usuario.
-    const zonas = ['.view-section', '.hist'];
+    const zonas = ['.view-section', '.notas-seccion'];
     const tamanos = new Set();
     const fuera = [];
     for (const z of zonas) {
@@ -1760,12 +1760,12 @@ async function testProyectosEscalaFicha(viewport) {
       empresa: { size: cs('#modal .view-empresa').fontSize, weight: cs('#modal .view-empresa').fontWeight },
       nro: { size: cs('#modal .view-exp').fontSize },
       // El cartel "SISTEMA" de las notas automáticas se sacó (2026-10-21).
-      sys: document.querySelectorAll('#modal .hist .sys').length,
-      histTexto: document.querySelector('#modal .hist').textContent,
+      sys: document.querySelectorAll('#modal .notas-seccion .sys').length,
+      histTexto: document.querySelector('#modal .notas-seccion').textContent,
       subtitulo: { size: cs('#modal .view-section h3').fontSize, weight: cs('#modal .view-section h3').fontWeight },
       rotulo: { size: cs('#modal .view-item label').fontSize, weight: cs('#modal .view-item label').fontWeight },
       respuesta: { size: cs('#modal .view-item .v').fontSize, color: cs('#modal .view-item .v').color },
-      nota: { size: cs('#modal .hist-text').fontSize, lh: cs('#modal .hist-text').lineHeight, color: cs('#modal .hist-text').color },
+      nota: { size: cs('#modal .nota-texto').fontSize, lh: cs('#modal .nota-texto').lineHeight, color: cs('#modal .nota-texto').color },
       tamanos: [...tamanos],
       fuera,
     };
@@ -1938,7 +1938,7 @@ async function testEscalaOtrasFichas() {
       { nombre: 'respuesta (fecha de inicio)', sel: '.expediente-expanded-dates > div > span:last-child', nivel: 'respuesta' },
       { nombre: 'fecha de la nota', sel: '.nota-hora', nivel: 'info' },
       { nombre: 'texto de la nota', sel: '.nota-texto', nivel: 'info' },
-    ], ['.expediente-expanded-tema', '.expediente-expanded-meta', '.expediente-expanded-dates', '.expediente-notas-section']);
+    ], ['.expediente-expanded-tema', '.expediente-expanded-dates', '.notas-seccion']);
     await page.close();
     ctx.server.close();
   }
@@ -3261,8 +3261,11 @@ async function testEspaciadoYAncho(puerto) {
         return Math.round((s.getBoundingClientRect().top - bajaFila) * 10) / 10;
       }).filter((g) => g !== null);
     }, espacios[p]);
+    // Seguimiento va a 16px (los chips se apretaban contra las tarjetas); las
+    // demás siguen a 8px. Cada una se mide contra su propio valor pedido.
+    const esperado = p === 'seguimiento' ? 16 : 8;
     for (const gap of medidas) {
-      ok(Math.abs(gap - 8) < 0.6, `${p} (390px): la fila de chips queda a 8px de lo que sigue (${gap}px)`);
+      ok(Math.abs(gap - esperado) < 0.6, `${p} (390px): la fila de chips queda a ${esperado}px de lo que sigue (${gap}px)`);
     }
     if (medidas.length === 0) ok(false, `${p} (390px): no se encontró la fila de chips para medir`);
   }
@@ -3282,6 +3285,102 @@ async function testEspaciadoYAncho(puerto) {
        `${p} (1440px): el contenido ocupa como máximo 960px y va centrado (${ancho.ancho}px)`);
   }
   await contextoEscritorio.close();
+  await browser.close();
+  server.close();
+}
+
+// Notas y etiquetas compartidas (2026-10-21). Las notas de Proyectos (ficha) se
+// ven como las de Seguimiento (tarjeta): mismo encabezado, mismo fondo, mismo
+// relleno y mismo tamaño. Y la tarjeta de Seguimiento muestra Coordinación (el
+// área) y Agente (el responsable) con su rótulo, igual que las fechas de abajo.
+async function testNotasYEtiquetas(puerto) {
+  console.log('\n=== NOTAS COMPARTIDAS Y ETIQUETAS DE LA TARJETA ===');
+  const htmls = {
+    seguimiento: fs.readFileSync(path.join(RAIZ, 'public/seguimiento.html'), 'utf8'),
+    proyectos: fs.readFileSync(path.join(RAIZ, 'public/proyectos.html'), 'utf8'),
+  };
+  const sha = 'sha-notas-1';
+  const notas = [
+    { hora: '28/09 21:37', texto: 'Reunion con Leiva el 04/09/2026' },
+    { hora: '05/10 08:56', texto: 'Solicita 7.413,93 m² (120.854.547,120)' },
+  ];
+  const seguimiento = {
+    expedientes: [{
+      id: 'nota1', numero: '363-9/2026-01', tema: 'Tema con notas', area: 'Operación', responsable: 'Alejandro Leiva',
+      estado: 'activo', fechaInicio: '2099-01-05', diasPlazo: 30, intervenciones: notas,
+    }],
+    areas: ['Operación'], responsables: ['Alejandro Leiva'],
+  };
+  // Proyectos: a cada carta se le pone la misma nota, así el primer click abre
+  // una ficha con notas sin importar si esa carta está archivada o no.
+  const cartas = JSON.parse(fs.readFileSync(path.join(RAIZ, 'cartas-intencion.json'), 'utf8'));
+  cartas.expedientes.forEach((e) => { e.intervenciones = notas; });
+  const server = http.createServer((req, res) => {
+    const u = new URL(req.url, 'http://x');
+    const json = (obj) => { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
+    if (u.pathname === '/api/sync') return json(seguimiento);
+    if (u.pathname === '/api/sync-cartas') return json(Object.assign({}, cartas, { _meta: { existe: true, sha } }));
+    if (u.pathname === '/api/version-cartas') return json({ version: sha });
+    if (u.pathname.startsWith('/api/')) return json({});
+    if (servirHeaderJs(req, res)) return;
+    const cual = u.pathname.startsWith('/proyectos') ? 'proyectos' : 'seguimiento';
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(htmls[cual]);
+  });
+  await new Promise((r) => server.listen(puerto, r));
+
+  const problemas = [];
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const contexto = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+
+  // Mismas propiedades para cualquier bloque de notas: si una lee distinto, se nombra.
+  // Se pasa a page.evaluate como función: corre dentro de la página, no acá.
+  const medirNota = (sel) => {
+    const raiz = document.querySelector(sel);
+    const item = raiz.querySelector('.nota-item');
+    if (!item) return null;
+    const cs = getComputedStyle(item);
+    const hdr = raiz.querySelector('.notas-header');
+    return {
+      fondo: cs.backgroundColor,
+      radio: cs.borderRadius,
+      relleno: cs.padding,
+      tamano: cs.fontSize,
+      encabezado: hdr ? getComputedStyle(hdr).textTransform : null,
+      encabezadoTexto: hdr ? hdr.textContent.trim() : null,
+    };
+  };
+
+  const seg = await contexto.newPage();
+  seg.on('pageerror', (e) => problemas.push('seguimiento: ' + e.message));
+  await seg.goto(`http://localhost:${puerto}/seguimiento.html`, { waitUntil: 'networkidle' });
+  await seg.locator('.expediente-header-urgencia').first().click();
+  await seg.waitForSelector('.expediente-expanded-content.expanded .nota-item');
+  const notasSeg = {
+    ...(await seg.evaluate(medirNota, '.expediente-expanded-content')),
+    // Las etiquetas viven en la misma lista de filas que las fechas.
+    meta: await seg.evaluate(() => document.querySelector('.expediente-expanded-dates').textContent.replace(/\s+/g, ' ').trim()),
+  };
+  ok(notasSeg.encabezado === 'uppercase' && notasSeg.encabezadoTexto === 'Notas (2)',
+     `Seguimiento: las notas tienen encabezado "NOTAS (2)" en mayúsculas (${notasSeg.encabezadoTexto}, ${notasSeg.encabezado})`);
+  ok(/Coordinación/.test(notasSeg.meta) && /Agente/.test(notasSeg.meta) && !/Área responsable/.test(notasSeg.meta),
+     `la tarjeta de Seguimiento rotula el área como Coordinación y el responsable como Agente ("${notasSeg.meta}")`);
+
+  const proy = await contexto.newPage();
+  proy.on('pageerror', (e) => problemas.push('proyectos: ' + e.message));
+  await proy.goto(`http://localhost:${puerto}/proyectos.html`, { waitUntil: 'networkidle' });
+  await proy.waitForFunction(() => document.querySelectorAll('.exp-card').length > 0);
+  await proy.locator('.exp-card').first().click();
+  await proy.waitForSelector('#modal .notas-seccion .nota-item');
+  const notasProy = await proy.evaluate(medirNota, '#modal .notas-seccion');
+  for (const k of ['fondo', 'radio', 'relleno', 'tamano', 'encabezado']) {
+    ok(notasProy[k] === notasSeg[k],
+       `las notas de Proyectos igualan a Seguimiento en ${k} (${notasProy[k]} vs ${notasSeg[k]})`);
+  }
+  ok(notasProy.encabezadoTexto === 'Notas (2)', `Proyectos: el encabezado cuenta las notas ("${notasProy.encabezadoTexto}")`);
+
+  ok(problemas.length === 0, `sin errores de página en las notas y etiquetas (${problemas.join(' | ') || 'ninguno'})`);
+  await contexto.close();
   await browser.close();
   server.close();
 }
@@ -3366,6 +3465,7 @@ async function testFormulariosUniformes(puerto) {
 await testUniformidad(8791);
 await testFormulariosUniformes(8792);
 await testEspaciadoYAncho(8793);
+await testNotasYEtiquetas(8798);
 await testTransiciones();
 await testReintentoSyncNoSeDesboca();
 await testClaveCompartidaEnElNavegador();

@@ -526,3 +526,45 @@
   flex: 0 0 auto;
 }
 
+/* ============================== NOTAS ==============================
+   El historial de un expediente: Seguimiento (la tarjeta y el formulario) y
+   Proyectos (la ficha). Un solo bloque para las cuatro cosas que se ven igual:
+   el encabezado "NOTAS (n)", y cada nota en su tarjeta gris con la hora arriba
+   y el texto abajo. Si cambia uno, cambia en todas las pantallas. */
+.notas-seccion { margin-bottom: 16px; }
+.notas-header {
+  font-size: var(--ds-text-subtitle);
+  line-height: var(--ds-text-subtitle-lh);
+  font-weight: 700;
+  color: var(--ds-fg);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 9px;
+}
+.notas-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap);
+}
+.nota-item {
+  padding: var(--ui-gap);
+  background: var(--ds-surface-nota);
+  border-radius: var(--ds-radius-nota);
+  font-size: var(--ds-text-info);
+  line-height: var(--ds-text-info-lh);
+}
+.nota-hora {
+  display: block;
+  color: var(--ds-fg-muted);
+  margin-bottom: 2px;
+}
+.nota-texto { color: var(--ds-fg-muted); }
+.notas-empty {
+  font-size: var(--ds-text-info);
+  line-height: var(--ds-text-info-lh);
+  color: var(--ds-fg-muted);
+  font-style: italic;
+  padding: var(--ui-gap);
+  text-align: center;
+}
+
