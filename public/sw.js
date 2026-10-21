@@ -7,7 +7,9 @@
  *
  * Cambiar CACHE_VERSION cuando hay cambios incompatibles.
  */
-const CACHE_VERSION = 'expedientes-crm-v9';
+// v10: fuerza que los celulares reemplacen el Service Worker instalado y
+// borren el cache viejo (el de v9 seguía sirviendo pantallas anteriores).
+const CACHE_VERSION = 'expedientes-crm-v10';
 const ASSETS = ['/manifest.json'];
 
 self.addEventListener('install', (event) => {
