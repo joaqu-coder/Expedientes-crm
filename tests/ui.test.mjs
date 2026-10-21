@@ -540,6 +540,22 @@ async function testMovilTactil() {
   ok(resolver.arriba && resolver.abajo,
      `Resolver responde al toque en los 44px completos (arriba=${resolver.arriba}, abajo=${resolver.abajo}, y=${resolver.y}, tapa=${resolver.quien})`);
 
+  // Resolver y Editar van uno al lado del otro, del mismo ancho y en la misma
+  // línea (pedido del usuario 2026-10-21: antes apilados a todo el ancho).
+  const filaAcciones = await page.evaluate(() => {
+    const botones = [...document.querySelector('.expediente-actions').querySelectorAll('.btn')];
+    const cajas = botones.map((b) => b.getBoundingClientRect());
+    return {
+      cantidad: botones.length,
+      mismaLinea: new Set(cajas.map((b) => Math.round(b.top))).size === 1,
+      anchos: cajas.map((b) => Math.round(b.width))
+    };
+  });
+  ok(filaAcciones.cantidad === 2 && filaAcciones.mismaLinea,
+     `Resolver y Editar van en la misma fila (${filaAcciones.cantidad} botones, misma línea=${filaAcciones.mismaLinea})`);
+  ok(Math.max(...filaAcciones.anchos) - Math.min(...filaAcciones.anchos) <= 1,
+     `Resolver y Editar miden lo mismo de ancho (${filaAcciones.anchos.join(' / ')}px)`);
+
   // Los chips de área van en una sola fila con scroll horizontal.
   const chips = await page.evaluate(() => {
     const c = document.getElementById('areaBotones');

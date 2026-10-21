@@ -583,19 +583,14 @@
     }
 
     /* Acciones */
+    /* Resolver y Editar lado a lado, del mismo ancho (.btn-grow de ui-kit.css). */
     .expediente-actions {
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
       gap: 8px;
       margin-top: 12px;
       padding-top: 12px;
       border-top: 1px solid var(--gray-200);
-    }
-
-    /* El ancho lo da .btn-full de ui-kit.css; acá solo se anula el margen
-       que la fila de acciones le pone a sus hijos. */
-    .btn-full {
-      margin: 0 !important;
     }
 
     /* Modal */
@@ -1898,10 +1893,10 @@
 
               <div class="expediente-actions">
                 ${archivado
-                  ? `<button class="btn btn-secondary btn-full" data-id="${esc(exp.id)}" onclick="reabrirExpediente(this.dataset.id)">${HeaderGlobal.icono('reabrir')} Reabrir</button>`
-                  : `<button class="btn btn-success btn-full" data-id="${esc(exp.id)}" onclick="marcarResuelto(this.dataset.id)">${HeaderGlobal.icono('resolver')} Resolver</button>`
+                  ? `<button class="btn btn-secondary btn-grow" data-id="${esc(exp.id)}" onclick="reabrirExpediente(this.dataset.id)">${HeaderGlobal.icono('reabrir')} Reabrir</button>`
+                  : `<button class="btn btn-success btn-grow" data-id="${esc(exp.id)}" onclick="marcarResuelto(this.dataset.id)">${HeaderGlobal.icono('resolver')} Resolver</button>`
                 }
-                <button class="btn btn-outline btn-full" data-id="${esc(exp.id)}" onclick="abrirEditar(this.dataset.id)">${HeaderGlobal.icono('editar')} Editar</button>
+                <button class="btn btn-outline btn-grow" data-id="${esc(exp.id)}" onclick="abrirEditar(this.dataset.id)">${HeaderGlobal.icono('editar')} Editar</button>
               </div>
             </div>
           </div>
