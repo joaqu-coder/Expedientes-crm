@@ -208,13 +208,18 @@
       "nombre_empresa": "FABRICA DE PASTAS LA FRANCISCA",
       "rubro": "Fábrica de pastas",
       "propietario_matricula": "Ente General de Parques y Areas Industriales de Salta",
-      "mail": "no",
+      "mail": "andresm@lafrancisca.com",
       "telefono": "no",
       "contacto_nombre": "no",
       "cargo": "Socio - Gerente",
       "instagram": "https://www.instagram.com/lafranciscaok/?hl=es",
       "observacion_contactos_2024": "Sigue estando?",
-      "id_parque": "guemes"
+      "id_parque": "guemes",
+      "situacion": "Activa",
+      "ubicacion": "",
+      "pagweb": "https://www.lafrancisca.com",
+      "facebook": "",
+      "linkedin": ""
     },
     {
       "id_empresa": "E017",
@@ -274,7 +279,11 @@
       "pagweb": "https://gruastucuman.com.ar/",
       "linkedin": "https://www.linkedin.com/in/pedro-ricardo-manzur-771a072a/?originalSubdomain=ar | https://www.linkedin.com/showcase/fmf-composites/about/",
       "observacion": "https://www.linkedin.com/showcase/fmf-composites/about/; https://www.linkedin.com/in/pedro-ricardo-manzur-771a072a/?originalSubdomain=ar",
-      "id_parque": "guemes"
+      "id_parque": "guemes",
+      "situacion": null,
+      "ubicacion": "",
+      "instagram": "",
+      "facebook": ""
     },
     {
       "id_empresa": "E021",
@@ -310,7 +319,7 @@
       "nombre_empresa": "GANFENG LITIUM LATAM",
       "rubro": "Planta industrial de polvo de polvo de fosfato de litio",
       "propietario_matricula": "Ente General de Parques y Areas Industriales de Salta",
-      "mail": "Juan.gilly@ganfenglithium-latam.com",
+      "mail": "Juan.gilly@ganfenglithium-latam.com / administracion@ganfenglithium-latam.com",
       "telefono": "011-63501330",
       "contacto_nombre": "Juan Gilly",
       "cargo": "Gerente de relación es institucionales",
@@ -318,7 +327,9 @@
       "instagram": "https://www.instagram.com/ganfenglithium.latam/?hl=es-la",
       "linkedin": "https://www.linkedin.com/company/ganfenglithium-latam/posts/?feedView=all",
       "ubicacion": "Juramento 80",
-      "id_parque": "guemes"
+      "id_parque": "guemes",
+      "situacion": null,
+      "facebook": ""
     },
     {
       "id_empresa": "E039",
@@ -349,7 +360,11 @@
       "instagram": "https://www.instagram.com/mahesrl/",
       "linkedin": "https://www.linkedin.com/company/distribuidora-maestro-s-r-l/?originalSubdomain=ar",
       "observacion": "https://www.linkedin.com/company/ganfenglithium-latam/posts/?feedView=all; https://www.linkedin.com/company/distribuidora-maestro-s-r-l/?originalSubdomain=ar",
-      "id_parque": "guemes"
+      "id_parque": "guemes",
+      "situacion": null,
+      "ubicacion": "",
+      "pagweb": "",
+      "facebook": ""
     },
     {
       "id_empresa": "E041",
@@ -415,7 +430,14 @@
       "pagweb": "https://nikron.com.ar/",
       "linkedin": "https://www.linkedin.com/company/nikron/",
       "observacion_contactos_2024": "Sigue estando?",
-      "id_parque": "guemes"
+      "id_parque": "guemes",
+      "telefono": "",
+      "contacto_nombre": "",
+      "situacion": null,
+      "mail": "proveedores@nikron.com.ar",
+      "ubicacion": "",
+      "instagram": "",
+      "facebook": ""
     },
     {
       "id_empresa": "E046",
@@ -529,7 +551,7 @@
       "nombre_empresa": "PRONTO PACK",
       "rubro": "Fábrica de envases de polipropileno para industria, minería y el agro",
       "propietario_matricula": "Ente General de Parques y Areas Industriales de Salta",
-      "mail": "fmazieres@prontomotos.com.ar\npaola@prontomotos.com.ar",
+      "mail": "fmazieres@prontomotos.com.ar /paola@prontomotos.com.ar",
       "telefono": "387-4630002",
       "contacto_nombre": "Paola Fainguersch",
       "cargo": "Socio - Gerente",
@@ -538,7 +560,9 @@
       "linkedin": "https://www.linkedin.com/company/posco-argentina/?originalSubdomain=ar | https://www.linkedin.com/in/leandro-etchezar/?originalSubdomain=ar",
       "ubicacion": "Parque Ind. Güemes, MANZANA 3 - PARCELA 15/16, A4430 Gral. Guemes, Salta",
       "observacion": "https://www.linkedin.com/company/posco-argentina/?originalSubdomain=ar",
-      "id_parque": "guemes"
+      "id_parque": "guemes",
+      "situacion": null,
+      "facebook": ""
     },
     {
       "id_empresa": "E054",
@@ -792,7 +816,13 @@
       "ubicacion": "Av. Rodríguez Durañona 1050",
       "observacion": "El origen le da más de un Id_Empresa (103, 105): esa columna no identifica a la empresa de forma confiable, así que no se usó como id. Su fila del export 2026-10-19 vuelve a mezclar datos del inquilino: mail, contacto y links quedaron como estaban (desarmados el 2026-10-18).",
       "es_ocupante_sin_registro": false,
-      "id_parque": "salta"
+      "id_parque": "salta",
+      "cargo": "",
+      "situacion": null,
+      "pagweb": "",
+      "instagram": "",
+      "facebook": "",
+      "linkedin": ""
     },
     {
       "id_empresa": "SE003",
