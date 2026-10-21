@@ -556,6 +556,42 @@ async function testMovilTactil() {
   ok(Math.max(...filaAcciones.anchos) - Math.min(...filaAcciones.anchos) <= 1,
      `Resolver y Editar miden lo mismo de ancho (${filaAcciones.anchos.join(' / ')}px)`);
 
+  // Distancias pedidas (2026-10-21), a 96 dpi: 0,5 mm entre el ⋮ y la búsqueda
+  // (2px) y 0,8 mm entre los chips y las tarjetas (3px). Esos 3px son el área
+  // táctil de 44px del chip (.area-btn::after): si la tarjeta los tapa, el chip
+  // deja de responder al borde de abajo.
+  const distancias = await page.evaluate(() => {
+    // Arriba de todo: el test anterior bajó la página para medir Resolver, y
+    // con la página bajada el ⋮ ya no está al lado de la búsqueda.
+    window.scrollTo(0, 0);
+    const menu = document.querySelector('#btnMenu').getBoundingClientRect();
+    const busqueda = document.querySelector('.search-bar').getBoundingClientRect();
+    const chip = document.querySelector('.area-btn').getBoundingClientRect();
+    const tarjeta = document.querySelector('.expediente-card-new').getBoundingClientRect();
+    return { menuBusqueda: busqueda.top - menu.bottom, chipTarjeta: tarjeta.top - chip.bottom };
+  });
+  ok(Math.abs(distancias.menuBusqueda - 2) < 0.6,
+     `el ⋮ y la búsqueda quedan a 2px, 0,5 mm (${distancias.menuBusqueda.toFixed(2)}px)`);
+  ok(Math.abs(distancias.chipTarjeta - 3) < 0.6,
+     `los chips de área y la primera tarjeta quedan a 3px, 0,8 mm (${distancias.chipTarjeta.toFixed(2)}px)`);
+  ok(await page.evaluate(() => getComputedStyle(document.getElementById('areaBotones')).scrollbarWidth) === 'none',
+     'la barra de desplazamiento de los chips está oculta (no aparece la línea al arrastrarlos)');
+
+  // Orden de la presentación de la tarjeta: Tema, Expediente, Vencimiento. El
+  // fondo de alarma se mantiene (el color del semáforo, no blanco).
+  const presentacion = await page.evaluate(() => {
+    const hdr = document.querySelector('.expediente-header-urgencia');
+    return {
+      orden: [...hdr.querySelectorAll('.expediente-urgencia-title > *')].map((e) => e.className),
+      fondo: getComputedStyle(hdr).backgroundColor
+    };
+  });
+  ok(presentacion.orden[0].includes('urgencia-tema') && presentacion.orden[1].includes('urgencia-label')
+     && presentacion.orden[2].includes('urgencia-dias'),
+     `la tarjeta muestra Tema, Expediente y Vencimiento en ese orden (${presentacion.orden.join(' > ')})`);
+  ok(presentacion.fondo !== 'rgba(0, 0, 0, 0)' && presentacion.fondo !== 'transparent',
+     `la cabecera de la tarjeta conserva el color de alarma (${presentacion.fondo})`);
+
   // Los chips de área van en una sola fila con scroll horizontal.
   const chips = await page.evaluate(() => {
     const c = document.getElementById('areaBotones');
