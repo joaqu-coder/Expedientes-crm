@@ -1093,7 +1093,7 @@ async function testProyectosCargaSolapada() {
      'una copia del servidor con RDLF se lee como Rosario');
 
   // Alta: calendario nativo igual que Expediente, arranca con la fecha de hoy,
-  // título «Nuevo Proyecto» y el parque aparece como Rosario.
+  // título «Nuevo proyecto» y el parque aparece como Rosario.
   await page.click('.app-fab');
   await page.waitForSelector('#f_nombre_empresa');
   const formulario = await page.evaluate(() => {
@@ -1108,7 +1108,7 @@ async function testProyectosCargaSolapada() {
   });
   ok(formulario.tipo === 'date', 'la fecha de inicio usa el calendario nativo, igual que Expediente');
   ok(formulario.valor === formulario.iso, `el alta arranca con la fecha de hoy (${formulario.valor})`);
-  ok(formulario.titulo === 'Nuevo Proyecto', `el título del alta es «Nuevo Proyecto» (${formulario.titulo})`);
+  ok(formulario.titulo === 'Nuevo proyecto', `el título del alta es «Nuevo proyecto» (${formulario.titulo})`);
   ok(formulario.rosario && !formulario.rdlf, 'el parque aparece como Rosario, no como RDLF');
   ok(formulario.etiqueta === '14px', `las etiquetas miden 14px (${formulario.etiqueta})`);
   await page.click('#xClose');
