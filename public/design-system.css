@@ -164,6 +164,18 @@
      anotado en .claude-state.json como trade-off. La fuente NO se define acá:
      es --ds-font-sans, la misma de toda la app. */
   --ds-search-font-size: 14px;
+  /* Formularios: un solo criterio para las cuatro apps (pedido 2026-10-21).
+     16px en el campo es lo que pide iOS para no hacer zoom al enfocar. */
+  --ds-field-label-size:  14px;
+  --ds-field-font-size:   16px;
+  --ds-field-min-height:  44px;
+  --ds-field-pad-y:       9px;
+  --ds-field-pad-x:       10px;
+  --ds-field-radius:      7px;
+  --ds-field-bg:          var(--ds-surface-2);
+  --ds-field-border:      var(--ds-border);
+  --ds-field-fg:          var(--ds-fg);
+  --ds-textarea-min-height: 70px;
   --ds-icon-size:      18px;
   --ds-gap:            8px;
   --ds-padding-x:      14px;
