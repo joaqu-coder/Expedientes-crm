@@ -789,7 +789,11 @@
       "linkedin": "https://www.linkedin.com/company/adionics?originalSubdomain=ar",
       "observacion": "Ocupante actual (alquiler) de: L121, titular E054-2",
       "observacion_contactos_2024": "Confirmado por usuario (dato nuevo)",
-      "id_parque": "guemes"
+      "id_parque": "guemes",
+      "situacion": null,
+      "ubicacion": "",
+      "instagram": "",
+      "facebook": ""
     },
     {
       "id_empresa": "SE001",
