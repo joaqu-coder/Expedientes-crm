@@ -480,7 +480,7 @@
       "rubro": "Manufactura",
       "superficie_solicitada_m2": 50000,
       "actividad_empresa": "Planta de pirolisis de neumáticos plasticos y biomasa",
-      "situacion": "Sin_tratamiento",
+      "situacion": "Desestimada",
       "representante_nombre": "Celso Fumagalli",
       "contacto_tel": "387-4490586",
       "contacto_mail": "fumagallicelso@gmail.com",
@@ -500,12 +500,17 @@
           "hora": "22/10/2026 13:10",
           "texto": "Rescatado del archivo (editado).",
           "tipo": "sistema"
+        },
+        {
+          "hora": "22/10/2026 13:10",
+          "texto": "Cambio de situación: Sin tratamiento → Desestimada",
+          "tipo": "sistema"
         }
       ],
       "archivado": false,
       "contacto_tel_2": "",
       "contacto_mail_2": "",
-      "actualizado_en": "2026-10-22T16:10:31.129Z"
+      "actualizado_en": "2026-10-22T16:10:50.768Z"
     },
     {
       "id": "exp_imp021",
