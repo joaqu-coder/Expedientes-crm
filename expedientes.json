@@ -96,7 +96,8 @@
           "hora": "29/09 09:00",
           "texto": "Comunicación con Patricia por msj. Comenta que ya salieron los expedientes de Legales."
         }
-      ]
+      ],
+      "parque": "Egpais"
     },
     {
       "id": "1790642672179",
@@ -278,5 +279,5 @@
     "San Antonio",
     "Egpais"
   ],
-  "timestamp": "2026-10-22T01:34:24.415Z"
+  "timestamp": "2026-10-22T01:35:00.320Z"
 }
