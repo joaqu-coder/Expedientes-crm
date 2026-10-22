@@ -313,18 +313,28 @@
       "actividad_empresa": "Construcción de campamentos mineros",
       "situacion": "Sin_tratamiento",
       "representante_nombre": "Rodrigo Sánchez / Agustín Sánchez Mateo",
-      "contacto_tel": "3875129189/3874021897",
-      "contacto_mail": "",
-      "fecha_ultimo_movimiento": "12/03/2026",
+      "contacto_tel": "387-5129189/387-4021897",
+      "contacto_mail": "Gerencia@nortemining.com",
+      "fecha_ultimo_movimiento": "22/10/2026 08:20",
       "intervenciones": [
         {
           "hora": "12/10/2026 20:54",
           "texto": "Archivado automáticamente: superó los 6 meses hábiles sin tratamiento.",
           "tipo": "sistema"
+        },
+        {
+          "hora": "22/10/2026 08:20",
+          "texto": "Se solicita al sub programa de evaluación de proyectos intervención (09/04/2023). Sub programa comunica vía mail (27/05/2026). Empresa no responde",
+          "tipo": "manual"
+        },
+        {
+          "hora": "22/10/2026 08:20",
+          "texto": "Rescatado del archivo (editado).",
+          "tipo": "sistema"
         }
       ],
-      "archivado": true,
-      "fecha_archivado": "12/10/2026 20:54"
+      "archivado": false,
+      "actualizado_en": "2026-10-22T11:20:47.903Z"
     },
     {
       "id": "exp_imp017",
