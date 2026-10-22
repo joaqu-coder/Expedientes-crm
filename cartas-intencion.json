@@ -929,20 +929,37 @@
       "rubro": "Manufactura",
       "superficie_solicitada_m2": "",
       "actividad_empresa": "",
-      "situacion": "Sin_tratamiento",
+      "situacion": "Desestimada",
       "representante_nombre": "",
       "contacto_tel": "",
       "contacto_mail": "",
-      "fecha_ultimo_movimiento": "25/03/2025",
+      "fecha_ultimo_movimiento": "22/10/2026 13:12",
       "intervenciones": [
         {
           "hora": "12/10/2026 20:54",
           "texto": "Archivado automáticamente: superó los 6 meses hábiles sin tratamiento.",
           "tipo": "sistema"
+        },
+        {
+          "hora": "22/10/2026 13:12",
+          "texto": "Cambio de situación: Sin tratamiento → Desestimada",
+          "tipo": "sistema"
+        },
+        {
+          "hora": "22/10/2026 13:12",
+          "texto": "No presenta formularios.",
+          "tipo": "manual"
+        },
+        {
+          "hora": "22/10/2026 13:12",
+          "texto": "Rescatado del archivo (editado).",
+          "tipo": "sistema"
         }
       ],
-      "archivado": true,
-      "fecha_archivado": "12/10/2026 20:54"
+      "archivado": false,
+      "contacto_tel_2": "",
+      "contacto_mail_2": "",
+      "actualizado_en": "2026-10-22T16:12:19.492Z"
     },
     {
       "id": "exp_imp034",
