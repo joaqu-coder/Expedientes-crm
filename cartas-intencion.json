@@ -960,19 +960,26 @@
     {
       "id": "exp_imp039",
       "nro_expediente": "36349680/2025",
-      "fecha_inicio": "",
+      "fecha_inicio": "19/03/2025",
       "anio_inicio_expediente": "2025",
       "nombre_empresa": "ANGEL CESLAYO SANGEUZO",
       "parque_industrial": "Rosario",
       "rubro": "Acopio",
       "superficie_solicitada_m2": "",
       "actividad_empresa": "",
-      "situacion": "Sin_tratamiento",
+      "situacion": "Desestimada",
       "representante_nombre": "",
       "contacto_tel": "",
       "contacto_mail": "",
-      "fecha_ultimo_movimiento": "",
-      "intervenciones": []
+      "fecha_ultimo_movimiento": "22/10/2026 09:02",
+      "intervenciones": [
+        {
+          "hora": "22/10/2026 09:02",
+          "texto": "Cambio de situación: Sin tratamiento → Desestimada",
+          "tipo": "sistema"
+        }
+      ],
+      "actualizado_en": "2026-10-22T12:02:18.155Z"
     },
     {
       "id": "exp_imp040",
