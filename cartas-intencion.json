@@ -1934,11 +1934,11 @@
       "rubro": "Alimenticia",
       "superficie_solicitada_m2": 3000,
       "actividad_empresa": "Planta de faenado de pollos",
-      "situacion": "Sin_tratamiento",
+      "situacion": "Desestimada",
       "representante_nombre": "Raquel Castiella",
       "contacto_tel": "3874089589",
       "contacto_mail": "",
-      "fecha_ultimo_movimiento": "22/10/2026 13:00",
+      "fecha_ultimo_movimiento": "22/10/2026 13:03",
       "intervenciones": [
         {
           "hora": "12/12/2022",
@@ -1954,12 +1954,22 @@
           "hora": "22/10/2026 13:00",
           "texto": "Rescatado del archivo (editado).",
           "tipo": "sistema"
+        },
+        {
+          "hora": "22/10/2026 13:03",
+          "texto": "Cambio de situación: Sin tratamiento → Desestimada",
+          "tipo": "sistema"
+        },
+        {
+          "hora": "22/10/2026 13:03",
+          "texto": "Se rescata, solamente para corregir info. Dra. María Raquel Castiela presenta poder para juicios y trámites administrativos y carta de intención.",
+          "tipo": "manual"
         }
       ],
       "archivado": false,
       "contacto_tel_2": "",
       "contacto_mail_2": "",
-      "actualizado_en": "2026-10-22T16:00:19.701Z"
+      "actualizado_en": "2026-10-22T16:03:28.543Z"
     },
     {
       "id": "exp_imp079",
