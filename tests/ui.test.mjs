@@ -623,6 +623,21 @@ async function testPlazosYTarjetas() {
   ok((await cards.count()) === 3, 'la pestaña Activos lista solo los activos (3)');
   ok((await cards.first().textContent()).includes('Muy vencido'), 'el vencido va primero');
   ok(/Vencido hace \d+ d háb\./.test(await cards.first().locator('.expediente-urgencia-dias').textContent()), 'el badge del vencido lleva texto, no solo color');
+  // Punto de color delante del plazo, como el de Proyectos: dentro del mismo
+  // renglón, del color del texto y centrado con él.
+  const punto = await cards.first().locator('.expediente-urgencia-dias').evaluate((el) => {
+    const d = el.querySelector(':scope > .exp-dot');
+    if (!d) return null;
+    const rd = d.getBoundingClientRect(), re = el.getBoundingClientRect();
+    return {
+      ancho: parseFloat(getComputedStyle(d).width),
+      fondo: getComputedStyle(d).backgroundColor,
+      color: getComputedStyle(el).color,
+      dy: Math.abs((rd.top + rd.height / 2) - (re.top + re.height / 2))
+    };
+  });
+  ok(punto && punto.ancho === 8 && punto.fondo === punto.color, `el plazo lleva un punto de 8px del color del texto (${JSON.stringify(punto)})`);
+  ok(punto && punto.dy < 2, 'el punto queda centrado con el texto del plazo');
   ok(await cards.first().locator('.expediente-header-urgencia.rojo').count() === 1, 'el vencido es rojo');
   ok(/Vence:\s*\w+ \d\d\/\d\d\/2099/.test(await cards.nth(1).textContent()), 'la tarjeta muestra la fecha de vencimiento');
   // El contador va pegado al nombre y SIN paréntesis ("Total 3"), igual que
@@ -638,6 +653,7 @@ async function testPlazosYTarjetas() {
   ok((await cards.count()) === 1, 'la pestaña Archivados lista 1');
   const arch = cards.first();
   ok(/Resuelto el .*20\/09\/2026/.test(await arch.locator('.expediente-urgencia-dias').textContent()), 'la archivada dice "Resuelto el …"');
+  ok(await arch.locator('.exp-dot').count() === 0, 'la archivada no lleva punto de plazo: no tiene plazo');
   ok(await arch.locator('.expediente-header-urgencia.archivado').count() === 1 && !(await arch.textContent()).includes('Vencido'), 'la archivada va en gris, sin semáforo ni "Vencido"');
   const fondo = await arch.locator('.expediente-header-urgencia').evaluate((el) => getComputedStyle(el).backgroundColor);
   const [cr, cg, cb] = fondo.match(/\d+/g).map(Number);

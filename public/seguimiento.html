@@ -452,12 +452,24 @@
       color: var(--urgencia-rojo-text);
     }
 
+    /* Plazo: texto con punto de color, igual que .exp-plazo en Proyectos. */
     .expediente-urgencia-dias {
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: 6px;
       font-size: 12px;
       font-weight: 600;
       line-height: 16px;
       margin-top: 7px;
+      white-space: nowrap;
+    }
+
+    .exp-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      flex: 0 0 auto;
     }
 
     .expediente-expand-icon {
@@ -2096,7 +2108,7 @@
                 <span class="expediente-urgencia-tema" style="display:block">${esc(exp.tema)}</span>
                 <span class="expediente-urgencia-label" style="display:block">${exp.numero ? esc(exp.numero) : 'Sin expediente'}</span>
                 ${exp.parque ? `<span class="expediente-parque-tag">${esc(exp.parque)}</span>` : ''}
-                <strong class="expediente-urgencia-dias" style="display:block">${esc(titulo)}</strong>
+                <strong class="expediente-urgencia-dias">${archivado ? '' : '<i class="exp-dot"></i>'}${esc(titulo)}</strong>
               </span>
               <span class="expediente-expand-icon" aria-hidden="true">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
