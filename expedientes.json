@@ -265,6 +265,23 @@
         }
       ],
       "parque": "Rosario"
+    },
+    {
+      "id": "1792677088526",
+      "numero": "111-849/2010-0",
+      "tema": "SEPELIO RIGO -  Solicita reunión por iintimación",
+      "area": "Jurídica",
+      "responsable": "Alejandro Montaldi",
+      "parque": "Salta",
+      "fechaInicio": "2026-10-21",
+      "diasPlazo": 3,
+      "estado": "activo",
+      "intervenciones": [
+        {
+          "hora": "22/10/2026 10:51",
+          "texto": "Representante Emilse Rigo solicita nuevos plazos para proyecto industrial. Reunión programada para el (26/10/2026).La empresa cambia de razón social  (EyP)."
+        }
+      ]
     }
   ],
   "areas": [
@@ -290,5 +307,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-10-22T02:28:43.998Z"
+  "timestamp": "2026-10-22T13:51:28.638Z"
 }
