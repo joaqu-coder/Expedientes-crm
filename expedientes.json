@@ -40,7 +40,8 @@
         }
       ],
       "estado": "archivado",
-      "fechaResolucion": "2026-09-29"
+      "fechaResolucion": "2026-09-29",
+      "parque": "Egpais"
     },
     {
       "id": "1790643000605",
@@ -289,5 +290,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-10-22T02:28:15.897Z"
+  "timestamp": "2026-10-22T02:28:43.998Z"
 }
