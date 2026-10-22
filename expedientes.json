@@ -243,7 +243,8 @@
           "hora": "21/10/2026 10:32",
           "texto": "Se cooridna reunion con Cecilia Borla 6/10/2026. Su presenta su representante (Su hijo) explicando la sutiacion. Se compromete a enviar los estudios ambientales"
         }
-      ]
+      ],
+      "parque": "Parque Salta"
     },
     {
       "id": "1792596751813",
@@ -284,5 +285,5 @@
     "San Antonio",
     "Egpais"
   ],
-  "timestamp": "2026-10-22T01:42:32.574Z"
+  "timestamp": "2026-10-22T01:42:45.190Z"
 }
