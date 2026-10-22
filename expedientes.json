@@ -125,7 +125,12 @@
       "responsable": "Joaquín Fernández Castro",
       "fechaInicio": "2026-09-29",
       "diasPlazo": 15,
-      "intervenciones": [],
+      "intervenciones": [
+        {
+          "hora": "22/10/2026 10:59",
+          "texto": "Llamada con Nelly Mellado. Proyecto en evaluación. solicitará hojas de seguridad e informe de impacto ambietal. Proyecto Frágil. Sivila se incorpora 26/10. Córdoba de lic."
+        }
+      ],
       "parque": "Güemes"
     },
     {
@@ -307,5 +312,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-10-22T13:51:28.638Z"
+  "timestamp": "2026-10-22T13:59:36.992Z"
 }
