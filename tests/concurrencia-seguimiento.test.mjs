@@ -247,6 +247,41 @@ console.log('\n=== Marca de pendiente ausente durante la subida: lo local no se 
   }
 }
 
+// Un dispositivo que tenía la app ANTES de esta versión: cambios pendientes y
+// ningún registro de base. No puede saber qué cambió el otro lado, pero tampoco
+// debe pisarlo: lo del servidor se conserva y lo local se suma.
+console.log('\n=== Dispositivo viejo sin base y con pendientes: se suma, no se pisa ===');
+{
+  const { http: h, srv } = levantarServidor(inicial());
+  await new Promise((r) => h.listen(8856, r));
+  try {
+    const A = await abrir(browser);
+    const B = await abrir(browser);
+    await cargar(A.page, 8856);
+    await cargar(B.page, 8856);
+    await escribirEstado(A.page, 's.expedientes.find(e => e.id === "1").tema = "EDITADO POR A";', null);
+    await A.page.reload({ waitUntil: 'networkidle' });
+    await esperar(1500);
+    await B.page.evaluate(() => localStorage.removeItem('expedientes_crm_base_v1')); // como antes del deploy
+    await escribirEstado(B.page, 's.expedientes.find(e => e.id === "2").tema = "EDITADO POR B"; s.expedientes.push(arg);', exp('77', 'ALTA DE B'));
+    await B.page.reload({ waitUntil: 'networkidle' });
+    await esperar(2500);
+    // Sin base no se puede saber quién editó qué: ante la duda se conservan las dos
+    // copias (la local se renumera). Pueden quedar duplicados, pero nada se pierde.
+    const temas = srv.datos.expedientes.map((e) => e.tema);
+    ok(temas.includes('EDITADO POR A'), 'la edición de A sobrevive');
+    ok(temas.includes('EDITADO POR B'), 'la edición de B llega');
+    ok(temas.includes('ALTA DE B'), 'la alta de B llega');
+    ok(temas.includes('Tres'), 'el expediente que nadie tocó sigue');
+    const ids = srv.datos.expedientes.map((e) => e.id);
+    ok(new Set(ids).size === ids.length, 'sin ids repetidos');
+    await A.ctx.close();
+    await B.ctx.close();
+  } finally {
+    h.close();
+  }
+}
+
 await browser.close();
 console.log(fallas === 0 ? '\nTodos los tests de concurrencia de Seguimiento pasaron.' : `\n${fallas} falla(s) en concurrencia de Seguimiento.`);
 process.exit(fallas === 0 ? 0 : 1);

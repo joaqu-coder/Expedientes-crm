@@ -79,6 +79,10 @@ mismo protocolo que Parques (`_baseSha` en el POST, 409 con el contenido actual)
   gana este dispositivo (se registra en consola). Una baja y una edición de registros
   distintos conviven (la baja no resucita). Baja local + edición remota del mismo
   expediente: gana la baja local.
+- **Sin base y con pendientes** (un dispositivo que tenía la app antes de este deploy):
+  no se puede saber quién editó qué, así que ante la duda se conservan **las dos
+  copias** (la local se renumera). Pueden quedar duplicados; nada se pierde. Ocurre una
+  sola vez por dispositivo.
 - **Listas** (áreas, agentes, parques): lo que este dispositivo quitó se quita, lo que
   agregó se suma, el resto es del servidor.
 - **Altas con el mismo id**: la local se renumera. `idNuevo()` evita además dos ids
