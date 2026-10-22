@@ -500,7 +500,7 @@
       "nro_expediente": "363-238541/2025-0",
       "fecha_inicio": "10/12/2025",
       "anio_inicio_expediente": "2025",
-      "nombre_empresa": "BRIMETN S.A.S",
+      "nombre_empresa": "BRIMET S.A.S",
       "parque_industrial": "Salta",
       "rubro": "Manufactura",
       "superficie_solicitada_m2": 1200,
@@ -509,16 +509,28 @@
       "representante_nombre": "Melisa Miranda",
       "contacto_tel": "387-2250729",
       "contacto_mail": "mmiranda@steelartsla.com.ar",
-      "fecha_ultimo_movimiento": "10/12/2025",
+      "fecha_ultimo_movimiento": "22/10/2026 13:06",
       "intervenciones": [
         {
           "hora": "12/10/2026 20:54",
           "texto": "Archivado automáticamente: superó los 6 meses hábiles sin tratamiento.",
           "tipo": "sistema"
+        },
+        {
+          "hora": "22/10/2026 13:06",
+          "texto": "Se envian formularios via mail (22/04/2026). Sin rta. por parte de la firma.",
+          "tipo": "manual"
+        },
+        {
+          "hora": "22/10/2026 13:06",
+          "texto": "Rescatado del archivo (editado).",
+          "tipo": "sistema"
         }
       ],
-      "archivado": true,
-      "fecha_archivado": "12/10/2026 20:54"
+      "archivado": false,
+      "contacto_tel_2": "",
+      "contacto_mail_2": "",
+      "actualizado_en": "2026-10-22T16:06:11.044Z"
     },
     {
       "id": "exp_imp022",
