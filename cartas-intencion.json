@@ -284,12 +284,12 @@
       "parque_industrial": "Salta",
       "rubro": "Manufactura",
       "superficie_solicitada_m2": 1500,
-      "actividad_empresa": "fabrica de pintura",
+      "actividad_empresa": "Fábrica de pintura",
       "situacion": "Sin_tratamiento",
       "representante_nombre": "Marco Mascietti Antonio",
       "contacto_tel": "",
       "contacto_mail": "",
-      "fecha_ultimo_movimiento": "22/10/2026 10:22",
+      "fecha_ultimo_movimiento": "22/10/2026 13:20",
       "intervenciones": [
         {
           "hora": "16/10/2026 21:18",
@@ -300,12 +300,17 @@
           "hora": "22/10/2026 10:22",
           "texto": "Rescatado del archivo (editado).",
           "tipo": "sistema"
+        },
+        {
+          "hora": "22/10/2026 13:20",
+          "texto": "La firma presenta carta de intención (31/03/2026).",
+          "tipo": "manual"
         }
       ],
       "archivado": false,
       "contacto_tel_2": "",
       "contacto_mail_2": "",
-      "actualizado_en": "2026-10-22T13:22:59.311Z"
+      "actualizado_en": "2026-10-22T16:20:34.079Z"
     },
     {
       "id": "exp_imp015",
