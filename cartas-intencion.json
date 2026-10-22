@@ -27,11 +27,11 @@
       "rubro": "Manufactura",
       "superficie_solicitada_m2": 4000,
       "actividad_empresa": "Ampliación planta de productos químicos",
-      "situacion": "En_tratamiento",
+      "situacion": "Desestimada",
       "representante_nombre": "Noemí A. Castro / Panuzzio",
       "contacto_tel": "3876319634",
       "contacto_mail": "info@manclean.com.ar",
-      "fecha_ultimo_movimiento": "22/10/2026 11:02",
+      "fecha_ultimo_movimiento": "22/10/2026 11:03",
       "intervenciones": [
         {
           "hora": "19/10/2026 09:58",
@@ -42,9 +42,14 @@
           "hora": "22/10/2026 11:02",
           "texto": "Panuzio / Gutierrez. Resolverán a traves de seción de derechos. Reunión mantenida el (06/10/2026). Presentarán doc. al ente para iniciar trámite.",
           "tipo": "manual"
+        },
+        {
+          "hora": "22/10/2026 11:03",
+          "texto": "Cambio de situación: En tratamiento → Desestimada",
+          "tipo": "sistema"
         }
       ],
-      "actualizado_en": "2026-10-22T14:02:49.649Z",
+      "actualizado_en": "2026-10-22T14:03:19.711Z",
       "contacto_tel_2": "",
       "contacto_mail_2": ""
     },
