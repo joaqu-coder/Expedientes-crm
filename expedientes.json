@@ -208,7 +208,8 @@
           "hora": "06/10/2026 09:24",
           "texto": "Hable con Favio, en 15 días estará habilitada la tarjeta de la Amarok"
         }
-      ]
+      ],
+      "parque": "Egpais"
     },
     {
       "id": "1791986589392",
@@ -276,5 +277,5 @@
     "San Antonio",
     "Egpais"
   ],
-  "timestamp": "2026-10-22T00:56:15.729Z"
+  "timestamp": "2026-10-22T01:20:59.920Z"
 }
