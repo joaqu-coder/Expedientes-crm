@@ -631,11 +631,11 @@
       "rubro": "Manufactura",
       "superficie_solicitada_m2": "",
       "actividad_empresa": "",
-      "situacion": "En_tratamiento",
+      "situacion": "Desestimada",
       "representante_nombre": "",
       "contacto_tel": "",
       "contacto_mail": "",
-      "fecha_ultimo_movimiento": "12/10/2026 21:02",
+      "fecha_ultimo_movimiento": "22/10/2026 10:24",
       "intervenciones": [
         {
           "hora": "12/10/2026 20:54",
@@ -646,9 +646,17 @@
           "hora": "12/10/2026 21:02",
           "texto": "Rescatado del archivo: corrección de la regla — En tratamiento no debe archivarse automáticamente por falta de nota, solo Sin tratamiento.",
           "tipo": "sistema"
+        },
+        {
+          "hora": "22/10/2026 10:24",
+          "texto": "Cambio de situación: En tratamiento → Desestimada",
+          "tipo": "sistema"
         }
       ],
-      "archivado": false
+      "archivado": false,
+      "contacto_tel_2": "",
+      "contacto_mail_2": "",
+      "actualizado_en": "2026-10-22T13:24:29.810Z"
     },
     {
       "id": "exp_imp027",
