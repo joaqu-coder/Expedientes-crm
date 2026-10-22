@@ -1337,6 +1337,29 @@ async function testProyectos(viewport, puerto) {
      'el expediente sintético En_tratamiento NO entra a Archivo aunque tenga la misma fecha vieja');
   ok((await page.locator('#archivoList').textContent()).includes('Archivado el'),
      'las tarjetas en Archivo muestran la fecha de archivado');
+
+  // Búsqueda en Archivo: la misma barra que en el listado, con el mismo
+  // criterio. Filtra los archivados, dice cuántos quedaron y, sin resultados,
+  // lo dice con su propia leyenda (no con la de "no hay archivados").
+  const plural = (n) => `${n} expediente${n === 1 ? '' : 's'} archivado${n === 1 ? '' : 's'}`;
+  ok(await page.locator('#busquedaListado').isVisible(), 'la búsqueda se ve en Archivo');
+  await page.fill('#search', 'archivable de prueba');
+  await page.waitForTimeout(100);
+  ok((await page.locator('#archivoList .exp-card').count()) === 1,
+     'buscar en Archivo deja solo el expediente que coincide');
+  ok((await page.locator('#archivoCount').textContent()) === `1 de ${plural(archivadosInicial)}`,
+     `el contador de Archivo dice "1 de N" (dice "${await page.locator('#archivoCount').textContent()}")`);
+  await page.fill('#search', 'zzz-sin-coincidencia');
+  await page.waitForTimeout(100);
+  ok((await page.locator('#archivoList').textContent()).includes('Ningún expediente archivado coincide con la búsqueda'),
+     'sin resultados en Archivo, la leyenda dice que ninguno coincide');
+  await page.fill('#search', '');
+  await page.waitForTimeout(100);
+  ok((await page.locator('#archivoList .exp-card').count()) === archivadosInicial,
+     'al borrar la búsqueda vuelven todos los archivados');
+  ok((await page.locator('#archivoCount').textContent()) === plural(archivadosInicial),
+     'sin búsqueda, el contador vuelve al total de archivados');
+
   await page.click('#tabList');
   await page.waitForSelector('#expList');
   ok((await page.locator('.exp-card', { hasText: 'No Archivable En Tratamiento' }).count()) === 1,
@@ -1944,10 +1967,12 @@ async function testProyectosLayoutYFiltros() {
   ok(orden.titulo < orden.busqueda && orden.busqueda < orden.pestanas && orden.pestanas < orden.contenido,
     `el orden es título → búsqueda → pestañas → contenido (${JSON.stringify(orden)})`);
 
-  // La búsqueda filtra el listado: se muestra solo en Listado.
+  // La búsqueda filtra Listado y Archivo: se oculta solo en Análisis.
   ok(await page.locator('#busquedaListado').isVisible(), 'la búsqueda se ve en el listado');
   await page.click('#tabArchivo');
-  ok(!(await page.locator('#busquedaListado').isVisible()), 'la búsqueda se oculta en Archivo');
+  ok(await page.locator('#busquedaListado').isVisible(), 'la búsqueda se ve en Archivo');
+  await page.click('#tabDash');
+  ok(!(await page.locator('#busquedaListado').isVisible()), 'la búsqueda se oculta en Análisis');
   await page.click('#tabList');
   ok(await page.locator('#busquedaListado').isVisible(), 'la búsqueda vuelve al listado');
 

@@ -258,7 +258,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 .chip.c-amarillo{background:var(--warn-bg);border-color:var(--warn-bg);color:var(--warn)}
 .chip.c-verde{background:var(--ok-bg);border-color:var(--ok-bg);color:var(--ok)}
 /* Búsqueda de la pantalla: debajo del título y encima de las pestañas.
-   Solo se muestra en el listado (ver showView). */
+   Se muestra en Listado y Archivo; se oculta solo en Análisis (ver showView). */
 .app-search{padding:12px 0 8px}
 .app-search[hidden]{display:none}
 /* Filtros avanzados: panel desplegable. El botón usa el chip de las pestañas. */
@@ -287,8 +287,8 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
      El alta vive ahora en el botón flotante (+), como en Seguimiento. -->
 
 <!-- Orden de la pantalla: título (header.js) → búsqueda → pestañas → contenido.
-     La búsqueda solo corre sobre el listado, así que se oculta en las otras
-     dos pestañas (ver showView). -->
+     Una sola búsqueda para Listado y Archivo: filtra la pestaña que se ve.
+     Solo se oculta en Análisis (ver showView). -->
 <div class="app-search" id="busquedaListado">
   <div class="search-bar"><input type="search" id="search" placeholder="Buscar empresa, expediente o representante…"></div>
 </div>
@@ -1230,7 +1230,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     tabList.setAttribute("aria-selected", String(!isDash && !isArchivo));
     tabArchivo.setAttribute("aria-selected", String(isArchivo));
     tabDash.setAttribute("aria-selected", String(isDash));
-    document.getElementById("busquedaListado").hidden = name!=="list";
+    document.getElementById("busquedaListado").hidden = isDash;
     if(isDash) renderDashboard();
     if(isArchivo) renderArchivo();
     if(desdeHash) return; // vino del hash: no lo reescribas, sería un bucle
@@ -1282,7 +1282,22 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   selRubro.addEventListener("change", function(){ state.filterRubro=this.value; renderList(); });
   document.getElementById("filterSituacion").addEventListener("change", function(){ state.filterSituacion=this.value; renderList(); });
   document.getElementById("filterPlazo").addEventListener("change", function(){ state.filterPlazo=this.value; renderList(); });
-  document.getElementById("search").addEventListener("input", function(){ state.search=this.value.toLowerCase(); renderList(); });
+  document.getElementById("search").addEventListener("input", function(){
+    state.search=this.value.toLowerCase();
+    // Filtra la pestaña que se ve. La otra se rearma al abrirse (showView).
+    if(vistaActual==="archivo") renderArchivo(); else renderList();
+  });
+
+  // Mismo criterio para el listado y el archivo: nombre, actividad, número
+  // y representante. Concatenar directo metía la cadena "undefined" en el
+  // blob cuando faltaba un campo, así que buscar "undefined" matcheaba
+  // registros incompletos.
+  function coincideBusqueda(e){
+    if(!state.search) return true;
+    var blob = [e.nombre_empresa, e.actividad_empresa, e.nro_expediente, e.representante_nombre]
+      .filter(Boolean).join(" ").toLowerCase();
+    return blob.indexOf(state.search)!==-1;
+  }
 
   function expedientesFiltrados(){
     return state.expedientes.filter(function(e){
@@ -1301,15 +1316,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
           return false;
         }
       }
-      if(state.search){
-        // Concatenar directo metía la cadena "undefined" en el blob cuando
-        // faltaba un campo, así que buscar "undefined" matcheaba registros
-        // incompletos.
-        var blob = [e.nombre_empresa, e.actividad_empresa, e.nro_expediente, e.representante_nombre]
-          .filter(Boolean).join(" ").toLowerCase();
-        if(blob.indexOf(state.search)===-1) return false;
-      }
-      return true;
+      return coincideBusqueda(e);
     });
   }
 
@@ -1369,18 +1376,23 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   // reciente primero — igual criterio que "Archivados" en Seguimiento.
   function renderArchivo(){
     var cont = document.getElementById("archivoList");
-    var lista = state.expedientes.filter(function(e){ return e.archivado; });
+    var total = state.expedientes.filter(function(e){ return e.archivado; }).length;
+    var lista = state.expedientes.filter(function(e){ return e.archivado && coincideBusqueda(e); });
     lista.sort(function(a,b){ return claveFechaHora(b.fecha_archivado).localeCompare(claveFechaHora(a.fecha_archivado)); });
 
+    // Con búsqueda puesta, "N de M" como en el listado: se ve cuánto quedó.
     var cuenta = document.getElementById("archivoCount");
     if(cuenta){
-      cuenta.textContent = lista.length
-        ? (lista.length + " expediente" + (lista.length===1?"":"s") + " archivado" + (lista.length===1?"":"s"))
-        : "";
+      var palabras = "expediente" + (total===1?"":"s") + " archivado" + (total===1?"":"s");
+      cuenta.textContent = !total ? ""
+        : state.search ? (lista.length + " de " + total + " " + palabras)
+        : (total + " " + palabras);
     }
     if(!lista.length){
-      cont.innerHTML = '<div class="empty-state">No hay expedientes archivados. '+
-        'Sin tratamiento se archiva solo a los 6 meses hábiles sin ningún movimiento.</div>';
+      cont.innerHTML = '<div class="empty-state">'+ (total && state.search
+        ? 'Ningún expediente archivado coincide con la búsqueda.'
+        : 'No hay expedientes archivados. Sin tratamiento se archiva solo a los 6 meses hábiles sin ningún movimiento.') +
+        '</div>';
       return;
     }
     cont.innerHTML = lista.map(function(e){
