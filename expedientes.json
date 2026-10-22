@@ -112,7 +112,8 @@
           "hora": "28/09 21:44",
           "texto": "mnsj con Rormando Miranda 22/09/2026"
         }
-      ]
+      ],
+      "parque": "San Antonio"
     },
     {
       "id": "1790640768114",
@@ -286,5 +287,5 @@
     "San Antonio",
     "Egpais"
   ],
-  "timestamp": "2026-10-22T01:43:21.357Z"
+  "timestamp": "2026-10-22T02:20:19.469Z"
 }
