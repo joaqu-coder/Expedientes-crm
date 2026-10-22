@@ -159,7 +159,8 @@
           "hora": "29/09 10:05",
           "texto": "Hablo con Patricia. Me clmenta q el expe ya fue enviado"
         }
-      ]
+      ],
+      "parque": "Egpais"
     },
     {
       "id": "1791207573159",
@@ -275,5 +276,5 @@
     "San Antonio",
     "Egpais"
   ],
-  "timestamp": "2026-10-22T00:52:12.613Z"
+  "timestamp": "2026-10-22T00:56:15.729Z"
 }
