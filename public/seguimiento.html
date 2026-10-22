@@ -397,30 +397,32 @@
       transition: all 0.2s;
     }
 
+    /* El fondo de la tarjeta es el mismo que el de .exp-card en Proyectos: la
+       urgencia se lee en el color del texto del vencimiento, no en un fondo tintado. */
     .expediente-header-urgencia.rojo {
-      background: var(--urgencia-rojo-bg);
+      background: transparent;
       color: var(--urgencia-rojo-text);
     }
 
     .expediente-header-urgencia.naranja {
-      background: var(--urgencia-naranja-bg);
+      background: transparent;
       color: var(--urgencia-naranja-text);
     }
 
     .expediente-header-urgencia.amarillo {
-      background: var(--urgencia-amarillo-bg);
+      background: transparent;
       color: var(--urgencia-amarillo-text);
     }
 
-    /* Archivado = tarea finalizada: todo en gris de inmediato */
+    /* Archivado = tarea finalizada: el texto va en gris, el fondo no cambia */
     .expediente-header-urgencia.archivado {
-      background: var(--gray-200);
+      background: transparent;
       color: var(--text-muted);
     }
     .expediente-card-new.archivado { opacity: 0.85; }
 
     .expediente-header-urgencia.verde {
-      background: var(--urgencia-verde-bg);
+      background: transparent;
       color: var(--urgencia-verde-text);
     }
 
@@ -443,16 +445,13 @@
       opacity: 0.8;
     }
 
-    /* Tag del parque: va entre el expediente y el vencimiento, como un chip chico. */
+    /* Parque: una línea de texto gris, igual que .exp-card-sub en Proyectos ("Rosario · Manufactura"). */
     .expediente-parque-tag {
-      display: inline-block;
-      margin-top: 4px;
-      padding: 2px 8px;
-      border-radius: 999px;
-      background: var(--gray-100);
-      color: var(--text-muted);
+      display: block;
+      margin-top: 6px;
       font-size: 11.5px;
       line-height: 16px;
+      color: var(--text-muted);
     }
 
     .expediente-urgencia-dias {

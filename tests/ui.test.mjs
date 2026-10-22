@@ -603,8 +603,8 @@ async function testMovilTactil() {
   ok(presentacion.orden[0].includes('urgencia-tema') && presentacion.orden[1].includes('urgencia-label')
      && presentacion.orden[2].includes('urgencia-dias'),
      `la tarjeta muestra Tema, Expediente y Vencimiento en ese orden (${presentacion.orden.join(' > ')})`);
-  ok(presentacion.fondo !== 'rgba(0, 0, 0, 0)' && presentacion.fondo !== 'transparent',
-     `la cabecera de la tarjeta conserva el color de alarma (${presentacion.fondo})`);
+  ok(presentacion.fondo === 'rgba(0, 0, 0, 0)' || presentacion.fondo === 'transparent',
+     `la cabecera no tiene fondo de alarma: es el fondo de Proyectos (${presentacion.fondo})`);
 
   // Los chips de área van en una sola fila con scroll horizontal.
   const chips = await page.evaluate(() => {
@@ -891,6 +891,14 @@ async function testParquesEnSeguimiento() {
   });
   ok(JSON.stringify(hijos) === JSON.stringify(['expediente-urgencia-tema', 'expediente-urgencia-label', 'expediente-parque-tag', 'expediente-urgencia-dias']), 'la tarjeta muestra Tema → Expediente → Parque → Vencimiento');
   ok((await page.locator('.expediente-parque-tag').first().textContent()).trim() === 'Rosario', 'el tag de la tarjeta dice Rosario');
+  // Mismo fondo que las tarjetas de Proyectos (sin tinte de urgencia) y el parque como línea de texto, no como chip
+  const fondos = await page.evaluate(() => {
+    const h = document.querySelector('.expediente-card-new .expediente-header-urgencia');
+    const p = document.querySelector('.expediente-parque-tag');
+    return { header: getComputedStyle(h).backgroundColor, parque: getComputedStyle(p).backgroundColor, radio: getComputedStyle(p).borderRadius };
+  });
+  ok(fondos.header === 'rgba(0, 0, 0, 0)', 'la tarjeta no tiene fondo tintado por urgencia (queda el de la tarjeta, como en Proyectos)');
+  ok(fondos.parque === 'rgba(0, 0, 0, 0)' && fondos.radio === '0px', 'el parque va como línea de texto, sin chip de fondo');
   ok(ctx.getUltimoPost()?.expedientes?.find((e) => e.tema === 'Expediente con parque')?.parque === 'Rosario', 'el parque elegido se sincroniza con el expediente');
   ok(JSON.stringify(ctx.getUltimoPost()?.parques) === JSON.stringify(esperados), 'la lista de parques se sincroniza con el servidor');
 
