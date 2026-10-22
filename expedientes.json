@@ -77,7 +77,8 @@
         }
       ],
       "estado": "archivado",
-      "fechaResolucion": "2026-10-05"
+      "fechaResolucion": "2026-10-05",
+      "parque": "Rosario"
     },
     {
       "id": "1790642486016",
@@ -288,5 +289,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-10-22T02:25:30.094Z"
+  "timestamp": "2026-10-22T02:28:15.897Z"
 }
