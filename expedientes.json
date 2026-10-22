@@ -224,7 +224,8 @@
       "fechaInicio": "2026-10-14",
       "diasPlazo": 5,
       "estado": "activo",
-      "intervenciones": []
+      "intervenciones": [],
+      "parque": "Güemes"
     },
     {
       "id": "1792589539622",
@@ -281,5 +282,5 @@
     "San Antonio",
     "Egpais"
   ],
-  "timestamp": "2026-10-22T01:41:57.165Z"
+  "timestamp": "2026-10-22T01:42:12.474Z"
 }
