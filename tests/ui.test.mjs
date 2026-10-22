@@ -834,6 +834,83 @@ async function testFlujo() {
 }
 
 /*
+ * Parques en Seguimiento (pedido del usuario, 2026-10-22). La lista se administra
+ * desde Configuración, se elige en el formulario justo después de Tema y se ve
+ * como tag en la tarjeta, entre el expediente y el vencimiento. Un parque en uso
+ * no se puede quitar, y la lista viaja con el resto de los datos al servidor.
+ */
+async function testParquesEnSeguimiento() {
+  console.log('\n=== SEGUIMIENTO: PARQUES EN CONFIGURACIÓN, FORMULARIO Y TARJETA ===');
+  const ctx = levantarServer(8785);
+  await new Promise((r) => ctx.server.listen(8785, r));
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const page = await browser.newPage({ viewport: { width: 1200, height: 800 } });
+  const problemas = [];
+  page.on('pageerror', (e) => problemas.push('pageerror: ' + e.message));
+  page.on('dialog', async (d) => { problemas.push('dialog nativo: ' + d.message()); await d.dismiss(); });
+  await page.goto('http://localhost:8785/', { waitUntil: 'networkidle' });
+
+  // Configuración: los siete tags, en el orden pedido, y se puede agregar y quitar uno sin uso
+  const esperados = ['Parque Salta', 'Güemes', 'Rosario', 'Mosconi', 'Pichanal', 'San Antonio', 'Egpais'];
+  await abrirDesdeMenu(page, 'Áreas y agentes');
+  const enConfig = await page.locator('#parquesConfigList .config-item span').allTextContents();
+  ok(JSON.stringify(enConfig) === JSON.stringify(esperados), 'Configuración lista los parques en el orden pedido');
+  await page.fill('#inputParque', 'Temporal');
+  await page.locator('#parquesConfigList + .config-input-group button').click();
+  ok(await page.evaluate(() => PARQUES.includes('Temporal')), 'se puede agregar un parque desde Configuración');
+  await page.locator('#parquesConfigList .config-item', { hasText: 'Temporal' }).locator('button').click();
+  ok(!(await page.evaluate(() => PARQUES.includes('Temporal'))), 'un parque sin uso se quita desde Configuración');
+
+  // Un parque en uso no se quita: avisa y lo deja como estaba
+  await page.evaluate(() => { expedientes = [{ id: 'p', numero: '363-7/2026-01', tema: 'Usa Rosario', area: 'Jurídica', responsable: 'Ana', estado: 'activo', intervenciones: [], fechaInicio: '2099-01-05', diasPlazo: 30, parque: 'Rosario' }]; guardarEnLS(false); renderizar(); });
+  await page.locator('#parquesConfigList .config-item', { hasText: 'Rosario' }).locator('button').click();
+  ok(await page.locator('#alertOverlay').isVisible() && await page.evaluate(() => PARQUES.includes('Rosario')), 'un parque en uso no se quita y avisa');
+  await page.locator('#alertOverlay button').first().click();
+  await page.keyboard.press('Escape');
+
+  // Formulario: Tema → Parque industrial → Área responsable, con la lista de la configuración
+  await page.evaluate(() => abrirNuevo());
+  const etiquetas = (await page.locator('#formularioModal .form-label').allTextContents()).map((t) => t.replace(/\(opcional\)/, '').trim());
+  const orden = ['Nro Expediente', 'Tema', 'Parque industrial', 'Área responsable', 'Agente', 'Fecha de Inicio', 'Plazo en Días Hábiles', 'Fecha de Vencimiento'];
+  ok(JSON.stringify(etiquetas.filter((e) => orden.includes(e))) === JSON.stringify(orden), 'el formulario va Nro → Tema → Parque industrial → Área → Agente → fechas');
+  const opciones = await page.locator('#parque option').allTextContents();
+  ok(JSON.stringify(opciones) === JSON.stringify(['Sin parque', ...esperados]), 'el selector de parque ofrece los parques de la configuración');
+
+  // Guardar con parque: aparece como tag en la tarjeta, entre expediente y vencimiento
+  await page.fill('#numero', '363-1254/2026-01');
+  await page.fill('#tema', 'Expediente con parque');
+  await page.selectOption('#parque', 'Rosario');
+  await page.selectOption('#area', 'Jurídica');
+  await page.selectOption('#responsable', 'María García');
+  await page.fill('#diasPlazo', '30');
+  await page.click('#btnGuardar');
+  await page.waitForTimeout(500);
+  const hijos = await page.evaluate(() => {
+    const tarjeta = [...document.querySelectorAll('.expediente-card-new')].find((c) => c.textContent.includes('Expediente con parque'));
+    return tarjeta ? [...tarjeta.querySelector('.expediente-urgencia-title').children].map((h) => h.className.split(' ')[0]) : [];
+  });
+  ok(JSON.stringify(hijos) === JSON.stringify(['expediente-urgencia-tema', 'expediente-urgencia-label', 'expediente-parque-tag', 'expediente-urgencia-dias']), 'la tarjeta muestra Tema → Expediente → Parque → Vencimiento');
+  ok((await page.locator('.expediente-parque-tag').first().textContent()).trim() === 'Rosario', 'el tag de la tarjeta dice Rosario');
+  ok(ctx.getUltimoPost()?.expedientes?.find((e) => e.tema === 'Expediente con parque')?.parque === 'Rosario', 'el parque elegido se sincroniza con el expediente');
+  ok(JSON.stringify(ctx.getUltimoPost()?.parques) === JSON.stringify(esperados), 'la lista de parques se sincroniza con el servidor');
+
+  // Un expediente sin parque no dibuja tag vacío
+  await page.evaluate(() => { expedientes.push({ id: 'sin', numero: '363-2/2026-01', tema: 'Sin parque', area: 'Jurídica', responsable: 'Ana', estado: 'activo', intervenciones: [], fechaInicio: '2099-01-05', diasPlazo: 30 }); guardarEnLS(false); renderizar(); });
+  ok((await page.locator('.expediente-card-new', { hasText: 'Sin parque' }).locator('.expediente-parque-tag').count()) === 0, 'sin parque no se dibuja tag');
+
+  // Refresco desde el servidor: la lista de parques viaja con los datos
+  await page.waitForTimeout(600);
+  ctx.ctl.datos = { expedientes: [], areas: ['Jurídica'], responsables: ['Ana'], parques: ['Güemes', 'Mosconi'] };
+  await page.evaluate(() => { ultimaDescarga = 0; document.dispatchEvent(new Event('visibilitychange')); });
+  await page.waitForTimeout(500);
+  ok(await page.evaluate(() => JSON.stringify(PARQUES) === JSON.stringify(['Güemes', 'Mosconi'])), 'al bajar datos se trae la lista de parques del servidor');
+
+  ok(problemas.length === 0, 'sin errores de JS ni diálogos nativos' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
+  await browser.close();
+  ctx.server.close();
+}
+
+/*
  * Resoluciones: la página carga el archivo histórico real (resoluciones.json,
  * 422 registros) desde un server local que imita al Worker. Existe porque esta
  * página pasó de 3 ejemplos a 422 registros reales con texto resolutivo, y los
@@ -3180,6 +3257,7 @@ await testPlazosYTarjetas();
 await testMovilTactil();
 await testTecladoYFoco();
 await testFlujo();
+await testParquesEnSeguimiento();
 await testResoluciones({ width: 1440, height: 900 }, 8797);
 await testResoluciones({ width: 390, height: 844 }, 8796);
 await testProyectos({ width: 1440, height: 900 }, 8795);
