@@ -484,16 +484,28 @@
       "representante_nombre": "Celso Fumagalli",
       "contacto_tel": "387-4490586",
       "contacto_mail": "fumagallicelso@gmail.com",
-      "fecha_ultimo_movimiento": "25/12/2025",
+      "fecha_ultimo_movimiento": "22/10/2026 13:10",
       "intervenciones": [
         {
           "hora": "12/10/2026 20:54",
           "texto": "Archivado automáticamente: superó los 6 meses hábiles sin tratamiento.",
           "tipo": "sistema"
+        },
+        {
+          "hora": "22/10/2026 13:10",
+          "texto": "Sub programa de evaluación de proyecto, eleva informe técnico (16/04/2026).Mesa de entrada comunica la necesidad de presentar formularios (22/04/2026).Sin rta. por parte de la firma",
+          "tipo": "manual"
+        },
+        {
+          "hora": "22/10/2026 13:10",
+          "texto": "Rescatado del archivo (editado).",
+          "tipo": "sistema"
         }
       ],
-      "archivado": true,
-      "fecha_archivado": "12/10/2026 20:54"
+      "archivado": false,
+      "contacto_tel_2": "",
+      "contacto_mail_2": "",
+      "actualizado_en": "2026-10-22T16:10:31.129Z"
     },
     {
       "id": "exp_imp021",
