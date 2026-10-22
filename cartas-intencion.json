@@ -261,16 +261,23 @@
       "representante_nombre": "Marco Mascietti Antonio",
       "contacto_tel": "",
       "contacto_mail": "",
-      "fecha_ultimo_movimiento": "31/03/2026",
+      "fecha_ultimo_movimiento": "22/10/2026 10:22",
       "intervenciones": [
         {
           "hora": "16/10/2026 21:18",
           "texto": "Archivado automáticamente: superó los 6 meses hábiles sin tratamiento.",
           "tipo": "sistema"
+        },
+        {
+          "hora": "22/10/2026 10:22",
+          "texto": "Rescatado del archivo (editado).",
+          "tipo": "sistema"
         }
       ],
-      "archivado": true,
-      "fecha_archivado": "16/10/2026 21:18"
+      "archivado": false,
+      "contacto_tel_2": "",
+      "contacto_mail_2": "",
+      "actualizado_en": "2026-10-22T13:22:59.311Z"
     },
     {
       "id": "exp_imp015",
