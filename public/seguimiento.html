@@ -397,32 +397,30 @@
       transition: all 0.2s;
     }
 
-    /* El fondo de la tarjeta es el mismo que el de .exp-card en Proyectos: la
-       urgencia se lee en el color del texto del vencimiento, no en un fondo tintado. */
     .expediente-header-urgencia.rojo {
-      background: transparent;
+      background: var(--urgencia-rojo-bg);
       color: var(--urgencia-rojo-text);
     }
 
     .expediente-header-urgencia.naranja {
-      background: transparent;
+      background: var(--urgencia-naranja-bg);
       color: var(--urgencia-naranja-text);
     }
 
     .expediente-header-urgencia.amarillo {
-      background: transparent;
+      background: var(--urgencia-amarillo-bg);
       color: var(--urgencia-amarillo-text);
     }
 
-    /* Archivado = tarea finalizada: el texto va en gris, el fondo no cambia */
+    /* Archivado = tarea finalizada: todo en gris de inmediato */
     .expediente-header-urgencia.archivado {
-      background: transparent;
+      background: var(--gray-200);
       color: var(--text-muted);
     }
     .expediente-card-new.archivado { opacity: 0.85; }
 
     .expediente-header-urgencia.verde {
-      background: transparent;
+      background: var(--urgencia-verde-bg);
       color: var(--urgencia-verde-text);
     }
 
@@ -445,13 +443,13 @@
       opacity: 0.8;
     }
 
-    /* Parque: una línea de texto gris, igual que .exp-card-sub en Proyectos ("Rosario · Manufactura"). */
+    /* Tag: una línea de texto con el color de la urgencia roja, sin chip de fondo. */
     .expediente-parque-tag {
       display: block;
       margin-top: 6px;
       font-size: 11.5px;
       line-height: 16px;
-      color: var(--text-muted);
+      color: var(--urgencia-rojo-text);
     }
 
     .expediente-urgencia-dias {
@@ -1598,9 +1596,9 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="parque">Parque industrial</label>
-          <select class="form-select" id="parque">
-            <option value="">Sin parque</option>
+          <label class="form-label required" for="parque">Tag</label>
+          <select class="form-select" id="parque" aria-required="true">
+            <option value="">Elegí un tag</option>
             ${PARQUES.map(p => `<option value="${esc(p)}" ${expediente?.parque === p ? 'selected' : ''}>${esc(p)}</option>`).join('')}
           </select>
         </div>
@@ -1973,7 +1971,7 @@
     }
 
     // Errores en línea: se marcan el campo y el mensaje, y se limpian apenas el usuario corrige.
-    const CAMPOS_FORM = ['numero', 'tema', 'area', 'responsable', 'fechaInicio', 'diasPlazo'];
+    const CAMPOS_FORM = ['numero', 'tema', 'parque', 'area', 'responsable', 'fechaInicio', 'diasPlazo'];
 
     function mostrarErrorCampo(id, mensaje) {
       const input = document.getElementById(id);
@@ -2067,6 +2065,7 @@
       const errores = [
         [numero && !validarNumeroExpediente(numero), 'numero', 'El número no tiene el formato esperado (mesa-número/año-sufijo)'],
         [!tema, 'tema', 'Escribí el tema del expediente'],
+        [!parque, 'parque', 'Elegí un tag'],
         [!area, 'area', 'Elegí un área'],
         [!responsable, 'responsable', 'Elegí un responsable'],
         [!fechaInicio, 'fechaInicio', 'Indicá la fecha de inicio'],
