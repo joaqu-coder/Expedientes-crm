@@ -194,7 +194,8 @@
           "hora": "05/10/2026 12:57",
           "texto": "1798 m² 49.137.656 Anticipo y 3 cuotas."
         }
-      ]
+      ],
+      "parque": "Parque Salta"
     },
     {
       "id": "1791289488677",
@@ -279,5 +280,5 @@
     "San Antonio",
     "Egpais"
   ],
-  "timestamp": "2026-10-22T01:35:00.320Z"
+  "timestamp": "2026-10-22T01:41:30.006Z"
 }
