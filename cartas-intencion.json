@@ -4150,6 +4150,31 @@
       "contacto_mail": "Luciariva2@hotmail.com",
       "fecha_ultimo_movimiento": "20/10/2026 11:04",
       "actualizado_en": "2026-10-20T14:04:03.956Z"
+    },
+    {
+      "id": "exp_mvjrarzwbnx8l",
+      "intervenciones": [
+        {
+          "hora": "22/10/2026 13:29",
+          "texto": "Sub programa de evaluación, sollicita información faltante. Mesa de entrada comunica (10/06/2026). La firma no resenta documentación solicitada.",
+          "tipo": "manual"
+        }
+      ],
+      "nro_expediente": "363-56560/2026-0",
+      "nombre_empresa": "LOGINOR S.A",
+      "fecha_inicio": "18/03/2026",
+      "parque_industrial": "Salta",
+      "rubro": "Logística",
+      "superficie_solicitada_m2": "",
+      "actividad_empresa": "Transporte de cargas generales y peligrosas",
+      "situacion": "Desestimada",
+      "representante_nombre": "Carlos Diego Rivello / Sebastián Aracino",
+      "contacto_tel": "",
+      "contacto_tel_2": "380465544",
+      "contacto_mail": "drivello@loginor.com.ar",
+      "contacto_mail_2": "",
+      "fecha_ultimo_movimiento": "22/10/2026 13:29",
+      "actualizado_en": "2026-10-22T16:29:32.348Z"
     }
   ],
   "plazoDias": 20,
