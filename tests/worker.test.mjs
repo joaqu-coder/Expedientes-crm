@@ -499,6 +499,41 @@ async function testParquesConflicto409() {
   assert(resp2.status === 200 && putHecho, 'con la base actual escribe y responde 200');
 }
 
+// Seguimiento (/api/sync) también usa concurrencia optimista desde el 2026-10-22:
+// antes era última-escritura-gana y un dispositivo pisaba el trabajo del otro.
+async function testSeguimientoConflicto409() {
+  llamadas = [];
+  const remoto = { expedientes: [{ id: '1', tema: 'REMOTO' }], areas: ['Jurídica'], responsables: ['Ana'] };
+  let putHecho = false;
+  mockFetch(async (url, opts) => {
+    if (!opts || opts.method === undefined || opts.method === 'GET') {
+      const contenido = Buffer.from(JSON.stringify(remoto)).toString('base64');
+      return new Response(JSON.stringify({ sha: 'sha-nuevo', content: contenido }), { status: 200 });
+    }
+    if (opts.method === 'PUT') { putHecho = true; return new Response(JSON.stringify({ content: { sha: 'sha-escrito' } }), { status: 200 }); }
+    throw new Error('metodo inesperado: ' + opts.method);
+  });
+  const env = { GITHUB_TOKEN: 'fake-token', ASSETS: { fetch: async () => new Response('no') } };
+  const post = (base) => new Request('https://x.workers.dev/api/sync', {
+    method: 'POST',
+    body: JSON.stringify({ expedientes: [], areas: [], responsables: [], _baseSha: base })
+  });
+
+  const get = await (await worker.fetch(new Request('https://x.workers.dev/api/sync'), env)).json();
+  assert(get._meta && get._meta.sha === 'sha-nuevo', 'el GET de /api/sync trae el sha para la base del cliente');
+
+  const resp = await worker.fetch(post('sha-viejo'), env);
+  const data = await resp.json();
+  assert(resp.status === 409, 'POST de Seguimiento con base vieja responde 409');
+  assert(data.actual && data.actual.expedientes[0].tema === 'REMOTO', 'el 409 trae el contenido actual para fusionar');
+  assert(!putHecho, 'con conflicto no se escribe nada en GitHub');
+
+  const resp2 = await worker.fetch(post('sha-nuevo'), env);
+  const data2 = await resp2.json();
+  assert(resp2.status === 200 && putHecho, 'con la base actual escribe y responde 200');
+  assert(data2.sha === 'sha-escrito', 'devuelve el sha nuevo para que el cliente lo tome como base');
+}
+
 // /api/health avisa antes del límite de 1 MB de la API de Contents de GitHub:
 // un archivo por encima de 700 KB aparece en alerta_tamano.
 async function testHealthAvisaArchivoGrande() {
@@ -546,6 +581,7 @@ async function main() {
   await testParquesPostEscribeArchivoPropio();
   await testParquesBajasSeUnenYNoResucitan();
   await testParquesConflicto409();
+  await testSeguimientoConflicto409();
   await testHealthAvisaArchivoGrande();
   await testParquesNoSeMezclaConOtrasApps();
   await testValidacionDeFormaEnLasTresApps();

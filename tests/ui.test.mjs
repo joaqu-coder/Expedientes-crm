@@ -86,7 +86,7 @@ const ok = (cond, msg) => {
 
 function levantarServer(puerto) {
   let ultimoPost = null;
-  const ctl = { fallar: false, demoraMs: 0, posts: 0, datos: null };
+  const ctl = { fallar: false, codigoFalla: 500, demoraMs: 0, posts: 0, datos: null };
   const server = http.createServer((req, res) => {
     if (req.url.startsWith('/api/sync')) {
       if (req.method === 'POST') {
@@ -95,7 +95,7 @@ function levantarServer(puerto) {
         req.on('end', () => {
           const responder = () => {
             if (ctl.fallar) {
-              res.writeHead(500, { 'Content-Type': 'application/json' });
+              res.writeHead(ctl.codigoFalla, { 'Content-Type': 'application/json' });
               return res.end(JSON.stringify({ error: 'simulado' }));
             }
             ultimoPost = JSON.parse(body);
@@ -236,6 +236,202 @@ async function testFechas() {
     ok(r.cinco === '2026-10-05', `[${tz}] lunes + 5 días hábiles = lunes siguiente (${r.cinco})`);
     await context.close();
   }
+  await browser.close();
+  ctx.server.close();
+}
+
+// Feriados y tope de plazo (auditoría de Seguimiento, 2026-10-22). Las fechas
+// de Viernes Santo y Carnaval se calculan desde Pascua (Meeus/Jones/Butcher)
+// en vez de copiarse de la tabla: si la tabla y el calendario discrepan, falla.
+async function testFeriadosYPlazoMaximo() {
+  console.log('\n=== FERIADOS Y TOPE DE PLAZO ===');
+  const ctx = levantarServer(8797);
+  await new Promise((r) => ctx.server.listen(8797, r));
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const page = await (await browser.newContext()).newPage();
+  await page.goto('http://localhost:8797/', { waitUntil: 'networkidle' });
+
+  const r = await page.evaluate(() => {
+    const pascua = (y) => {
+      const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4;
+      const f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
+      const h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4;
+      const l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+      const mes = Math.floor((h + l - 7 * m + 114) / 31), dia = ((h + l - 7 * m + 114) % 31) + 1;
+      return new Date(y, mes - 1, dia);
+    };
+    const resta = (f, n) => { const x = new Date(f); x.setDate(x.getDate() - n); return fechaISO(x); };
+    const faltan = [];
+    for (let y = 2024; y <= 2028; y++) {
+      const p = pascua(y);
+      for (const [nombre, n] of [['Viernes Santo', 2], ['Carnaval lunes', 48], ['Carnaval martes', 47]]) {
+        const f = resta(p, n);
+        if (!FERIADOS.includes(f)) faltan.push(`${nombre} ${f}`);
+      }
+    }
+    // Trasladables (Ley 27.399): martes/miércoles -> lunes anterior; jueves/viernes -> lunes siguiente.
+    const trasladado = (y, m, d) => {
+      const f = new Date(y, m - 1, d), w = f.getDay();
+      if (w === 2 || w === 3) f.setDate(f.getDate() - (w - 1));
+      else if (w === 4 || w === 5) f.setDate(f.getDate() + (8 - w));
+      return fechaISO(f);
+    };
+    const mal = [];
+    for (let y = 2026; y <= 2028; y++) {
+      for (const [m, d] of [[6, 17], [8, 17], [10, 12], [11, 20]]) {
+        const esperado = trasladado(y, m, d);
+        const diaSemana = new Date(esperado + 'T12:00:00').getDay();
+        if (diaSemana !== 0 && diaSemana !== 6 && !FERIADOS.includes(esperado)) mal.push(`${y}: falta ${esperado}`);
+        const orig = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const w = new Date(y, m - 1, d).getDay();
+        if (esperado !== orig && w !== 0 && w !== 6 && FERIADOS.includes(orig)) mal.push(`${y}: sobra ${orig}`);
+      }
+    }
+    return {
+      faltan, mal,
+      ultimo: [...FERIADOS].sort().pop(),
+      // jueves 2/4 Malvinas y viernes 3/4 Viernes Santo: 1/4 + 2 hábiles = martes 7/4
+      semanaSanta: fechaISO(calcularFechaFin('2026-04-01', 2)),
+      carnaval2025: fechaISO(calcularFechaFin('2025-02-28', 1)), // vie + 1 hábil, lun 3/3 y mar 4/3 feriados = mié 5/3
+    };
+  });
+  ok(r.faltan.length === 0, 'Viernes Santo y Carnaval 2024-2028 coinciden con Pascua' + (r.faltan.length ? ': faltan ' + r.faltan.join(', ') : ''));
+  ok(r.mal.length === 0, 'los feriados trasladables 2026-2028 caen donde corresponde' + (r.mal.length ? ': ' + r.mal.join(', ') : ''));
+  ok(r.ultimo >= '2028-12-25', `la tabla llega hasta fines de 2028 (último: ${r.ultimo})`);
+  ok(r.semanaSanta === '2026-04-07', `Semana Santa 2026 se saltea Malvinas y Viernes Santo (${r.semanaSanta})`);
+  ok(r.carnaval2025 === '2025-03-05', `Carnaval 2025 es 3 y 4 de marzo (${r.carnaval2025})`);
+
+  // Tope de plazo: un typo no puede colgar la pantalla ni quedar guardado.
+  await page.click('#fabNuevo');
+  await page.fill('#tema', 'Plazo desmedido');
+  await page.selectOption('#parque', { index: 1 });
+  await page.selectOption('#area', { index: 1 });
+  await page.selectOption('#responsable', { index: 1 });
+  await page.fill('#fechaInicio', '2026-09-28');
+  for (const malo of ['3000000', '1e2', '1000', '2.5']) {
+    await page.fill('#diasPlazo', malo);
+    const t0 = Date.now();
+    await page.click('#btnGuardar');
+    const ms = Date.now() - t0;
+    const guardados = await page.evaluate(() => expedientes.length);
+    ok(guardados === 0, `plazo «${malo}» no se guarda`);
+    ok(await page.locator('#error-diasPlazo').count() === 1, `plazo «${malo}» muestra el error en el campo`);
+    ok(ms < 1500, `plazo «${malo}» no cuelga la pantalla (${ms} ms)`);
+  }
+  await page.fill('#diasPlazo', '999');
+  await page.click('#btnGuardar');
+  ok(await page.evaluate(() => expedientes.length) === 1, 'plazo 999 (el máximo) sí se guarda');
+
+  // Un dato que ya viene envenenado de otro dispositivo tampoco congela el render.
+  const ms = await page.evaluate(() => {
+    expedientes[0].diasPlazo = 50000000;
+    const t0 = performance.now();
+    renderizar();
+    return performance.now() - t0;
+  });
+  ok(ms < 1500, `un plazo envenenado ya guardado no congela el render (${Math.round(ms)} ms)`);
+
+  await browser.close();
+  ctx.server.close();
+}
+
+// Problemas menores de la auditoría de Seguimiento (2026-10-22).
+async function testMenoresSeguimiento() {
+  console.log('\n=== SEGUIMIENTO: PROBLEMAS MENORES DE LA AUDITORÍA ===');
+  const ctx = levantarServer(8797);
+  await new Promise((r) => ctx.server.listen(8797, r));
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const page = await (await browser.newContext()).newPage();
+  const problemas = [];
+  page.on('pageerror', (e) => problemas.push('pageerror: ' + e.message));
+  await page.goto('http://localhost:8797/', { waitUntil: 'networkidle' });
+
+  const base = { numero: '', area: 'Jurídica', responsable: 'María García', parque: 'Güemes', estado: 'activo', intervenciones: [], fechaInicio: '2099-01-05', diasPlazo: 30 };
+  const sembrar = (lista) => page.evaluate((l) => { expedientes = l; guardarEnLS(false); renderizar(); }, lista);
+
+  // 1. Un valor que ya no está en la lista no se pierde al editar.
+  await sembrar([{ ...base, id: 'o1', tema: 'Huérfano', parque: 'Parque Viejo', area: 'Área Vieja', responsable: 'Agente Viejo' }]);
+  await page.evaluate(() => abrirEditar('o1'));
+  const sel = await page.evaluate(() => ({ p: parque.value, a: area.value, r: responsable.value }));
+  ok(sel.p === 'Parque Viejo' && sel.a === 'Área Vieja' && sel.r === 'Agente Viejo',
+     `tag, área y agente fuera de la lista siguen seleccionados al editar (${JSON.stringify(sel)})`);
+  await page.click('#btnGuardar');
+  const tras = await page.evaluate(() => ({ p: expedientes[0].parque, a: expedientes[0].area, r: expedientes[0].responsable }));
+  ok(tras.p === 'Parque Viejo' && tras.a === 'Área Vieja' && tras.r === 'Agente Viejo', 'guardar sin tocarlos no los pierde');
+
+  // 2. La búsqueda ignora tildes y mayúsculas, y también mira el tag.
+  await sembrar([
+    { ...base, id: 's1', tema: 'Alfa', area: 'Jurídica', parque: 'Güemes' },
+    { ...base, id: 's2', tema: 'Beta', area: 'Obras', parque: 'Rosario' }
+  ]);
+  const buscar = async (q) => {
+    await page.fill('#searchInput', q);
+    return page.evaluate(() => [...document.querySelectorAll('.expediente-card-new')].map((c) => c.dataset.id));
+  };
+  ok(JSON.stringify(await buscar('juridica')) === '["s1"]', 'buscar «juridica» (sin tilde) encuentra el área Jurídica');
+  ok(JSON.stringify(await buscar('GUEMES')) === '["s1"]', 'buscar «GUEMES» encuentra el tag Güemes');
+  ok(JSON.stringify(await buscar('rosario')) === '["s2"]', 'buscar «rosario» encuentra por tag');
+  ok((await buscar('zzz')).length === 0, 'una búsqueda sin coincidencias no devuelve nada');
+  await page.fill('#searchInput', '');
+  await page.evaluate(() => filtrarBusqueda());
+
+  // 3. Deshacer actúa sobre el expediente de hoy, no sobre una copia vieja.
+  await sembrar([{ ...base, id: 'u1', tema: 'Para resolver' }]);
+  await page.evaluate(() => { marcarResuelto('u1'); expedientes = JSON.parse(JSON.stringify(expedientes)); }); // llega una descarga
+  await page.click('#toastAccion');
+  ok(await page.evaluate(() => expedientes[0].estado) === 'activo', 'Deshacer de Resolver funciona aunque la lista se haya reemplazado');
+  await page.evaluate(() => { cambiarPestana('archivados'); cambiarPestana('activos'); marcarResuelto('u1'); reabrirExpediente('u1'); expedientes = JSON.parse(JSON.stringify(expedientes)); });
+  await page.click('#toastAccion');
+  ok(await page.evaluate(() => expedientes[0].estado) === 'archivado', 'Deshacer de Reabrir funciona aunque la lista se haya reemplazado');
+
+  // 4. Quitar un área que estaba filtrada no deja la lista vacía sin salida.
+  await sembrar([{ ...base, id: 'f1', tema: 'Visible' }]);
+  const filtro = await page.evaluate(() => { filtrarArea('Obras'); eliminarArea('Obras'); return filtroArea; });
+  ok(filtro === null, `al quitar el área filtrada el filtro vuelve a «Total» (${filtro})`);
+  ok(await page.locator('.expediente-card-new').count() === 1, 'y la lista vuelve a mostrar los expedientes');
+
+  // 5. Editar un expediente que desapareció avisa en vez de quedarse mudo.
+  await sembrar([{ ...base, id: 'd1', tema: 'Se va' }]);
+  await page.evaluate(() => abrirEditar('d1'));
+  await page.evaluate(() => { expedientes = []; renderizar(); }); // lo borraron desde otro dispositivo
+  await page.click('#btnGuardar');
+  await page.waitForTimeout(200);
+  ok(!(await page.locator('#modalOverlay').isVisible()), 'el formulario se cierra si el expediente ya no existe');
+  ok(await page.locator('#alertOverlay').isVisible() && /ya no existe/i.test(await page.locator('#alertMessage').textContent()),
+     'y avisa que el expediente ya no existe');
+  if (await page.locator('#alertOverlay').isVisible()) await page.click('#alertBtn');
+  if (await page.locator('#modalOverlay').isVisible()) await page.click('#btnCancelar');
+
+  // 6. Dos altas en el mismo milisegundo no comparten id.
+  await sembrar([]);
+  await page.evaluate(() => { Date.now = () => 1700000000000; });
+  for (const tema of ['Gemela A', 'Gemela B']) {
+    await page.click('#fabNuevo');
+    await page.fill('#tema', tema);
+    await page.selectOption('#parque', { index: 1 });
+    await page.selectOption('#area', { index: 1 });
+    await page.selectOption('#responsable', { index: 1 });
+    await page.fill('#fechaInicio', '2099-01-05');
+    await page.fill('#diasPlazo', '10');
+    await page.click('#btnGuardar');
+  }
+  const ids = await page.evaluate(() => expedientes.map((e) => e.id));
+  ok(ids.length === 2 && new Set(ids).size === 2, `dos altas en el mismo milisegundo tienen ids distintos (${ids.join(', ')})`);
+  await page.evaluate(() => { delete Date.now; });
+
+  // 7. Un rechazo del servidor (4xx) no se hace pasar por falta de conexión.
+  ctx.ctl.fallar = true; ctx.ctl.codigoFalla = 422;
+  await page.evaluate(() => { expedientes[0].tema = 'Cambio rechazado'; guardarEnLS(); });
+  await page.waitForTimeout(700);
+  const aviso = await page.locator('#syncAviso').textContent();
+  ok(/rechaz/i.test(aviso) && !/Sin conexión/i.test(aviso), `un 422 dice que el servidor rechazó los datos («${aviso.slice(0, 50)}…»)`);
+  ctx.ctl.codigoFalla = 500;
+  await page.evaluate(() => { expedientes[0].tema = 'Cambio sin red'; guardarEnLS(); });
+  await page.waitForTimeout(700);
+  ok(/Sin conexión/i.test(await page.locator('#syncAviso').textContent()), 'un 500 sigue diciendo «Sin conexión»');
+  ctx.ctl.fallar = false;
+
+  ok(problemas.length === 0, 'sin errores de JS' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
   await browser.close();
   ctx.server.close();
 }
@@ -3279,6 +3475,8 @@ async function testTransiciones() {
 await recorrido('DESKTOP', { width: 1440, height: 900 }, 8799);
 await recorrido('MOBILE', { width: 390, height: 844 }, 8798);
 await testFechas();
+await testFeriadosYPlazoMaximo();
+await testMenoresSeguimiento();
 await testSyncYEscape();
 await testPendienteAlAbrir();
 await testCampoNumero();

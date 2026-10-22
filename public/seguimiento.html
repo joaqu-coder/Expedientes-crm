@@ -1091,25 +1091,39 @@
 
     let PARQUES = [...PARQUES_DEFAULT];
 
-    // Feriados argentinos 2024-2027
+    // Feriados argentinos 2024-2028. Viernes Santo y Carnaval salen de Pascua; los
+    // trasladables (17/6, 17/8, 12/10, 20/11) siguen la Ley 27.399: martes o miércoles
+    // pasan al lunes anterior, jueves o viernes al lunes siguiente. Los decretos que
+    // agregan puentes turísticos o mueven un feriado por su cuenta NO están: hay que
+    // sumarlos a mano cuando salen (pendiente de confirmar con el usuario, ver CLAUDE.md).
+    // tests/ui.test.mjs recalcula Pascua y las reglas y falla si esta tabla se desvía.
     const FERIADOS = [
-      "2024-01-01", "2024-02-12", "2024-02-13", "2024-03-24", "2024-04-02",
-      "2024-04-10", "2024-05-01", "2024-05-25", "2024-06-17", "2024-06-20",
+      "2024-01-01", "2024-02-12", "2024-02-13", "2024-03-24", "2024-03-29",
+      "2024-04-02", "2024-05-01", "2024-05-25", "2024-06-17", "2024-06-20",
       "2024-07-09", "2024-07-25", "2024-08-17", "2024-10-12", "2024-11-18",
       "2024-12-08", "2024-12-25",
-      "2025-01-01", "2025-02-10", "2025-02-11", "2025-03-24", "2025-04-02",
-      "2025-04-25", "2025-05-01", "2025-05-25", "2025-06-17", "2025-06-20",
-      "2025-07-09", "2025-07-25", "2025-08-17", "2025-10-12", "2025-11-18",
+      "2025-01-01", "2025-03-03", "2025-03-04", "2025-03-24", "2025-04-02",
+      "2025-04-18", "2025-05-01", "2025-05-25", "2025-06-16", "2025-06-20",
+      "2025-07-09", "2025-07-25", "2025-08-17", "2025-10-12", "2025-11-24",
       "2025-12-08", "2025-12-25",
       "2026-01-01", "2026-02-16", "2026-02-17", "2026-03-24", "2026-04-02",
-      "2026-04-10", "2026-05-01", "2026-05-25", "2026-06-17", "2026-06-20",
-      "2026-07-09", "2026-07-25", "2026-08-17", "2026-10-12", "2026-11-18",
+      "2026-04-03", "2026-05-01", "2026-05-25", "2026-06-15", "2026-06-20",
+      "2026-07-09", "2026-07-25", "2026-08-17", "2026-10-12", "2026-11-23",
       "2026-12-08", "2026-12-25",
-      "2027-01-01", "2027-02-08", "2027-02-09", "2027-03-24", "2027-04-02",
-      "2027-04-10", "2027-05-01", "2027-05-25", "2027-06-17", "2027-06-20",
-      "2027-07-09", "2027-07-25", "2027-08-17", "2027-10-12", "2027-11-18",
-      "2027-12-08", "2027-12-25"
+      "2027-01-01", "2027-02-08", "2027-02-09", "2027-03-24", "2027-03-26",
+      "2027-04-02", "2027-05-01", "2027-05-25", "2027-06-20", "2027-06-21",
+      "2027-07-09", "2027-07-25", "2027-08-16", "2027-10-11", "2027-11-20",
+      "2027-12-08", "2027-12-25",
+      "2028-01-01", "2028-02-28", "2028-02-29", "2028-03-24", "2028-04-02",
+      "2028-04-14", "2028-05-01", "2028-05-25", "2028-06-17", "2028-06-20",
+      "2028-07-09", "2028-07-25", "2028-08-21", "2028-10-16", "2028-11-20",
+      "2028-12-08", "2028-12-25"
     ];
+
+    // Tope del plazo en días hábiles (~4 años). Sin tope, un typo (3000000) hace que
+    // calcularFechaFin recorra millones de días en cada render y la app queda colgada
+    // en todos los dispositivos, porque el dato se sincroniza.
+    const PLAZO_MAX_DIAS = 999;
 
     // ===== ESTADO =====
     let expedientes = [];
@@ -1299,6 +1313,7 @@
     function calcularFechaFin(fechaInicio, diasPlazo) {
       let fecha = parsearFecha(fechaInicio);
       let diasContados = 0;
+      diasPlazo = Math.min(diasPlazo, PLAZO_MAX_DIAS); // un dato viejo o ajeno sin tope no cuelga el render
 
       while (diasContados < diasPlazo) {
         fecha.setDate(fecha.getDate() + 1);
@@ -1371,6 +1386,10 @@
       if (!window.HeaderGlobal) return;
       if (estado === true) {
         HeaderGlobal.setSync('Al día', 'ok', reintentarSync);
+      } else if (estado === 'rechazado') {
+        HeaderGlobal.setSync(
+          'El servidor rechazó los datos. Tus cambios están guardados en este dispositivo, pero no se van a subir hasta que esto se corrija. Tocá para reintentar.',
+          'error', reintentarSync);
       } else if (estado === false) {
         HeaderGlobal.setSync(
           'Sin conexión. Tus cambios están guardados en este dispositivo y se suben solos al volver la señal. Tocá para reintentar.',
@@ -1380,27 +1399,196 @@
       }
     }
 
+    // ----- Base y fusión (concurrencia optimista, como Proyectos y Parques) -----
+    // Cada dispositivo guarda el sha y el contenido que el servidor tenía la última
+    // vez que lo leyó: la "base". Con ella se sabe qué cambió de cada lado,
+    // expediente por expediente, y lo que hizo otro dispositivo no se pisa.
+    const LS_BASE = 'expedientes_crm_base_v1';
+    let syncBase = cargarBase();
+
+    function cargarBase() {
+      try {
+        const v = JSON.parse(localStorage.getItem(LS_BASE));
+        if (v && typeof v.sha === 'string' && v.datos && typeof v.datos === 'object') return v;
+      } catch (e) { /* sin base: se trae primero */ }
+      return { sha: null, datos: null };
+    }
+
+    function copiar(x) { return x == null ? x : JSON.parse(JSON.stringify(x)); }
+
+    function guardarBase(sha, datos) {
+      syncBase = { sha, datos: copiar(datos) };
+      try { localStorage.setItem(LS_BASE, JSON.stringify(syncBase)); } catch (e) { /* se sigue en memoria */ }
+    }
+
+    // Comparación sin importar el orden de las claves: el servidor y este
+    // dispositivo no las serializan igual, y eso no es un cambio.
+    function canon(x) {
+      if (Array.isArray(x)) return x.map(canon);
+      if (x && typeof x === 'object') {
+        const o = {};
+        Object.keys(x).sort().forEach(k => { if (x[k] !== undefined) o[k] = canon(x[k]); });
+        return o;
+      }
+      return x;
+    }
+    function mismo(a, b) { return JSON.stringify(canon(a)) === JSON.stringify(canon(b)); }
+
+    function datosParaSync() {
+      return { expedientes, areas: AREAS, responsables: RESPONSABLES, parques: PARQUES };
+    }
+
+    // Lo que llega del servidor, con los mismos valores por defecto que usa la app.
+    function normalizarRemoto(datos) {
+      return {
+        expedientes: Array.isArray(datos.expedientes) ? datos.expedientes : [],
+        areas: (datos.areas && datos.areas.length) ? datos.areas : [...AREAS_DEFAULT],
+        responsables: (datos.responsables && datos.responsables.length) ? datos.responsables : [...RESPONSABLES_DEFAULT],
+        parques: Array.isArray(datos.parques) ? datos.parques : [...PARQUES_DEFAULT] // sin la clave: servidor anterior
+      };
+    }
+
+    // Listas de nombres (áreas, agentes, parques): lo que este dispositivo quitó
+    // se quita, lo que agregó se suma, y el resto es lo del servidor.
+    function fusionarLista(base, local, remoto) {
+      const quitadas = (base || []).filter(x => !local.includes(x));
+      const agregadas = local.filter(x => !(base || []).includes(x) && !remoto.includes(x));
+      return remoto.filter(x => !quitadas.includes(x)).concat(agregadas);
+    }
+
+    // Un expediente cambiado de un solo lado gana ese cambio. Si cambió en los dos
+    // y difiere, gana este dispositivo (y se cuenta). Las altas con el mismo id
+    // se renumeran en la copia local para que ninguna se pierda.
+    function fusionarExpedientes(base, local, remoto) {
+      const indexar = lista => { const m = new Map(); (lista || []).forEach(e => { if (e && e.id != null) m.set(String(e.id), e); }); return m; };
+      const B = indexar(base), R = indexar(remoto);
+      const L = copiar(local || []);
+      const usados = new Set([...B.keys(), ...R.keys(), ...L.map(e => String(e.id))]);
+      L.forEach(e => {
+        const id = String(e.id);
+        if (B.has(id) || !R.has(id) || mismo(R.get(id), e)) return;
+        let nuevo = Date.now();
+        while (usados.has(String(nuevo))) nuevo++;
+        usados.add(String(nuevo));
+        e.id = String(nuevo);
+      });
+      const Lm = indexar(L);
+      const claves = [...R.keys(), ...Lm.keys(), ...B.keys()].filter((k, i, a) => a.indexOf(k) === i);
+      let conflictos = 0;
+      const merged = [];
+      claves.forEach(k => {
+        const bk = B.get(k), lk = Lm.get(k), rk = R.get(k);
+        const lCambio = !mismo(lk, bk), rCambio = !mismo(rk, bk);
+        let elegido;
+        if (lCambio && rCambio && !mismo(lk, rk)) { conflictos++; elegido = lk; }
+        else if (lCambio) elegido = lk;
+        else elegido = rk;
+        if (elegido !== undefined) merged.push(elegido);
+      });
+      return { merged, conflictos };
+    }
+
+    function fusionar(base, local, remoto) {
+      const b = base || { expedientes: [], areas: [], responsables: [], parques: [] };
+      const ex = fusionarExpedientes(b.expedientes, local.expedientes, remoto.expedientes);
+      return {
+        conflictos: ex.conflictos,
+        merged: {
+          expedientes: ex.merged,
+          areas: fusionarLista(b.areas, local.areas, remoto.areas),
+          responsables: fusionarLista(b.responsables, local.responsables, remoto.responsables),
+          parques: fusionarLista(b.parques, local.parques, remoto.parques)
+        }
+      };
+    }
+
+    // Adopta lo que tiene el servidor. Si hay cambios sin subir, los fusiona con
+    // él (nunca los descarta). Devuelve true si todavía hay algo que subir.
+    // `enSubida`: se llama en medio de una subida, así que lo local es por definición
+    // algo por subir aunque localStorage no haya guardado la marca.
+    function adoptarRemoto(datos, sha, enSubida = false) {
+      const remoto = normalizarRemoto(datos);
+      const pendientes = enSubida || syncPendiente || hayPendiente();
+      let final = remoto;
+      if (pendientes) {
+        const f = fusionar(syncBase.datos, datosParaSync(), remoto);
+        final = f.merged;
+        if (f.conflictos) console.warn(`[sync] ${f.conflictos} expediente(s) editados en dos dispositivos: se conservó la versión de este dispositivo.`);
+      }
+      guardarBase(sha, remoto);
+      expedientes = final.expedientes;
+      AREAS = final.areas;
+      RESPONSABLES = final.responsables;
+      PARQUES = final.parques;
+      guardarEnLS(false); // guarda local sin re-subir lo que acabamos de bajar
+      renderizar();
+      if (pendientes && mismo(final, remoto)) {
+        // Nada que subir: lo local ya estaba en el servidor.
+        syncPendiente = false;
+        marcarPendiente(false);
+        return false;
+      }
+      return pendientes;
+    }
+
+    async function traerRemoto() {
+      const resp = await HeaderGlobal.fetchApi('/api/sync');
+      if (!resp.ok) return null;
+      const datos = await resp.json();
+      return { datos, sha: (datos._meta && datos._meta.sha) || null };
+    }
+
     async function subirAGitHub() {
       try {
         sincronizando = true;
         actualizarIndicadorSync(null);
-        const datos = {
-          expedientes,
-          areas: AREAS,
-          responsables: RESPONSABLES,
-          parques: PARQUES,
-          timestamp: new Date().toISOString()
-        };
 
-        const resp = await HeaderGlobal.fetchApi('/api/sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(datos)
-        });
+        // Sin base no hay forma de detectar un choque: se trae primero. Si ni eso
+        // se puede, no se sube a ciegas (pisaría lo de otro dispositivo).
+        if (!syncBase.sha) {
+          const r = await traerRemoto();
+          if (!r) { actualizarIndicadorSync(false); return false; }
+          if (!adoptarRemoto(r.datos, r.sha, true)) { actualizarIndicadorSync(true); return true; }
+        }
 
-        const ok = resp.ok;
-        actualizarIndicadorSync(ok);
-        return ok;
+        // 409: otro dispositivo guardó después de nuestra base. Se fusiona con lo que
+        // hay y se vuelve a intentar sobre el sha nuevo.
+        for (let intento = 0; intento < 3; intento++) {
+          const enviado = copiar(datosParaSync());
+          const cuerpo = Object.assign({}, enviado, { timestamp: new Date().toISOString() });
+          if (syncBase.sha) cuerpo._baseSha = syncBase.sha;
+
+          const resp = await HeaderGlobal.fetchApi('/api/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(cuerpo)
+          });
+
+          if (resp.status === 409) {
+            let choque = null;
+            try { choque = await resp.json(); } catch (e) { /* sin contenido */ }
+            if (!choque || !choque.actual || !Array.isArray(choque.actual.expedientes)) throw new Error('Conflicto sin contenido para fusionar');
+            const quedaAlgo = adoptarRemoto(choque.actual, (choque.actual._meta && choque.actual._meta.sha) || null, true);
+            if (!quedaAlgo) { actualizarIndicadorSync(true); return true; }
+            continue;
+          }
+
+          if (!resp.ok) {
+            // Un 4xx (salvo clave, tiempo agotado o límite) es culpa del contenido o de la
+            // configuración, no de la señal: decir «Sin conexión» manda a buscar donde no es.
+            const rechazo = resp.status >= 400 && resp.status < 500 && ![401, 403, 408, 429].includes(resp.status);
+            actualizarIndicadorSync(rechazo ? 'rechazado' : false);
+            return false;
+          }
+
+          // Lo que el servidor tiene ahora es lo enviado: pasa a ser la base.
+          let ack = null;
+          try { ack = await resp.json(); } catch (e) { /* servidor anterior: sin sha */ }
+          guardarBase(ack && ack.sha ? ack.sha : null, enviado);
+          actualizarIndicadorSync(true);
+          return true;
+        }
+        throw new Error('Demasiados conflictos seguidos con otro dispositivo');
       } catch (e) {
         console.error('Error al sincronizar:', e);
         actualizarIndicadorSync(false);
@@ -1410,27 +1598,22 @@
       }
     }
 
+    // Traer el servidor no depende de que no haya cambios locales: si los hay, se
+    // fusionan. Así "Actualizar datos" y volver a la app siempre muestran lo último.
     async function descargarDesdeGitHub() {
       try {
-        const resp = await HeaderGlobal.fetchApi('/api/sync');
-        if (!resp.ok) {
+        if (syncPromise) return false; // hay una subida en curso: ella deja todo al día
+        const shaAntes = syncBase.sha;
+        const r = await traerRemoto();
+        if (!r) {
           actualizarIndicadorSync(false);
           return false;
         }
+        // Si mientras bajaba empezó o terminó una subida, lo que bajó puede ser anterior.
+        if (syncPromise || syncBase.sha !== shaAntes) return false;
 
-        const datos = await resp.json();
-
-        // Si mientras bajaba hubo cambios locales sin subir, bajar pisaría trabajo del usuario.
-        if (syncPendiente || syncPromise || hayPendiente()) return false;
-
-        expedientes = datos.expedientes || [];
-        AREAS = (datos.areas && datos.areas.length) ? datos.areas : [...AREAS_DEFAULT];
-        RESPONSABLES = (datos.responsables && datos.responsables.length) ? datos.responsables : [...RESPONSABLES_DEFAULT];
-        PARQUES = Array.isArray(datos.parques) ? datos.parques : [...PARQUES_DEFAULT]; // sin la clave: servidor anterior
-
-        guardarEnLS(false); // guarda local sin re-subir lo que acabamos de bajar
-        renderizar();
-        actualizarIndicadorSync(true);
+        if (adoptarRemoto(r.datos, r.sha)) programarSincronizacion();
+        else actualizarIndicadorSync(true);
         return true;
       } catch (e) {
         console.error('Error al descargar:', e);
@@ -1545,6 +1728,7 @@
       }
       const indice = AREAS.indexOf(nombre);
       AREAS = AREAS.filter(a => a !== nombre);
+      if (filtroArea === nombre) filtroArea = null; // si no, la lista queda filtrada por un chip que ya no existe
       guardarEnLS();
       renderizar();
       mostrarToast(`Área "${nombre}" eliminada`, { accion: () => {
@@ -1582,6 +1766,16 @@
     }
 
     // ===== FUNCIONES DE UI =====
+    // Opciones de un <select> de lista administrable. Si el expediente trae un valor que
+    // ya no está en la lista (lo quitó otro dispositivo, o es un dato viejo), se agrega
+    // como opción para que no se pierda en silencio al guardar.
+    function opcionesSelect(lista, actual) {
+      const fuera = actual && !lista.includes(actual)
+        ? `<option value="${esc(actual)}" selected>${esc(actual)} (ya no está en la lista)</option>`
+        : '';
+      return fuera + lista.map(v => `<option value="${esc(v)}" ${actual === v ? 'selected' : ''}>${esc(v)}</option>`).join('');
+    }
+
     function crearFormulario(expediente = null) {
       const html = `
         <div class="form-group">
@@ -1599,7 +1793,7 @@
           <label class="form-label required" for="parque">Tag</label>
           <select class="form-select" id="parque" aria-required="true">
             <option value="">Elegí un tag</option>
-            ${PARQUES.map(p => `<option value="${esc(p)}" ${expediente?.parque === p ? 'selected' : ''}>${esc(p)}</option>`).join('')}
+            ${opcionesSelect(PARQUES, expediente?.parque)}
           </select>
         </div>
 
@@ -1607,7 +1801,7 @@
           <label class="form-label required" for="area">Área responsable</label>
           <select class="form-select" id="area" aria-required="true">
             <option value="">Seleccionar área...</option>
-            ${AREAS.map(a => `<option value="${esc(a)}" ${expediente?.area === a ? 'selected' : ''}>${esc(a)}</option>`).join('')}
+            ${opcionesSelect(AREAS, expediente?.area)}
           </select>
         </div>
 
@@ -1615,7 +1809,7 @@
           <label class="form-label required" for="responsable">Agente</label>
           <select class="form-select" id="responsable" aria-required="true">
             <option value="">Seleccionar agente...</option>
-            ${RESPONSABLES.map(r => `<option value="${esc(r)}" ${expediente?.responsable === r ? 'selected' : ''}>${esc(r)}</option>`).join('')}
+            ${opcionesSelect(RESPONSABLES, expediente?.responsable)}
           </select>
         </div>
 
@@ -1626,7 +1820,7 @@
 
         <div class="form-group">
           <label class="form-label required" for="diasPlazo">Plazo en Días Hábiles</label>
-          <input type="number" class="form-input" id="diasPlazo" placeholder="30" value="${esc(expediente?.diasPlazo)}" min="1" aria-required="true">
+          <input type="number" class="form-input" id="diasPlazo" placeholder="30" value="${esc(expediente?.diasPlazo)}" min="1" max="${PLAZO_MAX_DIAS}" step="1" aria-required="true">
         </div>
 
         <div class="form-group">
@@ -1803,9 +1997,12 @@
       guardarEnLS(true);
       renderizar();
       mostrarToast('Expediente archivado', { accion: () => {
-        exp.estado = previo.estado || 'activo';
-        if (previo.fechaResolucion) exp.fechaResolucion = previo.fechaResolucion;
-        else delete exp.fechaResolucion;
+        // Se busca de nuevo: una descarga pudo reemplazar la lista mientras el aviso estaba a la vista.
+        const actual = expedientes.find(e => e.id === expedienteId);
+        if (!actual) return;
+        actual.estado = previo.estado || 'activo';
+        if (previo.fechaResolucion) actual.fechaResolucion = previo.fechaResolucion;
+        else delete actual.fechaResolucion;
         guardarEnLS(true);
         renderizar();
       } });
@@ -1821,11 +2018,18 @@
       guardarEnLS(true);
       renderizar();
       mostrarToast('Expediente reabierto', { accion: () => {
-        exp.estado = previo.estado;
-        exp.fechaResolucion = previo.fechaResolucion;
+        const actual = expedientes.find(e => e.id === expedienteId);
+        if (!actual) return;
+        actual.estado = previo.estado;
+        if (previo.fechaResolucion) actual.fechaResolucion = previo.fechaResolucion;
+        else delete actual.fechaResolucion;
         guardarEnLS(true);
         renderizar();
       } });
+    }
+
+    function sinTildes(texto) {
+      return String(texto).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     }
 
     function filtrarBusqueda() {
@@ -1851,13 +2055,12 @@
         filtrados = filtrados.filter(e => e.area === filtroArea);
       }
 
-      // Filtrar por búsqueda (número, tema, área, responsable)
+      // Filtrar por búsqueda (número, tema, tag, área, responsable), sin importar
+      // mayúsculas ni tildes: «juridica» tiene que encontrar «Jurídica».
       if (busqueda) {
+        const q = sinTildes(busqueda);
         filtrados = filtrados.filter(e =>
-          (e.numero && e.numero.toLowerCase().includes(busqueda)) ||
-          (e.tema && e.tema.toLowerCase().includes(busqueda)) ||
-          (e.area && e.area.toLowerCase().includes(busqueda)) ||
-          (e.responsable && e.responsable.toLowerCase().includes(busqueda))
+          [e.numero, e.tema, e.parque, e.area, e.responsable].some(v => v && sinTildes(v).includes(q))
         );
       }
 
@@ -1952,9 +2155,10 @@
 
     function actualizarFechaVencimiento() {
       const fechaInicio = document.getElementById('fechaInicio')?.value;
-      const diasPlazo = parseInt(document.getElementById('diasPlazo')?.value || 0);
+      const plazoEscrito = (document.getElementById('diasPlazo')?.value || '').trim();
+      const diasPlazo = /^\d{1,4}$/.test(plazoEscrito) ? parseInt(plazoEscrito, 10) : 0;
 
-      if (!fechaInicio || !diasPlazo) {
+      if (!fechaInicio || diasPlazo < 1 || diasPlazo > PLAZO_MAX_DIAS) {
         document.getElementById('fechaVencimiento').textContent = 'Completa Fecha de Inicio y Plazo';
         return;
       }
@@ -2029,9 +2233,9 @@
     }
 
     function abrirEditar(id) {
-      editandoId = id;
       const exp = expedientes.find(e => e.id === id);
       if (!exp) return;
+      editandoId = id;
 
       document.getElementById('modalTitle').textContent = `Editar: ${exp.numero || 'sin número'}`;
       document.getElementById('btnEliminar').classList.remove('hidden');
@@ -2056,7 +2260,9 @@
       const responsable = document.getElementById('responsable').value;
       const parque = document.getElementById('parque').value;
       const fechaInicio = document.getElementById('fechaInicio').value;
-      const diasPlazo = parseInt(document.getElementById('diasPlazo').value);
+      const diasPlazoTexto = document.getElementById('diasPlazo').value.trim();
+      // Solo enteros en dígitos: parseInt('1e2') daba 1 y parseInt('2.5') daba 2 sin avisar.
+      const diasPlazo = /^\d{1,4}$/.test(diasPlazoTexto) ? parseInt(diasPlazoTexto, 10) : NaN;
       const notas = document.getElementById('notas').value.trim();
 
       CAMPOS_FORM.forEach(limpiarErrorCampo);
@@ -2069,7 +2275,7 @@
         [!area, 'area', 'Elegí un área'],
         [!responsable, 'responsable', 'Elegí un responsable'],
         [!fechaInicio, 'fechaInicio', 'Indicá la fecha de inicio'],
-        [!(diasPlazo > 0), 'diasPlazo', 'Indicá el plazo en días hábiles (1 o más)']
+        [!(diasPlazo >= 1 && diasPlazo <= PLAZO_MAX_DIAS), 'diasPlazo', `Indicá el plazo en días hábiles, un entero entre 1 y ${PLAZO_MAX_DIAS}`]
       ].filter(([falla]) => falla);
 
       if (errores.length) {
@@ -2082,7 +2288,11 @@
 
       if (editandoId) {
         exp = expedientes.find(e => e.id === editandoId);
-        if (!exp) return;
+        if (!exp) {
+          cerrarModal();
+          mostrarAlerta('Expediente no encontrado', 'Este expediente ya no existe: lo eliminaron desde otro dispositivo. Los cambios de este formulario no se guardaron.');
+          return;
+        }
 
         exp.numero = numero;
         exp.tema = tema;
@@ -2093,7 +2303,7 @@
         exp.diasPlazo = diasPlazo;
       } else {
         exp = {
-          id: Date.now().toString(),
+          id: idNuevo(),
           numero,
           tema,
           area,
@@ -2124,6 +2334,13 @@
       guardarEnLS();
       renderizar();
       cerrarModal();
+    }
+
+    // Dos altas en el mismo milisegundo (o un reloj retrasado) no pueden compartir id.
+    function idNuevo() {
+      let n = Date.now();
+      while (expedientes.some(e => String(e.id) === String(n))) n++;
+      return String(n);
     }
 
     function eliminarExpediente() {

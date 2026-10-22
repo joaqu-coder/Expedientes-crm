@@ -41,7 +41,11 @@ const APPS = {
   '/api/sync': {
     archivo: 'expedientes.json',
     nombre: 'expedientes',
-    vacio: { expedientes: [], areas: [], responsables: [] }
+    vacio: { expedientes: [], areas: [], responsables: [] },
+    // Concurrencia optimista (como Proyectos y Parques): 409 con el contenido
+    // actual si otro dispositivo guardó en el medio. Sin esto era "última
+    // escritura gana" y el trabajo del primero desaparecía en silencio.
+    conflictos: true
   },
   '/api/sync-resoluciones': {
     archivo: 'resoluciones.json',

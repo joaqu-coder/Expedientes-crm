@@ -11,7 +11,7 @@
     "test:ui": "node tests/ui.test.mjs",
     "deploy": "wrangler deploy",
     "dev": "wrangler dev",
-    "test:concurrencia": "node tests/concurrencia.test.mjs && node tests/concurrencia-parques.test.mjs"
+    "test:concurrencia": "node tests/concurrencia.test.mjs && node tests/concurrencia-parques.test.mjs && node tests/concurrencia-seguimiento.test.mjs"
   },
   "devDependencies": {
     "wrangler": "latest"

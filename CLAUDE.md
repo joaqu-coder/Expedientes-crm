@@ -64,6 +64,48 @@ y el Worker responde 409 con el contenido actual si el archivo cambió.
   verificación de que el código anterior los hace fallar) y el test de 409 en
   `tests/worker.test.mjs`.
 
+### Seguimiento: fusión por expediente (2026-10-22)
+
+Salió de la auditoría de Seguimiento. Dejó de ser "última escritura gana": usa el
+mismo protocolo que Parques (`_baseSha` en el POST, 409 con el contenido actual).
+
+- **Worker**: `/api/sync` tiene `conflictos: true` en `APPS`. El GET trae `_meta.sha` y
+  el POST responde `{ok, sha}`. Un cliente viejo sin `_baseSha` sigue funcionando (sin
+  protección).
+- **Base**: `expedientes_crm_base_v1` guarda el sha y el contenido que el servidor tenía
+  la última vez. Sin base, el cliente trae el servidor **antes** de subir; si no puede,
+  no sube a ciegas.
+- **Regla por expediente**: cambió de un lado → gana ese. Cambió en los dos y difiere →
+  gana este dispositivo (se registra en consola). Una baja y una edición de registros
+  distintos conviven (la baja no resucita). Baja local + edición remota del mismo
+  expediente: gana la baja local.
+- **Listas** (áreas, agentes, parques): lo que este dispositivo quitó se quita, lo que
+  agregó se suma, el resto es del servidor.
+- **Altas con el mismo id**: la local se renumera. `idNuevo()` evita además dos ids
+  iguales en el mismo milisegundo.
+- **Descargar siempre fusiona** lo pendiente en vez de descartar la bajada; si hay una
+  subida en vuelo, no baja (la subida deja todo al día).
+- **Test**: `tests/concurrencia-seguimiento.test.mjs` (5 escenarios; fallaban con el
+  código anterior) y el 409 de `/api/sync` en `tests/worker.test.mjs`.
+
+Otros arreglos de la misma auditoría, cada uno con test en `ui.test.mjs`
+(`testFeriadosYPlazoMaximo`, `testMenoresSeguimiento`):
+
+- **Plazo acotado** (`PLAZO_MAX_DIAS` = 999, solo enteros en dígitos). Sin tope, `3000000`
+  colgaba la pantalla (3 s por cálculo, en cada render) y el dato se sincronizaba a todos
+  los dispositivos. `calcularFechaFin` también recorta, por si el dato ya viene así.
+- **Feriados**: Viernes Santo estaba mal en todos los años (`04-10`), Carnaval 2025 en
+  febrero en vez del 3-4 de marzo, y los trasladables (17/6, 17/8, 12/10, 20/11) en la
+  fecha original. Ahora la tabla va 2024-2028 y el test recalcula Pascua y la Ley 27.399.
+  **Sigue pendiente con el usuario**: los puentes y traslados por decreto, y `07-25`
+  (no es feriado nacional; está en la tabla desde antes). Del 2029 en adelante la tabla
+  no tiene nada: hay que extenderla antes de fines de 2028.
+- Un tag/área/agente que ya no está en la lista se conserva al editar (opción
+  «ya no está en la lista»). La búsqueda ignora tildes y mira el tag. Deshacer
+  Resolver/Reabrir busca el expediente por id. Quitar el área filtrada limpia el filtro.
+  Editar un expediente borrado desde otro dispositivo avisa. Un 4xx dice «El servidor
+  rechazó los datos» en vez de «Sin conexión».
+
 ---
 
 ## Arquitectura (y por qué es así)
@@ -1308,8 +1350,8 @@ fuente, a diferencia del repo del Boletín donde lo genera el scraper.
       GitHub, actualizar **solo** el secret de runtime, y borrar el de Builds.
 - [ ] Verificar sync entre dos dispositivos reales (cargar en la compu, abrir en
       el celular).
-- [ ] **Última escritura gana en 3 de las 4 apps** (Seguimiento, Resoluciones,
-      Parques). Demostrado el 2026-10-19 contra el Worker real: dos
+- [ ] **Última escritura gana en 1 de las 4 apps** (Resoluciones; Parques y
+      Seguimiento ya fusionan). Originalmente eran 3 (Seguimiento, Resoluciones, Parques). Demostrado el 2026-10-19 contra el Worker real: dos
       dispositivos que abren la misma pantalla y guardan, y el trabajo del
       primero desaparece sin error ni aviso (Proyectos devuelve 409 y fusiona).
       La solución es generalizar `manejarSyncCartas`, no reescribirla: el
@@ -1318,8 +1360,8 @@ fuente, a diferencia del repo del Boletín donde lo genera el scraper.
       2026. Seguimiento y Proyectos calculan días hábiles con listas propias:
       el mismo vencimiento da semáforo distinto según la pantalla. Verificado
       calculando Pascua (Meeus/Jones/Butcher, contrastado con 2023-2025):
-      Viernes Santo 2026 es el **03/04**; Proyectos dice 17/04 y Seguimiento
-      10/04. Falta decidir los movibles por decreto (Soberanía, 25/07) con el
+      Viernes Santo 2026 es el **03/04**; Proyectos dice 17/04 (Seguimiento ya
+      está corregido, 2026-10-22). Falta decidir los movibles por decreto (Soberanía, 25/07) con el
       usuario, y unificar en un `calendario.js` compartido.
 - [ ] **33 funciones comparten nombre entre apps y 32 divergieron.** Es la
       causa raíz de los cuatro bugs P0 del 2026-10-19: una defensa escrita una
