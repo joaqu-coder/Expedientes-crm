@@ -122,7 +122,8 @@
       "responsable": "Joaquín Fernández Castro",
       "fechaInicio": "2026-09-29",
       "diasPlazo": 15,
-      "intervenciones": []
+      "intervenciones": [],
+      "parque": "Güemes"
     },
     {
       "id": "1790650865679",
@@ -283,5 +284,5 @@
     "San Antonio",
     "Egpais"
   ],
-  "timestamp": "2026-10-22T01:42:24.337Z"
+  "timestamp": "2026-10-22T01:42:32.574Z"
 }
