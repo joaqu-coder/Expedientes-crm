@@ -522,11 +522,11 @@
       "rubro": "Manufactura",
       "superficie_solicitada_m2": 1200,
       "actividad_empresa": "Fábrica de paneles metálicos",
-      "situacion": "Sin_tratamiento",
+      "situacion": "Desestimada",
       "representante_nombre": "Melisa Miranda",
       "contacto_tel": "387-2250729",
       "contacto_mail": "mmiranda@steelartsla.com.ar",
-      "fecha_ultimo_movimiento": "22/10/2026 13:06",
+      "fecha_ultimo_movimiento": "22/10/2026 13:11",
       "intervenciones": [
         {
           "hora": "12/10/2026 20:54",
@@ -542,12 +542,17 @@
           "hora": "22/10/2026 13:06",
           "texto": "Rescatado del archivo (editado).",
           "tipo": "sistema"
+        },
+        {
+          "hora": "22/10/2026 13:11",
+          "texto": "Cambio de situación: Sin tratamiento → Desestimada",
+          "tipo": "sistema"
         }
       ],
       "archivado": false,
       "contacto_tel_2": "",
       "contacto_mail_2": "",
-      "actualizado_en": "2026-10-22T16:06:45.231Z"
+      "actualizado_en": "2026-10-22T16:11:20.237Z"
     },
     {
       "id": "exp_imp022",
