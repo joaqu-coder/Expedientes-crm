@@ -170,6 +170,7 @@ async function recorrido(nombre, viewport, puerto) {
   await page.fill('#tema', 'Expediente de prueba — Ñandú y café ☕');
   await page.fill('#fechaInicio', '2026-09-28');
   await page.fill('#diasPlazo', '10');
+  await page.selectOption('#parque', { index: 1 });
   await page.selectOption('#area', { index: 1 });
   await page.selectOption('#responsable', { index: 1 });
   await page.click('#btnGuardar');
@@ -264,6 +265,7 @@ async function testSyncYEscape() {
   await page.click('#fabNuevo');
   await page.fill('#tema', tema);
   await page.fill('#diasPlazo', '10');
+  await page.selectOption('#parque', { index: 1 });
   await page.selectOption('#area', "D'Angelo <b>");
   await page.selectOption('#responsable', { index: 1 });
   await page.click('#btnGuardar');
@@ -603,8 +605,8 @@ async function testMovilTactil() {
   ok(presentacion.orden[0].includes('urgencia-tema') && presentacion.orden[1].includes('urgencia-label')
      && presentacion.orden[2].includes('urgencia-dias'),
      `la tarjeta muestra Tema, Expediente y Vencimiento en ese orden (${presentacion.orden.join(' > ')})`);
-  ok(presentacion.fondo === 'rgba(0, 0, 0, 0)' || presentacion.fondo === 'transparent',
-     `la cabecera no tiene fondo de alarma: es el fondo de Proyectos (${presentacion.fondo})`);
+  ok(presentacion.fondo !== 'rgba(0, 0, 0, 0)' && presentacion.fondo !== 'transparent',
+     `la cabecera de la tarjeta conserva el color de alarma (${presentacion.fondo})`);
 
   // Los chips de área van en una sola fila con scroll horizontal.
   const chips = await page.evaluate(() => {
@@ -732,6 +734,7 @@ async function testTecladoYFoco() {
   // Enter guarda desde un input
   await page.fill('#numero', '363-1254/2026-01');
   await page.fill('#diasPlazo', '10');
+  await page.selectOption('#parque', { index: 1 });
   await page.selectOption('#area', { index: 1 });
   await page.selectOption('#responsable', { index: 1 });
   await page.focus('#tema');
@@ -871,10 +874,23 @@ async function testParquesEnSeguimiento() {
   // Formulario: Tema → Parque industrial → Área responsable, con la lista de la configuración
   await page.evaluate(() => abrirNuevo());
   const etiquetas = (await page.locator('#formularioModal .form-label').allTextContents()).map((t) => t.replace(/\(opcional\)/, '').trim());
-  const orden = ['Nro Expediente', 'Tema', 'Parque industrial', 'Área responsable', 'Agente', 'Fecha de Inicio', 'Plazo en Días Hábiles', 'Fecha de Vencimiento'];
-  ok(JSON.stringify(etiquetas.filter((e) => orden.includes(e))) === JSON.stringify(orden), 'el formulario va Nro → Tema → Parque industrial → Área → Agente → fechas');
+  const orden = ['Nro Expediente', 'Tema', 'Tag', 'Área responsable', 'Agente', 'Fecha de Inicio', 'Plazo en Días Hábiles', 'Fecha de Vencimiento'];
+  ok(JSON.stringify(etiquetas.filter((e) => orden.includes(e))) === JSON.stringify(orden), 'el formulario va Nro → Tema → Tag → Área → Agente → fechas');
   const opciones = await page.locator('#parque option').allTextContents();
-  ok(JSON.stringify(opciones) === JSON.stringify(['Sin parque', ...esperados]), 'el selector de parque ofrece los parques de la configuración');
+  ok(JSON.stringify(opciones) === JSON.stringify(['Elegí un tag', ...esperados]), 'el selector de tag ofrece los parques de la configuración');
+  ok(await page.locator('#parque').getAttribute('aria-required') === 'true', 'el tag es obligatorio');
+
+  // Sin tag no se guarda: el campo marca el error y no sale ningún POST
+  await page.fill('#numero', '363-1254/2026-01');
+  await page.fill('#tema', 'Expediente con parque');
+  await page.selectOption('#area', 'Jurídica');
+  await page.selectOption('#responsable', 'María García');
+  await page.fill('#diasPlazo', '30');
+  const postsSinTag = ctx.getUltimoPost();
+  await page.click('#btnGuardar');
+  await page.waitForTimeout(300);
+  ok((await page.locator('#error-parque').textContent()).includes('Elegí un tag'), 'sin tag el formulario muestra el error y no guarda');
+  ok(ctx.getUltimoPost() === postsSinTag, 'sin tag no sale ningún POST');
 
   // Guardar con parque: aparece como tag en la tarjeta, entre expediente y vencimiento
   await page.fill('#numero', '363-1254/2026-01');
@@ -891,14 +907,19 @@ async function testParquesEnSeguimiento() {
   });
   ok(JSON.stringify(hijos) === JSON.stringify(['expediente-urgencia-tema', 'expediente-urgencia-label', 'expediente-parque-tag', 'expediente-urgencia-dias']), 'la tarjeta muestra Tema → Expediente → Parque → Vencimiento');
   ok((await page.locator('.expediente-parque-tag').first().textContent()).trim() === 'Rosario', 'el tag de la tarjeta dice Rosario');
-  // Mismo fondo que las tarjetas de Proyectos (sin tinte de urgencia) y el parque como línea de texto, no como chip
-  const fondos = await page.evaluate(() => {
-    const h = document.querySelector('.expediente-card-new .expediente-header-urgencia');
+  // El tag va con el color del texto de urgencia roja, como línea de texto y sin chip de fondo
+  const tag = await page.evaluate(() => {
+    const probe = document.createElement('span');
+    probe.style.color = 'var(--urgencia-rojo-text)';
+    document.body.appendChild(probe);
+    const esperado = getComputedStyle(probe).color;
+    probe.remove();
     const p = document.querySelector('.expediente-parque-tag');
-    return { header: getComputedStyle(h).backgroundColor, parque: getComputedStyle(p).backgroundColor, radio: getComputedStyle(p).borderRadius };
+    const cs = getComputedStyle(p);
+    return { color: cs.color, esperado, fondo: cs.backgroundColor, radio: cs.borderRadius };
   });
-  ok(fondos.header === 'rgba(0, 0, 0, 0)', 'la tarjeta no tiene fondo tintado por urgencia (queda el de la tarjeta, como en Proyectos)');
-  ok(fondos.parque === 'rgba(0, 0, 0, 0)' && fondos.radio === '0px', 'el parque va como línea de texto, sin chip de fondo');
+  ok(tag.color === tag.esperado, `el tag usa var(--urgencia-rojo-text) (${tag.color})`);
+  ok(tag.fondo === 'rgba(0, 0, 0, 0)' && tag.radio === '0px', 'el tag va como línea de texto, sin chip de fondo');
   ok(ctx.getUltimoPost()?.expedientes?.find((e) => e.tema === 'Expediente con parque')?.parque === 'Rosario', 'el parque elegido se sincroniza con el expediente');
   ok(JSON.stringify(ctx.getUltimoPost()?.parques) === JSON.stringify(esperados), 'la lista de parques se sincroniza con el servidor');
 
