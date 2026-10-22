@@ -40,7 +40,8 @@
         }
       ],
       "estado": "archivado",
-      "fechaResolucion": "2026-09-29"
+      "fechaResolucion": "2026-09-29",
+      "parque": "Egpais"
     },
     {
       "id": "1790643000605",
@@ -77,7 +78,8 @@
         }
       ],
       "estado": "archivado",
-      "fechaResolucion": "2026-10-05"
+      "fechaResolucion": "2026-10-05",
+      "parque": "Rosario"
     },
     {
       "id": "1790642486016",
@@ -112,7 +114,8 @@
           "hora": "28/09 21:44",
           "texto": "mnsj con Rormando Miranda 22/09/2026"
         }
-      ]
+      ],
+      "parque": "San Antonio"
     },
     {
       "id": "1790640768114",
@@ -284,7 +287,8 @@
     "Mosconi",
     "Pichanal",
     "San Antonio",
-    "Egpais"
+    "Egpais",
+    "Salta"
   ],
-  "timestamp": "2026-10-22T01:43:21.357Z"
+  "timestamp": "2026-10-22T02:28:43.998Z"
 }
