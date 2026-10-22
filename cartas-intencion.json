@@ -1460,11 +1460,11 @@
       "rubro": "Manufactura",
       "superficie_solicitada_m2": 3000,
       "actividad_empresa": "Construcción de campamentos mineros",
-      "situacion": "Sin_tratamiento",
+      "situacion": "Desestimada",
       "representante_nombre": "Rodrigo Sánchez / Agustín Sánchez Mateo",
       "contacto_tel": "3875129189",
       "contacto_mail": "gerencia@nortemining.com",
-      "fecha_ultimo_movimiento": "22/10/2026 11:36",
+      "fecha_ultimo_movimiento": "22/10/2026 13:18",
       "intervenciones": [
         {
           "hora": "12/10/2026 20:54",
@@ -1480,12 +1480,22 @@
           "hora": "22/10/2026 11:36",
           "texto": "Rescatado del archivo (editado).",
           "tipo": "sistema"
+        },
+        {
+          "hora": "22/10/2026 13:18",
+          "texto": "Cambio de situación: Sin tratamiento → Desestimada",
+          "tipo": "sistema"
+        },
+        {
+          "hora": "22/10/2026 13:18",
+          "texto": "Sub programa de evaluación, emite informe técnico (16/04/2026).Mesa de entrada comunica vía mail (22/04/2026). La firma no resenta formularios.",
+          "tipo": "manual"
         }
       ],
       "archivado": false,
       "contacto_tel_2": "3874021897",
       "contacto_mail_2": "rsanchez@nortesm.com",
-      "actualizado_en": "2026-10-22T14:36:42.276Z"
+      "actualizado_en": "2026-10-22T16:18:25.957Z"
     },
     {
       "id": "exp_imp055",
