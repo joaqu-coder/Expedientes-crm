@@ -1283,7 +1283,8 @@ async function testProyectos(viewport, puerto) {
     id: 'exp_archivo_test', nro_expediente: '999-00000/2020-0',
     nombre_empresa: 'Archivable De Prueba S.A.', fecha_inicio: '01/01/2020',
     parque_industrial: 'Salta', rubro: 'Manufactura', situacion: 'Sin_tratamiento',
-    fecha_ultimo_movimiento: '01/01/2020 00:00', intervenciones: []
+    fecha_ultimo_movimiento: '01/01/2020 00:00', intervenciones: [],
+    contacto_mail: 'solo.uno@ejemplo.com', contacto_mail_2: ''
   };
   const expedienteEnTratamientoViejo = {
     id: 'exp_no_archivo_test', nro_expediente: '999-00001/2020-0',
@@ -1435,11 +1436,20 @@ async function testProyectos(viewport, puerto) {
      && conContacto?.contacto_mail === 'primero@ejemplo.com' && conContacto?.contacto_mail_2 === 'segundo@ejemplo.com',
      'los cuatro contactos llegan al servidor, cada uno en su campo');
   await page.locator('.exp-card', { hasText: 'Editado — Güemes' }).first().click();
-  const grillaContactoSel = page.locator('#modal .view-grid', { hasText: 'Tel (1)' });
-  await grillaContactoSel.waitFor();
-  const grillaContacto = await grillaContactoSel.textContent();
-  ok(['Tel (1)', 'Tel (2)', 'Email (1)', 'Email (2)', '3874-333444', 'segundo@ejemplo.com'].every((t) => grillaContacto.includes(t)),
-     'la ficha muestra los dos teléfonos y los dos mails con sus rótulos');
+  // Contacto como en Parques: una fila por dato, con ícono, rótulo y link
+  // real (tel:/mailto:) hacia el número o la dirección.
+  const filasContacto = page.locator('#modal .contact-row');
+  await filasContacto.first().waitFor();
+  const detalle = await filasContacto.evaluateAll((els) => els.map((a) => ({
+    rotulo: a.querySelector('.contact-label').textContent,
+    valor: a.querySelector('.contact-value').textContent,
+    href: a.getAttribute('href'),
+  })));
+  const hrefDe = (rotulo) => detalle.find((f) => f.rotulo === rotulo)?.href;
+  ok(hrefDe('Tel (1)') === 'tel:3875111222' && hrefDe('Tel (2)') === 'tel:3874333444',
+     'cada teléfono es un link tel: hacia su número');
+  ok(hrefDe('Email (1)') === 'mailto:primero@ejemplo.com' && hrefDe('Email (2)') === 'mailto:segundo@ejemplo.com',
+     'cada mail es un link mailto: hacia su dirección');
   await page.keyboard.press('Escape');
   await page.waitForTimeout(300);
 
@@ -1473,6 +1483,12 @@ async function testProyectos(viewport, puerto) {
      'la situación y la fecha de archivado bajaron a la grilla de Expediente, no se perdieron');
   ok(panel.sys === 0 && !/SISTEMA/i.test(panel.notas) && panel.notas.includes('Archivado automáticamente'),
      'la nota de archivado automático se lee sin el cartel "SISTEMA"');
+  // Contacto: solo se dibuja lo que tiene dato. Este expediente tiene un
+  // solo mail cargado (Email (2) vacío): no puede aparecer una fila vacía.
+  const filasViejo = await page.locator('#modal .contact-row').evaluateAll((els) => els.map((a) => ({
+    rotulo: a.querySelector('.contact-label').textContent, href: a.getAttribute('href') })));
+  ok(JSON.stringify(filasViejo) === JSON.stringify([{ rotulo: 'Email (1)', href: 'mailto:solo.uno@ejemplo.com' }]),
+     `con un solo mail cargado, la ficha dibuja solo esa fila (${JSON.stringify(filasViejo)})`);
   await page.click('#btnRescatar');
   await page.waitForTimeout(2000); // debounce de la subida
   ok(ultimoPost?.expedientes?.find((e) => e.id === 'exp_archivo_test' && e.archivado === false) != null,

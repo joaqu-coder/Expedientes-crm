@@ -176,6 +176,20 @@ svg text{font-family:var(--font-body)}
 .view-item .v{margin-top:1px;font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);font-weight:400;color:var(--muted)}
 .view-actividad{font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);margin-top:11px;color:var(--muted)}
 .view-empty{font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);color:var(--muted)}
+/* ---- Ficha de empresa: sub-tab Contacto — fila con ícono + label + valor.
+   Íconos SVG inline, todos en el mismo gris neutro (pedido explícito del
+   usuario: "sin tanto color, todo gris", sin un color por red social). */
+.contact-list{display:flex;flex-direction:column;gap:2px}
+.contact-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);color:inherit;text-decoration:none}
+.contact-row:last-child{border-bottom:none}
+.contact-row:hover .contact-value{color:var(--accent)}
+.contact-icon{flex:0 0 auto;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--surface-2);color:var(--muted)}
+.contact-icon svg{width:18px;height:18px}
+.contact-body{min-width:0;display:flex;flex-direction:column;gap:1px}
+/* Mismo criterio tipográfico que el resto de la ficha: título en negrita,
+   contenido en gris (pedido explícito del usuario 2026-10-13). */
+.contact-label{font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);font-weight:700;color:var(--fg)}
+.contact-value{font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);font-weight:400;color:var(--muted);overflow-wrap:anywhere}
 .view-actions{display:flex;gap:8px;margin-top:16px}
 
 /* ---- Dashboard: gráficos ---- */
@@ -2292,7 +2306,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 
   function renderModalView(e){
     var urg = urgenciaDe(e);
-    var hayContacto = e.representante_nombre || e.contacto_tel || e.contacto_tel_2 || e.contacto_mail || e.contacto_mail_2;
+    var contacto = filasContacto(e);
 
     modal.innerHTML =
       '<div class="modal-head"><button class="x-close" id="xCloseView">&times;</button></div>'+
@@ -2327,14 +2341,8 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
       '</div>'+
 
       '<div class="view-section"><h3>Contacto</h3>'+
-        (hayContacto
-          ? '<div class="view-grid">'+
-              viewItem("Representante", e.representante_nombre)+
-              viewItem("Tel (1)", e.contacto_tel)+
-              viewItem("Tel (2)", e.contacto_tel_2)+
-              viewItem("Email (1)", e.contacto_mail)+
-              viewItem("Email (2)", e.contacto_mail_2)+
-            '</div>'
+        (contacto
+          ? '<div class="contact-list">'+contacto+'</div>'
           : '<p class="view-empty">Sin datos de contacto.</p>')+
       '</div>'+
 
@@ -2358,6 +2366,45 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     if(e.archivado){
       document.getElementById("btnRescatar").addEventListener("click", onRescatar);
     }
+  }
+
+  var ICON_MAIL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 7-10 5L2 7"></path></svg>';
+  var ICON_PHONE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92Z"></path></svg>';
+  var ICON_USER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
+
+  // Contacto de la ficha, igual que en Parques (pedido del usuario 2026-10-22):
+  // una fila por dato, con ícono, rótulo y link real (tel:/mailto:). Un campo
+  // vacío no deja fila, así que un solo mail cargado no muestra un "Email (2)"
+  // en blanco.
+  function contactRow(icon, label, valor, href){
+    valor = String(valor||"").trim();
+    if(!valor) return "";
+    var tag = href ? 'a href="'+esc(href)+'"' : 'div';
+    var cierre = href ? 'a' : 'div';
+    return '<'+tag+' class="contact-row">'+
+      '<span class="contact-icon" aria-hidden="true">'+icon+'</span>'+
+      '<div class="contact-body"><span class="contact-label">'+esc(label)+'</span>'+
+      '<span class="contact-value">'+esc(valor)+'</span></div>'+
+      '</'+cierre+'>';
+  }
+  // Primer número y primera dirección de cada campo: 83 empresas traen dos
+  // mails y 54 dos teléfonos en el mismo campo; "mailto:" con el campo entero
+  // no abre nada, y tel: con los separadores daba un número de 20 dígitos.
+  function mailtoHref(v){
+    var m = String(v||"").match(/[^\s|;,/<>()]+@[^\s|;,/<>()]+/);
+    return m ? "mailto:"+m[0] : "";
+  }
+  function telHref(v){
+    var primero = String(v||"").split(/[|;\n]/)[0].trim();
+    var digitos = primero.split("/")[0].replace(/[^+\d]/g,"");
+    return digitos ? "tel:"+digitos : "";
+  }
+  function filasContacto(e){
+    return contactRow(ICON_USER, "Representante", e.representante_nombre, null)+
+      contactRow(ICON_PHONE, "Tel (1)", e.contacto_tel, telHref(e.contacto_tel) || null)+
+      contactRow(ICON_PHONE, "Tel (2)", e.contacto_tel_2, telHref(e.contacto_tel_2) || null)+
+      contactRow(ICON_MAIL, "Email (1)", e.contacto_mail, mailtoHref(e.contacto_mail) || null)+
+      contactRow(ICON_MAIL, "Email (2)", e.contacto_mail_2, mailtoHref(e.contacto_mail_2) || null);
   }
 
   function viewItem(label, value){
