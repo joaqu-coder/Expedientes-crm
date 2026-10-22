@@ -108,18 +108,31 @@
       "rubro": "Servicios",
       "superficie_solicitada_m2": 500,
       "actividad_empresa": "Servicio de lavado y planchado",
-      "situacion": "En_tratamiento",
+      "situacion": "Desestimada",
       "representante_nombre": "Alfredo Cernusco",
       "contacto_tel": "3875753262",
       "contacto_mail": "",
-      "fecha_ultimo_movimiento": "31/07/2026",
+      "fecha_ultimo_movimiento": "22/10/2026 10:26",
       "intervenciones": [
         {
           "hora": "31/07/2026",
           "texto": "Superficie según planilla: 500 / 1000 m²",
           "tipo": "sistema"
+        },
+        {
+          "hora": "22/10/2026 10:26",
+          "texto": "Cambio de situación: En tratamiento → Desestimada",
+          "tipo": "sistema"
+        },
+        {
+          "hora": "22/10/2026 10:26",
+          "texto": "Se comunica que en el caso de PI Salta ya no hay lotes disponibles para adjudicar.",
+          "tipo": "manual"
         }
-      ]
+      ],
+      "contacto_tel_2": "",
+      "contacto_mail_2": "",
+      "actualizado_en": "2026-10-22T13:26:34.286Z"
     },
     {
       "id": "exp_imp007",
