@@ -2292,7 +2292,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 
   function renderModalView(e){
     var urg = urgenciaDe(e);
-    var hayContacto = e.representante_nombre || e.contacto_tel || e.contacto_mail;
+    var hayContacto = e.representante_nombre || e.contacto_tel || e.contacto_tel_2 || e.contacto_mail || e.contacto_mail_2;
 
     modal.innerHTML =
       '<div class="modal-head"><button class="x-close" id="xCloseView">&times;</button></div>'+
@@ -2330,8 +2330,10 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
         (hayContacto
           ? '<div class="view-grid">'+
               viewItem("Representante", e.representante_nombre)+
-              viewItem("Tel/Cel", e.contacto_tel)+
-              viewItem("Mail", e.contacto_mail)+
+              viewItem("Tel (1)", e.contacto_tel)+
+              viewItem("Tel (2)", e.contacto_tel_2)+
+              viewItem("Email (1)", e.contacto_mail)+
+              viewItem("Email (2)", e.contacto_mail_2)+
             '</div>'
           : '<p class="view-empty">Sin datos de contacto.</p>')+
       '</div>'+
@@ -2372,8 +2374,9 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
         '<div class="row2">'+field("superficie_solicitada_m2","Superficie solicitada (m²)","number",e)+selectField("rubro","Rubro",RUBROS,e)+'</div>'+
         selectField("situacion","Situación",SITUACIONES.map(function(s){return s.id;}),e,SITUACIONES)+
         field("actividad_empresa","Actividad de la empresa","text",e,"Fábrica de premoldeados de hormigón")+
-        field("representante_nombre","Representante — nombre y apellido","text",e,"Manuel Molina")+
-        '<div class="row2">'+field("contacto_tel","Contacto — tel/cel","text",e)+field("contacto_mail","Contacto — mail","text",e)+'</div>'+
+        field("representante_nombre","Representante (Nombre y Apellido)","text",e,"Manuel Molina")+
+        '<div class="row2">'+field("contacto_tel","Tel (1)","text",e)+field("contacto_tel_2","Tel (2)","text",e)+'</div>'+
+        '<div class="row2">'+field("contacto_mail","Email (1)","text",e)+field("contacto_mail_2","Email (2)","text",e)+'</div>'+
         '<div class="field"><label for="f_nota">Nueva nota (se agrega al historial)</label><textarea id="f_nota" placeholder="Observación, llamado, documentación recibida…"></textarea></div>'+
         historialHtml(e)+
         '<div class="modal-actions"><button type="submit" class="btn btn-primary btn-grow">'+HeaderGlobal.icono("guardar")+'Guardar</button>'+
@@ -2522,7 +2525,9 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     exp.situacion = situacionNueva;
     exp.representante_nombre = g("representante_nombre").trim();
     exp.contacto_tel = g("contacto_tel").trim();
+    exp.contacto_tel_2 = g("contacto_tel_2").trim();
     exp.contacto_mail = g("contacto_mail").trim();
+    exp.contacto_mail_2 = g("contacto_mail_2").trim();
     exp.intervenciones = exp.intervenciones || [];
 
     var huboCambioEstado = !isNew && situacionAnterior !== situacionNueva;

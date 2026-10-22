@@ -1407,6 +1407,42 @@ async function testProyectos(viewport, puerto) {
   ok(ultimoPost.expedientes.some((e) => e.nombre_empresa === 'Editado — Güemes ñandú ☕ S.A.'),
      'el nombre editado llega al servidor con tildes, ñ y emoji intactos');
 
+  // Contacto: dos teléfonos y dos mails, cada uno en su campo, con los rótulos
+  // pedidos (2026-10-22). El formulario y la ficha usan los mismos nombres.
+  await page.locator('.exp-card', { hasText: 'Editado — Güemes' }).first().click();
+  await page.waitForSelector('#btnEdit');
+  await page.click('#btnEdit');
+  await page.waitForSelector('#f_contacto_tel');
+  const rotulos = await page.evaluate(() => Object.fromEntries(
+    ['f_representante_nombre', 'f_contacto_tel', 'f_contacto_tel_2', 'f_contacto_mail', 'f_contacto_mail_2']
+      .map((id) => {
+        const l = document.querySelector('label[for="' + id + '"]');
+        return [id, l ? l.textContent.replace(/\*/g, '').trim() : null];
+      })));
+  ok(rotulos.f_representante_nombre === 'Representante (Nombre y Apellido)',
+     `el rótulo del representante es "Representante (Nombre y Apellido)" (${rotulos.f_representante_nombre})`);
+  ok(rotulos.f_contacto_tel === 'Tel (1)' && rotulos.f_contacto_tel_2 === 'Tel (2)'
+     && rotulos.f_contacto_mail === 'Email (1)' && rotulos.f_contacto_mail_2 === 'Email (2)',
+     `los contactos se rotulan Tel (1), Tel (2), Email (1), Email (2) (${JSON.stringify(rotulos)})`);
+  await page.fill('#f_contacto_tel', '3875-111222');
+  await page.fill('#f_contacto_tel_2', '3874-333444');
+  await page.fill('#f_contacto_mail', 'primero@ejemplo.com');
+  await page.fill('#f_contacto_mail_2', 'segundo@ejemplo.com');
+  await page.click('#expForm button[type=submit]');
+  await page.waitForTimeout(2000);
+  const conContacto = ultimoPost?.expedientes?.find((e) => e.nombre_empresa === 'Editado — Güemes ñandú ☕ S.A.');
+  ok(conContacto?.contacto_tel === '3875-111222' && conContacto?.contacto_tel_2 === '3874-333444'
+     && conContacto?.contacto_mail === 'primero@ejemplo.com' && conContacto?.contacto_mail_2 === 'segundo@ejemplo.com',
+     'los cuatro contactos llegan al servidor, cada uno en su campo');
+  await page.locator('.exp-card', { hasText: 'Editado — Güemes' }).first().click();
+  const grillaContactoSel = page.locator('#modal .view-grid', { hasText: 'Tel (1)' });
+  await grillaContactoSel.waitFor();
+  const grillaContacto = await grillaContactoSel.textContent();
+  ok(['Tel (1)', 'Tel (2)', 'Email (1)', 'Email (2)', '3874-333444', 'segundo@ejemplo.com'].every((t) => grillaContacto.includes(t)),
+     'la ficha muestra los dos teléfonos y los dos mails con sus rótulos');
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+
   // Rescatar: el expediente sintético vuelve del Archivo al listado.
   await page.click('#tabArchivo');
   await page.waitForSelector('#archivoList');
