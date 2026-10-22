@@ -22,7 +22,8 @@
           "texto": "Bosh habla con Leiva. Se solicita que se mantenga la reserva del lote. Realizará la op. comercial para el 2027, No quiere afrontar las obras en etaba de lluvia."
         }
       ],
-      "estado": "activo"
+      "estado": "activo",
+      "parque": "Güemes"
     },
     {
       "id": "1790642909884",
@@ -265,5 +266,14 @@
     "Karina Merino",
     "Joaquín Fernández Castro"
   ],
-  "timestamp": "2026-10-22T00:43:37.297Z"
+  "parques": [
+    "Parque Salta",
+    "Güemes",
+    "Rosario",
+    "Mosconi",
+    "Pichanal",
+    "San Antonio",
+    "Egpais"
+  ],
+  "timestamp": "2026-10-22T00:52:12.613Z"
 }
