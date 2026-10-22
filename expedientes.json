@@ -145,7 +145,8 @@
           "hora": "14/10/2026 12:58",
           "texto": "Tel Marcos Gonzalez 387-6408980"
         }
-      ]
+      ],
+      "parque": "Rosario"
     },
     {
       "id": "1790687148313",
@@ -280,5 +281,5 @@
     "San Antonio",
     "Egpais"
   ],
-  "timestamp": "2026-10-22T01:41:30.006Z"
+  "timestamp": "2026-10-22T01:41:57.165Z"
 }
