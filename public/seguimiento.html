@@ -443,6 +443,18 @@
       opacity: 0.8;
     }
 
+    /* Tag del parque: va entre el expediente y el vencimiento, como un chip chico. */
+    .expediente-parque-tag {
+      display: inline-block;
+      margin-top: 4px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--gray-100);
+      color: var(--text-muted);
+      font-size: 11.5px;
+      line-height: 16px;
+    }
+
     .expediente-urgencia-dias {
       display: block;
       font-size: 12px;
@@ -988,6 +1000,15 @@
             <button onclick="agregarResponsableDesdeInput()">+</button>
           </div>
         </div>
+
+        <div class="config-section">
+          <h3>🏭 Parques</h3>
+          <div class="config-list" id="parquesConfigList"></div>
+          <div class="config-input-group">
+            <input type="text" id="inputParque" placeholder="Nuevo parque">
+            <button onclick="agregarParqueDesdeInput()">+</button>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <span class="form-help" style="margin: 0 auto 0 0; align-self: center;">Los cambios se guardan y sincronizan solos.</span>
@@ -1060,6 +1081,18 @@
 
     let AREAS = [...AREAS_DEFAULT];
     let RESPONSABLES = [...RESPONSABLES_DEFAULT];
+
+    const PARQUES_DEFAULT = [
+      "Parque Salta",
+      "Güemes",
+      "Rosario",
+      "Mosconi",
+      "Pichanal",
+      "San Antonio",
+      "Egpais"
+    ];
+
+    let PARQUES = [...PARQUES_DEFAULT];
 
     // Feriados argentinos 2024-2027
     const FERIADOS = [
@@ -1358,6 +1391,7 @@
           expedientes,
           areas: AREAS,
           responsables: RESPONSABLES,
+          parques: PARQUES,
           timestamp: new Date().toISOString()
         };
 
@@ -1395,6 +1429,7 @@
         expedientes = datos.expedientes || [];
         AREAS = (datos.areas && datos.areas.length) ? datos.areas : [...AREAS_DEFAULT];
         RESPONSABLES = (datos.responsables && datos.responsables.length) ? datos.responsables : [...RESPONSABLES_DEFAULT];
+        PARQUES = Array.isArray(datos.parques) ? datos.parques : [...PARQUES_DEFAULT]; // sin la clave: servidor anterior
 
         guardarEnLS(false); // guarda local sin re-subir lo que acabamos de bajar
         renderizar();
@@ -1432,6 +1467,7 @@
         localStorage.setItem('expedientes_crm_expedientes', JSON.stringify(expedientes));
         localStorage.setItem('expedientes_crm_areas', JSON.stringify(AREAS));
         localStorage.setItem('expedientes_crm_responsables', JSON.stringify(RESPONSABLES));
+        localStorage.setItem('expedientes_crm_parques', JSON.stringify(PARQUES));
       } catch (e) {
         console.error('Error al guardar:', e);
       }
@@ -1482,11 +1518,15 @@
 
         const responsables = localStorage.getItem('expedientes_crm_responsables');
         RESPONSABLES = responsables ? JSON.parse(responsables) : [...RESPONSABLES_DEFAULT];
+
+        const parques = localStorage.getItem('expedientes_crm_parques');
+        PARQUES = parques ? JSON.parse(parques) : [...PARQUES_DEFAULT];
       } catch (e) {
         console.error('Error al cargar:', e);
         expedientes = [];
         AREAS = [...AREAS_DEFAULT];
         RESPONSABLES = [...RESPONSABLES_DEFAULT];
+        PARQUES = [...PARQUES_DEFAULT];
       }
     }
 
@@ -1556,6 +1596,14 @@
         <div class="form-group">
           <label class="form-label required" for="tema">Tema</label>
           <input type="text" class="form-input" id="tema" placeholder="Descripción breve del asunto" value="${esc(expediente?.tema)}" aria-required="true">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="parque">Parque industrial</label>
+          <select class="form-select" id="parque">
+            <option value="">Sin parque</option>
+            ${PARQUES.map(p => `<option value="${esc(p)}" ${expediente?.parque === p ? 'selected' : ''}>${esc(p)}</option>`).join('')}
+          </select>
         </div>
 
         <div class="form-group">
@@ -1654,6 +1702,56 @@
       }
     }
 
+    function renderizarConfigParques() {
+      const html = PARQUES.map(p => `
+        <div class="config-item">
+          <span>${esc(p)}</span>
+          <button type="button" data-nombre="${esc(p)}" onclick="eliminarParque(this.dataset.nombre)" aria-label="Quitar parque ${esc(p)}">✕</button>
+        </div>
+      `).join('');
+      document.getElementById('parquesConfigList').innerHTML = html || '<p style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 20px 0;">No hay parques</p>';
+    }
+
+    function agregarParque(nombre) {
+      const limpio = nombre.trim();
+      if (limpio && !PARQUES.includes(limpio)) {
+        PARQUES.push(limpio);
+        guardarEnLS();
+        renderizar();
+        return true;
+      }
+      return false;
+    }
+
+    function agregarParqueDesdeInput() {
+      const input = document.getElementById('inputParque');
+      if (agregarParque(input.value)) {
+        input.value = '';
+        renderizarConfigParques();
+      } else if (input.value.trim()) {
+        mostrarAlerta('ℹ️ Duplicado', 'El parque ya existe');
+      }
+    }
+
+    // Un parque asignado a algún expediente no se quita: si no, la tarjeta
+    // quedaría con un tag que ya no figura en la lista.
+    function eliminarParque(nombre) {
+      const usos = expedientes.filter(e => e.parque === nombre).length;
+      if (usos > 0) {
+        mostrarAlerta('No se puede eliminar', `"${nombre}" está asignado a ${usos} expediente${usos !== 1 ? 's' : ''} (activos o archivados). Cambialos antes de quitarlo.`);
+        return;
+      }
+      const indice = PARQUES.indexOf(nombre);
+      PARQUES = PARQUES.filter(p => p !== nombre);
+      guardarEnLS();
+      renderizar();
+      mostrarToast(`Parque "${nombre}" quitado`, { accion: () => {
+        PARQUES.splice(Math.min(indice, PARQUES.length), 0, nombre);
+        guardarEnLS();
+        renderizar();
+      } });
+    }
+
     function estadoDe(exp) {
       return (exp.estado || 'activo') === 'archivado' ? 'archivados' : 'activos';
     }
@@ -1741,6 +1839,7 @@
     function renderizar() {
       renderizarConfigAreas();
       renderizarConfigResponsables();
+      renderizarConfigParques();
       renderizarPanelAreas();
       actualizarPestanas();
 
@@ -1796,6 +1895,7 @@
               <span class="expediente-urgencia-title">
                 <span class="expediente-urgencia-tema" style="display:block">${esc(exp.tema)}</span>
                 <span class="expediente-urgencia-label" style="display:block">${exp.numero ? esc(exp.numero) : 'Sin expediente'}</span>
+                ${exp.parque ? `<span class="expediente-parque-tag">${esc(exp.parque)}</span>` : ''}
                 <strong class="expediente-urgencia-dias" style="display:block">${esc(titulo)}</strong>
               </span>
               <span class="expediente-expand-icon" aria-hidden="true">
@@ -1957,6 +2057,7 @@
       const tema = document.getElementById('tema').value.trim();
       const area = document.getElementById('area').value;
       const responsable = document.getElementById('responsable').value;
+      const parque = document.getElementById('parque').value;
       const fechaInicio = document.getElementById('fechaInicio').value;
       const diasPlazo = parseInt(document.getElementById('diasPlazo').value);
       const notas = document.getElementById('notas').value.trim();
@@ -1989,6 +2090,7 @@
         exp.tema = tema;
         exp.area = area;
         exp.responsable = responsable;
+        exp.parque = parque;
         exp.fechaInicio = fechaInicio;
         exp.diasPlazo = diasPlazo;
       } else {
@@ -1998,6 +2100,7 @@
           tema,
           area,
           responsable,
+          parque,
           fechaInicio,
           diasPlazo,
           estado: 'activo',
