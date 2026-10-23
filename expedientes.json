@@ -108,7 +108,7 @@
     {
       "id": "1790642672179",
       "numero": "",
-      "tema": "COMISION - sAN",
+      "tema": "COMISION - San Antonio",
       "area": "Coordinación",
       "responsable": "Joaquín Fernández Castro",
       "fechaInicio": "2026-09-29",
@@ -117,6 +117,10 @@
         {
           "hora": "28/09 21:44",
           "texto": "mnsj con Rormando Miranda 22/09/2026"
+        },
+        {
+          "hora": "23/10/2026 10:39",
+          "texto": "Se descarta comisión. El lote pertenece a la Provincia de Salta -Sec. de Tierras y bienes del estado (Silvina Abiléz) viajara con la firma Grupo CN, para evaluar la situación de lote requerido"
         }
       ],
       "parque": "San Antonio"
@@ -302,5 +306,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-10-23T13:35:55.276Z"
+  "timestamp": "2026-10-23T13:39:15.301Z"
 }
