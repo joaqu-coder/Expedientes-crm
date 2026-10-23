@@ -123,7 +123,9 @@
           "texto": "Se descarta comisión. El lote pertenece a la Provincia de Salta -Sec. de Tierras y bienes del estado (Silvina Abiléz) viajara con la firma Grupo CN, para evaluar la situación de lote requerido"
         }
       ],
-      "parque": "San Antonio"
+      "parque": "San Antonio",
+      "estado": "archivado",
+      "fechaResolucion": "2026-10-23"
     },
     {
       "id": "1790640768114",
@@ -306,5 +308,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-10-23T13:39:15.301Z"
+  "timestamp": "2026-10-23T13:40:39.728Z"
 }
