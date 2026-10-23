@@ -44,22 +44,6 @@
       "parque": "Egpais"
     },
     {
-      "id": "1790643000605",
-      "numero": "",
-      "tema": "Intimaciones",
-      "area": "Coordinación",
-      "responsable": "Joaquín Fernández Castro",
-      "fechaInicio": "2026-09-29",
-      "diasPlazo": 1,
-      "intervenciones": [
-        {
-          "hora": "28/09 21:50",
-          "texto": "Repasar las intimaciones pendientes"
-        }
-      ],
-      "parque": "Egpais"
-    },
-    {
       "id": "1790642567420",
       "numero": "363-191417/2026-0",
       "tema": "Comisión RDLF",
@@ -312,5 +296,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-10-23T14:03:36.164Z"
+  "timestamp": "2026-10-23T14:04:11.222Z"
 }
