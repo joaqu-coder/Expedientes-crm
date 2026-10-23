@@ -4175,6 +4175,31 @@
       "contacto_mail_2": "",
       "fecha_ultimo_movimiento": "22/10/2026 13:29",
       "actualizado_en": "2026-10-22T16:29:32.348Z"
+    },
+    {
+      "id": "exp_mvkwa1eyy5p32",
+      "intervenciones": [
+        {
+          "hora": "23/10/2026 08:36",
+          "texto": "la firma presenta  constancia de inscripción de ARCA, INFORME de BCRA.Sub programa de evaluación, interviene (27/02/2026 - sin firma). Mesa de entrada solicita formularios via mail (22/04/2026).La firma no presenta formularios.",
+          "tipo": "manual"
+        }
+      ],
+      "nro_expediente": "363-249093/2025-0",
+      "nombre_empresa": "ING. DAVID FERNANDO KASEM",
+      "fecha_inicio": "29/12/2025",
+      "parque_industrial": "Rosario",
+      "rubro": "Alimenticia",
+      "superficie_solicitada_m2": 3000,
+      "actividad_empresa": "Planta procesadora de granos",
+      "situacion": "Desestimada",
+      "representante_nombre": "David Fernando Kasem",
+      "contacto_tel": "3815767744",
+      "contacto_tel_2": "",
+      "contacto_mail": "kasemdavid@hotmail.com",
+      "contacto_mail_2": "",
+      "fecha_ultimo_movimiento": "23/10/2026 08:36",
+      "actualizado_en": "2026-10-23T11:36:42.156Z"
     }
   ],
   "plazoDias": 20,
