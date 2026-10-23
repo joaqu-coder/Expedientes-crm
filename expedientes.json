@@ -217,23 +217,6 @@
       "parque": "Salta"
     },
     {
-      "id": "1791289488677",
-      "numero": "363-152102/2026-0",
-      "tema": "Solicitud de tarjeta de combustible",
-      "area": "Administración",
-      "responsable": "Karina Merino",
-      "fechaInicio": "2026-07-31",
-      "diasPlazo": 30,
-      "estado": "activo",
-      "intervenciones": [
-        {
-          "hora": "06/10/2026 09:24",
-          "texto": "Hable con Favio, en 15 días estará habilitada la tarjeta de la Amarok"
-        }
-      ],
-      "parque": "Egpais"
-    },
-    {
       "id": "1791986589392",
       "numero": "245 -77/2009-13",
       "tema": "OXITESA S.R.L Solicitud de escrituración",
@@ -319,5 +302,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-10-23T13:19:42.034Z"
+  "timestamp": "2026-10-23T13:33:26.181Z"
 }
