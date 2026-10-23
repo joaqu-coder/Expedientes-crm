@@ -101,6 +101,10 @@
         {
           "hora": "23/10/2026 10:18",
           "texto": "Recibo expte 23/10/2026. Se realiza la denuncia como primer punto."
+        },
+        {
+          "hora": "23/10/2026 10:44",
+          "texto": "Federico Cornejo realiza la denuncia de la Tc  YPF RUTA cod. (WMHL2QN)."
         }
       ],
       "parque": "Egpais"
@@ -308,5 +312,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-10-23T13:40:39.728Z"
+  "timestamp": "2026-10-23T13:44:07.592Z"
 }
