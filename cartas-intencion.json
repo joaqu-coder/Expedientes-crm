@@ -4200,6 +4200,31 @@
       "contacto_mail_2": "",
       "fecha_ultimo_movimiento": "23/10/2026 08:36",
       "actualizado_en": "2026-10-23T11:36:42.156Z"
+    },
+    {
+      "id": "exp_mvky28x6unwf8",
+      "intervenciones": [
+        {
+          "hora": "23/10/2026 09:26",
+          "texto": "La firma presenta informacion parcial por mail (22/09/2026 - Carta de intención, Excel, impacto ambiental). Mauricio Torres contador 387-4811088.",
+          "tipo": "manual"
+        }
+      ],
+      "nro_expediente": "363-158277/2026-0",
+      "nombre_empresa": "BRINDAR S.R.L",
+      "fecha_inicio": "14/07/2026",
+      "parque_industrial": "Rosario",
+      "rubro": "Acopio",
+      "superficie_solicitada_m2": 5000,
+      "actividad_empresa": "Depósito y logística de bebidas.",
+      "situacion": "En_tratamiento",
+      "representante_nombre": "Marcos González",
+      "contacto_tel": "3876408980",
+      "contacto_tel_2": "",
+      "contacto_mail": "",
+      "contacto_mail_2": "",
+      "fecha_ultimo_movimiento": "23/10/2026 09:26",
+      "actualizado_en": "2026-10-23T12:26:37.866Z"
     }
   ],
   "plazoDias": 20,
