@@ -84,7 +84,7 @@
     {
       "id": "1790642486016",
       "numero": "363-175815/2026-0",
-      "tema": "Mantenimiento Toyota Hiloux  LAN 097",
+      "tema": "CAMIONETA TOYOTA (LAN 097) - Solicitud de mantenimiento",
       "area": "Coordinación",
       "responsable": "Joaquín Fernández Castro",
       "fechaInicio": "2026-09-29",
@@ -97,6 +97,10 @@
         {
           "hora": "29/09 09:00",
           "texto": "Comunicación con Patricia por msj. Comenta que ya salieron los expedientes de Legales."
+        },
+        {
+          "hora": "23/10/2026 10:18",
+          "texto": "Recibo expte 23/10/2026. Se realiza la denuncia como primer punto."
         }
       ],
       "parque": "Egpais"
@@ -315,5 +319,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-10-23T13:08:33.683Z"
+  "timestamp": "2026-10-23T13:18:36.954Z"
 }
