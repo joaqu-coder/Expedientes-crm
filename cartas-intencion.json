@@ -4225,6 +4225,31 @@
       "contacto_mail_2": "",
       "fecha_ultimo_movimiento": "23/10/2026 09:26",
       "actualizado_en": "2026-10-23T12:26:37.866Z"
+    },
+    {
+      "id": "exp_mvkz7bgm3acf4",
+      "intervenciones": [
+        {
+          "hora": "23/10/2026 09:58",
+          "texto": "recibo expte el (23/10/2026). En la carta de intención presentada por la firna (OXYNOR), falta mail y dirección. Se adjunta un contacto: Sergio Escalante (3874422666).",
+          "tipo": "manual"
+        }
+      ],
+      "nro_expediente": "363-201445/2026-0",
+      "nombre_empresa": "PREVISIONES Y SERVICIOS INTEGRALES S.R.L",
+      "fecha_inicio": "13/10/2026",
+      "parque_industrial": "Salta",
+      "rubro": "Química",
+      "superficie_solicitada_m2": 1500,
+      "actividad_empresa": "Producción, almacenamiento, fraccionamiénte y distribución de gases industriales.",
+      "situacion": "En_tratamiento",
+      "representante_nombre": "Javier Enrique Rivero",
+      "contacto_tel": "",
+      "contacto_tel_2": "",
+      "contacto_mail": "",
+      "contacto_mail_2": "",
+      "fecha_ultimo_movimiento": "23/10/2026 09:58",
+      "actualizado_en": "2026-10-23T12:58:34.055Z"
     }
   ],
   "plazoDias": 20,
