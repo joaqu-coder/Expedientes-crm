@@ -168,7 +168,7 @@
       "area": "Coordinación",
       "responsable": "Joaquín Fernández Castro",
       "fechaInicio": "2026-07-31",
-      "diasPlazo": 30,
+      "diasPlazo": 1,
       "estado": "activo",
       "intervenciones": [
         {
@@ -302,5 +302,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-10-23T13:34:32.135Z"
+  "timestamp": "2026-10-23T13:35:30.304Z"
 }
