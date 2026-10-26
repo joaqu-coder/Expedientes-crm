@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#ffffff">
+<title>Design system · Expedientes CRM</title>
+<link rel="stylesheet" href="../public/design-system.css">
+<link rel="stylesheet" href="../public/ui-kit.css">
+<style>
+  /* Estilos propios de este documento. Solo tokens: si una página de la app
+     necesitara un color que no está acá, el que está mal es el token, no esta
+     hoja. */
+  body {
+    padding: var(--ds-padding-x) 16px 48px;
+    line-height: 1.5;
+  }
+  h1 { font-size: var(--ds-text-title); line-height: var(--ds-text-title-lh); margin: 8px 0 4px; font-weight: 700; }
+  h2 {
+    font-size: var(--ds-text-title); line-height: var(--ds-text-title-lh);
+    font-weight: 700; margin: 48px 0 12px; padding-top: 16px;
+    border-top: 1px solid var(--ds-border);
+  }
+  h3 {
+    font-size: var(--ds-text-subtitle); line-height: var(--ds-text-subtitle-lh);
+    font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+    margin: 24px 0 8px;
+  }
+  p, li { font-size: 14px; color: var(--ds-fg); }
+  .lead { color: var(--ds-fg-muted); font-size: 14px; margin: 0 0 16px; }
+  .meta { color: var(--ds-fg-muted); font-size: var(--ds-text-info); line-height: var(--ds-text-info-lh); }
+  code {
+    font-family: var(--ds-font-mono);
+    font-size: 12.5px;
+    background: var(--ds-surface-2);
+    border-radius: var(--ds-radius-nota);
+    padding: 1px 5px;
+    white-space: nowrap;
+  }
+  nav.indice {
+    display: flex; flex-wrap: wrap; gap: var(--ds-gap);
+    margin: 16px 0 0; padding: 0; list-style: none;
+  }
+  nav.indice a {
+    display: inline-flex; align-items: center; height: 38px; padding: 0 var(--ds-padding-x);
+    border-radius: var(--ds-radius-pill); background: var(--ds-surface-2);
+    color: var(--ds-fg); text-decoration: none; font-size: 14px;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: var(--ds-text-info); line-height: var(--ds-text-info-lh); margin: 8px 0 16px; }
+  th, td { text-align: left; vertical-align: top; padding: 8px 8px; border-bottom: 1px solid var(--ds-border); overflow-wrap: anywhere; }
+  th { font-size: 12px; font-weight: 700; color: var(--ds-fg-muted); text-transform: uppercase; letter-spacing: .04em; }
+  td code { font-size: 12px; white-space: normal; }
+  .muted { color: var(--ds-fg-muted); }
+  .sw {
+    display: inline-block; width: 18px; height: 18px; border-radius: var(--ds-radius-nota);
+    border: 1px solid var(--ds-border); vertical-align: -4px; margin-right: 6px;
+  }
+  .val { font-family: var(--ds-font-mono); font-variant-numeric: tabular-nums; color: var(--ds-fg); }
+  .grid { display: grid; gap: var(--ds-gap); grid-template-columns: 1fr; }
+  @media (min-width: 640px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+  .caja {
+    border: 1px solid var(--ds-border); border-radius: var(--ds-radius-card);
+    padding: var(--ds-card-pad); background: var(--ds-surface);
+  }
+  .fila { display: flex; flex-wrap: wrap; gap: var(--ds-gap); align-items: center; }
+  .fila-acciones { display: flex; gap: var(--ds-gap); align-items: stretch; }
+  .fila-acciones > .btn { flex: 1 1 0; min-width: 0; }
+  .etiqueta-variante {
+    font-size: 12px; color: var(--ds-fg-muted); margin: 0 0 4px;
+    font-family: var(--ds-font-mono);
+  }
+  .ejemplo { display: flex; flex-direction: column; gap: 4px; }
+  .escala-linea {
+    display: grid; gap: 8px; align-items: baseline;
+    grid-template-columns: minmax(0, 1fr); padding: 8px 0; border-bottom: 1px solid var(--ds-border);
+  }
+  @media (min-width: 640px) { .escala-linea { grid-template-columns: 160px 1fr; } }
+  .escala-linea .meta code { background: none; padding: 0; }
+  .aviso {
+    border: 1px solid var(--ds-warn); background: var(--ds-warn-bg);
+    color: var(--ds-warn); border-radius: var(--ds-radius-card);
+    padding: var(--ds-gap) var(--ds-padding-x); font-size: 13px;
+  }
+  .aviso p { color: var(--ds-fg); margin: 0; }
+  .aviso strong { color: var(--ds-fg); }
+  details summary { cursor: pointer; font-size: 14px; color: var(--ds-fg); padding: 8px 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <p class="meta">Expedientes CRM · documentación de diseño</p>
+  <h1>Botones, tipografía, colores y medidas</h1>
+  <p class="lead">
+    Los valores se leen en vivo de <code>public/design-system.css</code>: las tablas
+    de abajo no repiten números, así que no se desfasan cuando alguien cambia un token.
+    Los componentes son <code>public/ui-kit.css</code>. Esta página carga los dos archivos
+    reales, así que los ejemplos son la app, no un dibujo de ella.
+  </p>
+  <ul class="indice">
+    <li><a href="#capas">Cómo está armado</a></li>
+    <li><a href="#colores">Colores</a></li>
+    <li><a href="#tipografia">Tipografía</a></li>
+    <li><a href="#forma">Forma y medidas</a></li>
+    <li><a href="#botones">Botones</a></li>
+    <li><a href="#componentes">Otros componentes</a></li>
+    <li><a href="#movimiento">Movimiento</a></li>
+    <li><a href="#excepciones">Excepciones y deuda</a></li>
+    <li><a href="#verificar">Cómo verificar</a></li>
+  </ul>
+</header>
+
+<!-- ============================================================ -->
+<h2 id="capas">1. Cómo está armado</h2>
+
+<p>Las cinco pantallas (Seguimiento, Proyectos, Resoluciones, Parques y la landing) comparten
+dos hojas de estilo y un script de cabecera. Todo lo demás es propio de cada página.</p>
+
+<table>
+  <thead><tr><th>Archivo</th><th>Qué contiene</th><th>Cuándo se edita</th></tr></thead>
+  <tbody>
+    <tr><td><code>public/design-system.css</code></td><td>Los <strong>valores</strong>: paleta, tipografía, radios, medidas, movimiento.</td><td>Casi siempre acá.</td></tr>
+    <tr><td><code>public/ui-kit.css</code></td><td>Los <strong>componentes</strong>: <code>.btn</code> y variantes, barra de búsqueda, chips, barra inferior, tarjetas de listado, notas, formularios, tarjeta de confirmación.</td><td>Al crear un componente nuevo.</td></tr>
+    <tr><td><code>public/header.js</code></td><td>Header (título + ⋮), FAB «+», menú, iconos de acción y cableado de la búsqueda.</td><td>Al cambiar el header o un icono.</td></tr>
+    <tr><td><code>public/confirmar-cambios.js</code></td><td>La tarjeta «¿Desea guardar los cambios?». Solo arma el marcado; el estilo está en <code>ui-kit.css</code>.</td><td>Rara vez.</td></tr>
+  </tbody>
+</table>
+
+<p>Orden de carga en cada página, y el orden importa: sin <code>design-system.css</code> primero, las variables de
+<code>ui-kit.css</code> no resuelven.</p>
+
+<div class="caja"><code>&lt;link rel="stylesheet" href="/design-system.css"&gt;</code><br>
+<code>&lt;link rel="stylesheet" href="/ui-kit.css"&gt;</code><br>
+<code>&lt;style&gt; … lo propio de la página … &lt;/style&gt;</code></div>
+
+<h3>Tres capas de tokens</h3>
+<ol>
+  <li><strong>Primitivas</strong> (<code>--ds-c-*</code>): la paleta cruda, sin significado. Ninguna página ni <code>ui-kit.css</code> las usan.</li>
+  <li><strong>Semánticas</strong> (<code>--ds-accent</code>, <code>--ds-border</code>, <code>--ds-radius-button</code>…): qué significa cada valor. <em>Es la capa que se edita.</em></li>
+  <li><strong>Alias</strong> (<code>--accent</code>, <code>--fg</code>, <code>--primary</code>, <code>--gray-200</code>, <code>--c1</code>…): nombres viejos que las páginas siguen usando, apuntados a la capa semántica. No son una segunda fuente de verdad.</li>
+</ol>
+
+<h3>Herencia controlada</h3>
+<p>Una página puede desviarse de un token, pero solo redeclarando <strong>ese token</strong> en su propio
+<code>:root</code>, con un comentario que diga por qué. Nunca copiando la paleta. Cada desvío permitido se
+registra en <code>DESVIOS_PERMITIDOS</code> de <code>tests/ids.test.mjs</code>; uno que no esté en esa lista pone el test en rojo.</p>
+
+<h2 id="dondetocar">Dónde tocar</h2>
+<table>
+  <thead><tr><th>Querés cambiar…</th><th>Tocás</th><th>Archivos</th></tr></thead>
+  <tbody>
+    <tr><td>El color principal de toda la app</td><td><code>--ds-accent</code></td><td>1</td></tr>
+    <tr><td>El radio de todos los botones</td><td><code>--ds-radius-button</code></td><td>1</td></tr>
+    <tr><td>El alto de todos los controles</td><td><code>--ds-control-height</code></td><td>1</td></tr>
+    <tr><td>El fondo de las cinco pantallas</td><td><code>--ds-bg</code></td><td>1</td></tr>
+    <tr><td>Un estado (peligro, ok, pendiente)</td><td><code>--ds-danger</code>, <code>--ds-ok</code>, <code>--ds-warn</code></td><td>1</td></tr>
+  </tbody>
+</table>
+<p class="meta"><code>tests/ui.test.mjs</code> (<code>testUniformidad</code>) pisa estos tokens en caliente y comprueba que el cambio llegue a las cuatro apps.</p>
+
+<!-- ============================================================ -->
+<h2 id="colores">2. Colores</h2>
+
+<p>Los valores de la columna de la derecha son los que tiene el navegador ahora mismo. Si no aparece un valor
+(«sin cargar»), la hoja no se está leyendo.</p>
+
+<h3>Semánticos: el color de la marca y de las superficies</h3>
+<table>
+  <thead><tr><th>Token</th><th>Para qué</th><th>Valor</th></tr></thead>
+  <tbody>
+    <tr><td><code>--ds-accent</code></td><td>FAB, Guardar, Resolver, pestaña y ítem activo, anillo de foco</td><td><span class="sw" style="background:var(--ds-accent)"></span><span class="val" data-var="--ds-accent"></span></td></tr>
+    <tr><td><code>--ds-accent-fg</code></td><td>Texto sobre el acento</td><td><span class="sw" style="background:var(--ds-accent-fg)"></span><span class="val" data-var="--ds-accent-fg"></span></td></tr>
+    <tr><td><code>--ds-bg</code></td><td>Fondo de página</td><td><span class="sw" style="background:var(--ds-bg)"></span><span class="val" data-var="--ds-bg"></span></td></tr>
+    <tr><td><code>--ds-surface</code></td><td>Tarjetas, modales, menús</td><td><span class="sw" style="background:var(--ds-surface)"></span><span class="val" data-var="--ds-surface"></span></td></tr>
+    <tr><td><code>--ds-surface-2</code></td><td>Relleno de búsqueda, chips inactivos, campos</td><td><span class="sw" style="background:var(--ds-surface-2)"></span><span class="val" data-var="--ds-surface-2"></span></td></tr>
+    <tr><td><code>--ds-surface-nota</code></td><td>Cada nota del historial</td><td><span class="sw" style="background:var(--ds-surface-nota)"></span><span class="val" data-var="--ds-surface-nota"></span></td></tr>
+    <tr><td><code>--ds-tab-active</code></td><td>Chip o pestaña activa</td><td><span class="sw" style="background:var(--ds-tab-active)"></span><span class="val" data-var="--ds-tab-active"></span></td></tr>
+    <tr><td><code>--ds-border</code></td><td>Bordes de tarjetas, campos y botones de contorno</td><td><span class="sw" style="background:var(--ds-border)"></span><span class="val" data-var="--ds-border"></span></td></tr>
+    <tr><td><code>--ds-border-strong</code></td><td>Borde reforzado (uso bajo)</td><td><span class="sw" style="background:var(--ds-border-strong)"></span><span class="val" data-var="--ds-border-strong"></span></td></tr>
+    <tr><td><code>--ds-fg</code></td><td>Texto principal, rótulos, títulos</td><td><span class="sw" style="background:var(--ds-fg)"></span><span class="val" data-var="--ds-fg"></span></td></tr>
+    <tr><td><code>--ds-fg-muted</code></td><td>Respuestas, datos complementarios, fechas</td><td><span class="sw" style="background:var(--ds-fg-muted)"></span><span class="val" data-var="--ds-fg-muted"></span></td></tr>
+  </tbody>
+</table>
+
+<h3>Estados: tienen color a propósito</h3>
+<p>Codifican información. Quitarles el color no «normaliza» nada: borra el dato que transmite el badge.
+Cada uno tiene su tono de texto y un fondo suave.</p>
+<table>
+  <thead><tr><th>Estado</th><th>Texto</th><th>Fondo</th><th>Uso</th></tr></thead>
+  <tbody>
+    <tr><td>Peligro</td><td><span class="sw" style="background:var(--ds-danger)"></span><span class="val" data-var="--ds-danger"></span></td><td><span class="sw" style="background:var(--ds-danger-bg)"></span><span class="val" data-var="--ds-danger-bg"></span></td><td>Vencido, errores, Eliminar</td></tr>
+    <tr><td>Ok</td><td><span class="sw" style="background:var(--ds-ok)"></span><span class="val" data-var="--ds-ok"></span></td><td><span class="sw" style="background:var(--ds-ok-bg)"></span><span class="val" data-var="--ds-ok-bg"></span></td><td>Al día, activo</td></tr>
+    <tr><td>Advertencia</td><td><span class="sw" style="background:var(--ds-warn)"></span><span class="val" data-var="--ds-warn"></span></td><td><span class="sw" style="background:var(--ds-warn-bg)"></span><span class="val" data-var="--ds-warn-bg"></span></td><td>Pendiente, por vencer, «A revisar»</td></tr>
+    <tr><td>Inactivo</td><td><span class="sw" style="background:var(--ds-idle)"></span><span class="val" data-var="--ds-idle"></span></td><td><span class="sw" style="background:var(--ds-idle-bg)"></span><span class="val" data-var="--ds-idle-bg"></span></td><td>Sin actividad, cerrado</td></tr>
+  </tbody>
+</table>
+
+<h3>Categorías y gráficos</h3>
+<p>Las categorías (temas, rubros) usan <code>--c1</code> a <code>--c6</code>, cada una con su
+<code>-bg</code>. Los gráficos usan <code>--s1</code> a <code>--s8</code>, en orden fijo: el lector
+asocia el color a un parque, así que no se cicla ni se reordena.</p>
+<div class="grid grid-2">
+  <div class="caja">
+    <p class="meta">Categorías</p>
+    <table>
+      <tbody>
+        <tr><td><code>--c1</code></td><td><span class="sw" style="background:var(--c1)"></span><span class="val" data-var="--c1"></span></td></tr>
+        <tr><td><code>--c2</code></td><td><span class="sw" style="background:var(--c2)"></span><span class="val" data-var="--c2"></span></td></tr>
+        <tr><td><code>--c3</code></td><td><span class="sw" style="background:var(--c3)"></span><span class="val" data-var="--c3"></span></td></tr>
+        <tr><td><code>--c4</code></td><td><span class="sw" style="background:var(--c4)"></span><span class="val" data-var="--c4"></span></td></tr>
+        <tr><td><code>--c5</code></td><td><span class="sw" style="background:var(--c5)"></span><span class="val" data-var="--c5"></span></td></tr>
+        <tr><td><code>--c6</code></td><td><span class="sw" style="background:var(--c6)"></span><span class="val" data-var="--c6"></span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="caja">
+    <p class="meta">Gráficos (orden fijo)</p>
+    <table>
+      <tbody>
+        <tr><td><code>--s1</code></td><td><span class="sw" style="background:var(--s1)"></span><span class="val" data-var="--s1"></span></td></tr>
+        <tr><td><code>--s2</code></td><td><span class="sw" style="background:var(--s2)"></span><span class="val" data-var="--s2"></span></td></tr>
+        <tr><td><code>--s3</code></td><td><span class="sw" style="background:var(--s3)"></span><span class="val" data-var="--s3"></span></td></tr>
+        <tr><td><code>--s4</code></td><td><span class="sw" style="background:var(--s4)"></span><span class="val" data-var="--s4"></span></td></tr>
+        <tr><td><code>--s5</code></td><td><span class="sw" style="background:var(--s5)"></span><span class="val" data-var="--s5"></span></td></tr>
+        <tr><td><code>--s6</code></td><td><span class="sw" style="background:var(--s6)"></span><span class="val" data-var="--s6"></span></td></tr>
+        <tr><td><code>--s7</code></td><td><span class="sw" style="background:var(--s7)"></span><span class="val" data-var="--s7"></span></td></tr>
+        <tr><td><code>--s8</code></td><td><span class="sw" style="background:var(--s8)"></span><span class="val" data-var="--s8"></span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<h3>Sin color de marca</h3>
+<p>Desde el 2026-10-19 no hay índigo ni ámbar como identidad. <code>--accent</code> es la tinta del texto y el
+fondo es blanco en las cinco pantallas. <code>theme-color</code> es <code>#ffffff</code> en cada página y en
+<code>manifest.json</code>: es lo que pinta la barra de estado del teléfono. Si se agrega una página, su meta va en blanco.</p>
+
+<details>
+  <summary>Primitivas (no usar fuera de <code>design-system.css</code>)</summary>
+  <table>
+    <tbody>
+      <tr><td><code>--ds-c-ink</code> / <code>--ds-c-ink-soft</code></td><td>Tinta y gris de texto secundario</td></tr>
+      <tr><td><code>--ds-c-gray-50</code> … <code>--ds-c-gray-300</code></td><td>Escala de grises</td></tr>
+      <tr><td><code>--ds-c-red</code>, <code>--ds-c-green</code>, <code>--ds-c-amber</code>, <code>--ds-c-clay</code>, <code>--ds-c-stone</code>, <code>--ds-c-teal</code>, <code>--ds-c-periwinkle</code></td><td>Colores de estado y categoría, cada uno con su <code>-soft</code></td></tr>
+      <tr><td><code>--ds-c-cat-1</code> … <code>--ds-c-cat-8</code></td><td>Serie de gráficos</td></tr>
+    </tbody>
+  </table>
+</details>
+
+<!-- ============================================================ -->
+<h2 id="tipografia">3. Tipografía</h2>
+
+<h3>Familia</h3>
+<p>Un solo stack para las cinco pantallas. El monoespaciado no existe: <code>--ds-font-mono</code> apunta al mismo
+stack y los números alineados salen de <code>font-variant-numeric: tabular-nums</code>.</p>
+<div class="caja">
+  <p class="meta"><code>--ds-font-sans</code></p>
+  <p class="val" data-stack="--ds-font-sans" style="font-size:14px; word-break:break-word;"></p>
+  <p style="font-size:24px; font-weight:600; margin:8px 0 0;">Expediente 363-1254/2025-01 · Güemes · Ñandú</p>
+  <p style="font-size:16px; margin:4px 0 0;">Aa Bb Cc 0123456789 · áéíóú ñ</p>
+</div>
+
+<h3>Escala de texto</h3>
+<p>Tres niveles para fichas (px con su alto de línea). Lo que decide el color es el rol, no el tamaño.</p>
+<div class="escala-linea">
+  <div class="meta"><code>--ds-text-title</code><br>18 / 24, negrita</div>
+  <div style="font-size:var(--ds-text-title); line-height:var(--ds-text-title-lh); font-weight:700;">Nombre de la empresa o expediente</div>
+</div>
+<div class="escala-linea">
+  <div class="meta"><code>--ds-text-subtitle</code><br>14 / 20, mayúsculas, negrita</div>
+  <div style="font-size:var(--ds-text-subtitle); line-height:var(--ds-text-subtitle-lh); font-weight:700; text-transform:uppercase; letter-spacing:.04em;">Expediente · Contacto · Historial</div>
+</div>
+<div class="escala-linea">
+  <div class="meta"><code>--ds-text-info</code><br>13 / 18, rótulo en negrita, dato en <span class="muted">gris</span></div>
+  <div style="font-size:var(--ds-text-info); line-height:var(--ds-text-info-lh);"><strong>Parque</strong> <span class="muted">Güemes · Manzana 4</span></div>
+</div>
+
+<h3>Tamaños de componentes</h3>
+<table>
+  <thead><tr><th>Token</th><th>Valor</th><th>Dónde</th></tr></thead>
+  <tbody>
+    <tr><td><code>--ds-field-label-size</code></td><td class="val">14px, 600</td><td>Rótulo de formulario</td></tr>
+    <tr><td><code>--ds-field-font-size</code></td><td class="val">16px</td><td>Texto en campos. 16px es el mínimo para que iOS no haga zoom al enfocar.</td></tr>
+    <tr><td><code>--ds-search-font-size</code></td><td class="val">14px</td><td>Búsqueda. Decisión del usuario (2026-10-20); queda debajo de 16px a sabiendas.</td></tr>
+    <tr><td><code>--ds-list-card-title</code></td><td class="val">15px, 700</td><td>Nombre en tarjeta de listado</td></tr>
+    <tr><td><code>--ds-list-card-small</code></td><td class="val">11.5px</td><td>Identificador en tarjeta de listado</td></tr>
+    <tr><td><code>--ds-list-card-estado</code></td><td class="val">12px, 600</td><td>Línea de estado en tarjeta de listado</td></tr>
+  </tbody>
+</table>
+
+<h3>Botones, chips y encabezado</h3>
+<table>
+  <thead><tr><th>Elemento</th><th>Tamaño y peso</th></tr></thead>
+  <tbody>
+    <tr><td><code>.btn</code></td><td class="val">14px, 500, alto de línea 1.2</td></tr>
+    <tr><td><code>.app-tab</code> (chip)</td><td class="val">14px, 400; el contador va en 600</td></tr>
+    <tr><td><code>.cc-title</code> / <code>.cc-msg</code></td><td class="val">17px, 600 / 14px, 1.5</td></tr>
+    <tr><td>Título del header</td><td class="val">clamp(22px, 6vw, 28px), 600, letter-spacing −0.02em</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="forma">4. Forma y medidas</h2>
+
+<h3>Radios</h3>
+<div class="grid grid-2">
+  <div class="caja ejemplo">
+    <div class="etiqueta-variante"><code>--ds-radius-pill</code> 999px · botones, chips, búsqueda</div>
+    <div class="fila"><span class="btn btn-outline" style="cursor:default">Pastilla</span></div>
+  </div>
+  <div class="caja ejemplo">
+    <div class="etiqueta-variante"><code>--ds-radius-card</code> 10px · tarjetas, cuadros de confirmación</div>
+    <div style="height:40px; border:1px solid var(--ds-border); border-radius:var(--ds-radius-card);"></div>
+  </div>
+  <div class="caja ejemplo">
+    <div class="etiqueta-variante"><code>--ds-radius-panel</code> 12px · menús y paneles</div>
+    <div style="height:40px; border:1px solid var(--ds-border); border-radius:var(--ds-radius-panel);"></div>
+  </div>
+  <div class="caja ejemplo">
+    <div class="etiqueta-variante"><code>--ds-radius-nota</code> 6px · notas del historial</div>
+    <div style="height:40px; background:var(--ds-surface-nota); border-radius:var(--ds-radius-nota);"></div>
+  </div>
+</div>
+
+<h3>Medidas</h3>
+<table>
+  <thead><tr><th>Token</th><th>Valor</th><th>Para qué</th></tr></thead>
+  <tbody>
+    <tr><td><code>--ds-control-height</code></td><td class="val">40px</td><td>Alto de botones y controles</td></tr>
+    <tr><td><code>--ds-touch-min</code></td><td class="val">44px</td><td>Área táctil mínima. El botón mide 40 y un <code>::after</code> le estira el área a 44 en pantallas táctiles, sin cambiar lo que se ve.</td></tr>
+    <tr><td><code>--ds-search-height</code></td><td class="val">48px</td><td>Barra de búsqueda</td></tr>
+    <tr><td><code>--ds-field-min-height</code></td><td class="val">44px</td><td>Campo de formulario</td></tr>
+    <tr><td><code>--ds-textarea-min-height</code></td><td class="val">70px</td><td>Área de texto</td></tr>
+    <tr><td><code>--ds-content-max</code></td><td class="val">960px</td><td>Ancho máximo del contenido en escritorio, igual en las cuatro apps</td></tr>
+    <tr><td><code>--ds-icon-size</code></td><td class="val">18px</td><td>Icono dentro de un botón</td></tr>
+    <tr><td><code>--ds-gap</code></td><td class="val">8px</td><td>Separación entre elementos de una fila</td></tr>
+    <tr><td><code>--ds-padding-x</code></td><td class="val">14px</td><td>Padding horizontal de botones, chips y tarjetas</td></tr>
+    <tr><td><code>--ds-list-card-pad-y</code> / <code>-x</code></td><td class="val">13px / 14px</td><td>Relleno de tarjeta de listado</td></tr>
+    <tr><td><code>--ds-card-pad</code></td><td class="val">18px</td><td>Relleno de la tarjeta de confirmación</td></tr>
+    <tr><td><code>--ds-z-confirm</code> · <code>--ds-scrim-alpha</code></td><td class="val">30 · 55%</td><td>Capa y velo de la tarjeta de confirmación</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="botones">5. Botones</h2>
+
+<p>Un solo componente, <code>.btn</code>, con una variante por <strong>tipo de acción</strong>. La variante se
+nombra por rol, no por el texto del botón: «Listo» o «Aceptar» necesitan un rol igual. Lo que garantiza que las
+cinco acciones se vean igual en las cuatro apps es <code>testUniformidad()</code>.</p>
+
+<h3>Ejemplos</h3>
+<div class="caja">
+  <p class="etiqueta-variante">fila de acciones · cada botón con <code>btn-grow</code></p>
+  <div class="fila-acciones">
+    <button class="btn btn-primary btn-grow" type="button">
+      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"></path><path d="M17 21v-8H7v8M7 3v5h8"></path></svg>
+      Guardar
+    </button>
+    <button class="btn btn-secondary btn-grow" type="button">
+      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+      Cancelar
+    </button>
+    <button class="btn btn-danger btn-grow" type="button">
+      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M10 11v6M14 11v6"></path></svg>
+      Eliminar
+    </button>
+  </div>
+</div>
+
+<div class="caja" style="margin-top:var(--ds-gap);">
+  <p class="etiqueta-variante">las cinco acciones</p>
+  <div class="fila">
+    <button class="btn btn-primary" type="button">Guardar</button>
+    <button class="btn btn-success" type="button">Resolver</button>
+    <button class="btn btn-outline" type="button">Editar</button>
+    <button class="btn btn-secondary" type="button">Cancelar</button>
+    <button class="btn btn-danger" type="button">Eliminar</button>
+  </div>
+</div>
+
+<div class="caja" style="margin-top:var(--ds-gap);">
+  <p class="etiqueta-variante">estados: deshabilitado y foco con teclado (Tab)</p>
+  <div class="fila">
+    <button class="btn btn-primary" type="button" disabled>Guardar</button>
+    <button class="btn btn-outline" type="button">Editar</button>
+  </div>
+</div>
+
+<h3>Variantes por acción</h3>
+<table>
+  <thead><tr><th>Clase</th><th>Acción</th><th>Aspecto</th><th>Icono</th><th>Uso</th></tr></thead>
+  <tbody>
+    <tr><td><code>.btn-primary</code></td><td>Guardar</td><td>Relleno con <code>--ds-accent</code></td><td><code>guardar</code></td><td>Acción principal de un formulario</td></tr>
+    <tr><td><code>.btn-success</code></td><td>Resolver</td><td>Relleno con el acento (no verde)</td><td><code>resolver</code></td><td>Cerrar o resolver un registro. Se distingue de Editar sin ser verde.</td></tr>
+    <tr><td><code>.btn-outline</code></td><td>Editar</td><td>Contorno, fondo transparente</td><td><code>editar</code></td><td>Entrar en modo edición. Siempre <code>btn-outline</code>, en las cuatro apps.</td></tr>
+    <tr><td><code>.btn-secondary</code></td><td>Cancelar</td><td>Contorno sobre <code>--ds-surface</code></td><td><code>cancelar</code></td><td>Salir sin guardar</td></tr>
+    <tr><td><code>.btn-danger</code></td><td>Eliminar</td><td>Contorno rojo, no rojo pleno</td><td><code>eliminar</code></td><td>Baja. Se deshace con el toast, no con un confirm bloqueante.</td></tr>
+  </tbody>
+</table>
+
+<h3>Base y modificadores</h3>
+<table>
+  <tbody>
+    <tr><td><code>.btn</code></td><td>Alto 40px (<code>--ui-control-height</code>), padding horizontal 14px, radio pastilla, texto 14px/500, gap 8px. Sin ancho fijo.</td></tr>
+    <tr><td><code>.btn-grow</code></td><td><code>flex: 1 1 0</code>. Todos los botones de una fila lo llevan: si no, el de «Eliminar» queda más ancho que «Editar».</td></tr>
+    <tr><td><code>.btn-full</code></td><td>Ancho 100%, para botones que ocupan una línea entera.</td></tr>
+    <tr><td><code>:active</code></td><td><code>scale(.98)</code>. Se apaga con <code>prefers-reduced-motion</code>.</td></tr>
+    <tr><td><code>:disabled</code> / <code>[aria-disabled="true"]</code></td><td>Opacidad 50%, cursor no permitido, sin transformación.</td></tr>
+    <tr><td><code>:focus-visible</code></td><td>Contorno de 2px en <code>--ui-accent</code>, separado 2px.</td></tr>
+  </tbody>
+</table>
+
+<h3>Reglas</h3>
+<ul>
+  <li>El tamaño <strong>nunca</strong> cambia entre variantes. Eliminar mide lo mismo que Guardar.</li>
+  <li>Editar es siempre <code>btn-outline</code>. No se alterna según el estado del registro.</li>
+  <li>El icono lo pone <code>HeaderGlobal.icono(nombre)</code>, no un SVG escrito a mano en el HTML. Iconos disponibles: <code>guardar</code>, <code>cancelar</code>, <code>eliminar</code>, <code>editar</code>, <code>resolver</code>, <code>reabrir</code>, <code>buscar</code>. Trazo de 2px, dibujados como Lucide.</li>
+  <li>Si una acción no encaja en las cinco, se agrega variante por rol en <code>ui-kit.css</code> usando solo tokens, y se suma a <code>testUniformidad()</code>.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="componentes">6. Otros componentes</h2>
+
+<h3>Barra de búsqueda</h3>
+<div class="caja">
+  <div class="search-bar">
+    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+    <input class="search-input" type="search" placeholder="Buscar expediente, tema o área">
+    <button class="search-clear" type="button" aria-label="Limpiar la búsqueda"></button>
+  </div>
+  <p class="meta" style="margin:8px 0 0;">Pastilla de <code>--ds-search-height</code>, relleno <code>--ds-surface-2</code>. Al enfocar pasa a blanco con borde.</p>
+</div>
+
+<h3>Chips (pestañas y filtros)</h3>
+<div class="caja">
+  <div class="app-tabs">
+    <button class="app-tab active" type="button">Activos <span class="count">12</span></button>
+    <button class="app-tab" type="button">Archivo <span class="count">87</span></button>
+    <button class="app-tab" type="button">Todos</button>
+  </div>
+  <p class="meta" style="margin:8px 0 0;">Activo: <code>--ds-tab-active</code> con texto oscuro. Inactivo: <code>--ds-surface-2</code>. Altura 38px; el área táctil llega a 44px.</p>
+</div>
+
+<h3>Campos de formulario</h3>
+<div class="caja">
+  <div class="field">
+    <label for="ej-campo">Tema</label>
+    <input id="ej-campo" type="text" value="Requerimiento">
+  </div>
+  <div class="field" style="margin-top:var(--ds-gap);">
+    <label for="ej-obs">Observaciones</label>
+    <textarea id="ej-obs">Texto de ejemplo.</textarea>
+  </div>
+  <p class="meta" style="margin:8px 0 0;">Rótulos (<code>.field label</code>) en 14px/600 y <code>--ds-fg</code>. Campos sobre <code>--ds-field-bg</code>, radio 7px, borde <code>--ds-field-border</code>. Los estados de error y válido siguen en cada app: son la única excepción.</p>
+</div>
+
+<h3>Tarjeta de listado</h3>
+<div class="caja">
+  <button class="ui-card" type="button">
+    <div class="ui-card-title">Forte Industrial S.A.</div>
+    <div class="ui-card-id">EXP 363-1254/2025-01 · Parque Güemes</div>
+    <div class="ui-card-estado is-warn"><span class="ui-dot"></span> Vence en 3 días hábiles</div>
+  </button>
+  <p class="meta" style="margin:8px 0 0;">El color del estado sale de <code>is-ok</code>, <code>is-warn</code> o <code>is-idle</code>. El punto (<code>.ui-dot</code>) toma el color del texto.</p>
+</div>
+
+<h3>Notas del historial</h3>
+<div class="caja">
+  <div class="notas-seccion">
+    <div class="notas-header">Notas (2)</div>
+    <div class="notas-list">
+      <div class="nota-item"><span class="nota-hora">22/10/2026 · 10:14</span><div class="nota-texto">Se llamó al responsable; pide plazo hasta el viernes.</div></div>
+      <div class="nota-item"><span class="nota-hora">20/10/2026 · 16:02</span><div class="nota-texto">Expediente recibido en mesa de entradas.</div></div>
+    </div>
+  </div>
+</div>
+
+<h3>Tarjeta de confirmación</h3>
+<p class="meta">Se arma con <code>ConfirmarCambios.pedir()</code>. Acá se ve la tarjeta sola, sin velo, para leer el estilo.</p>
+<div class="caja" style="max-width:420px;">
+  <div class="cc-card" style="box-shadow:none; max-width:none;">
+    <p class="cc-title">¿Desea guardar los cambios?</p>
+    <p class="cc-msg">Hay texto sin guardar en este expediente.</p>
+    <div class="cc-actions">
+      <button class="btn btn-primary" type="button">Guardar</button>
+      <button class="btn btn-secondary" type="button">Descartar</button>
+      <button class="btn btn-outline" type="button">Seguir editando</button>
+    </div>
+  </div>
+</div>
+
+<h3>Barra inferior de navegación</h3>
+<p>Cuatro ítems fijos al pie, uno activo (<code>aria-current="page"</code>). El ícono activo va sobre una
+pastilla de <code>--ds-accent</code> al 16%. La barra mide lo mismo en las cinco páginas (56px) y se
+nombra con <code>view-transition-name</code> para que no se desvanezca al cambiar de pantalla. El
+marcado se repite en cada HTML a propósito, porque cada pantalla es un documento propio.</p>
+
+<h3>Header y FAB</h3>
+<p><code>HeaderGlobal.init()</code> arma el header, el menú ⋮ y el FAB «+» en las cuatro apps. Son lo único que
+tiene que verse igual en todas: el ⋮ es de 48×48 a 16px del borde derecho, y el FAB es un círculo de 56px a 16px del
+borde derecho, con el acento de fondo, a 76px del fondo más el área segura del teléfono. Va en <code>z-index:14</code>,
+por debajo de los modales.</p>
+
+<!-- ============================================================ -->
+<h2 id="movimiento">7. Movimiento</h2>
+<table>
+  <tbody>
+    <tr><td><code>--ds-transition</code></td><td class="val">160ms ease</td><td>Cambios de color y fondo en botones, chips, tarjetas</td></tr>
+    <tr><td><code>--ds-transition-pantalla</code></td><td class="val">220ms</td><td>Cambio de pantalla entre documentos (View Transitions): el contenido se desvanece y la pantalla nueva sube 8px. La barra inferior no se mueve.</td></tr>
+  </tbody>
+</table>
+<p>Todo movimiento se apaga con <code>prefers-reduced-motion: reduce</code>. La regla de View Transitions va
+inline en el <code>&lt;head&gt;</code> de cada página, no en este archivo: una hoja externa llega tarde a la decisión del
+navegador y la animación salía en 5 de 8 navegaciones.</p>
+
+<!-- ============================================================ -->
+<h2 id="excepciones">8. Excepciones y deuda conocida</h2>
+
+<p>Lo que no cumple la regla, con el archivo donde está. Cada uno es un candidato a token; ninguno rompe nada hoy.</p>
+
+<table>
+  <thead><tr><th>Dónde</th><th>Qué</th><th>Qué haría falta</th></tr></thead>
+  <tbody>
+    <tr><td><code>seguimiento.html</code></td><td><code>--orange: #f97316</code> (desvío permitido)</td><td>Nada. Está en <code>DESVIOS_PERMITIDOS</code>.</td></tr>
+    <tr><td><code>seguimiento.html</code></td><td>Ocho colores hex del semáforo de urgencia (<code>--urgencia-rojo/naranja/amarillo/verde-bg/text</code>) definidos en su <code>:root</code></td><td>Pasarlos a <code>design-system.css</code> como estados semánticos.</td></tr>
+    <tr><td><code>header.js</code></td><td>Velo del modal de clave <code>rgba(0,0,0,.45)</code>; tamaños 12, 12.5 y 13.5px; FAB 56px y menú 48px</td><td>Velo: usar <code>--ds-scrim-alpha</code>. Tamaños: tokens de escala. FAB y menú: tokens de medida.</td></tr>
+    <tr><td><code>proyectos.html</code></td><td>Badge <code>.pill-n</code> con <code>color: #fff</code> y 10.5px</td><td>Texto sobre <code>--ds-danger</code>: <code>--ds-accent-fg</code>; tamaño de la escala.</td></tr>
+    <tr><td><code>ui-kit.css</code></td><td>Sin colores literales (lo exige <code>tests/ids.test.mjs</code>). <strong>Sí</strong> tiene medidas literales: <code>.btn</code> 14px/500, alto de chip 38px, búsqueda 28px en el botón de limpiar, iconos 16 y 20px, punto de 8px, <code>.cc-title</code> 17px.</td><td>Tokens para: alto de chip, tamaño del botón y del título de confirmación. El comentario del archivo dice «ni un valor literal»; hoy es más exacto decir «ni un color literal».</td></tr>
+    <tr><td>Fichas de las cuatro apps</td><td>La escala <code>--ds-text-*</code> se aplicó a Proyectos, Resoluciones, Parques (fichas) y a la tarjeta expandida de Seguimiento. El resto de las páginas usa tamaños sueltos (10.5, 11, 12.5, 26px…).</td><td>Migrar el resto por pantalla, con su test de escala.</td></tr>
+    <tr><td>Barra inferior</td><td>Duplicada en las cinco páginas; el alto de 56px no tiene token</td><td>Mover el marcado y el estilo a <code>ui-kit.css</code> cuando se resuelva el tema de duplicados (ver CLAUDE.md, deuda de <code>sync.js</code>).</td></tr>
+    <tr><td><code>--c1</code> (índigo) y <code>--c3</code>/<code>--warn</code> (ámbar)</td><td>Los dos colores que quedan de la paleta vieja</td><td>Son residuales a propósito: codifican información (categoría, advertencia). Si se cambian, tienen que seguir distinguiéndose de los otros cinco.</td></tr>
+    <tr><td><code>--ds-font-mono</code></td><td>Es igual a <code>--ds-font-sans</code>: el token existe para no reescribir las páginas</td><td>Ninguna acción; separarlo sería un cambio de diseño.</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="verificar">9. Cómo verificar un cambio</h2>
+<ul>
+  <li><code>npm run test:ids</code>: rápido, sin navegador. Revisa que las cinco páginas carguen las dos hojas en orden, que <code>ui-kit.css</code> no tenga colores literales y que ninguna página redeclare un token fuera de <code>DESVIOS_PERMITIDOS</code>.</li>
+  <li><code>npm run test:ui</code>: <code>testUniformidad()</code> pisa <code>--ds-accent</code>, <code>--ds-radius-button</code>, <code>--ds-control-height</code>, <code>--ds-bg</code> y <code>--ds-fg</code> en caliente, y pregunta al navegador qué pinta. Si una página clava un color, esa página no se mueve y el test la nombra.</li>
+  <li>Un cambio de token se revisa abriendo las cinco pantallas, en claro, en escritorio y en celular (390px). Un test que lee el CSS dice que el token existe; no dice que se vea.</li>
+</ul>
+
+<p class="meta" style="margin-top:32px;">Última revisión de los valores: rama <code>claude/kind-galileo-9wauk5</code>. Las tablas de valores son live; las de excepciones son un registro a fecha de esta revisión.</p>
+
+<script>
+  /* Rellena cada [data-var] con el valor que el navegador resuelve para ese
+     token. Si la hoja no cargó, lo dice en vez de mostrar un valor vacío. */
+  (function () {
+    var root = getComputedStyle(document.documentElement);
+    document.querySelectorAll("[data-var]").forEach(function (el) {
+      var v = root.getPropertyValue(el.getAttribute("data-var")).trim();
+      el.textContent = v || "(sin cargar)";
+    });
+    document.querySelectorAll("[data-stack]").forEach(function (el) {
+      var v = root.getPropertyValue(el.getAttribute("data-stack")).trim();
+      el.textContent = v || "(sin cargar)";
+    });
+  })();
+</script>
+</body>
+</html>
