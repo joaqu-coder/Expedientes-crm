@@ -377,10 +377,10 @@ async function testMenoresSeguimiento() {
 
   // 3. Deshacer actúa sobre el expediente de hoy, no sobre una copia vieja.
   await sembrar([{ ...base, id: 'u1', tema: 'Para resolver' }]);
-  await page.evaluate(() => { marcarResuelto('u1'); expedientes = JSON.parse(JSON.stringify(expedientes)); }); // llega una descarga
+  await page.evaluate(() => { marcarResuelto('u1'); finalMotivo.value = 'm'; confirmarFinal(); expedientes = JSON.parse(JSON.stringify(expedientes)); }); // llega una descarga
   await page.click('#toastAccion');
   ok(await page.evaluate(() => expedientes[0].estado) === 'activo', 'Deshacer de Resolver funciona aunque la lista se haya reemplazado');
-  await page.evaluate(() => { cambiarPestana('archivados'); cambiarPestana('activos'); marcarResuelto('u1'); reabrirExpediente('u1'); expedientes = JSON.parse(JSON.stringify(expedientes)); });
+  await page.evaluate(() => { cambiarPestana('archivados'); cambiarPestana('activos'); marcarResuelto('u1'); finalMotivo.value = 'm'; confirmarFinal(); reabrirExpediente('u1'); expedientes = JSON.parse(JSON.stringify(expedientes)); });
   await page.click('#toastAccion');
   ok(await page.evaluate(() => expedientes[0].estado) === 'archivado', 'Deshacer de Reabrir funciona aunque la lista se haya reemplazado');
 
@@ -765,10 +765,10 @@ async function testMovilTactil() {
       anchos: cajas.map((b) => Math.round(b.width))
     };
   });
-  ok(filaAcciones.cantidad === 2 && filaAcciones.mismaLinea,
-     `Resolver y Editar van en la misma fila (${filaAcciones.cantidad} botones, misma línea=${filaAcciones.mismaLinea})`);
+  ok(filaAcciones.cantidad === 3 && filaAcciones.mismaLinea,
+     `Resolver, Archivar y Editar van en la misma fila (${filaAcciones.cantidad} botones, misma línea=${filaAcciones.mismaLinea})`);
   ok(Math.max(...filaAcciones.anchos) - Math.min(...filaAcciones.anchos) <= 1,
-     `Resolver y Editar miden lo mismo de ancho (${filaAcciones.anchos.join(' / ')}px)`);
+     `Resolver, Archivar y Editar miden lo mismo de ancho (${filaAcciones.anchos.join(' / ')}px)`);
 
   // Distancias pedidas (2026-10-21): 0,5 mm entre el ⋮ y la búsqueda (2px) y
   // 16px entre los chips y las tarjetas, sin línea divisoria. Subió de 8 a 16
@@ -902,7 +902,7 @@ async function testTecladoYFoco() {
   for (const sel of ['#btnMenu', '#fabNuevo', '#modalClose', '#configClose']) {
     ok(!!(await page.locator(sel).getAttribute('aria-label')), `${sel} tiene aria-label`);
   }
-  ok((await page.locator('[role="dialog"], [role="alertdialog"]').count()) === 3, 'los 3 modales tienen role dialog/alertdialog');
+  ok((await page.locator('[role="dialog"], [role="alertdialog"]').count()) === 4, 'los 4 modales tienen role dialog/alertdialog');
 
   // Abrir con teclado: la tarjeta es un botón real
   const boton = page.locator('.expediente-header-urgencia').first();
@@ -987,6 +987,8 @@ async function testFlujo() {
   // Resolver: toast con Deshacer, sin popup bloqueante
   await expandir(page, 'Primero');
   await page.locator('.expediente-card-new', { hasText: 'Primero' }).locator('button', { hasText: 'Resolver' }).click();
+  await page.fill('#finalMotivo', 'Cumplido');
+  await page.click('#finalConfirmar');
   ok(await toast.isVisible() && /archivado/.test(await toast.textContent()), 'Resolver muestra un toast "archivado"');
   ok(!(await page.locator('#alertOverlay').isVisible()), 'Resolver ya no abre un popup bloqueante');
   ok((await page.locator('.expediente-card-new').count()) === 1, 'el expediente salió de Activos');
@@ -3565,6 +3567,154 @@ async function testTransiciones() {
   server.close();
 }
 
+// Resolver / Archivar con motivo, devolución a Proyectos y rescate (2026-10-27).
+async function testResolverArchivar() {
+  console.log('\n=== SEGUIMIENTO ↔ PROYECTOS: RESOLVER, ARCHIVAR Y RESCATAR ===');
+  const PUERTO = 8780;
+  const HTML_PROY = fs.readFileSync(path.join(RAIZ, 'public/proyectos.html'), 'utf8');
+  const NRO_CARTA = '363-166383/2026-0';
+  const base = { area: 'Jurídica', responsable: 'Ana', estado: 'activo', intervenciones: [{ hora: '01/10/2026 09:00', texto: 'Nota previa' }], fechaInicio: '2099-01-05', diasPlazo: 30 };
+  const servidor = {
+    sha: 1, posts: [], fuerza409: false,
+    datos: { expedientes: [
+      { ...base, id: 'carta', numero: NRO_CARTA, tema: 'SYRES S.R.L - Comercial', fechaInicio: '2026-01-05' },
+      { ...base, id: 'otra', numero: '363-9/2026-0', tema: 'Camioneta' },
+      { ...base, id: 'otra2', numero: '363-10/2026-0', tema: 'Obra red' }
+    ], areas: ['Jurídica'], responsables: ['Ana'], parques: [] }
+  };
+  const hoyTxt = '01/01/2099 00:00';
+  const carta = { id: 'c1', nro_expediente: NRO_CARTA, nombre_empresa: 'SYRES S.R.L', fecha_inicio: '05/01/2026',
+    parque_industrial: 'Salta', rubro: 'Manufactura', situacion: 'En_tratamiento', fecha_ultimo_movimiento: hoyTxt, intervenciones: [] };
+  const json = (res, cod, obj) => { res.writeHead(cod, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
+  const server = http.createServer((req, res) => {
+    const ruta = req.url.split('?')[0];
+    if (ruta === '/api/sync' && req.method === 'POST') {
+      let cuerpo = '';
+      req.on('data', (c) => (cuerpo += c));
+      req.on('end', () => {
+        const d = JSON.parse(cuerpo);
+        const baseSha = d._baseSha; delete d._baseSha; delete d._meta;
+        if (servidor.fuerza409 || (baseSha && baseSha !== String(servidor.sha))) {
+          servidor.fuerza409 = false;
+          servidor.sha++;
+          return json(res, 409, { error: 'conflicto', actual: { ...servidor.datos, _meta: { existe: true, sha: String(servidor.sha) } } });
+        }
+        servidor.datos = d; servidor.sha++; servidor.posts.push(d);
+        json(res, 200, { ok: true, sha: String(servidor.sha) });
+      });
+      return;
+    }
+    if (ruta === '/api/sync') return json(res, 200, { ...servidor.datos, _meta: { existe: true, sha: String(servidor.sha) } });
+    if (ruta === '/api/sync-cartas') return json(res, 200, { expedientes: [carta], plazoDias: 90, umbrales: {}, eliminados: [], _meta: { existe: true, sha: 'c' } });
+    if (ruta === '/api/version-cartas') return json(res, 200, { version: 'c' });
+    if (servirHeaderJs(req, res)) return;
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(ruta === '/proyectos' ? HTML_PROY : HTML);
+  });
+  await new Promise((r) => server.listen(PUERTO, r));
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const ctx = await browser.newContext({ viewport: { width: 1200, height: 900 } }); // mismo origen: comparten localStorage, como en producción
+  const seg = await ctx.newPage();
+  const problemas = [];
+  seg.on('pageerror', (e) => problemas.push('pageerror: ' + e.message));
+  seg.on('dialog', async (d) => { problemas.push('dialog nativo: ' + d.message()); await d.dismiss(); });
+  await seg.goto(`http://localhost:${PUERTO}/seguimiento`, { waitUntil: 'networkidle' });
+  const tarjetas = () => seg.evaluate(() => [...document.querySelectorAll('.expediente-card-new')].map((c) => c.dataset.id));
+  const estado = (id) => seg.evaluate((i) => expedientes.find((e) => e.id === i), id);
+  const abrirAccion = async (id, boton) => {
+    await seg.evaluate((i) => { expandidos.add(i); renderizar(); }, id);
+    await seg.locator(`.expediente-card-new[data-id="${id}"] button`, { hasText: boton }).click();
+  };
+  const contadores = () => seg.evaluate(() => [...document.querySelectorAll('.pestana-btn .count')].map((c) => c.textContent));
+
+  ok(JSON.stringify(await contadores()) === '["3","0"]', 'T9: arranca con 3 activos y 0 archivados');
+
+  // T1 — sin motivo no pasa nada
+  await abrirAccion('otra', 'Resolver');
+  ok(await seg.locator('#finalOverlay').isVisible(), 'Resolver abre el diálogo del motivo');
+  await seg.click('#finalConfirmar');
+  ok(await seg.locator('#finalError').isVisible(), 'T1: sin motivo muestra «El motivo es obligatorio»');
+  ok((await estado('otra')).estado === 'activo' && !(await estado('otra')).final, 'T1: sin motivo el expediente sigue activo');
+  ok(await seg.locator('#finalOverlay').isVisible(), 'T1: el diálogo sigue abierto');
+  await seg.fill('#finalMotivo', '   ');
+  await seg.click('#finalConfirmar');
+  ok((await estado('otra')).estado === 'activo', 'T1: un motivo de solo espacios tampoco vale');
+
+  // T2 — con motivo: sale de la lista y queda en Archivados con su motivo
+  await seg.fill('#finalMotivo', 'Se respondió la nota');
+  await seg.click('#finalConfirmar');
+  let o = await estado('otra');
+  ok(o.final === 'resuelta' && o.motivoFinal === 'Se respondió la nota' && o.estado === 'archivado' && /^\d{4}-\d{2}-\d{2}$/.test(o.fechaResolucion), 'T2: resuelta con motivo y fecha');
+  ok(!(await tarjetas()).includes('otra'), 'T2: salió de la lista de Seguimiento');
+  ok(JSON.stringify(await contadores()) === '["2","1"]', 'T9: los contadores pasan a 2 y 1');
+
+  // T3 — archivar
+  await abrirAccion('otra2', 'Archivar');
+  await seg.fill('#finalMotivo', 'Sin novedades');
+  await seg.click('#finalConfirmar');
+  o = await estado('otra2');
+  ok(o.final === 'archivada' && o.motivoFinal === 'Sin novedades' && o.estado === 'archivado', 'T3: archivada con motivo');
+  await seg.evaluate(() => cambiarPestana('archivados'));
+  const textoArch = await seg.locator('.expediente-card-new[data-id="otra2"]').textContent();
+  ok(/Archivado el/.test(textoArch) && /Sin novedades/.test(textoArch), 'T3: Archivados muestra «Archivado el…» y el motivo');
+
+  // T4 / T5 — reabrir conserva el historial
+  await seg.evaluate(() => expandidos.add('otra'));
+  await seg.evaluate(() => renderizar());
+  await seg.locator('.expediente-card-new[data-id="otra"] button', { hasText: 'Reabrir' }).click();
+  o = await estado('otra');
+  ok(o.estado === 'activo' && o.final === undefined && o.motivoFinal === undefined && o.fechaResolucion === undefined, 'T4: reabrir limpia final, motivo y fecha');
+  ok(o.intervenciones.length === 3 && o.intervenciones[0].texto === 'Nota previa' && /Motivo: Se respondió/.test(o.intervenciones[1].texto) && o.intervenciones[2].texto === 'Reabierto.',
+     'T5: el historial no se borra (nota previa + resolución + reabierto)');
+  await seg.evaluate(() => cambiarPestana('activos'));
+
+  // Una carta de Proyectos vuelve a Proyectos, no a Archivados
+  await abrirAccion('carta', 'Resolver');
+  await seg.waitForFunction(() => /Vuelve a Proyectos/.test(document.getElementById('finalAyuda').textContent));
+  ok(true, 'el diálogo avisa «Vuelve a Proyectos» para una carta');
+  await seg.fill('#finalMotivo', 'Adjudicada');
+  await seg.click('#finalConfirmar');
+  const c = await estado('carta');
+  ok(c.estado === 'devuelto' && c.final === 'resuelta' && c.motivoFinal === 'Adjudicada', 'la carta resuelta queda «devuelto» con su motivo');
+  ok(!(await tarjetas()).includes('carta'), 'la carta sale de Activos');
+  await seg.evaluate(() => cambiarPestana('archivados'));
+  ok(!(await tarjetas()).includes('carta'), 'y no aparece en Archivados');
+  ok(JSON.stringify(await contadores()) === '["1","1"]', 'T9: ni Activos ni Archivados cuentan la devuelta (1 y 1)');
+  await seg.waitForTimeout(400);
+  ok(servidor.datos.expedientes.find((e) => e.id === 'carta').estado === 'devuelto', 'la devolución llega al servidor');
+
+  // Proyectos: se ve en la ficha de la carta y se rescata (con un 409 en el medio)
+  const pro = await ctx.newPage();
+  pro.on('pageerror', (e) => problemas.push('pageerror proyectos: ' + e.message));
+  await pro.goto(`http://localhost:${PUERTO}/proyectos`, { waitUntil: 'networkidle' });
+  await pro.waitForFunction(() => /Resuelto en Seguimiento/.test(document.body.textContent));
+  ok(true, 'Proyectos marca la carta devuelta en su tarjeta');
+  await pro.locator('.exp-card', { hasText: 'SYRES' }).click();
+  ok(/Adjudicada/.test(await pro.locator('#secDevuelto').textContent()), 'la ficha muestra el motivo');
+  servidor.fuerza409 = true;
+  await pro.click('#btnRescatarSeg');
+  await pro.waitForFunction(() => /Vuelve a Seguimiento/.test(document.getElementById('toast').textContent));
+  ok(await pro.locator('#veil').isHidden(), 'la ficha se cierra al rescatar');
+  const r = servidor.datos.expedientes.find((e) => e.id === 'carta');
+  const hoy = new Date();
+  const hoyISO = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+  ok(r.estado === 'activo' && r.final === undefined && r.motivoFinal === undefined && r.fechaResolucion === undefined, 'rescatar deja la carta activa, sin final ni motivo (tras reintentar el 409)');
+  ok(r.fechaInicio === hoyISO, 'el plazo arranca de nuevo (fechaInicio = hoy)');
+  ok(r.intervenciones.length === 3 && r.intervenciones[0].texto === 'Nota previa' && /Rescatado desde Proyectos/.test(r.intervenciones[2].texto), 'el historial se conserva y suma la nota de rescate');
+  ok(servidor.datos.expedientes.length === 3, 'T6: el rescate no duplica ni pierde expedientes');
+
+  // T6 — el otro dispositivo (Seguimiento) recibe el rescate sin duplicar ni perder
+  await seg.evaluate(() => cambiarPestana('activos'));
+  await seg.evaluate(() => bajarCambios && bajarCambios()).catch(() => {});
+  await seg.reload({ waitUntil: 'networkidle' });
+  const lista = await seg.evaluate(() => expedientes.map((e) => e.id + ':' + e.estado));
+  ok(lista.filter((x) => x.startsWith('carta:')).length === 1 && lista.includes('carta:activo'), `T6: Seguimiento ve la carta una sola vez y activa (${lista.join(', ')})`);
+
+  ok(problemas.length === 0, 'sin errores de página ni diálogos nativos' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
+  await browser.close();
+  server.close();
+}
+
 await recorrido('DESKTOP', { width: 1440, height: 900 }, 8799);
 await recorrido('MOBILE', { width: 390, height: 844 }, 8798);
 await testFechas();
@@ -3577,6 +3727,7 @@ await testPlazosYTarjetas();
 await testMovilTactil();
 await testTecladoYFoco();
 await testFlujo();
+await testResolverArchivar();
 await testParquesEnSeguimiento();
 await testResoluciones({ width: 1440, height: 900 }, 8797);
 await testResoluciones({ width: 390, height: 844 }, 8796);

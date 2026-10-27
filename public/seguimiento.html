@@ -1044,6 +1044,28 @@
     </div>
   </div>
 
+  <!-- Resolver / Archivar: el motivo es obligatorio -->
+  <div class="modal-overlay" id="finalOverlay">
+    <div class="modal" style="max-width: 420px;" role="dialog" aria-modal="true" aria-labelledby="finalTitle" aria-describedby="finalAyuda">
+      <div class="modal-header">
+        <h2 class="modal-header-title" id="finalTitle">Resolver expediente</h2>
+        <button class="modal-close" id="finalClose" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-content">
+        <p id="finalAyuda" style="margin: 0 0 16px; font-size: 14px; line-height: 1.5;"></p>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label required" for="finalMotivo">Motivo</label>
+          <textarea class="form-textarea" id="finalMotivo" aria-describedby="finalError" placeholder="Por qué se resuelve o archiva"></textarea>
+          <span class="form-error" id="finalError" role="alert" hidden>El motivo es obligatorio.</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-grow" id="finalCancelar" type="button"></button>
+        <button class="btn btn-primary btn-grow" id="finalConfirmar" type="button"></button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast" role="status" aria-live="polite" hidden>
     <span class="toast-mensaje" id="toastMensaje"></span>
     <button type="button" class="toast-accion" id="toastAccion" hidden></button>
@@ -1153,7 +1175,7 @@
     }
 
     // ===== MODALES: foco, Escape y trampa de Tab =====
-    const OVERLAYS = ['alertOverlay', 'configOverlay', 'modalOverlay']; // del más al menos prioritario
+    const OVERLAYS = ['alertOverlay', 'finalOverlay', 'configOverlay', 'modalOverlay']; // del más al menos prioritario
     const focoPrevio = {};
 
     function overlayAbierto(id) {
@@ -1191,6 +1213,7 @@
     function cerrarSuperior() {
       const id = OVERLAYS.find(overlayAbierto);
       if (id === 'alertOverlay') cerrarAlert();
+      else if (id === 'finalOverlay') cerrarFinal();
       else if (id === 'configOverlay') cerrarConfigModal();
       else if (id === 'modalOverlay') cerrarModal();
     }
@@ -1956,7 +1979,10 @@
     }
 
     function estadoDe(exp) {
-      return (exp.estado || 'activo') === 'archivado' ? 'archivados' : 'activos';
+      const estado = exp.estado || 'activo';
+      if (estado === 'archivado') return 'archivados';
+      // «devuelto» = salió de Seguimiento y vive en Proyectos: no cuenta en ninguna pestaña.
+      return estado === 'devuelto' ? 'proyectos' : 'activos';
     }
 
     // Los contadores reflejan la pestaña visible: antes "Total" sumaba activos y
@@ -1999,42 +2025,154 @@
       });
     }
 
-    function marcarResuelto(expedienteId) {
+    // ===== RESOLVER / ARCHIVAR (motivo obligatorio) =====
+    // Un expediente que es una carta de intención de Proyectos (mismo número) no
+    // pasa a «Archivados»: se devuelve a Proyectos, que lo muestra en su ficha y
+    // desde ahí se rescata. El resto (otras gestiones) se archiva acá y se reabre acá.
+    const CLAVE_NROS_CARTAS = 'expedientes_crm_cartas_nros_v1';
+    const VIGENCIA_NROS_CARTAS_MS = 10 * 60 * 1000;
+
+    function normalizarNro(n) {
+      return String(n || '').replace(/[–—]/g, '-').replace(/\s+/g, '');
+    }
+
+    function leerNrosCartas() {
+      try {
+        const g = JSON.parse(localStorage.getItem(CLAVE_NROS_CARTAS) || 'null');
+        return g && Array.isArray(g.nros) ? g : { nros: [], t: 0 };
+      } catch (e) { return { nros: [], t: 0 }; }
+    }
+
+    // En segundo plano: el diálogo nunca espera a la red. Sin conexión queda lo último que se supo.
+    async function refrescarNrosCartas() {
+      if (Date.now() - leerNrosCartas().t < VIGENCIA_NROS_CARTAS_MS) return false;
+      try {
+        const resp = await HeaderGlobal.fetchApi('/api/sync-cartas');
+        if (!resp.ok) return false;
+        const datos = await resp.json();
+        if (!datos || !Array.isArray(datos.expedientes)) return false;
+        const nros = datos.expedientes.map(c => normalizarNro(c.nro_expediente)).filter(Boolean);
+        localStorage.setItem(CLAVE_NROS_CARTAS, JSON.stringify({ nros, t: Date.now() }));
+        return true;
+      } catch (e) { return false; /* sin red: se usa lo último conocido */ }
+    }
+
+    function esCartaDeProyectos(exp) {
+      const n = normalizarNro(exp.numero);
+      return !!n && leerNrosCartas().nros.includes(n);
+    }
+
+    function textoHora() {
+      const a = new Date();
+      const p = (x) => String(x).padStart(2, '0');
+      return `${p(a.getDate())}/${p(a.getMonth() + 1)}/${a.getFullYear()} ${p(a.getHours())}:${p(a.getMinutes())}`;
+    }
+
+    let finalPendiente = null; // { id, tipo }
+
+    function marcarResuelto(expedienteId) { abrirFinal(expedienteId, 'resuelta'); }
+    function archivarExpediente(expedienteId) { abrirFinal(expedienteId, 'archivada'); }
+
+    function abrirFinal(expedienteId, tipo) {
       const exp = expedientes.find(e => e.id === expedienteId);
       if (!exp) return;
-      const previo = { estado: exp.estado, fechaResolucion: exp.fechaResolucion };
+      finalPendiente = { id: expedienteId, tipo };
+      const resolver = tipo === 'resuelta';
+      const textoAyuda = () => {
+        document.getElementById('finalAyuda').textContent = esCartaDeProyectos(exp)
+          ? `Vuelve a Proyectos como ${resolver ? 'resuelto' : 'archivado'}. Desde ahí se puede rescatar y vuelve a Seguimiento.`
+          : `Pasa a Archivados como ${resolver ? 'resuelto' : 'archivado'}. Desde ahí se puede reabrir.`;
+      };
+      // Si la lista de cartas llega con el diálogo abierto, el texto se corrige.
+      refrescarNrosCartas().then(llego => {
+        if (llego && finalPendiente && finalPendiente.id === expedienteId) textoAyuda();
+      });
+      document.getElementById('finalTitle').textContent = resolver ? 'Resolver expediente' : 'Archivar expediente';
+      textoAyuda();
+      document.getElementById('finalConfirmar').innerHTML = HeaderGlobal.icono(resolver ? 'resolver' : 'archivar') + (resolver ? 'Confirmar resolución' : 'Confirmar archivo');
+      document.getElementById('finalMotivo').value = '';
+      document.getElementById('finalError').hidden = true;
+      abrirOverlay('finalOverlay', '#finalMotivo');
+    }
 
-      exp.estado = 'archivado';
+    function cerrarFinal() {
+      finalPendiente = null;
+      cerrarOverlay('finalOverlay');
+    }
+
+    function confirmarFinal() {
+      if (!finalPendiente) return;
+      const motivo = document.getElementById('finalMotivo').value.trim();
+      if (!motivo) {
+        document.getElementById('finalError').hidden = false;
+        document.getElementById('finalMotivo').focus();
+        return;
+      }
+      const { id, tipo } = finalPendiente;
+      const exp = expedientes.find(e => e.id === id);
+      cerrarFinal();
+      if (!exp) return;
+
+      const devolver = esCartaDeProyectos(exp);
+      const previo = {
+        estado: exp.estado, fechaResolucion: exp.fechaResolucion, final: exp.final, motivoFinal: exp.motivoFinal,
+        notas: (exp.intervenciones || []).length
+      };
+      const resolver = tipo === 'resuelta';
+      exp.estado = devolver ? 'devuelto' : 'archivado';
+      exp.final = tipo;
       exp.fechaResolucion = fechaISO(new Date());
+      exp.motivoFinal = motivo;
+      exp.intervenciones = exp.intervenciones || [];
+      exp.intervenciones.push({
+        hora: textoHora(),
+        texto: `${resolver ? 'Expediente resuelto' : 'Expediente archivado'}. Motivo: ${motivo}. ${devolver ? 'Vuelve a Proyectos.' : 'Pasa a Archivados.'}`
+      });
       guardarEnLS(true);
       renderizar();
-      mostrarToast('Expediente archivado', { accion: () => {
+      mostrarToast(devolver ? 'Devuelto a Proyectos' : 'Expediente archivado', { accion: () => {
         // Se busca de nuevo: una descarga pudo reemplazar la lista mientras el aviso estaba a la vista.
-        const actual = expedientes.find(e => e.id === expedienteId);
+        const actual = expedientes.find(e => e.id === id);
         if (!actual) return;
         actual.estado = previo.estado || 'activo';
-        if (previo.fechaResolucion) actual.fechaResolucion = previo.fechaResolucion;
-        else delete actual.fechaResolucion;
+        restaurarCampo(actual, 'fechaResolucion', previo.fechaResolucion);
+        restaurarCampo(actual, 'final', previo.final);
+        restaurarCampo(actual, 'motivoFinal', previo.motivoFinal);
+        actual.intervenciones = (actual.intervenciones || []).slice(0, previo.notas);
         guardarEnLS(true);
         renderizar();
       } });
     }
 
+    function restaurarCampo(obj, campo, valor) {
+      if (valor === undefined || valor === null) delete obj[campo];
+      else obj[campo] = valor;
+    }
+
     function reabrirExpediente(expedienteId) {
       const exp = expedientes.find(e => e.id === expedienteId);
       if (!exp) return;
-      const previo = { estado: exp.estado, fechaResolucion: exp.fechaResolucion };
+      const previo = {
+        estado: exp.estado, fechaResolucion: exp.fechaResolucion, final: exp.final, motivoFinal: exp.motivoFinal,
+        notas: (exp.intervenciones || []).length
+      };
 
       exp.estado = 'activo';
       delete exp.fechaResolucion;
+      delete exp.final;
+      delete exp.motivoFinal;
+      exp.intervenciones = exp.intervenciones || [];
+      exp.intervenciones.push({ hora: textoHora(), texto: 'Reabierto.' });
       guardarEnLS(true);
       renderizar();
       mostrarToast('Expediente reabierto', { accion: () => {
         const actual = expedientes.find(e => e.id === expedienteId);
         if (!actual) return;
         actual.estado = previo.estado;
-        if (previo.fechaResolucion) actual.fechaResolucion = previo.fechaResolucion;
-        else delete actual.fechaResolucion;
+        restaurarCampo(actual, 'fechaResolucion', previo.fechaResolucion);
+        restaurarCampo(actual, 'final', previo.final);
+        restaurarCampo(actual, 'motivoFinal', previo.motivoFinal);
+        actual.intervenciones = (actual.intervenciones || []).slice(0, previo.notas);
         guardarEnLS(true);
         renderizar();
       } });
@@ -2095,7 +2233,7 @@
         const archivado = pestanaActiva === 'archivados';
         const clase = archivado ? 'archivado' : obtenerSemaforo(plazo).color;
         const titulo = archivado
-          ? `Resuelto el ${exp.fechaResolucion ? formatearFechaCorta(parsearFecha(exp.fechaResolucion)) : '—'}`
+          ? `${exp.final === 'archivada' ? 'Archivado' : 'Resuelto'} el ${exp.fechaResolucion ? formatearFechaCorta(parsearFecha(exp.fechaResolucion)) : '—'}`
           : textoPlazo(plazo);
         const expandId = `exp-expand-${exp.id}`;
         const notas = exp.intervenciones || [];
@@ -2120,6 +2258,7 @@
                 <div><span class="label">Área responsable:</span><span>${esc(exp.area)}</span></div>
                 <div><span class="label">Agente:</span><span>${esc(exp.responsable)}</span></div>
                 <div><span class="label">Inicio:</span><span>${esc(formatearFechaCorta(parsearFecha(exp.fechaInicio)))}</span></div>
+                ${archivado && exp.motivoFinal ? `<div><span class="label">Motivo:</span><span>${esc(exp.motivoFinal)}</span></div>` : ''}
                 ${archivado ? '' : `<div><span class="label">Vence:</span><span>${esc(formatearFechaCorta(plazo.fechaFin))}</span></div>`}
               </div>
 
@@ -2135,7 +2274,8 @@
               <div class="expediente-actions">
                 ${archivado
                   ? `<button class="btn btn-secondary btn-grow" data-id="${esc(exp.id)}" onclick="reabrirExpediente(this.dataset.id)">${HeaderGlobal.icono('reabrir')} Reabrir</button>`
-                  : `<button class="btn btn-success btn-grow" data-id="${esc(exp.id)}" onclick="marcarResuelto(this.dataset.id)">${HeaderGlobal.icono('resolver')} Resolver</button>`
+                  : `<button class="btn btn-success btn-grow" data-id="${esc(exp.id)}" onclick="marcarResuelto(this.dataset.id)">${HeaderGlobal.icono('resolver')} Resolver</button>
+                     <button class="btn btn-outline btn-grow" data-id="${esc(exp.id)}" onclick="archivarExpediente(this.dataset.id)">${HeaderGlobal.icono('archivar')} Archivar</button>`
                 }
                 <button class="btn btn-outline btn-grow" data-id="${esc(exp.id)}" onclick="abrirEditar(this.dataset.id)">${HeaderGlobal.icono('editar')} Editar</button>
               </div>
@@ -2384,6 +2524,14 @@
     document.getElementById('btnCancelar').addEventListener('click', cerrarModal);
     document.getElementById('btnGuardar').addEventListener('click', guardarExpediente);
     document.getElementById('btnEliminar').addEventListener('click', eliminarExpediente);
+    document.getElementById('finalClose').addEventListener('click', cerrarFinal);
+    document.getElementById('finalCancelar').addEventListener('click', cerrarFinal);
+    document.getElementById('finalConfirmar').addEventListener('click', confirmarFinal);
+    document.getElementById('finalCancelar').innerHTML = HeaderGlobal.icono('cancelar') + 'Cancelar';
+    document.getElementById('finalMotivo').addEventListener('input', () => { document.getElementById('finalError').hidden = true; });
+    document.getElementById('finalOverlay').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('finalOverlay')) cerrarFinal();
+    });
 
     // Los iconos de estos tres salen del juego compartido (header.js), igual
     // que en las otras apps. Se ponen desde acá y no en el HTML porque el

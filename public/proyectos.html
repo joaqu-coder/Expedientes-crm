@@ -1156,6 +1156,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     if(Date.now() - ultimoRefresco < REFRESCO_MIN_MS) return;
     ultimoRefresco = Date.now();
     bajarCambiosIniciales();
+    cargarDevueltos();
   }
   document.addEventListener("visibilitychange", function(){
     refrescarSiCorresponde();
@@ -1434,6 +1435,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
           '<span class="exp-plazo c-'+urg.color+'"'+(urg.aviso?' title="'+esc(urg.aviso)+'"':'')+
           '><i class="exp-dot"></i>'+esc(urg.texto)+'</span>'+
         '</div>':'')+
+        (devueltoDe(e)?'<div class="exp-card-sub">'+esc(leyendaDevuelto(devueltoDe(e)))+'</div>':'')+
         (subExtra?'<div class="exp-card-sub">'+esc(subExtra)+'</div>':'')+
       '</div>'+
       '</button>';
@@ -2340,6 +2342,14 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
         (e.actividad_empresa?'<p class="view-actividad">'+esc(e.actividad_empresa)+'</p>':'')+
       '</div>'+
 
+      (devueltoDe(e)
+        ? '<div class="view-section" id="secDevuelto"><h3>Seguimiento</h3>'+
+            '<div class="view-grid">'+
+              viewItem("Estado", leyendaDevuelto(devueltoDe(e)))+
+              viewItem("Motivo", devueltoDe(e).motivoFinal)+
+            '</div></div>'
+        : '')+
+
       '<div class="view-section"><h3>Contacto</h3>'+
         (contacto
           ? '<div class="contact-list">'+contacto+'</div>'
@@ -2349,6 +2359,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
       historialHtml(e)+
 
       '<div class="view-actions">'+
+        (devueltoDe(e)?'<button type="button" class="btn btn-primary btn-grow" id="btnRescatarSeg">'+HeaderGlobal.icono("reabrir")+'Rescatar a Seguimiento</button>':'')+
         (e.archivado?'<button type="button" class="btn btn-primary btn-grow" id="btnRescatar">'+HeaderGlobal.icono("reabrir")+'Rescatar</button>':'')+
         // Siempre la variante "outline", igual que en Resoluciones y Parques.
         // Antes alternaba btn-primary/btn-outline según el expediente
@@ -2365,6 +2376,9 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     document.getElementById("btnDeleteView").addEventListener("click", onDelete);
     if(e.archivado){
       document.getElementById("btnRescatar").addEventListener("click", onRescatar);
+    }
+    if(devueltoDe(e)){
+      document.getElementById("btnRescatarSeg").addEventListener("click", onRescatarASeguimiento);
     }
   }
 
@@ -2693,10 +2707,86 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     ]
   });
 
+  // ---- Devueltos desde Seguimiento ----
+  // Seguimiento resuelve o archiva sus expedientes con motivo. Si el número es el de
+  // una carta de Proyectos, no queda en «Archivados» de Seguimiento: vuelve acá
+  // (estado «devuelto» en expedientes.json, que esta pantalla solo LEE) y se muestra
+  // en la ficha de la carta. Rescatar escribe una sola cosa en expedientes.json:
+  // ese expediente vuelve a «activo», con _baseSha y reintento ante un 409.
+  var devueltos = {};
+  function normNro(n){ return String(n||"").replace(/[–—]/g,"-").replace(/\s+/g,""); }
+  function devueltoDe(e){ return e ? devueltos[normNro(e.nro_expediente)] || null : null; }
+  function leyendaDevuelto(x){
+    return (x.final==="archivada"?"Archivado":"Resuelto")+" en Seguimiento"+(x.fechaResolucion?" el "+x.fechaResolucion.split("-").reverse().join("/"):"");
+  }
+  async function cargarDevueltos(){
+    try{
+      var resp = await HeaderGlobal.fetchApi("/api/sync");
+      if(!resp.ok) return;
+      var datos = await resp.json();
+      if(!datos || !Array.isArray(datos.expedientes)) return;
+      var m = {};
+      datos.expedientes.forEach(function(x){
+        if(x.estado==="devuelto" && normNro(x.numero)) m[normNro(x.numero)] = x;
+      });
+      if(JSON.stringify(m)===JSON.stringify(devueltos)) return;
+      devueltos = m;
+      renderList();
+      // La ficha abierta en modo lectura se redibuja; una que se está editando, no.
+      if(!veil.hidden && state.editingId && state.modalMode!=="edit") renderModal();
+    }catch(err){ /* sin red: se muestra lo último que se supo */ }
+  }
+  async function onRescatarASeguimiento(){
+    var e = state.expedientes.find(function(x){return x.id===state.editingId;});
+    var k = e && normNro(e.nro_expediente);
+    if(!k) return;
+    var btn = document.getElementById("btnRescatarSeg");
+    if(btn) btn.disabled = true;
+    try{
+      for(var intento=0; intento<3; intento++){
+        var resp = await HeaderGlobal.fetchApi("/api/sync");
+        if(!resp.ok) throw new Error("get");
+        var datos = await resp.json();
+        var sha = datos._meta && datos._meta.sha;
+        delete datos._meta;
+        var x = (datos.expedientes||[]).find(function(y){return y.estado==="devuelto" && normNro(y.numero)===k;});
+        if(!x){
+          delete devueltos[k]; renderList(); renderModal();
+          mostrarToast("Ese expediente ya no está devuelto desde Seguimiento.");
+          return;
+        }
+        var hoy = new Date();
+        x.estado = "activo";
+        delete x.final; delete x.motivoFinal; delete x.fechaResolucion;
+        // El plazo arranca de nuevo.
+        x.fechaInicio = hoy.getFullYear()+"-"+String(hoy.getMonth()+1).padStart(2,"0")+"-"+String(hoy.getDate()).padStart(2,"0");
+        x.intervenciones = x.intervenciones || [];
+        x.intervenciones.push({hora:horaLocal(), texto:"Rescatado desde Proyectos. El plazo arranca de nuevo."});
+        datos.timestamp = new Date().toISOString();
+        if(sha) datos._baseSha = sha;
+        var post = await HeaderGlobal.fetchApi("/api/sync", {
+          method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(datos)
+        });
+        if(post.status===409) continue;     // otro dispositivo guardó en el medio: se vuelve a leer
+        if(!post.ok) throw new Error("post");
+        delete devueltos[k];
+        closeModal();
+        renderList();
+        mostrarToast("Vuelve a Seguimiento.");
+        return;
+      }
+      throw new Error("conflicto");
+    }catch(err){
+      if(btn) btn.disabled = false;
+      mostrarToast("No se pudo rescatar a Seguimiento. Probá de nuevo.");
+    }
+  }
+
   aplicarArchivadoAutomatico();
   renderList();
   showView(vistaDeHash(location.hash), true);
   bajarCambiosIniciales();
+  cargarDevueltos();
   programarPoll();
 
   if('serviceWorker' in navigator){

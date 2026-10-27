@@ -45,6 +45,29 @@ ni las actualizaciones, ni los pasos de fondo. Eso es responsabilidad del agente
 - **Parques: el registro editado en los dos dispositivos a la vez** gana la versión
   de este dispositivo (y se registra en consola). Una fusión por campo sería mejor.
 
+### Resolver y Archivar con motivo; cartas devueltas a Proyectos (2026-10-27)
+
+Seguimiento tiene dos salidas del listado, **las dos con motivo obligatorio** (diálogo `#finalOverlay`,
+`abrirFinal`/`confirmarFinal`): *Resolver* (`final:"resuelta"`) y *Archivar* (`final:"archivada"`).
+Hoy se comportan igual; solo cambia la etiqueta. Se guardan `final`, `fechaResolucion`, `motivoFinal` y una
+nota en `intervenciones`. Deshacer (toast) restaura todo, incluida la nota.
+
+- **Otras gestiones** (no son cartas): `estado:"archivado"`, pestaña Archivados, **Reabrir** (limpia los campos
+  de cierre, suma la nota «Reabierto.»; el historial no se borra).
+- **Cartas de intención** (el `numero` coincide con un `nro_expediente` de Proyectos): `estado:"devuelto"`. No
+  cuenta en Activos ni en Archivados. La lista de números sale de `/api/sync-cartas`, cacheada en
+  `expedientes_crm_cartas_nros_v1` (10 min), se refresca en segundo plano al abrir el diálogo; el diálogo nunca
+  espera a la red. **Sin lista cacheada y sin red, Resolver archiva en Seguimiento** (Reabrir lo recupera).
+- **Proyectos** solo LEE `/api/sync` (`cargarDevueltos`): la tarjeta dice «Resuelto/Archivado en Seguimiento el…»
+  y la ficha muestra estado y motivo con **Rescatar a Seguimiento**. Rescatar es la única escritura: lee con sha,
+  deja el expediente `activo` (sin final/motivo/fecha), `fechaInicio` = hoy (el plazo arranca de nuevo), suma una
+  nota, y POSTea con `_baseSha`; ante 409 relee y reintenta (3 veces). No escribe `cartas-intencion.json`.
+- **Sin cambios**: el archivado automático de Proyectos (132 días hábiles, solo `Sin_tratamiento`).
+- **No existe «Cambiar etapa»**: las etapas del mockup no están en el repo. No se inventaron.
+- **Pendientes**: reactivación automática desde Proyectos (sin definir cómo se detecta actividad); un cliente
+  anterior a este deploy ve un `devuelto` como activo.
+- **Test**: `testResolverArchivar()` en `tests/ui.test.mjs` (T1–T6 y T9 del documento, dos páginas reales, 409 forzado en el rescate).
+
 ### Parques: fusión por registro (2026-10-20)
 
 Parques usa el mismo protocolo concurrente que Proyectos: el POST lleva `_baseSha`
