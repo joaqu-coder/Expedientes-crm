@@ -89,6 +89,10 @@
         {
           "hora": "23/10/2026 10:44",
           "texto": "Federico Cornejo realiza la denuncia de la Tc  YPF RUTA cod. (WMHL2QN)."
+        },
+        {
+          "hora": "27/10/2026 13:33",
+          "texto": "Recibo expte.  Se agrega al cuerpo que el peritaje  sobre la ficha técnica se encunetra realizada y verificada  por SAP el 16/07/2026. Nota para iniciar solicitud de RTO"
         }
       ],
       "parque": "Egpais"
@@ -296,5 +300,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-10-23T14:04:11.222Z"
+  "timestamp": "2026-10-27T16:33:44.843Z"
 }
