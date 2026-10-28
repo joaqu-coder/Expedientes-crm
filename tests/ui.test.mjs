@@ -14,6 +14,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+await import('../public/plazos.js');
+const Plazos = globalThis.Plazos;
 
 // Playwright viene como paquete global en el entorno de Claude Code on the web.
 let chromium;
@@ -38,6 +40,8 @@ const DESIGN_SYSTEM = fs.readFileSync(path.join(RAIZ, 'public/design-system.css'
 // La tarjeta «¿Desea guardar los cambios?» también es compartida: sin este
 // archivo, el <script> cae al HTML de relleno y la página tira SyntaxError.
 const CONFIRMAR_JS = fs.readFileSync(path.join(RAIZ, 'public/confirmar-cambios.js'), 'utf8');
+// Plazos por etapa y feriados: un solo cálculo para Seguimiento y Proyectos.
+const PLAZOS_JS = fs.readFileSync(path.join(RAIZ, 'public/plazos.js'), 'utf8');
 // Los dos archivos compartidos por las 5 páginas. Si el server de un test no
 // los sirve, esa pantalla corre sin header, sin botones con estilo y sin la
 // lupa de la búsqueda — y el test falla por una razón que no es la que
@@ -55,6 +59,11 @@ function servirHeaderJs(req, res) {
   if (req.url.startsWith('/ui-kit.css')) {
     res.writeHead(200, { 'Content-Type': 'text/css; charset=utf-8' });
     res.end(UI_KIT);
+    return true;
+  }
+  if (req.url.startsWith('/plazos.js')) {
+    res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8' });
+    res.end(PLAZOS_JS);
     return true;
   }
   if (req.url.startsWith('/confirmar-cambios.js')) {
@@ -3725,10 +3734,10 @@ async function testResolverArchivar() {
   await pro.click('#btnPasarSeg');
   const antes = servidor.datos.expedientes.length;
   await pro.click('#pasarConfirmar');
-  ok(await pro.locator('#pasarError').isVisible() && servidor.datos.expedientes.length === antes, 'pasar: sin plazo, área y agente no se guarda nada');
+  ok(await pro.locator('#pasarError').isVisible() && servidor.datos.expedientes.length === antes, 'pasar: sin etapa, área y agente no se guarda nada');
   const opcAreas = await pro.locator('#pasarArea option').allTextContents();
   ok(opcAreas.includes('Operación') && (await pro.locator('#pasarResp option').allTextContents()).includes('Leiva'), 'pasar: área y agente salen de las listas de Seguimiento');
-  await pro.fill('#pasarPlazo', '45');
+  await pro.selectOption('#pasarEtapa', '3');
   await pro.selectOption('#pasarArea', 'Operación');
   await pro.selectOption('#pasarResp', 'Leiva');
   servidor.fuerza409 = true;
@@ -3736,7 +3745,7 @@ async function testResolverArchivar() {
   await pro.waitForFunction(() => /Pasó a Seguimiento/.test(document.getElementById('toast').textContent));
   ok(await pro.locator('#veil').isHidden(), 'pasar: la ficha se cierra');
   const n = servidor.datos.expedientes.find((e) => e.numero === '363-777/2026-0');
-  ok(!!n && n.tema === 'NUEVA S.A.' && n.estado === 'activo' && n.diasPlazo === 45 && n.area === 'Operación' && n.responsable === 'Leiva' && n.parque === 'Salta' && n.fechaInicio === hoyISO, 'pasar: crea el expediente con el mismo número, plazo, área, agente y parque (tras reintentar el 409)');
+  ok(!!n && n.tema === 'NUEVA S.A.' && n.estado === 'activo' && n.etapa === 3 && n.fechaEntradaEtapa === hoyISO && n.area === 'Operación' && n.responsable === 'Leiva' && n.parque === 'Salta' && n.fechaInicio === hoyISO, 'pasar: crea el expediente con el mismo número, etapa, área, agente y parque (tras reintentar el 409)');
   ok(n.intervenciones.length === 1 && /Pasado desde Proyectos/.test(n.intervenciones[0].texto), 'pasar: deja una nota de origen');
   ok(servidor.datos.expedientes.length === antes + 1 && servidor.datos.expedientes.filter((e) => e.numero === '363-777/2026-0').length === 1, 'pasar: no duplica ni pierde expedientes');
   await pro.locator('.exp-card', { hasText: 'NUEVA' }).click();
@@ -3744,6 +3753,226 @@ async function testResolverArchivar() {
   await pro.click('#xCloseView');
   await seg.reload({ waitUntil: 'networkidle' });
   ok((await seg.evaluate(() => expedientes.map((e) => e.numero))).includes('363-777/2026-0'), 'pasar: Seguimiento la ve en su lista');
+
+  ok(problemas.length === 0, 'sin errores de página ni diálogos nativos' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
+  await browser.close();
+  server.close();
+}
+
+async function testPlazosEtapasProyectos() {
+  console.log('\n=== PROYECTOS: PLAZOS POR ETAPA (menú ⋮) ===');
+  const PUERTO = 8782;
+  const HTML_PROY = fs.readFileSync(path.join(RAIZ, 'public/proyectos.html'), 'utf8');
+  const servidor = { posts: [], plazosEtapas: undefined };
+  const json = (res, cod, obj) => { res.writeHead(cod, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
+  const server = http.createServer((req, res) => {
+    const ruta = req.url.split('?')[0];
+    if (ruta === '/api/version-cartas') return json(res, 200, { version: 'v' + servidor.posts.length });
+    if (ruta === '/api/sync-cartas' && req.method === 'POST') {
+      let c = '';
+      req.on('data', (x) => (c += x));
+      req.on('end', () => {
+        const d = JSON.parse(c); servidor.posts.push(d); servidor.plazosEtapas = d.plazosEtapas;
+        json(res, 200, { ok: true, sha: 'v' + servidor.posts.length });
+      });
+      return;
+    }
+    if (ruta === '/api/sync-cartas') return json(res, 200, { expedientes: [], plazoDias: 90, umbrales: {}, eliminados: [], plazosEtapas: servidor.plazosEtapas, _meta: { existe: true, sha: 'v' + servidor.posts.length } });
+    if (ruta === '/api/sync') return json(res, 200, { expedientes: [], areas: [], responsables: [], parques: [], _meta: { existe: true, sha: '1' } });
+    if (servirHeaderJs(req, res)) return;
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(HTML_PROY);
+  });
+  await new Promise((r) => server.listen(PUERTO, r));
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const ctx = await browser.newContext({ viewport: { width: 1200, height: 900 } });
+  const pro = await ctx.newPage();
+  const problemas = [];
+  pro.on('pageerror', (e) => problemas.push('pageerror: ' + e.message));
+  pro.on('dialog', async (d) => { problemas.push('dialog nativo: ' + d.message()); await d.dismiss(); });
+  await pro.goto(`http://localhost:${PUERTO}/proyectos`, { waitUntil: 'networkidle' });
+
+  await abrirDesdeMenu(pro, 'Plazos por etapa');
+  ok(await pro.locator('#veil').isVisible(), 'el menú ⋮ abre «Plazos por etapa»');
+  const valores = await pro.evaluate(() => [...document.querySelectorAll('[id^="plazoEt"]')].map((i) => i.value));
+  ok(valores.join(',') === '5,20,10,15,5,10,30,,', `arranca con la tabla del Excel (${valores.join(',')})`);
+  ok(await pro.locator('#veil').getByText('Evaluación técnica').count() > 0 && await pro.locator('#veil').getByText('Escribanía de Gobierno').count() > 0, 'muestra el nombre y el responsable de cada etapa');
+
+  // Validación: solo enteros de 1 a 999; vacío = sin plazo
+  await pro.fill('#plazoEt1', '0');
+  await pro.click('#plazosGuardar');
+  ok(await pro.locator('#plazosError').isVisible() && servidor.posts.length === 0, 'un 0 se rechaza y no se guarda nada');
+  await pro.fill('#plazoEt1', '2.5');
+  await pro.click('#plazosGuardar');
+  ok(await pro.locator('#plazosError').isVisible(), 'un decimal se rechaza');
+  await pro.fill('#plazoEt1', '12');
+  await pro.fill('#plazoEt6', '');
+  await pro.click('#plazosGuardar');
+  await pro.waitForFunction(() => document.getElementById('veil').hidden);
+  await pro.waitForFunction(() => true);
+  for (let i = 0; i < 30 && servidor.posts.length === 0; i++) await pro.waitForTimeout(200);
+  const post = servidor.posts[servidor.posts.length - 1];
+  const dias = post && post.plazosEtapas ? post.plazosEtapas.map((x) => x.dias).join(',') : '';
+  ok(dias === '5,12,10,15,5,10,,,', `guarda y sube plazosEtapas (${dias})`);
+  ok(post.plazosEtapas.length === 9 && post.plazosEtapas[1].etapa === 2 && post.plazosEtapas[1].nombre === 'Presentación', 'cada entrada lleva etapa y nombre');
+
+  // Cancelar no guarda; Restaurar vuelve a la tabla del Excel
+  await abrirDesdeMenu(pro, 'Plazos por etapa');
+  await pro.fill('#plazoEt0', '99');
+  await pro.click('#plazosCancelar');
+  const antes = servidor.posts.length;
+  await abrirDesdeMenu(pro, 'Plazos por etapa');
+  ok(await pro.inputValue('#plazoEt0') === '5' && servidor.posts.length === antes, 'Cancelar descarta lo escrito');
+  await pro.click('#plazosRestaurar');
+  ok(await pro.inputValue('#plazoEt1') === '20' && await pro.inputValue('#plazoEt6') === '30', 'Restaurar vuelve a los valores del Excel (sin guardar todavía)');
+  await pro.click('#plazosCancelar');
+
+  // Otro dispositivo: lo guardado llega al abrir (el servidor es la fuente de verdad)
+  const otro = await (await browser.newContext({ viewport: { width: 1200, height: 900 } })).newPage();
+  await otro.goto(`http://localhost:${PUERTO}/proyectos`, { waitUntil: 'networkidle' });
+  await abrirDesdeMenu(otro, 'Plazos por etapa');
+  ok(await otro.inputValue('#plazoEt1') === '12' && await otro.inputValue('#plazoEt6') === '', 'otro dispositivo adopta los plazos del servidor');
+
+  ok(problemas.length === 0, 'sin errores de página ni diálogos nativos' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
+  await browser.close();
+  server.close();
+}
+
+async function testEtapas() {
+  console.log('\n=== SEGUIMIENTO: PLAZOS POR ETAPA, CAMBIAR ETAPA E INTIMACIÓN ===');
+  const PUERTO = 8781;
+  const HOY = new Date(2026, 10, 3, 10, 0); // martes 3/11/2026, fijo: el test no depende del día en que corre
+  const HOY_ISO = '2026-11-03';
+  const servidor = { sha: 1, posts: [], plazosEtapas: undefined };
+  const base = { area: 'Jurídica', responsable: 'Ana', estado: 'activo', intervenciones: [], parque: 'Salta' };
+  servidor.datos = { expedientes: [
+    { ...base, id: 'p1', numero: '363-1/2026-0', tema: 'EN PLAZO SA', etapa: 1, fechaInicio: '2026-10-27', fechaEntradaEtapa: '2026-10-27' },
+    { ...base, id: 'v1', numero: '363-2/2026-0', tema: 'VENCIDO SA', etapa: 0, fechaInicio: '2026-10-26', fechaEntradaEtapa: '2026-10-26' },
+    { ...base, id: 'a1', numero: '363-3/2026-0', tema: 'ALERTA SA', etapa: 0, fechaInicio: '2026-10-23', fechaEntradaEtapa: '2026-10-23' },
+    { ...base, id: 'h1', numero: '363-4/2026-0', tema: 'HOY SA', etapa: 0, fechaInicio: '2026-10-27', fechaEntradaEtapa: '2026-10-27' },
+    { ...base, id: 's1', numero: '363-5/2026-0', tema: 'SIN PLAZO SA', etapa: 7, fechaInicio: '2026-01-05', fechaEntradaEtapa: '2026-01-05' },
+    { ...base, id: 'u1', numero: '363-6/2026-0', tema: 'ULTIMA SA', etapa: 8, fechaInicio: '2026-01-05', fechaEntradaEtapa: '2026-01-05' },
+    { ...base, id: 'l1', numero: '363-7/2026-0', tema: 'LEGADO SA', fechaInicio: '2026-10-01', diasPlazo: 30 }
+  ], areas: ['Jurídica'], responsables: ['Ana'], parques: ['Salta'] };
+  const json = (res, cod, obj) => { res.writeHead(cod, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
+  const server = http.createServer((req, res) => {
+    const ruta = req.url.split('?')[0];
+    if (ruta === '/api/sync' && req.method === 'POST') {
+      let c = '';
+      req.on('data', (x) => (c += x));
+      req.on('end', () => {
+        const d = JSON.parse(c); delete d._baseSha; delete d._meta;
+        servidor.datos = d; servidor.sha++; servidor.posts.push(d);
+        json(res, 200, { ok: true, sha: String(servidor.sha) });
+      });
+      return;
+    }
+    if (ruta === '/api/sync') return json(res, 200, { ...servidor.datos, _meta: { existe: true, sha: String(servidor.sha) } });
+    if (ruta === '/api/sync-cartas') return json(res, 200, { expedientes: [], plazoDias: 90, umbrales: {}, eliminados: [], plazosEtapas: servidor.plazosEtapas, _meta: { existe: true, sha: 'c' } });
+    if (servirHeaderJs(req, res)) return;
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(HTML);
+  });
+  await new Promise((r) => server.listen(PUERTO, r));
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const ctx = await browser.newContext({ viewport: { width: 1200, height: 900 } });
+  const seg = await ctx.newPage();
+  await seg.clock.setFixedTime(HOY);
+  const problemas = [];
+  seg.on('pageerror', (e) => problemas.push('pageerror: ' + e.message));
+  seg.on('dialog', async (d) => { problemas.push('dialog nativo: ' + d.message()); await d.dismiss(); });
+  const abrir = async () => { await seg.goto(`http://localhost:${PUERTO}/seguimiento`, { waitUntil: 'networkidle' }); };
+  await abrir();
+  const tarjeta = (id) => seg.locator(`.expediente-card-new[data-id="${id}"]`);
+  const titulo = async (id) => (await tarjeta(id).locator('.expediente-urgencia-dias').textContent()).trim();
+  const clase = async (id) => (await tarjeta(id).getAttribute('class')).split(/\s+/).filter((c) => ['rojo', 'verde', 'naranja', 'amarillo', 'archivado'].includes(c))[0];
+  const estado = (id) => seg.evaluate((i) => expedientes.find((e) => e.id === i), id);
+  const expandir = (id) => seg.evaluate((i) => { expandidos.add(i); renderizar(); }, id);
+  const d = (iso) => Plazos.parsear(iso);
+
+  // Tarjetas: «estado · etapa», con el color del estado (documento, 4.1)
+  const restan = Plazos.estadoPlazo(d('2026-10-27'), 20, HOY).restan;
+  ok(await titulo('p1') === `En plazo: ${restan} d háb. · Presentación` && await clase('p1') === 'verde', `tarjeta en plazo: «En plazo: ${restan} d háb. · Presentación», verde`);
+  ok(await titulo('v1') === 'Vencido hace 1 d háb. · Carta de intención' && await clase('v1') === 'rojo', 'tarjeta vencida: «Vencido hace 1 d háb. · Carta de intención», rojo');
+  ok(await titulo('h1') === 'Vence hoy · Carta de intención' && await clase('h1') === 'rojo', 'vence hoy: rojo el mismo día del vencimiento');
+  ok(await titulo('a1') === 'Intimar: pendiente · Carta de intención' && await clase('a1') === 'archivado', 'a los 2 días hábiles de vencida: «Intimar: pendiente» (gris)');
+  ok(await titulo('s1') === 'Sin plazo · Procedimiento de venta' && await clase('s1') === 'archivado', 'etapa sin plazo: «Sin plazo · Procedimiento de venta» (gris)');
+  ok(!/·/.test(await titulo('l1')) && /d háb\./.test(await titulo('l1')), 'un expediente sin etapa conserva su plazo propio y su tarjeta de siempre');
+
+  // Orden: lo más atrasado arriba; sin plazo al final
+  const orden = await seg.evaluate(() => [...document.querySelectorAll('.expediente-card-new')].map((c) => c.dataset.id));
+  ok(orden.indexOf('a1') < orden.indexOf('v1') && orden.indexOf('v1') < orden.indexOf('p1') && orden.slice(-2).sort().join() === 's1,u1', `orden por vencimiento, sin plazo al final (${orden.join(',')})`);
+
+  // Ficha: etapa actual, responsable de la etapa y lista de etapas
+  await expandir('p1');
+  const ficha = await tarjeta('p1').textContent();
+  ok(/Etapa actual:\s*Presentación/.test(ficha) && /Responsable de la etapa:\s*Empresa/.test(ficha) && /Plazo:\s*20 días hábiles/.test(ficha), 'la ficha muestra etapa actual, responsable de la etapa y plazo');
+  ok(await tarjeta('p1').locator('.etapa-item').count() === 9 && await tarjeta('p1').locator('.etapa-item.etapa-actual').count() === 1, 'la lista muestra las 9 etapas con una sola marcada como actual');
+  ok(await tarjeta('l1').locator('.etapa-item').count() === 0, 'un expediente sin etapa no dibuja la lista de etapas');
+
+  // Cambiar etapa: motivo obligatorio, reinicia el reloj, deja nota, se puede deshacer
+  await seg.locator('.expediente-card-new[data-id="p1"] button', { hasText: 'Cambiar etapa' }).click();
+  await seg.click('#etapaConfirmar');
+  ok(await seg.locator('#etapaError').isVisible() && (await estado('p1')).etapa === 1, 'cambiar etapa sin motivo: error y la etapa no cambia');
+  await seg.fill('#etapaMotivo', '   ');
+  await seg.click('#etapaConfirmar');
+  ok((await estado('p1')).etapa === 1, 'un motivo de solo espacios tampoco vale');
+  await seg.fill('#etapaMotivo', 'Presentó la documentación');
+  await seg.click('#etapaConfirmar');
+  let p1 = await estado('p1');
+  ok(p1.etapa === 2 && p1.fechaEntradaEtapa === HOY_ISO, 'pasa a «Chequeo» y el plazo arranca hoy');
+  ok(p1.intervenciones.length === 1 && /Presentación → Chequeo/.test(p1.intervenciones[0].texto) && /Motivo: Presentó la documentación/.test(p1.intervenciones[0].texto), 'deja la nota «Presentación → Chequeo. Motivo: …»');
+  ok(await titulo('p1') === 'En plazo: 10 d háb. · Chequeo', 'la tarjeta pasa a «En plazo: 10 d háb. · Chequeo»');
+  await seg.waitForTimeout(400);
+  ok(servidor.datos.expedientes.find((e) => e.id === 'p1').etapa === 2, 'el cambio llega al servidor');
+  await seg.click('#toastAccion');
+  p1 = await estado('p1');
+  ok(p1.etapa === 1 && p1.fechaEntradaEtapa === '2026-10-27' && p1.intervenciones.length === 0, 'Deshacer restaura etapa, fecha de entrada y notas');
+
+  // La última etapa no se puede avanzar; un expediente sin etapa no ofrece el botón
+  await expandir('u1'); await expandir('l1');
+  ok(await tarjeta('u1').locator('button', { hasText: 'Cambiar etapa' }).count() === 0, 'en la última etapa no hay «Cambiar etapa»');
+  ok(await tarjeta('l1').locator('button', { hasText: 'Cambiar etapa' }).count() === 0, 'sin etapa no hay «Cambiar etapa»');
+
+  // Intimación: aparece a los 2 días hábiles, se deriva a Legal y se registra con referencia obligatoria
+  await expandir('a1');
+  ok(/Corresponde intimar/.test(await tarjeta('a1').textContent()), 'la ficha avisa «Corresponde intimar»');
+  ok(await tarjeta('v1').locator('text=Corresponde intimar').count() === 0, 'vencido de ayer todavía no corresponde intimar');
+  await tarjeta('a1').locator('button', { hasText: 'Derivar a Legal' }).click();
+  let a1 = await estado('a1');
+  ok(a1.intervenciones.length === 1 && /Legal/.test(a1.intervenciones[0].texto) && !!a1.derivadaLegal, 'Derivar a Legal deja nota y marca');
+  ok(await tarjeta('a1').locator('button', { hasText: 'Derivar a Legal' }).count() === 0, 'derivada: el botón desaparece');
+  await tarjeta('a1').locator('button', { hasText: 'Registrar intimación' }).click();
+  await seg.click('#intimConfirmar');
+  ok(await seg.locator('#intimError').isVisible() && !(await estado('a1')).intimacion, 'intimar sin referencia: error y no se registra');
+  await seg.selectOption('#intimMedio', 'Carta documento');
+  await seg.fill('#intimRef', 'CD 123456789');
+  await seg.click('#intimConfirmar');
+  a1 = await estado('a1');
+  ok(a1.intimacion && a1.intimacion.medio === 'Carta documento' && a1.intimacion.ref === 'CD 123456789' && /Intimación/.test(a1.intervenciones[1].texto) && /CD 123456789/.test(a1.intervenciones[1].texto), 'registra medio y referencia, y deja nota');
+  ok(await titulo('a1') === 'Vencido hace 2 d háb. · Carta de intención' && await clase('a1') === 'rojo', 'alarma cerrada: vuelve a «Vencido hace 2 d háb.» en rojo');
+
+  // Alta desde el formulario: etapa en lugar de plazo propio
+  await seg.click('.app-fab');
+  ok(await seg.locator('#diasPlazo').isVisible(), 'el alta sin etapa pide el plazo propio (otras gestiones)');
+  await seg.selectOption('#etapa', '4');
+  ok(await seg.locator('#diasPlazo').isHidden(), 'al elegir una etapa el plazo propio se oculta');
+  await seg.fill('#numero', '363-99/2026-0');
+  await seg.fill('#tema', 'NUEVA POR ETAPA');
+  await seg.selectOption('#parque', 'Salta');
+  await seg.selectOption('#area', 'Jurídica');
+  await seg.selectOption('#responsable', 'Ana');
+  await seg.fill('#fechaInicio', '2026-11-02');
+  await seg.click('#btnGuardar');
+  const nuevo = await seg.evaluate(() => expedientes.find((e) => e.tema === 'NUEVA POR ETAPA'));
+  ok(nuevo && nuevo.etapa === 4 && nuevo.fechaEntradaEtapa === '2026-11-02', 'guardar crea el expediente con su etapa y fecha de entrada');
+  ok(/·\s*Preadjudicación/.test(await titulo(nuevo.id)), 'y su tarjeta muestra la etapa');
+
+  // Plazos configurados en Proyectos (T9): llegan por /api/sync-cartas y recalculan las tarjetas
+  servidor.plazosEtapas = Plazos.serializarPlazos([5, 3, 10, 15, 5, 10, 30, null, null]);
+  await seg.evaluate(() => localStorage.removeItem('expedientes_crm_cartas_nros_v1'));
+  await abrir();
+  ok(await titulo('p1') === 'Vencido hace 4 d háb. · Presentación' || /^(Vencido|Intimar)/.test(await titulo('p1')), `T9: con el plazo de «Presentación» en 3 días, la tarjeta se recalcula (${await titulo('p1')})`);
 
   ok(problemas.length === 0, 'sin errores de página ni diálogos nativos' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
   await browser.close();
@@ -3763,6 +3992,8 @@ await testMovilTactil();
 await testTecladoYFoco();
 await testFlujo();
 await testResolverArchivar();
+await testEtapas();
+await testPlazosEtapasProyectos();
 await testParquesEnSeguimiento();
 await testResoluciones({ width: 1440, height: 900 }, 8797);
 await testResoluciones({ width: 390, height: 844 }, 8796);

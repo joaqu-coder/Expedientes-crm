@@ -544,6 +544,30 @@
       border-top: 1px solid var(--gray-200);
     }
 
+    /* Etapas del procedimiento (solo tokens del sistema de diseño) */
+    .expediente-actions.expediente-actions-etapa { margin-top: 0; padding-top: 0; border-top: 0; margin-bottom: 8px; }
+    .etapas { display: flex; flex-direction: column; margin: 0 0 4px; }
+    .etapa-item {
+      display: flex; align-items: center; gap: 10px; padding: 6px 0; min-width: 0;
+      font-size: var(--ds-text-info); line-height: var(--ds-text-info-lh); color: var(--ds-border-strong);
+    }
+    .etapa-punto { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; background: var(--ds-border-strong); }
+    .etapa-nombre { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .etapa-dato { white-space: nowrap; }
+    .etapa-sep { color: var(--ds-fg-muted); }
+    .etapa-item.etapa-pasada { color: var(--ds-fg-muted); }
+    .etapa-item.etapa-pasada .etapa-punto { background: var(--ds-fg-muted); }
+    .etapa-item.etapa-actual { color: var(--ds-fg); font-weight: 700; }
+    .etapa-item.etapa-actual .etapa-punto { width: 11px; height: 11px; background: var(--ds-idle); }
+    .etapa-item.etapa-actual.rojo .etapa-punto { background: var(--ds-danger); }
+    .etapa-item.etapa-actual.verde .etapa-punto { background: var(--ds-ok); }
+    .alarma-intimar {
+      background: var(--ui-danger-soft); border: 1px solid var(--ui-danger-border); border-radius: var(--ds-radius-nota);
+      padding: 10px 12px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px;
+    }
+    .alarma-titulo { font-size: var(--ds-text-subtitle); font-weight: 700; color: var(--ds-danger); }
+    .alarma-texto { font-size: var(--ds-text-info); line-height: var(--ds-text-info-lh); color: var(--ds-fg); }
+
     /* Modal */
     .modal-overlay {
       display: none;
@@ -1066,6 +1090,55 @@
     </div>
   </div>
 
+  <!-- Cambiar etapa: el motivo es obligatorio -->
+  <div class="modal-overlay" id="etapaOverlay">
+    <div class="modal" style="max-width: 420px;" role="dialog" aria-modal="true" aria-labelledby="etapaTitle" aria-describedby="etapaAyuda">
+      <div class="modal-header">
+        <h2 class="modal-header-title" id="etapaTitle">Cambiar etapa</h2>
+        <button class="modal-close" id="etapaClose" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-content">
+        <p id="etapaAyuda" style="margin: 0 0 16px; font-size: 14px; line-height: 1.5;"></p>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label required" for="etapaMotivo">Motivo</label>
+          <textarea class="form-textarea" id="etapaMotivo" aria-describedby="etapaError" placeholder="Por qué pasa a la etapa siguiente"></textarea>
+          <span class="form-error" id="etapaError" role="alert" hidden>El motivo es obligatorio.</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-grow" id="etapaCancelar" type="button"></button>
+        <button class="btn btn-primary btn-grow" id="etapaConfirmar" type="button"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Registrar intimación: medio y referencia obligatorios -->
+  <div class="modal-overlay" id="intimOverlay">
+    <div class="modal" style="max-width: 420px;" role="dialog" aria-modal="true" aria-labelledby="intimTitle">
+      <div class="modal-header">
+        <h2 class="modal-header-title" id="intimTitle">Registrar intimación</h2>
+        <button class="modal-close" id="intimClose" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-content">
+        <div class="form-group">
+          <label class="form-label" for="intimMedio">Medio</label>
+          <select class="form-select" id="intimMedio">
+            <option>Carta documento</option><option>Nota</option><option>Correo</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label required" for="intimRef">Número o referencia</label>
+          <input type="text" class="form-input" id="intimRef" aria-describedby="intimError" placeholder="Obligatorio" autocomplete="off">
+          <span class="form-error" id="intimError" role="alert" hidden>La referencia es obligatoria.</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-grow" id="intimCancelar" type="button"></button>
+        <button class="btn btn-primary btn-grow" id="intimConfirmar" type="button"></button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast" role="status" aria-live="polite" hidden>
     <span class="toast-mensaje" id="toastMensaje"></span>
     <button type="button" class="toast-accion" id="toastAccion" hidden></button>
@@ -1086,6 +1159,7 @@
   </div>
 
   <script src="/header.js"></script>
+  <script src="/plazos.js"></script>
   <script>
     // ===== CONFIGURACIÓN =====
     // Iconos de las acciones de la tarjeta expandida (mismo trazo que Proyectos).
@@ -1125,34 +1199,9 @@
 
     let PARQUES = [...PARQUES_DEFAULT];
 
-    // Feriados argentinos 2024-2028. Viernes Santo y Carnaval salen de Pascua; los
-    // trasladables (17/6, 17/8, 12/10, 20/11) siguen la Ley 27.399: martes o miércoles
-    // pasan al lunes anterior, jueves o viernes al lunes siguiente. Los decretos que
-    // agregan puentes turísticos o mueven un feriado por su cuenta NO están: hay que
-    // sumarlos a mano cuando salen (pendiente de confirmar con el usuario, ver CLAUDE.md).
-    // tests/ui.test.mjs recalcula Pascua y las reglas y falla si esta tabla se desvía.
-    const FERIADOS = [
-      "2024-01-01", "2024-02-12", "2024-02-13", "2024-03-24", "2024-03-29",
-      "2024-04-02", "2024-05-01", "2024-05-25", "2024-06-17", "2024-06-20",
-      "2024-07-09", "2024-07-25", "2024-08-17", "2024-10-12", "2024-11-18",
-      "2024-12-08", "2024-12-25",
-      "2025-01-01", "2025-03-03", "2025-03-04", "2025-03-24", "2025-04-02",
-      "2025-04-18", "2025-05-01", "2025-05-25", "2025-06-16", "2025-06-20",
-      "2025-07-09", "2025-07-25", "2025-08-17", "2025-10-12", "2025-11-24",
-      "2025-12-08", "2025-12-25",
-      "2026-01-01", "2026-02-16", "2026-02-17", "2026-03-24", "2026-04-02",
-      "2026-04-03", "2026-05-01", "2026-05-25", "2026-06-15", "2026-06-20",
-      "2026-07-09", "2026-07-25", "2026-08-17", "2026-10-12", "2026-11-23",
-      "2026-12-08", "2026-12-25",
-      "2027-01-01", "2027-02-08", "2027-02-09", "2027-03-24", "2027-03-26",
-      "2027-04-02", "2027-05-01", "2027-05-25", "2027-06-20", "2027-06-21",
-      "2027-07-09", "2027-07-25", "2027-08-16", "2027-10-11", "2027-11-20",
-      "2027-12-08", "2027-12-25",
-      "2028-01-01", "2028-02-28", "2028-02-29", "2028-03-24", "2028-04-02",
-      "2028-04-14", "2028-05-01", "2028-05-25", "2028-06-17", "2028-06-20",
-      "2028-07-09", "2028-07-25", "2028-08-21", "2028-10-16", "2028-11-20",
-      "2028-12-08", "2028-12-25"
-    ];
+    // Feriados: una sola tabla para Seguimiento y Proyectos, en plazos.js (con sus reglas:
+    // Pascua, Ley 27.399). tests/ui.test.mjs recalcula Pascua y falla si se desvía.
+    const FERIADOS = Plazos.FERIADOS;
 
     // Tope del plazo en días hábiles (~4 años). Sin tope, un typo (3000000) hace que
     // calcularFechaFin recorra millones de días en cada render y la app queda colgada
@@ -1175,7 +1224,7 @@
     }
 
     // ===== MODALES: foco, Escape y trampa de Tab =====
-    const OVERLAYS = ['alertOverlay', 'finalOverlay', 'configOverlay', 'modalOverlay']; // del más al menos prioritario
+    const OVERLAYS = ['alertOverlay', 'etapaOverlay', 'intimOverlay', 'finalOverlay', 'configOverlay', 'modalOverlay']; // del más al menos prioritario
     const focoPrevio = {};
 
     function overlayAbierto(id) {
@@ -1213,6 +1262,8 @@
     function cerrarSuperior() {
       const id = OVERLAYS.find(overlayAbierto);
       if (id === 'alertOverlay') cerrarAlert();
+      else if (id === 'etapaOverlay') cerrarEtapa();
+      else if (id === 'intimOverlay') cerrarIntim();
       else if (id === 'finalOverlay') cerrarFinal();
       else if (id === 'configOverlay') cerrarConfigModal();
       else if (id === 'modalOverlay') cerrarModal();
@@ -1849,11 +1900,20 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label required" for="fechaInicio">Fecha de Inicio</label>
-          <input type="date" class="form-input" id="fechaInicio" value="${esc(expediente?.fechaInicio || fechaISO(new Date()))}" aria-required="true">
+          <label class="form-label" for="etapa">Etapa del procedimiento</label>
+          <select class="form-select" id="etapa" ${tieneEtapa(expediente) ? 'disabled aria-describedby="ayuda-etapa"' : ''}>
+            <option value="">Sin etapa (plazo propio)</option>
+            ${Plazos.ETAPAS.map((x, i) => `<option value="${i}"${tieneEtapa(expediente) && expediente.etapa === i ? ' selected' : ''}>${esc(x.n)}</option>`).join('')}
+          </select>
+          ${tieneEtapa(expediente) ? '<span class="form-help" id="ayuda-etapa">Para pasar a la etapa siguiente usá «Cambiar etapa» en la tarjeta.</span>' : ''}
         </div>
 
         <div class="form-group">
+          <label class="form-label required" for="fechaInicio" id="rotuloFecha">${tieneEtapa(expediente) ? 'Entrada a la etapa' : 'Fecha de Inicio'}</label>
+          <input type="date" class="form-input" id="fechaInicio" value="${esc(tieneEtapa(expediente) ? entradaEtapa(expediente) : (expediente?.fechaInicio || fechaISO(new Date())))}" aria-required="true">
+        </div>
+
+        <div class="form-group" id="grupoPlazo"${tieneEtapa(expediente) ? ' hidden' : ''}>
           <label class="form-label required" for="diasPlazo">Plazo en Días Hábiles</label>
           <input type="number" class="form-input" id="diasPlazo" placeholder="30" value="${esc(expediente?.diasPlazo)}" min="1" max="${PLAZO_MAX_DIAS}" step="1" aria-required="true">
         </div>
@@ -2052,7 +2112,9 @@
         const datos = await resp.json();
         if (!datos || !Array.isArray(datos.expedientes)) return false;
         const nros = datos.expedientes.map(c => normalizarNro(c.nro_expediente)).filter(Boolean);
-        localStorage.setItem(CLAVE_NROS_CARTAS, JSON.stringify({ nros, t: Date.now() }));
+        // plazosEtapas: lo configura Proyectos (menú ⋮) y Seguimiento solo lo lee.
+        const plazosEtapas = Array.isArray(datos.plazosEtapas) ? datos.plazosEtapas : null;
+        localStorage.setItem(CLAVE_NROS_CARTAS, JSON.stringify({ nros, t: Date.now(), plazosEtapas }));
         return true;
       } catch (e) { return false; /* sin red: se usa lo último conocido */ }
     }
@@ -2178,6 +2240,187 @@
       } });
     }
 
+    // ===== ETAPAS DEL PROCEDIMIENTO =====
+    // Un expediente con `etapa` (0 a 8, ver Plazos.ETAPAS) cuenta su plazo desde `fechaEntradaEtapa`
+    // con el plazo de esa etapa. Sin `etapa` (otras gestiones) conserva `fechaInicio` + `diasPlazo`.
+    // Los plazos los configura Proyectos (menú ⋮); acá se leen de la copia cacheada junto con la
+    // lista de cartas, y si todavía no hay ninguna rige la tabla del Excel.
+    function tieneEtapa(exp) {
+      return !!exp && Number.isInteger(exp.etapa) && exp.etapa >= 0 && exp.etapa < Plazos.ETAPAS.length;
+    }
+
+    function plazosEtapas() {
+      return Plazos.normalizarPlazos(leerNrosCartas().plazosEtapas);
+    }
+
+    // Los clientes anteriores a las etapas siguen leyendo diasPlazo: se les deja algo coherente.
+    function diasPlazoCompat(etapa) {
+      return plazosEtapas()[etapa] || PLAZO_MAX_DIAS;
+    }
+
+    function entradaEtapa(exp) {
+      return exp.fechaEntradaEtapa || exp.fechaInicio;
+    }
+
+    function intimada(exp) {
+      return !!(exp.intimacion && exp.intimacion.entrada === entradaEtapa(exp));
+    }
+
+    // Una sola fuente para la tarjeta, el orden y la ficha.
+    //   clase: rojo | verde (con etapa) o el semáforo de siempre (sin etapa); archivado = gris.
+    function infoPlazo(exp, hoy) {
+      if (!tieneEtapa(exp)) {
+        const plazo = calcularPlazo(exp.fechaInicio, exp.diasPlazo, hoy);
+        return { conEtapa: false, clase: obtenerSemaforo(plazo).color, texto: textoPlazo(plazo), fin: plazo.fechaFin, plazo };
+      }
+      const et = Plazos.ETAPAS[exp.etapa];
+      const dias = plazosEtapas()[exp.etapa];
+      const r = Plazos.estadoPlazo(parsearFecha(entradaEtapa(exp)), dias, hoy);
+      const estado = r.estado === 'alerta' && intimada(exp) ? 'vencido' : r.estado;
+      const base = { conEtapa: true, etapa: et, dias, fin: r.fin || null, estado, r };
+      switch (estado) {
+        case 'sin_plazo': return { ...base, clase: 'archivado', texto: `Sin plazo · ${et.n}` };
+        case 'en_plazo': return { ...base, clase: 'verde', texto: `En plazo: ${r.restan} d háb. · ${et.n}` };
+        case 'vence_hoy': return { ...base, clase: 'rojo', texto: `Vence hoy · ${et.n}` };
+        case 'alerta': return { ...base, clase: 'archivado', texto: `Intimar: pendiente · ${et.n}` };
+        default: return { ...base, clase: 'rojo', texto: `Vencido hace ${r.diasVencido} d háb. · ${et.n}` };
+      }
+    }
+
+    function fechaCorta(fecha) {
+      return `${String(fecha.getDate()).padStart(2, '0')}/${String(fecha.getMonth() + 1).padStart(2, '0')}`;
+    }
+
+    function htmlEtapa(exp, info, hoy) {
+      const et = info.etapa;
+      const usados = Plazos.diasHabilesEntre(parsearFecha(entradaEtapa(exp)), hoy);
+      const filas = `
+        <div><span class="label">Etapa actual:</span><span>${esc(et.n)}</span></div>
+        <div><span class="label">Responsable de la etapa:</span><span>${esc(et.r)}</span></div>
+        <div><span class="label">Plazo:</span><span>${info.dias === null ? 'Sin plazo' : `${info.dias} días hábiles`}</span></div>
+        <div><span class="label">Entrada a la etapa:</span><span>${esc(formatearFechaCorta(parsearFecha(entradaEtapa(exp))))}</span></div>
+        ${info.dias === null ? '' : `<div><span class="label">Días usados:</span><span>${usados} de ${info.dias}</span></div>`}`;
+      const plazos = plazosEtapas();
+      const lista = Plazos.ETAPAS.map((x, i) => {
+        const cls = i < exp.etapa ? 'etapa-pasada' : i === exp.etapa ? `etapa-actual ${info.clase}` : '';
+        const dato = i < exp.etapa ? 'pasada' : i === exp.etapa ? 'actual' : (plazos[i] === null ? 'sin plazo' : `${plazos[i]} días`);
+        return `<div class="etapa-item ${cls}"><span class="etapa-punto"></span><span class="etapa-nombre">${esc(x.n)}</span><span class="etapa-sep">·</span><span class="etapa-dato">${esc(x.r)}</span><span class="etapa-sep">·</span><span class="etapa-dato">${esc(dato)}</span></div>`;
+      }).join('');
+      let alarma = '';
+      if (info.estado === 'alerta') {
+        alarma = `<div class="alarma-intimar" role="group" aria-label="Corresponde intimar">
+          <div class="alarma-titulo">Corresponde intimar</div>
+          <div class="alarma-texto">Pasaron ${info.r.diasVencido} días hábiles desde el vencimiento (${fechaCorta(info.fin)}) y sigue sin movimiento.</div>
+          ${exp.derivadaLegal
+            ? `<div class="alarma-texto">Derivada a Legal el ${esc(formatearFechaCorta(parsearFecha(exp.derivadaLegal)))}.</div>`
+            : `<button class="btn btn-secondary" type="button" data-id="${esc(exp.id)}" onclick="derivarLegal(this.dataset.id)">Derivar a Legal</button>`}
+          <button class="btn btn-primary" type="button" data-id="${esc(exp.id)}" onclick="abrirIntim(this.dataset.id)">Registrar intimación</button>
+        </div>`;
+      }
+      return { alarma, filas, lista: `<div class="etapas" aria-label="Etapas del procedimiento">${lista}</div>` };
+    }
+
+    let etapaPendiente = null; // id
+    function cambiarEtapa(id) {
+      const exp = expedientes.find(e => e.id === id);
+      if (!tieneEtapa(exp) || exp.etapa + 1 >= Plazos.ETAPAS.length) return;
+      etapaPendiente = id;
+      const de = Plazos.ETAPAS[exp.etapa], a = Plazos.ETAPAS[exp.etapa + 1], dias = plazosEtapas()[exp.etapa + 1];
+      document.getElementById('etapaAyuda').textContent =
+        `Pasa de ${de.n} a ${a.n}. El plazo que rige es de ${dias === null ? 'sin plazo' : `${dias} días hábiles`} desde hoy.`;
+      document.getElementById('etapaMotivo').value = '';
+      document.getElementById('etapaError').hidden = true;
+      abrirOverlay('etapaOverlay', '#etapaMotivo');
+    }
+
+    function cerrarEtapa() {
+      etapaPendiente = null;
+      cerrarOverlay('etapaOverlay');
+    }
+
+    function confirmarEtapa() {
+      if (!etapaPendiente) return;
+      const motivo = document.getElementById('etapaMotivo').value.trim();
+      if (!motivo) {
+        document.getElementById('etapaError').hidden = false;
+        document.getElementById('etapaMotivo').focus();
+        return;
+      }
+      const id = etapaPendiente;
+      const exp = expedientes.find(e => e.id === id);
+      cerrarEtapa();
+      if (!tieneEtapa(exp) || exp.etapa + 1 >= Plazos.ETAPAS.length) return;
+
+      const previo = {
+        etapa: exp.etapa, fechaEntradaEtapa: exp.fechaEntradaEtapa, diasPlazo: exp.diasPlazo,
+        intimacion: exp.intimacion, derivadaLegal: exp.derivadaLegal, notas: (exp.intervenciones || []).length
+      };
+      const de = Plazos.ETAPAS[exp.etapa].n;
+      exp.etapa += 1;
+      exp.fechaEntradaEtapa = fechaISO(hoyLocal()); // el plazo de la etapa nueva arranca hoy
+      exp.diasPlazo = diasPlazoCompat(exp.etapa);
+      delete exp.intimacion; delete exp.derivadaLegal; // la alarma era de la etapa anterior
+      exp.intervenciones = exp.intervenciones || [];
+      exp.intervenciones.push({ hora: textoHora(), texto: `Cambio de etapa: ${de} → ${Plazos.ETAPAS[exp.etapa].n}. Motivo: ${motivo}` });
+      guardarEnLS(true);
+      renderizar();
+      mostrarToast('Etapa cambiada', { accion: () => {
+        const actual = expedientes.find(e => e.id === id);
+        if (!actual) return;
+        actual.etapa = previo.etapa;
+        restaurarCampo(actual, 'fechaEntradaEtapa', previo.fechaEntradaEtapa);
+        restaurarCampo(actual, 'diasPlazo', previo.diasPlazo);
+        restaurarCampo(actual, 'intimacion', previo.intimacion);
+        restaurarCampo(actual, 'derivadaLegal', previo.derivadaLegal);
+        actual.intervenciones = (actual.intervenciones || []).slice(0, previo.notas);
+        guardarEnLS(true);
+        renderizar();
+      } });
+    }
+
+    function derivarLegal(id) {
+      const exp = expedientes.find(e => e.id === id);
+      if (!exp || exp.derivadaLegal) return;
+      exp.derivadaLegal = fechaISO(hoyLocal());
+      exp.intervenciones = exp.intervenciones || [];
+      exp.intervenciones.push({ hora: textoHora(), texto: 'Alarma de intimación derivada a Legal.' });
+      guardarEnLS(true);
+      renderizar();
+    }
+
+    let intimPendiente = null; // id
+    function abrirIntim(id) {
+      if (!expedientes.some(e => e.id === id)) return;
+      intimPendiente = id;
+      document.getElementById('intimRef').value = '';
+      document.getElementById('intimError').hidden = true;
+      abrirOverlay('intimOverlay', '#intimRef');
+    }
+
+    function cerrarIntim() {
+      intimPendiente = null;
+      cerrarOverlay('intimOverlay');
+    }
+
+    function confirmarIntim() {
+      if (!intimPendiente) return;
+      const ref = document.getElementById('intimRef').value.trim();
+      if (!ref) {
+        document.getElementById('intimError').hidden = false;
+        document.getElementById('intimRef').focus();
+        return;
+      }
+      const medio = document.getElementById('intimMedio').value;
+      const exp = expedientes.find(e => e.id === intimPendiente);
+      cerrarIntim();
+      if (!exp) return;
+      exp.intimacion = { fecha: fechaISO(hoyLocal()), medio, ref, entrada: entradaEtapa(exp) };
+      exp.intervenciones = exp.intervenciones || [];
+      exp.intervenciones.push({ hora: textoHora(), texto: `Intimación enviada por ${medio}. Ref.: ${ref}. Alarma cerrada.` });
+      guardarEnLS(true);
+      renderizar();
+    }
+
     function sinTildes(texto) {
       return String(texto).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     }
@@ -2216,25 +2459,25 @@
 
       // El plazo se calcula una sola vez por expediente (no en cada comparación del sort).
       const hoy = hoyLocal();
-      const items = filtrados.map(exp => ({
-        exp,
-        plazo: calcularPlazo(exp.fechaInicio, exp.diasPlazo, hoy)
-      }));
+      const items = filtrados.map(exp => ({ exp, info: infoPlazo(exp, hoy) }));
 
       if (pestanaActiva === 'archivados') {
         // Más recientemente resueltos primero
         items.sort((a, b) => (b.exp.fechaResolucion || '').localeCompare(a.exp.fechaResolucion || ''));
       } else {
         // Vencidos primero (el más atrasado arriba), luego por fecha de vencimiento
-        items.sort((a, b) => a.plazo.fechaFin - b.plazo.fechaFin);
+        // Sin plazo (etapas 8 y 9) al final
+        const t = (x) => (x.info.fin ? x.info.fin.getTime() : Infinity);
+        items.sort((a, b) => (t(a) === t(b) ? 0 : t(a) < t(b) ? -1 : 1));
       }
 
-      const html = items.map(({ exp, plazo }) => {
+      const html = items.map(({ exp, info }) => {
         const archivado = pestanaActiva === 'archivados';
-        const clase = archivado ? 'archivado' : obtenerSemaforo(plazo).color;
+        const clase = archivado ? 'archivado' : info.clase;
+        const etapa = !archivado && info.conEtapa ? htmlEtapa(exp, info, hoy) : null;
         const titulo = archivado
           ? `${exp.final === 'archivada' ? 'Archivado' : 'Resuelto'} el ${exp.fechaResolucion ? formatearFechaCorta(parsearFecha(exp.fechaResolucion)) : '—'}`
-          : textoPlazo(plazo);
+          : info.texto;
         const expandId = `exp-expand-${exp.id}`;
         const notas = exp.intervenciones || [];
         const abierto = expandidos.has(exp.id);
@@ -2254,13 +2497,16 @@
             </button>
 
             <div id="${esc(expandId)}" class="expediente-expanded-content${abierto ? ' expanded' : ''}">
+              ${etapa ? etapa.alarma : ''}
               <div class="expediente-expanded-dates">
                 <div><span class="label">Área responsable:</span><span>${esc(exp.area)}</span></div>
                 <div><span class="label">Agente:</span><span>${esc(exp.responsable)}</span></div>
                 <div><span class="label">Inicio:</span><span>${esc(formatearFechaCorta(parsearFecha(exp.fechaInicio)))}</span></div>
                 ${archivado && exp.motivoFinal ? `<div><span class="label">Motivo:</span><span>${esc(exp.motivoFinal)}</span></div>` : ''}
-                ${archivado ? '' : `<div><span class="label">Vence:</span><span>${esc(formatearFechaCorta(plazo.fechaFin))}</span></div>`}
+                ${etapa ? etapa.filas : ''}
+                ${archivado || !info.fin ? '' : `<div><span class="label">Vence:</span><span>${esc(formatearFechaCorta(info.fin))}</span></div>`}
               </div>
+              ${etapa ? etapa.lista : ''}
 
               <div class="notas-seccion">
                 <div class="notas-header">Notas${notas.length ? ` (${notas.length})` : ''}</div>
@@ -2271,6 +2517,9 @@
                   </div>`).join('')}</div>` : '<div class="notas-empty">Sin notas aún</div>'}
               </div>
 
+              ${etapa && exp.etapa + 1 < Plazos.ETAPAS.length ? `<div class="expediente-actions expediente-actions-etapa">
+                <button class="btn btn-primary btn-grow" type="button" data-id="${esc(exp.id)}" onclick="cambiarEtapa(this.dataset.id)">Cambiar etapa</button>
+              </div>` : ''}
               <div class="expediente-actions">
                 ${archivado
                   ? `<button class="btn btn-secondary btn-grow" data-id="${esc(exp.id)}" onclick="reabrirExpediente(this.dataset.id)">${HeaderGlobal.icono('reabrir')} Reabrir</button>`
@@ -2307,6 +2556,19 @@
 
     function actualizarFechaVencimiento() {
       const fechaInicio = document.getElementById('fechaInicio')?.value;
+      const etapaSel = document.getElementById('etapa')?.value;
+      if (etapaSel) {
+        // Con etapa, el plazo es el que Proyectos configuró para esa etapa.
+        const dias = plazosEtapas()[Number(etapaSel)];
+        const salida = document.getElementById('fechaVencimiento');
+        if (!fechaInicio) { salida.textContent = 'Completa la fecha de entrada a la etapa'; return; }
+        if (dias === null) { salida.textContent = 'Esta etapa no tiene plazo'; return; }
+        const fin = Plazos.vencimientoEtapa(parsearFecha(fechaInicio), dias);
+        const r = Plazos.estadoPlazo(parsearFecha(fechaInicio), dias, hoyLocal());
+        const txt = r.estado === 'en_plazo' ? `${r.restan} días hábiles restantes` : r.estado === 'vence_hoy' ? 'vence hoy' : `vencido hace ${r.diasVencido} d háb.`;
+        salida.textContent = `${fin.toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} (${txt})`;
+        return;
+      }
       const plazoEscrito = (document.getElementById('diasPlazo')?.value || '').trim();
       const diasPlazo = /^\d{1,4}$/.test(plazoEscrito) ? parseInt(plazoEscrito, 10) : 0;
 
@@ -2371,6 +2633,14 @@
       // Cálculo de vencimiento en tiempo real
       document.getElementById('fechaInicio').addEventListener('change', actualizarFechaVencimiento);
       document.getElementById('diasPlazo').addEventListener('input', actualizarFechaVencimiento);
+      // Con etapa, el plazo propio no corre: lo da la etapa, y la fecha pasa a ser la de entrada.
+      document.getElementById('etapa').addEventListener('change', () => {
+        const conEtapa = !!document.getElementById('etapa').value;
+        document.getElementById('grupoPlazo').hidden = conEtapa;
+        document.getElementById('rotuloFecha').textContent = conEtapa ? 'Entrada a la etapa' : 'Fecha de Inicio';
+        limpiarErrorCampo('diasPlazo');
+        actualizarFechaVencimiento();
+      });
     }
 
     function abrirNuevo() {
@@ -2412,6 +2682,9 @@
       const responsable = document.getElementById('responsable').value;
       const parque = document.getElementById('parque').value;
       const fechaInicio = document.getElementById('fechaInicio').value;
+      const etapaTexto = document.getElementById('etapa').value;
+      const conEtapa = etapaTexto !== '';
+      const etapa = conEtapa ? parseInt(etapaTexto, 10) : null;
       const diasPlazoTexto = document.getElementById('diasPlazo').value.trim();
       // Solo enteros en dígitos: parseInt('1e2') daba 1 y parseInt('2.5') daba 2 sin avisar.
       const diasPlazo = /^\d{1,4}$/.test(diasPlazoTexto) ? parseInt(diasPlazoTexto, 10) : NaN;
@@ -2427,7 +2700,7 @@
         [!area, 'area', 'Elegí un área'],
         [!responsable, 'responsable', 'Elegí un responsable'],
         [!fechaInicio, 'fechaInicio', 'Indicá la fecha de inicio'],
-        [!(diasPlazo >= 1 && diasPlazo <= PLAZO_MAX_DIAS), 'diasPlazo', `Indicá el plazo en días hábiles, un entero entre 1 y ${PLAZO_MAX_DIAS}`]
+        [!conEtapa && !(diasPlazo >= 1 && diasPlazo <= PLAZO_MAX_DIAS), 'diasPlazo', `Indicá el plazo en días hábiles, un entero entre 1 y ${PLAZO_MAX_DIAS}`]
       ].filter(([falla]) => falla);
 
       if (errores.length) {
@@ -2451,8 +2724,16 @@
         exp.area = area;
         exp.responsable = responsable;
         exp.parque = parque;
-        exp.fechaInicio = fechaInicio;
-        exp.diasPlazo = diasPlazo;
+        if (conEtapa) {
+          // El campo de fecha es la entrada a la etapa; fechaInicio (alta del expediente) no se toca.
+          exp.etapa = etapa;
+          exp.fechaEntradaEtapa = fechaInicio;
+          exp.fechaInicio = exp.fechaInicio || fechaInicio;
+          exp.diasPlazo = diasPlazoCompat(etapa);
+        } else {
+          exp.fechaInicio = fechaInicio;
+          exp.diasPlazo = diasPlazo;
+        }
       } else {
         exp = {
           id: idNuevo(),
@@ -2462,7 +2743,8 @@
           responsable,
           parque,
           fechaInicio,
-          diasPlazo,
+          diasPlazo: conEtapa ? diasPlazoCompat(etapa) : diasPlazo,
+          ...(conEtapa ? { etapa, fechaEntradaEtapa: fechaInicio } : {}),
           estado: 'activo',
           intervenciones: []
         };
@@ -2524,6 +2806,20 @@
     document.getElementById('btnCancelar').addEventListener('click', cerrarModal);
     document.getElementById('btnGuardar').addEventListener('click', guardarExpediente);
     document.getElementById('btnEliminar').addEventListener('click', eliminarExpediente);
+    document.getElementById('etapaClose').addEventListener('click', cerrarEtapa);
+    document.getElementById('etapaCancelar').addEventListener('click', cerrarEtapa);
+    document.getElementById('etapaCancelar').innerHTML = HeaderGlobal.icono('cancelar') + 'Cancelar';
+    document.getElementById('etapaConfirmar').innerHTML = HeaderGlobal.icono('resolver') + 'Confirmar cambio';
+    document.getElementById('etapaConfirmar').addEventListener('click', confirmarEtapa);
+    document.getElementById('etapaMotivo').addEventListener('input', () => { document.getElementById('etapaError').hidden = true; });
+    document.getElementById('etapaOverlay').addEventListener('click', (e) => { if (e.target.id === 'etapaOverlay') cerrarEtapa(); });
+    document.getElementById('intimClose').addEventListener('click', cerrarIntim);
+    document.getElementById('intimCancelar').addEventListener('click', cerrarIntim);
+    document.getElementById('intimCancelar').innerHTML = HeaderGlobal.icono('cancelar') + 'Cancelar';
+    document.getElementById('intimConfirmar').innerHTML = HeaderGlobal.icono('guardar') + 'Confirmar';
+    document.getElementById('intimConfirmar').addEventListener('click', confirmarIntim);
+    document.getElementById('intimRef').addEventListener('input', () => { document.getElementById('intimError').hidden = true; });
+    document.getElementById('intimOverlay').addEventListener('click', (e) => { if (e.target.id === 'intimOverlay') cerrarIntim(); });
     document.getElementById('finalClose').addEventListener('click', cerrarFinal);
     document.getElementById('finalCancelar').addEventListener('click', cerrarFinal);
     document.getElementById('finalConfirmar').addEventListener('click', confirmarFinal);
@@ -2568,6 +2864,11 @@
     (async () => {
       cargarDesdeLS();
       renderizar(); // Mostrar lo local de inmediato, sin esperar la red
+      // Plazos por etapa configurados en Proyectos: en segundo plano; si cambiaron, se recalcula.
+      const plazosAntes = JSON.stringify(plazosEtapas());
+      refrescarNrosCartas().then(llego => {
+        if (llego && JSON.stringify(plazosEtapas()) !== plazosAntes) renderizar();
+      });
 
       // Cambios hechos sin conexión: primero subirlos; si no se puede, conservar lo local
       // en lugar de pisarlo con lo que hay en el servidor.

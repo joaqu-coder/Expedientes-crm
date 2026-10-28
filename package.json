@@ -5,7 +5,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node tests/ids.test.mjs && node tests/worker.test.mjs && node tests/ui.test.mjs && npm run test:concurrencia",
+    "test": "node tests/ids.test.mjs && node tests/plazos.test.mjs && node tests/worker.test.mjs && node tests/ui.test.mjs && npm run test:concurrencia",
     "test:ids": "node tests/ids.test.mjs",
     "test:worker": "node tests/worker.test.mjs",
     "test:ui": "node tests/ui.test.mjs",

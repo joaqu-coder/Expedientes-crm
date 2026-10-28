@@ -208,6 +208,15 @@ function validarCartas(datos) {
     const p = Number(datos.plazoDias);
     if (!Number.isFinite(p) || p < 1 || p > 3650) return "'plazoDias' debe ser un número entre 1 y 3650.";
   }
+  // Plazos por etapa (menú ⋮ de Proyectos): [{etapa 1..9, nombre, dias entero 1..999 | null = sin plazo}].
+  // Los leen Proyectos y Seguimiento; un valor roto no puede quedar en el archivo.
+  if (datos.plazosEtapas != null) {
+    if (!Array.isArray(datos.plazosEtapas)) return "'plazosEtapas' debe ser un array.";
+    const malo = datos.plazosEtapas.some((x) => !x || typeof x !== 'object' ||
+      !Number.isInteger(x.etapa) || x.etapa < 1 || x.etapa > 9 ||
+      (x.dias !== null && !(Number.isInteger(x.dias) && x.dias >= 1 && x.dias <= 999)));
+    if (malo) return "Cada entrada de 'plazosEtapas' debe ser {etapa: 1 a 9, dias: entero de 1 a 999 o null}.";
+  }
   return null;
 }
 

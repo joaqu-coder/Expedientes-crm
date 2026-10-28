@@ -194,6 +194,36 @@ async function testCartasValidacionRechazaDatosRotos() {
   assert(data.error === 'Datos rechazados', 'el 422 explica el motivo');
 }
 
+// plazosEtapas (menú ⋮ de Proyectos) lo leen las dos apps: un valor roto no puede llegar al archivo.
+async function testCartasValidaPlazosEtapas() {
+  const env = { GITHUB_TOKEN: 'fake-token', ASSETS: { fetch: async () => new Response('no debería llamarse') } };
+  const malos = {
+    'no es un array': 'x',
+    'una etapa fuera de 1..9': [{ etapa: 10, nombre: 'X', dias: 5 }],
+    'dias negativos': [{ etapa: 1, nombre: 'Carta', dias: -3 }],
+    'dias sobre el tope': [{ etapa: 1, nombre: 'Carta', dias: 5000 }],
+    'dias no entero': [{ etapa: 1, nombre: 'Carta', dias: 2.5 }]
+  };
+  for (const [queEs, plazosEtapas] of Object.entries(malos)) {
+    llamadas = [];
+    mockFetch(async () => { throw new Error('no debería llegar a GitHub'); });
+    const resp = await worker.fetch(new Request('https://x.workers.dev/api/sync-cartas', {
+      method: 'POST', body: JSON.stringify({ expedientes: [], plazosEtapas })
+    }), env);
+    assert(resp.status === 422, `plazosEtapas que ${queEs} se rechaza con 422 (dio ${resp.status})`);
+  }
+  llamadas = [];
+  mockFetch(async (url, opts) => {
+    if (!opts || opts.method === 'GET' || !opts.method) return new Response('', { status: 404 });
+    return new Response(JSON.stringify({ content: { sha: 'n' } }), { status: 201 });
+  });
+  const bien = [{ etapa: 1, nombre: 'Carta de intención', dias: 7 }, { etapa: 8, nombre: 'Procedimiento de venta', dias: null }];
+  const resp = await worker.fetch(new Request('https://x.workers.dev/api/sync-cartas', {
+    method: 'POST', body: JSON.stringify({ expedientes: [], plazosEtapas: bien })
+  }), env);
+  assert(resp.status === 200, `plazosEtapas válido (con null = sin plazo) se acepta (dio ${resp.status})`);
+}
+
 async function testCartasVersion() {
   llamadas = [];
   mockFetch(async (url) => {
@@ -575,6 +605,7 @@ async function main() {
   await testCartasPostEscribeArchivoPropio();
   await testCartasConflicto409();
   await testCartasValidacionRechazaDatosRotos();
+  await testCartasValidaPlazosEtapas();
   await testCartasVersion();
   await testSyncYCartasNoSeMezclan();
   await testParquesGetSinArchivoTodavia();

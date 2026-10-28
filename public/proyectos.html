@@ -388,6 +388,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 </div>
 
 <script src="/header.js"></script>
+<script src="/plazos.js"></script>
 <script src="/confirmar-cambios.js"></script>
 <script>
 (function(){
@@ -413,6 +414,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   var STORAGE_KEY = "cartas_intencion_parques_v3";
   var BORRADOS_KEY = "cartas_intencion_borrados_v1";
   var PLAZO_KEY = "cartas_intencion_plazo_v1";
+  var PLAZOS_ETAPAS_KEY = "cartas_intencion_plazos_etapas_v1";
   var UMBRAL_KEY = "cartas_intencion_umbrales_v1";
   var SYNC_AT_KEY = "cartas_intencion_ultima_sync_v1";
   // Umbrales del semáforo, en días hábiles RESTANTES del plazo estimado.
@@ -434,7 +436,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   var SIT_BADGE = {Adjudicada:"b-ok", En_tratamiento:"b-warn",
                    Sin_tratamiento:"b-idle", Desestimada:"b-danger"};
 
-  // Feriados nacionales (+ Güemes, 17/6, feriado en Salta) 2025-2026.
+  // Feriados nacionales 2024-2028.
   //
   // IMPORTANTE: esta tabla tiene fecha de vencimiento. Los feriados
   // trasladables y los puentes turísticos los fija el gobierno por decreto
@@ -446,15 +448,9 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   // vencía en 2027 se calculaba como si 2027 no tuviera ningún feriado, lo
   // que adelantaba la fecha y disparaba urgencias falsas sin avisar.
   //
-  // Para extender: agregá el año al array y listo, el aviso desaparece solo.
-  var FERIADOS = [
-    "2025-01-01","2025-03-03","2025-03-04","2025-03-24","2025-04-02","2025-04-18",
-    "2025-05-01","2025-05-25","2025-06-17","2025-06-20","2025-07-09","2025-08-17",
-    "2025-10-12","2025-11-24","2025-12-08","2025-12-25",
-    "2026-01-01","2026-02-16","2026-02-17","2026-03-24","2026-04-02","2026-04-17",
-    "2026-05-01","2026-05-25","2026-06-17","2026-06-20","2026-07-09","2026-08-17",
-    "2026-10-12","2026-11-20","2026-12-08","2026-12-25"
-  ];
+  // Para extender: agregá el año al array de public/plazos.js y listo, el aviso desaparece solo.
+  // La tabla vive en plazos.js, compartida con Seguimiento (un solo calendario).
+  var FERIADOS = Plazos.FERIADOS;
 
   // Último año cubierto por la tabla, derivado de los datos: no hay que
   // acordarse de actualizar una constante aparte al agregar un año.
@@ -784,6 +780,26 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     configSucia = true;
     marcarPendiente();
   }
+  // Plazos por etapa (menú ⋮ → Plazos por etapa): 9 valores, entero 1..999 o null = sin plazo.
+  // Viajan en cada POST como plazosEtapas y los lee también Seguimiento. Mismo cuidado que el
+  // plazo global: mientras este dispositivo tenga un cambio sin subir (configSucia), lo remoto no lo pisa.
+  function loadPlazosEtapas(){
+    try{ return Plazos.normalizarPlazos(JSON.parse(localStorage.getItem(PLAZOS_ETAPAS_KEY))); }
+    catch(e){ return Plazos.normalizarPlazos(null); }
+  }
+  function savePlazosEtapas(lista){
+    try{ localStorage.setItem(PLAZOS_ETAPAS_KEY, JSON.stringify(Plazos.serializarPlazos(lista))); }catch(e){}
+    configSucia = true;
+    marcarPendiente();
+  }
+  function adoptarPlazosEtapasRemotos(datos){
+    if(configSucia || !datos || !Array.isArray(datos.plazosEtapas)) return false;
+    var nuevos = Plazos.normalizarPlazos(datos.plazosEtapas);
+    if(JSON.stringify(nuevos) === JSON.stringify(state.plazosEtapas)) return false;
+    state.plazosEtapas = nuevos;
+    try{ localStorage.setItem(PLAZOS_ETAPAS_KEY, JSON.stringify(Plazos.serializarPlazos(nuevos))); }catch(e){}
+    return true;
+  }
   function loadUmbrales(){
     try{
       var raw = JSON.parse(localStorage.getItem(UMBRAL_KEY));
@@ -825,6 +841,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
         cambio = true;
       }
     }
+    if(adoptarPlazosEtapasRemotos(datos)) cambio = true;
     return cambio;
   }
 
@@ -970,6 +987,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
         body: JSON.stringify({
           expedientes: state.expedientes, plazoDias: state.plazoDias,
           umbrales: state.umbrales, eliminados: state.eliminados,
+          plazosEtapas: Plazos.serializarPlazos(state.plazosEtapas),
           _baseSha: state.baseSha
         })
       });
@@ -1103,6 +1121,8 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
         }
       }
 
+      if(adoptarPlazosEtapasRemotos(datos)) cambio = true;
+
       // Si datos.json existe, el repo es la fuente de verdad — incluso con
       // cero expedientes. Antes un repo vacío se ignoraba y la demo local
       // sobrevivía para después subirse.
@@ -1221,7 +1241,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   var state = {
     expedientes: load(), editingId: null, modalMode: null,
     filterParque:"", filterRubro:"", filterSituacion:"", filterPlazo:"", search:"",
-    plazoDias: loadPlazo(), umbrales: loadUmbrales(),
+    plazoDias: loadPlazo(), umbrales: loadUmbrales(), plazosEtapas: loadPlazosEtapas(),
     eliminados: cargarBorrados(), baseSha: null,
     // dashboard: sección activa, rankings desplegados y panel de detalle abierto
     dashSection: "resumen", verTodos: {}, drill: null, drillEmpresa: null, metricas: null
@@ -2201,7 +2221,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     if(ev.target===veil && pulsoEnFondo) intentarSalir();
     pulsoEnFondo = false;
   });
-  modal.addEventListener("input", function(){ if(state.modalMode!=="pasar") state.formSucio = true; });
+  modal.addEventListener("input", function(){ if(state.modalMode!=="pasar" && state.modalMode!=="plazos") state.formSucio = true; });
 
   var focoPrevio = null;
 
@@ -2302,7 +2322,8 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     var id = state.editingId;
     var e = id ? state.expedientes.find(function(x){return x.id===id;}) : null;
     var isNew = !e;
-    if(isNew || state.modalMode==="edit"){ renderModalEdit(e, isNew); }
+    if(state.modalMode==="plazos"){ renderModalPlazos(); }
+    else if(isNew || state.modalMode==="edit"){ renderModalEdit(e, isNew); }
     else if(state.modalMode==="pasar"){ renderModalPasar(e); }
     else { renderModalView(e); }
   }
@@ -2387,8 +2408,60 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     }
   }
 
+  // Plazos por etapa (menú ⋮). Vacío = etapa sin plazo. Lo que se guarda lo leen Proyectos y
+  // Seguimiento; el archivado automático (132 días hábiles) NO se configura acá: queda fijo.
+  function abrirPlazosEtapas(){
+    focoPrevio = document.activeElement;
+    state.editingId = null;
+    state.modalMode = "plazos";
+    state.formSucio = false;
+    veil.hidden = false;
+    document.body.style.overflow = "hidden";
+    renderModal();
+    enfocarPrimero();
+  }
+  function renderModalPlazos(){
+    modal.innerHTML =
+      '<div class="modal-head"><h2>Plazos por etapa</h2><button class="x-close" id="xClosePlazos" aria-label="Cerrar">&times;</button></div>'+
+      '<p class="view-empty">Días hábiles que tiene cada etapa para resolverse. El conteo arranca el día siguiente a la entrada. Vacío = sin plazo.</p>'+
+      Plazos.ETAPAS.map(function(et, i){
+        var d = state.plazosEtapas[i];
+        return '<div class="field"><label for="plazoEt'+i+'">'+(i+1)+'. '+esc(et.n)+' <span class="view-empty">· '+esc(et.r)+'</span></label>'+
+          '<input type="number" id="plazoEt'+i+'" min="1" max="'+Plazos.PLAZO_MAX_DIAS+'" step="1" inputmode="numeric" placeholder="Sin plazo" value="'+(d===null?"":d)+'"></div>';
+      }).join("")+
+      '<div class="field-error" id="plazosError" role="alert" hidden>Cada plazo es un número entero de 1 a '+Plazos.PLAZO_MAX_DIAS+', o vacío para «sin plazo».</div>'+
+      '<div class="view-actions">'+
+        '<button type="button" class="btn btn-secondary btn-grow" id="plazosCancelar">'+HeaderGlobal.icono("cancelar")+'Cancelar</button>'+
+        '<button type="button" class="btn btn-outline btn-grow" id="plazosRestaurar">Restaurar</button>'+
+        '<button type="button" class="btn btn-primary btn-grow" id="plazosGuardar">'+HeaderGlobal.icono("guardar")+'Guardar</button>'+
+      '</div>'+
+      src('El archivado automático de cartas sin tratamiento (132 días hábiles) no se configura acá.');
+    var ocultar = function(){ document.getElementById("plazosError").hidden = true; };
+    document.getElementById("xClosePlazos").addEventListener("click", closeModal);
+    document.getElementById("plazosCancelar").addEventListener("click", closeModal);
+    document.getElementById("plazosRestaurar").addEventListener("click", function(){
+      Plazos.ETAPAS.forEach(function(et, i){ document.getElementById("plazoEt"+i).value = et.p===null ? "" : et.p; });
+      ocultar();
+    });
+    modal.addEventListener("input", ocultar);
+    document.getElementById("plazosGuardar").addEventListener("click", function(){
+      var lista = [], malo = false;
+      Plazos.ETAPAS.forEach(function(et, i){
+        var t = document.getElementById("plazoEt"+i).value.trim();
+        if(t===""){ lista.push(null); return; }
+        var n = /^\d{1,3}$/.test(t) ? parseInt(t,10) : 0;
+        if(n<1 || n>Plazos.PLAZO_MAX_DIAS) malo = true; else lista.push(n);
+      });
+      if(malo){ document.getElementById("plazosError").hidden = false; return; }
+      state.plazosEtapas = lista;
+      savePlazosEtapas(lista);
+      closeModal();
+      mostrarToast("Plazos guardados.");
+    });
+  }
+
   // Diálogo de «Pasar a Seguimiento»: dentro de la misma ficha, así hereda el foco,
-  // la trampa de Tab y Escape. Plazo, área y agente son obligatorios.
+  // la trampa de Tab y Escape. Etapa, área y agente son obligatorios.
   function renderModalPasar(e){
     var opts = function(lista){
       return '<option value="" selected disabled>Seleccionar…</option>'+lista.map(function(x){ return '<option value="'+esc(x)+'">'+esc(x)+'</option>'; }).join("");
@@ -2397,11 +2470,12 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
       '<div class="modal-head"><h2>Pasar a Seguimiento</h2><button class="x-close" id="xClosePasar" aria-label="Cerrar">&times;</button></div>'+
       '<div class="view-head"><div class="view-empresa">'+esc(e.nombre_empresa||"(sin nombre de empresa)")+'</div>'+
       '<div class="view-exp">'+esc(e.nro_expediente||"s/n")+'</div></div>'+
-      '<p class="view-empty">Se crea en Seguimiento con el mismo número. El plazo cuenta desde hoy.</p>'+
-      '<div class="field"><label for="pasarPlazo">Plazo en días hábiles<span class="req">*</span></label><input type="number" id="pasarPlazo" min="1" max="999" step="1" inputmode="numeric" placeholder="30"></div>'+
+      '<p class="view-empty">Se crea en Seguimiento con el mismo número. El plazo de la etapa cuenta desde hoy.</p>'+
+      '<div class="field"><label for="pasarEtapa">Etapa<span class="req">*</span></label><select id="pasarEtapa"><option value="" selected disabled>Seleccionar…</option>'+
+        Plazos.ETAPAS.map(function(et,i){ var d=state.plazosEtapas[i]; return '<option value="'+i+'">'+esc(et.n)+' ('+(d===null?'sin plazo':d+' d háb.')+')</option>'; }).join("")+'</select></div>'+
       '<div class="field"><label for="pasarArea">Área<span class="req">*</span></label><select id="pasarArea">'+opts(segListas.areas)+'</select></div>'+
       '<div class="field"><label for="pasarResp">Agente<span class="req">*</span></label><select id="pasarResp">'+opts(segListas.responsables)+'</select></div>'+
-      '<div class="field-error" id="pasarError" role="alert" hidden>Completá el plazo (1 a 999), el área y el agente.</div>'+
+      '<div class="field-error" id="pasarError" role="alert" hidden>Elegí la etapa, el área y el agente.</div>'+
       '<div class="view-actions">'+
         '<button type="button" class="btn btn-secondary btn-grow" id="pasarCancelar">'+HeaderGlobal.icono("cancelar")+'Cancelar</button>'+
         '<button type="button" class="btn btn-primary btn-grow" id="pasarConfirmar">'+HeaderGlobal.icono("resolver")+'Pasar</button>'+
@@ -2734,6 +2808,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     titulo: "Proyectos",
     accion: { etiqueta: "Nuevo Proyecto", onClick: function(){ openModal(null); } },
     menu: [
+      { etiqueta: "Plazos por etapa", onClick: function(){ abrirPlazosEtapas(); } },
       { etiqueta: "Actualizar datos", onClick: function(){ bajarCambiosIniciales(); } }
     ]
   });
@@ -2800,7 +2875,8 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
         x.estado = "activo";
         delete x.final; delete x.motivoFinal; delete x.fechaResolucion;
         // El plazo arranca de nuevo.
-        x.fechaInicio = hoy.getFullYear()+"-"+String(hoy.getMonth()+1).padStart(2,"0")+"-"+String(hoy.getDate()).padStart(2,"0");
+        x.fechaInicio = hoyISO(hoy);
+        if(Number.isInteger(x.etapa)) x.fechaEntradaEtapa = x.fechaInicio; // misma etapa, el reloj de la etapa arranca hoy
         x.intervenciones = x.intervenciones || [];
         x.intervenciones.push({hora:horaLocal(), texto:"Rescatado desde Proyectos. El plazo arranca de nuevo."});
         datos.timestamp = new Date().toISOString();
@@ -2841,15 +2917,16 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     renderModal();
     enfocarPrimero();
   }
+  function hoyISO(f){ return f.getFullYear()+"-"+String(f.getMonth()+1).padStart(2,"0")+"-"+String(f.getDate()).padStart(2,"0"); }
   async function onPasarASeguimiento(){
     var e = state.expedientes.find(function(x){return x.id===state.editingId;});
     var k = e && normNro(e.nro_expediente);
     if(!k) return;
-    var plazoTxt = document.getElementById("pasarPlazo").value.trim();
-    var plazo = /^\d{1,3}$/.test(plazoTxt) ? parseInt(plazoTxt,10) : 0;
+    var etapaTxt = document.getElementById("pasarEtapa").value;
+    var etapa = /^[0-8]$/.test(etapaTxt) ? parseInt(etapaTxt,10) : -1;
     var area = document.getElementById("pasarArea").value;
     var resp = document.getElementById("pasarResp").value;
-    if(plazo<1 || !area || !resp){ document.getElementById("pasarError").hidden = false; return; }
+    if(etapa<0 || !area || !resp){ document.getElementById("pasarError").hidden = false; return; }
     var btn = document.getElementById("pasarConfirmar");
     btn.disabled = true;
     try{
@@ -2873,8 +2950,9 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
           numero: e.nro_expediente,
           tema: e.nombre_empresa||"",
           area: area, responsable: resp,
-          fechaInicio: hoy.getFullYear()+"-"+String(hoy.getMonth()+1).padStart(2,"0")+"-"+String(hoy.getDate()).padStart(2,"0"),
-          diasPlazo: plazo,
+          fechaInicio: hoyISO(hoy),
+          etapa: etapa, fechaEntradaEtapa: hoyISO(hoy),
+          diasPlazo: state.plazosEtapas[etapa] || Plazos.PLAZO_MAX_DIAS, // solo para clientes anteriores a las etapas
           estado: "activo",
           intervenciones: [{hora:horaLocal(), texto:"Pasado desde Proyectos."}]
         };

@@ -36,6 +36,7 @@ try {
 const ESTATICOS = {
   '/seguimiento.html': ['text/html; charset=utf-8', 'public/seguimiento.html'],
   '/header.js': ['application/javascript; charset=utf-8', 'public/header.js'],
+  '/plazos.js': ['application/javascript; charset=utf-8', 'public/plazos.js'],
   '/confirmar-cambios.js': ['application/javascript; charset=utf-8', 'public/confirmar-cambios.js'],
   '/design-system.css': ['text/css; charset=utf-8', 'public/design-system.css'],
   '/ui-kit.css': ['text/css; charset=utf-8', 'public/ui-kit.css']

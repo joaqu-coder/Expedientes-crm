@@ -64,7 +64,7 @@ self.addEventListener('fetch', (event) => {
   // índigo de unos milisegundos" al cambiar de pantalla. No estaba en la
   // página —se grabó la navegación cuadro por cuadro y no hay un solo pixel
   // azulado en el viewport—, estaba en el manifest cacheado.
-  const CRITICOS = ['/header.js', '/confirmar-cambios.js', '/design-system.css', '/ui-kit.css', '/manifest.json'];
+  const CRITICOS = ['/header.js', '/plazos.js', '/confirmar-cambios.js', '/design-system.css', '/ui-kit.css', '/manifest.json'];
   const esCritico = isHTML || CRITICOS.includes(url.pathname);
 
   if (esCritico) {
