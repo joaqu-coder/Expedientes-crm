@@ -285,13 +285,20 @@
       "responsable": "Alejandro Saravia",
       "fechaInicio": "2026-10-28",
       "diasPlazo": 30,
-      "estado": "activo",
+      "estado": "devuelto",
       "intervenciones": [
         {
           "hora": "28/10/2026 10:16",
           "texto": "Pasado desde Proyectos."
+        },
+        {
+          "hora": "28/10/2026 12:03",
+          "texto": "Expediente archivado. Motivo: Estoy probando. Vuelve a Proyectos."
         }
-      ]
+      ],
+      "final": "archivada",
+      "fechaResolucion": "2026-10-28",
+      "motivoFinal": "Estoy probando"
     }
   ],
   "areas": [
@@ -316,5 +323,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-10-28T13:16:58.431Z"
+  "timestamp": "2026-10-28T15:03:04.591Z"
 }
