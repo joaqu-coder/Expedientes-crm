@@ -4264,6 +4264,25 @@
       "contacto_mail_2": "",
       "fecha_ultimo_movimiento": "23/10/2026 09:58",
       "actualizado_en": "2026-10-23T13:26:17.545Z"
+    },
+    {
+      "id": "exp_mvs51ioe78pa8",
+      "intervenciones": [],
+      "nro_expediente": "363-49671/2022-01",
+      "nombre_empresa": "Prueba 1",
+      "fecha_inicio": "28/10/2026",
+      "parque_industrial": "SAC",
+      "rubro": "Manufactura",
+      "superficie_solicitada_m2": 1500,
+      "actividad_empresa": "fabrica de pupo",
+      "situacion": "En_tratamiento",
+      "representante_nombre": "Jimmy Xendrix",
+      "contacto_tel": "4393169",
+      "contacto_tel_2": "387-4393165",
+      "contacto_mail": "laviejadepipo@gmail.com",
+      "contacto_mail_2": "",
+      "fecha_ultimo_movimiento": "28/10/2026 10:16",
+      "actualizado_en": "2026-10-28T13:16:24.399Z"
     }
   ],
   "plazoDias": 20,
