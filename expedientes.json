@@ -276,6 +276,22 @@
           "texto": "Representante Emilse Rigo solicita nuevos plazos para proyecto industrial. Reunión programada para el (26/10/2026).La empresa cambia de razón social  (EyP)."
         }
       ]
+    },
+    {
+      "id": "1793193418431749",
+      "numero": "363-49671/2022-01",
+      "tema": "Prueba 1",
+      "area": "Administración",
+      "responsable": "Alejandro Saravia",
+      "fechaInicio": "2026-10-28",
+      "diasPlazo": 30,
+      "estado": "activo",
+      "intervenciones": [
+        {
+          "hora": "28/10/2026 10:16",
+          "texto": "Pasado desde Proyectos."
+        }
+      ]
     }
   ],
   "areas": [
@@ -300,5 +316,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-10-28T02:05:59.196Z"
+  "timestamp": "2026-10-28T13:16:58.431Z"
 }
