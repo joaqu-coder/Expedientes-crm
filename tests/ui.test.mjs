@@ -911,7 +911,7 @@ async function testTecladoYFoco() {
   for (const sel of ['#btnMenu', '#fabNuevo', '#modalClose', '#configClose']) {
     ok(!!(await page.locator(sel).getAttribute('aria-label')), `${sel} tiene aria-label`);
   }
-  ok((await page.locator('[role="dialog"], [role="alertdialog"]').count()) === 4, 'los 4 modales tienen role dialog/alertdialog');
+  ok((await page.locator('[role="dialog"], [role="alertdialog"]').count()) === 6, 'los 6 modales tienen role dialog/alertdialog');
 
   // Abrir con teclado: la tarjeta es un botón real
   const boton = page.locator('.expediente-header-urgencia').first();
