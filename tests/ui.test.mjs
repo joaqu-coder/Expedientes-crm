@@ -377,10 +377,10 @@ async function testMenoresSeguimiento() {
 
   // 3. Deshacer actúa sobre el expediente de hoy, no sobre una copia vieja.
   await sembrar([{ ...base, id: 'u1', tema: 'Para resolver' }]);
-  await page.evaluate(() => { marcarResuelto('u1'); finalMotivo.value = 'm'; confirmarFinal(); expedientes = JSON.parse(JSON.stringify(expedientes)); }); // llega una descarga
+  await page.evaluate(() => { archivarExpediente('u1'); finalMotivo.value = 'm'; confirmarFinal(); expedientes = JSON.parse(JSON.stringify(expedientes)); }); // llega una descarga
   await page.click('#toastAccion');
-  ok(await page.evaluate(() => expedientes[0].estado) === 'activo', 'Deshacer de Resolver funciona aunque la lista se haya reemplazado');
-  await page.evaluate(() => { cambiarPestana('archivados'); cambiarPestana('activos'); marcarResuelto('u1'); finalMotivo.value = 'm'; confirmarFinal(); reabrirExpediente('u1'); expedientes = JSON.parse(JSON.stringify(expedientes)); });
+  ok(await page.evaluate(() => expedientes[0].estado) === 'activo', 'Deshacer de Archivar funciona aunque la lista se haya reemplazado');
+  await page.evaluate(() => { cambiarPestana('archivados'); cambiarPestana('activos'); archivarExpediente('u1'); finalMotivo.value = 'm'; confirmarFinal(); reabrirExpediente('u1'); expedientes = JSON.parse(JSON.stringify(expedientes)); });
   await page.click('#toastAccion');
   ok(await page.evaluate(() => expedientes[0].estado) === 'archivado', 'Deshacer de Reabrir funciona aunque la lista se haya reemplazado');
 
@@ -652,7 +652,7 @@ async function testPlazosYTarjetas() {
   await page.locator('.pestana-btn', { hasText: 'Archivados' }).click();
   ok((await cards.count()) === 1, 'la pestaña Archivados lista 1');
   const arch = cards.first();
-  ok(/Resuelto el .*20\/09\/2026/.test(await arch.locator('.expediente-urgencia-dias').textContent()), 'la archivada dice "Resuelto el …"');
+  ok(/Archivado el .*20\/09\/2026/.test(await arch.locator('.expediente-urgencia-dias').textContent()), 'la archivada dice "Archivado el …"');
   ok(await arch.locator('.exp-dot').count() === 0, 'la archivada no lleva punto de plazo: no tiene plazo');
   ok(await arch.locator('.expediente-header-urgencia.archivado').count() === 1 && !(await arch.textContent()).includes('Vencido'), 'la archivada va en gris, sin semáforo ni "Vencido"');
   const fondo = await arch.locator('.expediente-header-urgencia').evaluate((el) => getComputedStyle(el).backgroundColor);
@@ -750,11 +750,11 @@ async function testMovilTactil() {
       y: Math.round(b.top)
     };
   });
-  ok(Math.round(resolver.alto) === 40, `Resolver mide los 40px de la especificación (${Math.round(resolver.alto)}px)`);
+  ok(Math.round(resolver.alto) === 40, `Archivar mide los 40px de la especificación (${Math.round(resolver.alto)}px)`);
   ok(resolver.arriba && resolver.abajo,
-     `Resolver responde al toque en los 44px completos (arriba=${resolver.arriba}, abajo=${resolver.abajo}, y=${resolver.y}, tapa=${resolver.quien})`);
+     `Archivar responde al toque en los 44px completos (arriba=${resolver.arriba}, abajo=${resolver.abajo}, y=${resolver.y}, tapa=${resolver.quien})`);
 
-  // Resolver y Editar van uno al lado del otro, del mismo ancho y en la misma
+  // Archivar y Editar van uno al lado del otro, del mismo ancho y en la misma
   // línea (pedido del usuario 2026-10-21: antes apilados a todo el ancho).
   const filaAcciones = await page.evaluate(() => {
     const botones = [...document.querySelector('.expediente-actions').querySelectorAll('.btn')];
@@ -765,10 +765,10 @@ async function testMovilTactil() {
       anchos: cajas.map((b) => Math.round(b.width))
     };
   });
-  ok(filaAcciones.cantidad === 3 && filaAcciones.mismaLinea,
-     `Resolver, Archivar y Editar van en la misma fila (${filaAcciones.cantidad} botones, misma línea=${filaAcciones.mismaLinea})`);
+  ok(filaAcciones.cantidad === 2 && filaAcciones.mismaLinea,
+     `Archivar y Editar van en la misma fila (${filaAcciones.cantidad} botones, misma línea=${filaAcciones.mismaLinea})`);
   ok(Math.max(...filaAcciones.anchos) - Math.min(...filaAcciones.anchos) <= 1,
-     `Resolver, Archivar y Editar miden lo mismo de ancho (${filaAcciones.anchos.join(' / ')}px)`);
+     `Archivar y Editar miden lo mismo de ancho (${filaAcciones.anchos.join(' / ')}px)`);
 
   // Distancias pedidas (2026-10-21): 0,5 mm entre el ⋮ y la búsqueda (2px) y
   // 16px entre los chips y las tarjetas, sin línea divisoria. Subió de 8 a 16
@@ -984,13 +984,13 @@ async function testFlujo() {
   });
   const toast = page.locator('#toast');
 
-  // Resolver: toast con Deshacer, sin popup bloqueante
+  // Archivar: diálogo con motivo, toast con Deshacer, sin popup de alerta
   await expandir(page, 'Primero');
-  await page.locator('.expediente-card-new', { hasText: 'Primero' }).locator('button', { hasText: 'Resolver' }).click();
+  await page.locator('.expediente-card-new', { hasText: 'Primero' }).locator('button', { hasText: 'Archivar' }).click();
   await page.fill('#finalMotivo', 'Cumplido');
   await page.click('#finalConfirmar');
-  ok(await toast.isVisible() && /archivado/.test(await toast.textContent()), 'Resolver muestra un toast "archivado"');
-  ok(!(await page.locator('#alertOverlay').isVisible()), 'Resolver ya no abre un popup bloqueante');
+  ok(await toast.isVisible() && /archivado/.test(await toast.textContent()), 'Archivar muestra un toast "archivado"');
+  ok(!(await page.locator('#alertOverlay').isVisible()), 'Archivar no abre el popup de alerta');
   ok((await page.locator('.expediente-card-new').count()) === 1, 'el expediente salió de Activos');
   await page.click('#toastAccion');
   ok((await page.locator('.expediente-card-new').count()) === 2, 'Deshacer lo devuelve a Activos');
@@ -3567,9 +3567,15 @@ async function testTransiciones() {
   server.close();
 }
 
-// Resolver / Archivar con motivo, devolución a Proyectos y rescate (2026-10-27).
+// Archivar con motivo, devolución a Proyectos y rescate retomando los días usados.
+// (2026-10-27; Resolver se quitó el 2026-10-28: Archivar es la única salida.)
 async function testResolverArchivar() {
-  console.log('\n=== SEGUIMIENTO ↔ PROYECTOS: RESOLVER, ARCHIVAR Y RESCATAR ===');
+  console.log('\n=== SEGUIMIENTO ↔ PROYECTOS: ARCHIVAR Y RESCATAR ===');
+  const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const diasHabilesAtras = (n) => { const d = new Date(); d.setHours(0, 0, 0, 0); let k = 0; while (k < n) { d.setDate(d.getDate() - 1); if (d.getDay() !== 0 && d.getDay() !== 6) k++; } return iso(d); };
+  // Días hábiles en (desde, hasta], sin feriados (la ventana de la prueba es de pocos días).
+  const habilesEntre = (desde, hasta) => { let n = 0; const d = new Date(desde + 'T00:00:00'); const h = new Date(hasta + 'T00:00:00'); while (d < h) { d.setDate(d.getDate() + 1); if (d.getDay() !== 0 && d.getDay() !== 6) n++; } return n; };
+  const hace4 = diasHabilesAtras(4);
   const PUERTO = 8780;
   const HTML_PROY = fs.readFileSync(path.join(RAIZ, 'public/proyectos.html'), 'utf8');
   const NRO_CARTA = '363-166383/2026-0';
@@ -3577,7 +3583,7 @@ async function testResolverArchivar() {
   const servidor = {
     sha: 1, posts: [], fuerza409: false,
     datos: { expedientes: [
-      { ...base, id: 'carta', numero: NRO_CARTA, tema: 'SYRES S.R.L - Comercial', fechaInicio: '2026-01-05' },
+      { ...base, id: 'carta', numero: NRO_CARTA, tema: 'SYRES S.R.L - Comercial', fechaInicio: hace4 },
       { ...base, id: 'otra', numero: '363-9/2026-0', tema: 'Camioneta' },
       { ...base, id: 'otra2', numero: '363-10/2026-0', tema: 'Obra red' }
     ], areas: ['Jurídica', 'Operación'], responsables: ['Ana', 'Leiva'], parques: ['Salta'] }
@@ -3632,10 +3638,11 @@ async function testResolverArchivar() {
   const contadores = () => seg.evaluate(() => [...document.querySelectorAll('.pestana-btn .count')].map((c) => c.textContent));
 
   ok(JSON.stringify(await contadores()) === '["3","0"]', 'T9: arranca con 3 activos y 0 archivados');
+  ok(await seg.locator('.expediente-card-new button', { hasText: 'Resolver' }).count() === 0, 'ya no hay botón Resolver en ninguna tarjeta');
 
   // T1 — sin motivo no pasa nada
-  await abrirAccion('otra', 'Resolver');
-  ok(await seg.locator('#finalOverlay').isVisible(), 'Resolver abre el diálogo del motivo');
+  await abrirAccion('otra', 'Archivar');
+  ok(await seg.locator('#finalOverlay').isVisible(), 'Archivar abre el diálogo del motivo');
   await seg.click('#finalConfirmar');
   ok(await seg.locator('#finalError').isVisible(), 'T1: sin motivo muestra «El motivo es obligatorio»');
   ok((await estado('otra')).estado === 'activo' && !(await estado('otra')).final, 'T1: sin motivo el expediente sigue activo');
@@ -3648,7 +3655,7 @@ async function testResolverArchivar() {
   await seg.fill('#finalMotivo', 'Se respondió la nota');
   await seg.click('#finalConfirmar');
   let o = await estado('otra');
-  ok(o.final === 'resuelta' && o.motivoFinal === 'Se respondió la nota' && o.estado === 'archivado' && /^\d{4}-\d{2}-\d{2}$/.test(o.fechaResolucion), 'T2: resuelta con motivo y fecha');
+  ok(o.final === 'archivada' && o.motivoFinal === 'Se respondió la nota' && o.estado === 'archivado' && /^\d{4}-\d{2}-\d{2}$/.test(o.fechaResolucion), 'T2: archivada con motivo y fecha');
   ok(!(await tarjetas()).includes('otra'), 'T2: salió de la lista de Seguimiento');
   ok(JSON.stringify(await contadores()) === '["2","1"]', 'T9: los contadores pasan a 2 y 1');
 
@@ -3673,13 +3680,13 @@ async function testResolverArchivar() {
   await seg.evaluate(() => cambiarPestana('activos'));
 
   // Una carta de Proyectos vuelve a Proyectos, no a Archivados
-  await abrirAccion('carta', 'Resolver');
+  await abrirAccion('carta', 'Archivar');
   await seg.waitForFunction(() => /Vuelve a Proyectos/.test(document.getElementById('finalAyuda').textContent));
   ok(true, 'el diálogo avisa «Vuelve a Proyectos» para una carta');
   await seg.fill('#finalMotivo', 'Adjudicada');
   await seg.click('#finalConfirmar');
   const c = await estado('carta');
-  ok(c.estado === 'devuelto' && c.final === 'resuelta' && c.motivoFinal === 'Adjudicada', 'la carta resuelta queda «devuelto» con su motivo');
+  ok(c.estado === 'devuelto' && c.final === 'archivada' && c.motivoFinal === 'Adjudicada', 'la carta archivada queda «devuelto» con su motivo');
   ok(!(await tarjetas()).includes('carta'), 'la carta sale de Activos');
   await seg.evaluate(() => cambiarPestana('archivados'));
   ok(!(await tarjetas()).includes('carta'), 'y no aparece en Archivados');
@@ -3691,7 +3698,7 @@ async function testResolverArchivar() {
   const pro = await ctx.newPage();
   pro.on('pageerror', (e) => problemas.push('pageerror proyectos: ' + e.message));
   await pro.goto(`http://localhost:${PUERTO}/proyectos`, { waitUntil: 'networkidle' });
-  await pro.waitForFunction(() => /Resuelto en Seguimiento/.test(document.body.textContent));
+  await pro.waitForFunction(() => /Archivado en Seguimiento/.test(document.body.textContent));
   ok(true, 'Proyectos marca la carta devuelta en su tarjeta');
   await pro.locator('.exp-card', { hasText: 'SYRES' }).click();
   ok(/Adjudicada/.test(await pro.locator('#secDevuelto').textContent()), 'la ficha muestra el motivo');
@@ -3701,9 +3708,10 @@ async function testResolverArchivar() {
   ok(await pro.locator('#veil').isHidden(), 'la ficha se cierra al rescatar');
   const r = servidor.datos.expedientes.find((e) => e.id === 'carta');
   const hoy = new Date();
-  const hoyISO = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+  const hoyISO = iso(hoy);
   ok(r.estado === 'activo' && r.final === undefined && r.motivoFinal === undefined && r.fechaResolucion === undefined, 'rescatar deja la carta activa, sin final ni motivo (tras reintentar el 409)');
-  ok(r.fechaInicio === hoyISO, 'el plazo arranca de nuevo (fechaInicio = hoy)');
+  ok(habilesEntre(r.fechaInicio, hoyISO) === 4, `el rescate retoma los 4 días hábiles usados, no arranca de cero (fechaInicio=${r.fechaInicio})`);
+  ok(r.fechaInicio !== hoyISO, 'el plazo no arranca de hoy');
   ok(r.intervenciones.length === 3 && r.intervenciones[0].texto === 'Nota previa' && /Rescatado desde Proyectos/.test(r.intervenciones[2].texto), 'el historial se conserva y suma la nota de rescate');
   ok(servidor.datos.expedientes.length === 3, 'T6: el rescate no duplica ni pierde expedientes');
 

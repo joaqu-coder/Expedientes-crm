@@ -45,11 +45,10 @@ ni las actualizaciones, ni los pasos de fondo. Eso es responsabilidad del agente
 - **Parques: el registro editado en los dos dispositivos a la vez** gana la versión
   de este dispositivo (y se registra en consola). Una fusión por campo sería mejor.
 
-### Resolver y Archivar con motivo; cartas devueltas a Proyectos (2026-10-27)
+### Archivar con motivo; cartas devueltas a Proyectos (2026-10-27; Resolver quitado 2026-10-28)
 
-Seguimiento tiene dos salidas del listado, **las dos con motivo obligatorio** (diálogo `#finalOverlay`,
-`abrirFinal`/`confirmarFinal`): *Resolver* (`final:"resuelta"`) y *Archivar* (`final:"archivada"`).
-Hoy se comportan igual; solo cambia la etiqueta. Se guardan `final`, `fechaResolucion`, `motivoFinal` y una
+Seguimiento tiene una sola salida del listado, *Archivar*, **con motivo obligatorio** (diálogo `#finalOverlay`,
+`abrirFinal`/`confirmarFinal`, `final:"archivada"`). *Resolver* se eliminó el 2026-10-28: era lo mismo. Se guardan `final`, `fechaResolucion`, `motivoFinal` y una
 nota en `intervenciones`. Deshacer (toast) restaura todo, incluida la nota.
 
 - **Otras gestiones** (no son cartas): `estado:"archivado"`, pestaña Archivados, **Reabrir** (limpia los campos
@@ -60,7 +59,7 @@ nota en `intervenciones`. Deshacer (toast) restaura todo, incluida la nota.
   espera a la red. **Sin lista cacheada y sin red, Resolver archiva en Seguimiento** (Reabrir lo recupera).
 - **Proyectos** solo LEE `/api/sync` (`cargarDevueltos`): la tarjeta dice «Resuelto/Archivado en Seguimiento el…»
   y la ficha muestra estado y motivo con **Rescatar a Seguimiento**. Rescatar es la única escritura: lee con sha,
-  deja el expediente `activo` (sin final/motivo/fecha), `fechaInicio` = hoy (el plazo arranca de nuevo), suma una
+  deja el expediente `activo` (sin final/motivo/fecha), `fechaInicio` se recalcula para retomar los días hábiles ya usados hasta el archivo (`diasUsadosAlArchivar` / `fechaInicioConDiasUsados`: el reloj no arranca de cero), suma una
   nota, y POSTea con `_baseSha`; ante 409 relee y reintenta (3 veces). No escribe `cartas-intencion.json`.
 - **Pasar a Seguimiento (2026-10-28)**: en la ficha de una carta `En_tratamiento` (no archivada, ni devuelta, ni ya presente en
   Seguimiento) el botón abre, dentro de la misma ficha (`modalMode:"pasar"`), plazo, área y agente (obligatorios; las listas salen

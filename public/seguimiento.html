@@ -1044,18 +1044,18 @@
     </div>
   </div>
 
-  <!-- Resolver / Archivar: el motivo es obligatorio -->
+  <!-- Archivar: el motivo es obligatorio -->
   <div class="modal-overlay" id="finalOverlay">
     <div class="modal" style="max-width: 420px;" role="dialog" aria-modal="true" aria-labelledby="finalTitle" aria-describedby="finalAyuda">
       <div class="modal-header">
-        <h2 class="modal-header-title" id="finalTitle">Resolver expediente</h2>
+        <h2 class="modal-header-title" id="finalTitle">Archivar expediente</h2>
         <button class="modal-close" id="finalClose" aria-label="Cerrar">✕</button>
       </div>
       <div class="modal-content">
         <p id="finalAyuda" style="margin: 0 0 16px; font-size: 14px; line-height: 1.5;"></p>
         <div class="form-group" style="margin-bottom: 0;">
           <label class="form-label required" for="finalMotivo">Motivo</label>
-          <textarea class="form-textarea" id="finalMotivo" aria-describedby="finalError" placeholder="Por qué se resuelve o archiva"></textarea>
+          <textarea class="form-textarea" id="finalMotivo" aria-describedby="finalError" placeholder="Por qué se archiva"></textarea>
           <span class="form-error" id="finalError" role="alert" hidden>El motivo es obligatorio.</span>
         </div>
       </div>
@@ -2070,26 +2070,24 @@
 
     let finalPendiente = null; // { id, tipo }
 
-    function marcarResuelto(expedienteId) { abrirFinal(expedienteId, 'resuelta'); }
     function archivarExpediente(expedienteId) { abrirFinal(expedienteId, 'archivada'); }
 
     function abrirFinal(expedienteId, tipo) {
       const exp = expedientes.find(e => e.id === expedienteId);
       if (!exp) return;
       finalPendiente = { id: expedienteId, tipo };
-      const resolver = tipo === 'resuelta';
       const textoAyuda = () => {
         document.getElementById('finalAyuda').textContent = esCartaDeProyectos(exp)
-          ? `Vuelve a Proyectos como ${resolver ? 'resuelto' : 'archivado'}. Desde ahí se puede rescatar y vuelve a Seguimiento.`
-          : `Pasa a Archivados como ${resolver ? 'resuelto' : 'archivado'}. Desde ahí se puede reabrir.`;
+          ? 'Vuelve a Proyectos como archivado. Desde ahí se puede rescatar y vuelve a Seguimiento.'
+          : 'Pasa a Archivados. Desde ahí se puede reabrir.';
       };
       // Si la lista de cartas llega con el diálogo abierto, el texto se corrige.
       refrescarNrosCartas().then(llego => {
         if (llego && finalPendiente && finalPendiente.id === expedienteId) textoAyuda();
       });
-      document.getElementById('finalTitle').textContent = resolver ? 'Resolver expediente' : 'Archivar expediente';
+      document.getElementById('finalTitle').textContent = 'Archivar expediente';
       textoAyuda();
-      document.getElementById('finalConfirmar').innerHTML = HeaderGlobal.icono(resolver ? 'resolver' : 'archivar') + (resolver ? 'Confirmar resolución' : 'Confirmar archivo');
+      document.getElementById('finalConfirmar').innerHTML = HeaderGlobal.icono('archivar') + 'Confirmar archivo';
       document.getElementById('finalMotivo').value = '';
       document.getElementById('finalError').hidden = true;
       abrirOverlay('finalOverlay', '#finalMotivo');
@@ -2118,7 +2116,6 @@
         estado: exp.estado, fechaResolucion: exp.fechaResolucion, final: exp.final, motivoFinal: exp.motivoFinal,
         notas: (exp.intervenciones || []).length
       };
-      const resolver = tipo === 'resuelta';
       exp.estado = devolver ? 'devuelto' : 'archivado';
       exp.final = tipo;
       exp.fechaResolucion = fechaISO(new Date());
@@ -2126,7 +2123,7 @@
       exp.intervenciones = exp.intervenciones || [];
       exp.intervenciones.push({
         hora: textoHora(),
-        texto: `${resolver ? 'Expediente resuelto' : 'Expediente archivado'}. Motivo: ${motivo}. ${devolver ? 'Vuelve a Proyectos.' : 'Pasa a Archivados.'}`
+        texto: `Expediente archivado. Motivo: ${motivo}. ${devolver ? 'Vuelve a Proyectos.' : 'Pasa a Archivados.'}`
       });
       guardarEnLS(true);
       renderizar();
@@ -2233,7 +2230,7 @@
         const archivado = pestanaActiva === 'archivados';
         const clase = archivado ? 'archivado' : obtenerSemaforo(plazo).color;
         const titulo = archivado
-          ? `${exp.final === 'archivada' ? 'Archivado' : 'Resuelto'} el ${exp.fechaResolucion ? formatearFechaCorta(parsearFecha(exp.fechaResolucion)) : '—'}`
+          ? `Archivado el ${exp.fechaResolucion ? formatearFechaCorta(parsearFecha(exp.fechaResolucion)) : '—'}`
           : textoPlazo(plazo);
         const expandId = `exp-expand-${exp.id}`;
         const notas = exp.intervenciones || [];
@@ -2274,8 +2271,7 @@
               <div class="expediente-actions">
                 ${archivado
                   ? `<button class="btn btn-secondary btn-grow" data-id="${esc(exp.id)}" onclick="reabrirExpediente(this.dataset.id)">${HeaderGlobal.icono('reabrir')} Reabrir</button>`
-                  : `<button class="btn btn-success btn-grow" data-id="${esc(exp.id)}" onclick="marcarResuelto(this.dataset.id)">${HeaderGlobal.icono('resolver')} Resolver</button>
-                     <button class="btn btn-outline btn-grow" data-id="${esc(exp.id)}" onclick="archivarExpediente(this.dataset.id)">${HeaderGlobal.icono('archivar')} Archivar</button>`
+                  : `<button class="btn btn-outline btn-grow" data-id="${esc(exp.id)}" onclick="archivarExpediente(this.dataset.id)">${HeaderGlobal.icono('archivar')} Archivar</button>`
                 }
                 <button class="btn btn-outline btn-grow" data-id="${esc(exp.id)}" onclick="abrirEditar(this.dataset.id)">${HeaderGlobal.icono('editar')} Editar</button>
               </div>

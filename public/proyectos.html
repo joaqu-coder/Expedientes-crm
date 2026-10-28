@@ -2754,7 +2754,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   function normNro(n){ return String(n||"").replace(/[–—]/g,"-").replace(/\s+/g,""); }
   function devueltoDe(e){ return e ? devueltos[normNro(e.nro_expediente)] || null : null; }
   function leyendaDevuelto(x){
-    return (x.final==="archivada"?"Archivado":"Resuelto")+" en Seguimiento"+(x.fechaResolucion?" el "+x.fechaResolucion.split("-").reverse().join("/"):"");
+    return "Archivado en Seguimiento"+(x.fechaResolucion?" el "+x.fechaResolucion.split("-").reverse().join("/"):"");
   }
   async function cargarDevueltos(){
     try{
@@ -2777,6 +2777,19 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
       if(!veil.hidden && state.editingId && state.modalMode!=="edit") renderModal();
     }catch(err){ /* sin red: se muestra lo último que se supo */ }
   }
+  // Días hábiles que el expediente llevaba usados cuando se archivó (desde su inicio hasta el archivo).
+  function isoAFecha(s){ var p=String(s||"").split("-"); return new Date(+p[0], +p[1]-1, +p[2]); }
+  function diasUsadosAlArchivar(x){
+    if(!x.fechaInicio || !x.fechaResolucion) return 0;
+    return diasHabilesEntre(isoAFecha(x.fechaInicio), isoAFecha(x.fechaResolucion));
+  }
+  // Fecha de inicio tal que, desde ella hasta hoy, hay exactamente n días hábiles.
+  function fechaInicioConDiasUsados(n, hoy){
+    var f = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()), k = 0;
+    while(k < n){ f.setDate(f.getDate()-1); if(esHabil(f)) k++; }
+    return fechaISO(f);
+  }
+
   async function onRescatarASeguimiento(){
     var e = state.expedientes.find(function(x){return x.id===state.editingId;});
     var k = e && normNro(e.nro_expediente);
@@ -2797,12 +2810,13 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
           return;
         }
         var hoy = new Date();
+        var usados = diasUsadosAlArchivar(x); // antes de borrar fechaResolucion
         x.estado = "activo";
         delete x.final; delete x.motivoFinal; delete x.fechaResolucion;
-        // El plazo arranca de nuevo.
-        x.fechaInicio = hoy.getFullYear()+"-"+String(hoy.getMonth()+1).padStart(2,"0")+"-"+String(hoy.getDate()).padStart(2,"0");
+        // Retoma los días hábiles que ya llevaba usados: el reloj no arranca de cero.
+        x.fechaInicio = fechaInicioConDiasUsados(usados, hoy);
         x.intervenciones = x.intervenciones || [];
-        x.intervenciones.push({hora:horaLocal(), texto:"Rescatado desde Proyectos. El plazo arranca de nuevo."});
+        x.intervenciones.push({hora:horaLocal(), texto:"Rescatado desde Proyectos. Retoma los "+usados+" días hábiles usados."});
         datos.timestamp = new Date().toISOString();
         if(sha) datos._baseSha = sha;
         var post = await HeaderGlobal.fetchApi("/api/sync", {
