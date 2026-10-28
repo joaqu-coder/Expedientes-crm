@@ -62,6 +62,12 @@ nota en `intervenciones`. Deshacer (toast) restaura todo, incluida la nota.
   y la ficha muestra estado y motivo con **Rescatar a Seguimiento**. Rescatar es la única escritura: lee con sha,
   deja el expediente `activo` (sin final/motivo/fecha), `fechaInicio` = hoy (el plazo arranca de nuevo), suma una
   nota, y POSTea con `_baseSha`; ante 409 relee y reintenta (3 veces). No escribe `cartas-intencion.json`.
+- **Pasar a Seguimiento (2026-10-28)**: en la ficha de una carta `En_tratamiento` (no archivada, ni devuelta, ni ya presente en
+  Seguimiento) el botón abre, dentro de la misma ficha (`modalMode:"pasar"`), plazo, área y agente (obligatorios; las listas salen
+  de `/api/sync`). Crea en `expedientes.json` un expediente `activo` con el mismo número, `tema` = nombre de la empresa, `fechaInicio`
+  = hoy, `parque` si está en la lista de Seguimiento, y la nota «Pasado desde Proyectos.». Lee con sha, POSTea con `_baseSha` y reintenta
+  ante 409 (3 veces); si el número ya existe en Seguimiento, no duplica. Nunca fue automático: se pasa a mano, carta por carta.
+  Test: final de `testResolverArchivar()`.
 - **Sin cambios**: el archivado automático de Proyectos (132 días hábiles, solo `Sin_tratamiento`).
 - **No existe «Cambiar etapa»**: las etapas del mockup no están en el repo. No se inventaron.
 - **Pendientes**: reactivación automática desde Proyectos (sin definir cómo se detecta actividad); un cliente

@@ -3580,11 +3580,15 @@ async function testResolverArchivar() {
       { ...base, id: 'carta', numero: NRO_CARTA, tema: 'SYRES S.R.L - Comercial', fechaInicio: '2026-01-05' },
       { ...base, id: 'otra', numero: '363-9/2026-0', tema: 'Camioneta' },
       { ...base, id: 'otra2', numero: '363-10/2026-0', tema: 'Obra red' }
-    ], areas: ['Jurídica'], responsables: ['Ana'], parques: [] }
+    ], areas: ['Jurídica', 'Operación'], responsables: ['Ana', 'Leiva'], parques: ['Salta'] }
   };
   const hoyTxt = '01/01/2099 00:00';
   const carta = { id: 'c1', nro_expediente: NRO_CARTA, nombre_empresa: 'SYRES S.R.L', fecha_inicio: '05/01/2026',
     parque_industrial: 'Salta', rubro: 'Manufactura', situacion: 'En_tratamiento', fecha_ultimo_movimiento: hoyTxt, intervenciones: [] };
+  const cartaNueva = { id: 'c2', nro_expediente: '363-777/2026-0', nombre_empresa: 'NUEVA S.A.', fecha_inicio: '05/02/2026',
+    parque_industrial: 'Salta', rubro: 'Manufactura', situacion: 'En_tratamiento', fecha_ultimo_movimiento: hoyTxt, intervenciones: [] };
+  const cartaFria = { id: 'c3', nro_expediente: '363-888/2026-0', nombre_empresa: 'FRIA S.A.', fecha_inicio: '05/02/2026',
+    parque_industrial: 'Salta', rubro: 'Manufactura', situacion: 'Sin_tratamiento', fecha_ultimo_movimiento: hoyTxt, intervenciones: [] };
   const json = (res, cod, obj) => { res.writeHead(cod, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
   const server = http.createServer((req, res) => {
     const ruta = req.url.split('?')[0];
@@ -3605,7 +3609,7 @@ async function testResolverArchivar() {
       return;
     }
     if (ruta === '/api/sync') return json(res, 200, { ...servidor.datos, _meta: { existe: true, sha: String(servidor.sha) } });
-    if (ruta === '/api/sync-cartas') return json(res, 200, { expedientes: [carta], plazoDias: 90, umbrales: {}, eliminados: [], _meta: { existe: true, sha: 'c' } });
+    if (ruta === '/api/sync-cartas') return json(res, 200, { expedientes: [carta, cartaNueva, cartaFria], plazoDias: 90, umbrales: {}, eliminados: [], _meta: { existe: true, sha: 'c' } });
     if (ruta === '/api/version-cartas') return json(res, 200, { version: 'c' });
     if (servirHeaderJs(req, res)) return;
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -3709,6 +3713,37 @@ async function testResolverArchivar() {
   await seg.reload({ waitUntil: 'networkidle' });
   const lista = await seg.evaluate(() => expedientes.map((e) => e.id + ':' + e.estado));
   ok(lista.filter((x) => x.startsWith('carta:')).length === 1 && lista.includes('carta:activo'), `T6: Seguimiento ve la carta una sola vez y activa (${lista.join(', ')})`);
+
+  // Proyectos → Seguimiento: «Pasar a Seguimiento» desde la ficha de una carta en tratamiento
+  await pro.locator('.exp-card', { hasText: 'FRIA' }).click();
+  ok(await pro.locator('#btnPasarSeg').count() === 0, 'pasar: una carta sin tratamiento no ofrece «Pasar a Seguimiento»');
+  await pro.click('#xCloseView');
+  await pro.locator('.exp-card', { hasText: 'SYRES' }).click();
+  ok(await pro.locator('#btnPasarSeg').count() === 0, 'pasar: una carta que ya está en Seguimiento no lo ofrece');
+  await pro.click('#xCloseView');
+  await pro.locator('.exp-card', { hasText: 'NUEVA' }).click();
+  await pro.click('#btnPasarSeg');
+  const antes = servidor.datos.expedientes.length;
+  await pro.click('#pasarConfirmar');
+  ok(await pro.locator('#pasarError').isVisible() && servidor.datos.expedientes.length === antes, 'pasar: sin plazo, área y agente no se guarda nada');
+  const opcAreas = await pro.locator('#pasarArea option').allTextContents();
+  ok(opcAreas.includes('Operación') && (await pro.locator('#pasarResp option').allTextContents()).includes('Leiva'), 'pasar: área y agente salen de las listas de Seguimiento');
+  await pro.fill('#pasarPlazo', '45');
+  await pro.selectOption('#pasarArea', 'Operación');
+  await pro.selectOption('#pasarResp', 'Leiva');
+  servidor.fuerza409 = true;
+  await pro.click('#pasarConfirmar');
+  await pro.waitForFunction(() => /Pasó a Seguimiento/.test(document.getElementById('toast').textContent));
+  ok(await pro.locator('#veil').isHidden(), 'pasar: la ficha se cierra');
+  const n = servidor.datos.expedientes.find((e) => e.numero === '363-777/2026-0');
+  ok(!!n && n.tema === 'NUEVA S.A.' && n.estado === 'activo' && n.diasPlazo === 45 && n.area === 'Operación' && n.responsable === 'Leiva' && n.parque === 'Salta' && n.fechaInicio === hoyISO, 'pasar: crea el expediente con el mismo número, plazo, área, agente y parque (tras reintentar el 409)');
+  ok(n.intervenciones.length === 1 && /Pasado desde Proyectos/.test(n.intervenciones[0].texto), 'pasar: deja una nota de origen');
+  ok(servidor.datos.expedientes.length === antes + 1 && servidor.datos.expedientes.filter((e) => e.numero === '363-777/2026-0').length === 1, 'pasar: no duplica ni pierde expedientes');
+  await pro.locator('.exp-card', { hasText: 'NUEVA' }).click();
+  ok(await pro.locator('#btnPasarSeg').count() === 0, 'pasar: ya pasada, el botón desaparece');
+  await pro.click('#xCloseView');
+  await seg.reload({ waitUntil: 'networkidle' });
+  ok((await seg.evaluate(() => expedientes.map((e) => e.numero))).includes('363-777/2026-0'), 'pasar: Seguimiento la ve en su lista');
 
   ok(problemas.length === 0, 'sin errores de página ni diálogos nativos' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
   await browser.close();

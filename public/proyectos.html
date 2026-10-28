@@ -2201,7 +2201,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     if(ev.target===veil && pulsoEnFondo) intentarSalir();
     pulsoEnFondo = false;
   });
-  modal.addEventListener("input", function(){ state.formSucio = true; });
+  modal.addEventListener("input", function(){ if(state.modalMode!=="pasar") state.formSucio = true; });
 
   var focoPrevio = null;
 
@@ -2303,6 +2303,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     var e = id ? state.expedientes.find(function(x){return x.id===id;}) : null;
     var isNew = !e;
     if(isNew || state.modalMode==="edit"){ renderModalEdit(e, isNew); }
+    else if(state.modalMode==="pasar"){ renderModalPasar(e); }
     else { renderModalView(e); }
   }
 
@@ -2360,6 +2361,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 
       '<div class="view-actions">'+
         (devueltoDe(e)?'<button type="button" class="btn btn-primary btn-grow" id="btnRescatarSeg">'+HeaderGlobal.icono("reabrir")+'Rescatar a Seguimiento</button>':'')+
+        (puedePasarASeguimiento(e)?'<button type="button" class="btn btn-primary btn-grow" id="btnPasarSeg">'+HeaderGlobal.icono("resolver")+'Pasar a Seguimiento</button>':'')+
         (e.archivado?'<button type="button" class="btn btn-primary btn-grow" id="btnRescatar">'+HeaderGlobal.icono("reabrir")+'Rescatar</button>':'')+
         // Siempre la variante "outline", igual que en Resoluciones y Parques.
         // Antes alternaba btn-primary/btn-outline según el expediente
@@ -2380,6 +2382,35 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     if(devueltoDe(e)){
       document.getElementById("btnRescatarSeg").addEventListener("click", onRescatarASeguimiento);
     }
+    if(puedePasarASeguimiento(e)){
+      document.getElementById("btnPasarSeg").addEventListener("click", abrirPasar);
+    }
+  }
+
+  // Diálogo de «Pasar a Seguimiento»: dentro de la misma ficha, así hereda el foco,
+  // la trampa de Tab y Escape. Plazo, área y agente son obligatorios.
+  function renderModalPasar(e){
+    var opts = function(lista){
+      return '<option value="" selected disabled>Seleccionar…</option>'+lista.map(function(x){ return '<option value="'+esc(x)+'">'+esc(x)+'</option>'; }).join("");
+    };
+    modal.innerHTML =
+      '<div class="modal-head"><h2>Pasar a Seguimiento</h2><button class="x-close" id="xClosePasar" aria-label="Cerrar">&times;</button></div>'+
+      '<div class="view-head"><div class="view-empresa">'+esc(e.nombre_empresa||"(sin nombre de empresa)")+'</div>'+
+      '<div class="view-exp">'+esc(e.nro_expediente||"s/n")+'</div></div>'+
+      '<p class="view-empty">Se crea en Seguimiento con el mismo número. El plazo cuenta desde hoy.</p>'+
+      '<div class="field"><label for="pasarPlazo">Plazo en días hábiles<span class="req">*</span></label><input type="number" id="pasarPlazo" min="1" max="999" step="1" inputmode="numeric" placeholder="30"></div>'+
+      '<div class="field"><label for="pasarArea">Área<span class="req">*</span></label><select id="pasarArea">'+opts(segListas.areas)+'</select></div>'+
+      '<div class="field"><label for="pasarResp">Agente<span class="req">*</span></label><select id="pasarResp">'+opts(segListas.responsables)+'</select></div>'+
+      '<div class="field-error" id="pasarError" role="alert" hidden>Completá el plazo (1 a 999), el área y el agente.</div>'+
+      '<div class="view-actions">'+
+        '<button type="button" class="btn btn-secondary btn-grow" id="pasarCancelar">'+HeaderGlobal.icono("cancelar")+'Cancelar</button>'+
+        '<button type="button" class="btn btn-primary btn-grow" id="pasarConfirmar">'+HeaderGlobal.icono("resolver")+'Pasar</button>'+
+      '</div>';
+    var volver = function(){ state.modalMode="view"; renderModal(); };
+    document.getElementById("xClosePasar").addEventListener("click", volver);
+    document.getElementById("pasarCancelar").addEventListener("click", volver);
+    document.getElementById("pasarConfirmar").addEventListener("click", onPasarASeguimiento);
+    modal.addEventListener("input", function ocultar(){ var er=document.getElementById("pasarError"); if(er) er.hidden=true; }, {once:true});
   }
 
   var ICON_MAIL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 7-10 5L2 7"></path></svg>';
@@ -2714,6 +2745,12 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   // en la ficha de la carta. Rescatar escribe una sola cosa en expedientes.json:
   // ese expediente vuelve a «activo», con _baseSha y reintento ante un 409.
   var devueltos = {};
+  var enSeguimiento = {};   // todos los números que ya están en Seguimiento, en cualquier estado
+  var segListas = { areas: [], responsables: [], parques: [] };
+  function puedePasarASeguimiento(e){
+    return !!e && e.situacion==="En_tratamiento" && !e.archivado && !!normNro(e.nro_expediente) &&
+      !devueltoDe(e) && !enSeguimiento[normNro(e.nro_expediente)];
+  }
   function normNro(n){ return String(n||"").replace(/[–—]/g,"-").replace(/\s+/g,""); }
   function devueltoDe(e){ return e ? devueltos[normNro(e.nro_expediente)] || null : null; }
   function leyendaDevuelto(x){
@@ -2725,12 +2762,16 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
       if(!resp.ok) return;
       var datos = await resp.json();
       if(!datos || !Array.isArray(datos.expedientes)) return;
-      var m = {};
+      var m = {}, todos = {};
       datos.expedientes.forEach(function(x){
-        if(x.estado==="devuelto" && normNro(x.numero)) m[normNro(x.numero)] = x;
+        if(!normNro(x.numero)) return;
+        todos[normNro(x.numero)] = true;
+        if(x.estado==="devuelto") m[normNro(x.numero)] = x;
       });
-      if(JSON.stringify(m)===JSON.stringify(devueltos)) return;
+      segListas = { areas: datos.areas||[], responsables: datos.responsables||[], parques: datos.parques||[] };
+      if(JSON.stringify(m)===JSON.stringify(devueltos) && JSON.stringify(todos)===JSON.stringify(enSeguimiento)) return;
       devueltos = m;
+      enSeguimiento = todos;
       renderList();
       // La ficha abierta en modo lectura se redibuja; una que se está editando, no.
       if(!veil.hidden && state.editingId && state.modalMode!=="edit") renderModal();
@@ -2779,6 +2820,83 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     }catch(err){
       if(btn) btn.disabled = false;
       mostrarToast("No se pudo rescatar a Seguimiento. Probá de nuevo.");
+    }
+  }
+
+  // «Pasar a Seguimiento»: única otra escritura de Proyectos sobre expedientes.json.
+  // Lee con sha, agrega el expediente (mismo número que la carta) y POSTea con
+  // _baseSha; ante un 409 relee y reintenta. No toca cartas-intencion.json.
+  async function abrirPasar(){
+    var btn = document.getElementById("btnPasarSeg");
+    if(btn) btn.disabled = true;
+    await cargarDevueltos();   // listas y números al día antes de mostrar el diálogo
+    var e = state.expedientes.find(function(x){return x.id===state.editingId;});
+    if(!e) return;
+    if(!puedePasarASeguimiento(e)){
+      renderModal();
+      mostrarToast("Ese expediente ya está en Seguimiento.");
+      return;
+    }
+    state.modalMode = "pasar";
+    renderModal();
+    enfocarPrimero();
+  }
+  async function onPasarASeguimiento(){
+    var e = state.expedientes.find(function(x){return x.id===state.editingId;});
+    var k = e && normNro(e.nro_expediente);
+    if(!k) return;
+    var plazoTxt = document.getElementById("pasarPlazo").value.trim();
+    var plazo = /^\d{1,3}$/.test(plazoTxt) ? parseInt(plazoTxt,10) : 0;
+    var area = document.getElementById("pasarArea").value;
+    var resp = document.getElementById("pasarResp").value;
+    if(plazo<1 || !area || !resp){ document.getElementById("pasarError").hidden = false; return; }
+    var btn = document.getElementById("pasarConfirmar");
+    btn.disabled = true;
+    try{
+      for(var intento=0; intento<3; intento++){
+        var r = await HeaderGlobal.fetchApi("/api/sync");
+        if(!r.ok) throw new Error("get");
+        var datos = await r.json();
+        var sha = datos._meta && datos._meta.sha;
+        delete datos._meta;
+        datos.expedientes = datos.expedientes || [];
+        if(datos.expedientes.some(function(y){ return normNro(y.numero)===k; })){
+          enSeguimiento[k] = true;
+          renderModal();
+          mostrarToast("Ese expediente ya está en Seguimiento.");
+          return;
+        }
+        var hoy = new Date();
+        var parque = (datos.parques||[]).indexOf(e.parque_industrial)>=0 ? e.parque_industrial : "";
+        var nuevo = {
+          id: String(Date.now())+String(Math.floor(Math.random()*1000)),
+          numero: e.nro_expediente,
+          tema: e.nombre_empresa||"",
+          area: area, responsable: resp,
+          fechaInicio: hoy.getFullYear()+"-"+String(hoy.getMonth()+1).padStart(2,"0")+"-"+String(hoy.getDate()).padStart(2,"0"),
+          diasPlazo: plazo,
+          estado: "activo",
+          intervenciones: [{hora:horaLocal(), texto:"Pasado desde Proyectos."}]
+        };
+        if(parque) nuevo.parque = parque;
+        datos.expedientes.push(nuevo);
+        datos.timestamp = new Date().toISOString();
+        if(sha) datos._baseSha = sha;
+        var post = await HeaderGlobal.fetchApi("/api/sync", {
+          method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(datos)
+        });
+        if(post.status===409) continue;     // otro dispositivo guardó en el medio: se vuelve a leer
+        if(!post.ok) throw new Error("post");
+        enSeguimiento[k] = true;
+        closeModal();
+        renderList();
+        mostrarToast("Pasó a Seguimiento.");
+        return;
+      }
+      throw new Error("conflicto");
+    }catch(err){
+      btn.disabled = false;
+      mostrarToast("No se pudo pasar a Seguimiento. Probá de nuevo.");
     }
   }
 
