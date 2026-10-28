@@ -276,23 +276,6 @@
           "texto": "Representante Emilse Rigo solicita nuevos plazos para proyecto industrial. Reunión programada para el (26/10/2026).La empresa cambia de razón social  (EyP)."
         }
       ]
-    },
-    {
-      "id": "1793147703603608",
-      "numero": "363-66279/2026",
-      "tema": "MARCELO MATINEZ / HECTOR AVILA",
-      "area": "Coordinación",
-      "responsable": "Joaquín Fernández Castro",
-      "fechaInicio": "2026-10-27",
-      "diasPlazo": 30,
-      "estado": "activo",
-      "intervenciones": [
-        {
-          "hora": "27/10/2026 21:35",
-          "texto": "Pasado desde Proyectos."
-        }
-      ],
-      "parque": "Mosconi"
     }
   ],
   "areas": [
@@ -317,5 +300,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-10-28T00:35:03.603Z"
+  "timestamp": "2026-10-28T02:05:59.196Z"
 }
