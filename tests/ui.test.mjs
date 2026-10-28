@@ -3934,6 +3934,22 @@ async function testEtapas() {
   ok(await tarjeta('u1').locator('button', { hasText: 'Cambiar etapa' }).count() === 0, 'en la última etapa no hay «Cambiar etapa»');
   ok(await tarjeta('l1').locator('button', { hasText: 'Cambiar etapa' }).count() === 0, 'sin etapa no hay «Cambiar etapa»');
 
+  // Un expediente que todavía no tiene etapa (lo pasado antes de este cambio) puede asignársela
+  ok(await tarjeta('l1').locator('button', { hasText: 'Asignar etapa' }).count() === 1, 'sin etapa ofrece «Asignar etapa»');
+  ok(await tarjeta('p1').locator('button', { hasText: 'Asignar etapa' }).count() === 0, 'con etapa no la ofrece');
+  await tarjeta('l1').locator('button', { hasText: 'Asignar etapa' }).click();
+  await seg.click('#etapaConfirmar');
+  ok(await seg.locator('#etapaError').isVisible() && (await estado('l1')).etapa === undefined, 'asignar sin elegir etapa: error y no cambia nada');
+  await seg.selectOption('#etapaSel', '2');
+  await seg.fill('#etapaFecha', '2026-10-27');
+  await seg.click('#etapaConfirmar');
+  const l1 = await estado('l1');
+  ok(l1.etapa === 2 && l1.fechaEntradaEtapa === '2026-10-27' && /Etapa asignada: Chequeo/.test(l1.intervenciones[l1.intervenciones.length - 1].texto), 'asigna etapa y fecha de entrada y deja nota');
+  ok(/·\s*Chequeo/.test(await titulo('l1')), 'la tarjeta pasa a mostrar la etapa');
+  await seg.click('#toastAccion');
+  const l1b = await estado('l1');
+  ok(l1b.etapa === undefined && l1b.diasPlazo === 30 && l1b.intervenciones.length === 0, 'Deshacer vuelve al plazo propio');
+
   // Intimación: aparece a los 2 días hábiles, se deriva a Legal y se registra con referencia obligatoria
   await expandir('a1');
   ok(/Corresponde intimar/.test(await tarjeta('a1').textContent()), 'la ficha avisa «Corresponde intimar»');

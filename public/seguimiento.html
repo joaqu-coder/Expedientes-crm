@@ -1099,7 +1099,17 @@
       </div>
       <div class="modal-content">
         <p id="etapaAyuda" style="margin: 0 0 16px; font-size: 14px; line-height: 1.5;"></p>
-        <div class="form-group" style="margin-bottom: 0;">
+        <div id="etapaAsignar" hidden>
+          <div class="form-group">
+            <label class="form-label required" for="etapaSel">Etapa</label>
+            <select class="form-select" id="etapaSel"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label required" for="etapaFecha">Entrada a la etapa</label>
+            <input type="date" class="form-input" id="etapaFecha">
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;" id="etapaMotivoGrupo">
           <label class="form-label required" for="etapaMotivo">Motivo</label>
           <textarea class="form-textarea" id="etapaMotivo" aria-describedby="etapaError" placeholder="Por qué pasa a la etapa siguiente"></textarea>
           <span class="form-error" id="etapaError" role="alert" hidden>El motivo es obligatorio.</span>
@@ -2321,10 +2331,67 @@
     }
 
     let etapaPendiente = null; // id
+    let etapaModo = 'cambiar'; // cambiar | asignar
+    function prepararEtapaOverlay(modo) {
+      etapaModo = modo;
+      const asignar = modo === 'asignar';
+      document.getElementById('etapaAsignar').hidden = !asignar;
+      document.getElementById('etapaMotivoGrupo').hidden = asignar;
+      document.getElementById('etapaTitle').textContent = asignar ? 'Asignar etapa' : 'Cambiar etapa';
+      document.getElementById('etapaConfirmar').innerHTML = HeaderGlobal.icono('resolver') + (asignar ? 'Asignar' : 'Confirmar cambio');
+      document.getElementById('etapaError').hidden = true;
+      document.getElementById('etapaError').textContent = asignar ? 'Elegí la etapa y la fecha de entrada.' : 'El motivo es obligatorio.';
+    }
+
+    // Expedientes sin etapa (los pasados antes de que existieran): se les asigna una sin tocar el resto.
+    function asignarEtapa(id) {
+      const exp = expedientes.find(e => e.id === id);
+      if (!exp || tieneEtapa(exp)) return;
+      etapaPendiente = id;
+      prepararEtapaOverlay('asignar');
+      document.getElementById('etapaAyuda').textContent = 'El plazo pasa a ser el de la etapa elegida, contado desde la fecha de entrada. El plazo propio deja de usarse.';
+      const plazos = plazosEtapas();
+      document.getElementById('etapaSel').innerHTML = '<option value="">Elegí una etapa</option>' +
+        Plazos.ETAPAS.map((x, i) => `<option value="${i}">${esc(x.n)} (${plazos[i] === null ? 'sin plazo' : plazos[i] + ' d háb.'})</option>`).join('');
+      document.getElementById('etapaFecha').value = exp.fechaInicio || fechaISO(hoyLocal());
+      abrirOverlay('etapaOverlay', '#etapaSel');
+    }
+
+    function confirmarAsignarEtapa() {
+      const val = document.getElementById('etapaSel').value;
+      const fecha = document.getElementById('etapaFecha').value;
+      if (val === '' || !fecha) {
+        document.getElementById('etapaError').hidden = false;
+        return;
+      }
+      const id = etapaPendiente;
+      const exp = expedientes.find(e => e.id === id);
+      cerrarEtapa();
+      if (!exp || tieneEtapa(exp)) return;
+      const previo = { diasPlazo: exp.diasPlazo, notas: (exp.intervenciones || []).length };
+      exp.etapa = parseInt(val, 10);
+      exp.fechaEntradaEtapa = fecha;
+      exp.diasPlazo = diasPlazoCompat(exp.etapa);
+      exp.intervenciones = exp.intervenciones || [];
+      exp.intervenciones.push({ hora: textoHora(), texto: `Etapa asignada: ${Plazos.ETAPAS[exp.etapa].n}. Entrada: ${formatearFechaCorta(parsearFecha(fecha))}.` });
+      guardarEnLS(true);
+      renderizar();
+      mostrarToast('Etapa asignada', { accion: () => {
+        const actual = expedientes.find(e => e.id === id);
+        if (!actual) return;
+        delete actual.etapa; delete actual.fechaEntradaEtapa;
+        restaurarCampo(actual, 'diasPlazo', previo.diasPlazo);
+        actual.intervenciones = (actual.intervenciones || []).slice(0, previo.notas);
+        guardarEnLS(true);
+        renderizar();
+      } });
+    }
+
     function cambiarEtapa(id) {
       const exp = expedientes.find(e => e.id === id);
       if (!tieneEtapa(exp) || exp.etapa + 1 >= Plazos.ETAPAS.length) return;
       etapaPendiente = id;
+      prepararEtapaOverlay('cambiar');
       const de = Plazos.ETAPAS[exp.etapa], a = Plazos.ETAPAS[exp.etapa + 1], dias = plazosEtapas()[exp.etapa + 1];
       document.getElementById('etapaAyuda').textContent =
         `Pasa de ${de.n} a ${a.n}. El plazo que rige es de ${dias === null ? 'sin plazo' : `${dias} días hábiles`} desde hoy.`;
@@ -2340,6 +2407,7 @@
 
     function confirmarEtapa() {
       if (!etapaPendiente) return;
+      if (etapaModo === 'asignar') return confirmarAsignarEtapa();
       const motivo = document.getElementById('etapaMotivo').value.trim();
       if (!motivo) {
         document.getElementById('etapaError').hidden = false;
@@ -2519,6 +2587,9 @@
 
               ${etapa && exp.etapa + 1 < Plazos.ETAPAS.length ? `<div class="expediente-actions expediente-actions-etapa">
                 <button class="btn btn-primary btn-grow" type="button" data-id="${esc(exp.id)}" onclick="cambiarEtapa(this.dataset.id)">Cambiar etapa</button>
+              </div>` : ''}
+              ${!archivado && !info.conEtapa ? `<div class="expediente-actions expediente-actions-etapa">
+                <button class="btn btn-primary btn-grow" type="button" data-id="${esc(exp.id)}" onclick="asignarEtapa(this.dataset.id)">Asignar etapa</button>
               </div>` : ''}
               <div class="expediente-actions">
                 ${archivado
