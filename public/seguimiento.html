@@ -545,7 +545,8 @@
     }
 
     /* Etapas del procedimiento (solo tokens del sistema de diseño) */
-    .expediente-actions.expediente-actions-etapa { margin-top: 0; padding-top: 0; border-top: 0; margin-bottom: 8px; }
+    .expediente-etapa-accion { display: flex; margin-top: 12px; }
+    .expediente-etapa-accion + .expediente-actions { margin-top: 8px; }
     .etapas { display: flex; flex-direction: column; margin: 0 0 4px; }
     .etapa-item {
       display: flex; align-items: center; gap: 10px; padding: 6px 0; min-width: 0;
@@ -1112,8 +1113,8 @@
         <div class="form-group" style="margin-bottom: 0;" id="etapaMotivoGrupo">
           <label class="form-label required" for="etapaMotivo">Motivo</label>
           <textarea class="form-textarea" id="etapaMotivo" aria-describedby="etapaError" placeholder="Por qué pasa a la etapa siguiente"></textarea>
-          <span class="form-error" id="etapaError" role="alert" hidden>El motivo es obligatorio.</span>
         </div>
+        <span class="form-error" id="etapaError" role="alert" hidden>El motivo es obligatorio.</span>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary btn-grow" id="etapaCancelar" type="button"></button>
@@ -2585,10 +2586,10 @@
                   </div>`).join('')}</div>` : '<div class="notas-empty">Sin notas aún</div>'}
               </div>
 
-              ${etapa && exp.etapa + 1 < Plazos.ETAPAS.length ? `<div class="expediente-actions expediente-actions-etapa">
+              ${etapa && exp.etapa + 1 < Plazos.ETAPAS.length ? `<div class="expediente-etapa-accion">
                 <button class="btn btn-primary btn-grow" type="button" data-id="${esc(exp.id)}" onclick="cambiarEtapa(this.dataset.id)">Cambiar etapa</button>
               </div>` : ''}
-              ${!archivado && !info.conEtapa ? `<div class="expediente-actions expediente-actions-etapa">
+              ${!archivado && !info.conEtapa ? `<div class="expediente-etapa-accion">
                 <button class="btn btn-primary btn-grow" type="button" data-id="${esc(exp.id)}" onclick="asignarEtapa(this.dataset.id)">Asignar etapa</button>
               </div>` : ''}
               <div class="expediente-actions">
