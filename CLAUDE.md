@@ -69,7 +69,27 @@ nota en `intervenciones`. Deshacer (toast) restaura todo, incluida la nota.
   ante 409 (3 veces); si el número ya existe en Seguimiento, no duplica. Nunca fue automático: se pasa a mano, carta por carta.
   Test: final de `testResolverArchivar()`.
 - **Sin cambios**: el archivado automático de Proyectos (132 días hábiles, solo `Sin_tratamiento`).
-- **No existe «Cambiar etapa»**: las etapas del mockup no están en el repo. No se inventaron.
+- **Etapas y plazos por etapa (2026-10-28, documento «Expedientes CRM: resultado final»)**:
+  - `public/plazos.js` (compartido, función pura): feriados (tabla única 2024-2028, ya no hay dos), `vencimientoEtapa`,
+    `estadoPlazo` (`en_plazo | vence_hoy | vencido | alerta | sin_plazo`), `normalizarPlazos`/`serializarPlazos` y las 9 etapas
+    del Excel (5, 20, 10, 15, 5, 10, 30, sin plazo, sin plazo). Conteo desde el día siguiente; el reloj no se pausa.
+    Test sin navegador: `tests/plazos.test.mjs`.
+  - Un expediente de Seguimiento con `etapa` (0-8) y `fechaEntradaEtapa` usa el plazo de esa etapa; sin `etapa` (otras gestiones)
+    conserva `fechaInicio` + `diasPlazo`. Tarjeta: «En plazo: N d háb. · Etapa» (verde), «Vence hoy» / «Vencido hace N d háb.» (rojo),
+    «Intimar: pendiente» y «Sin plazo» (gris). Se escribe también `diasPlazo` solo para clientes anteriores a este deploy.
+  - **Cambiar etapa** (`#etapaOverlay`): motivo obligatorio, la etapa nueva arranca hoy, nota «Cambio de etapa: A → B. Motivo: …»,
+    Deshacer. **Intimación**: a los 2 días hábiles de vencida aparece «Corresponde intimar» con *Derivar a Legal* (`derivadaLegal`) y
+    *Registrar intimación* (`#intimOverlay`, medio + referencia obligatoria, guarda `intimacion` y cierra la alarma). Al cambiar de etapa
+    se limpian ambas.
+  - **Plazos configurables**: Proyectos → ⋮ → «Plazos por etapa» → `plazosEtapas: [{etapa, nombre, dias|null}]` en
+    `cartas-intencion.json` (el Worker lo valida: etapa 1-9, dias entero 1-999 o null). Seguimiento lo lee de `/api/sync-cartas`
+    (cache de 10 min junto con la lista de cartas) y recalcula.
+  - «Pasar a Seguimiento» ahora pide **etapa** (no plazo); Rescatar mantiene la etapa y reinicia `fechaEntradaEtapa`.
+  - **NO se tocó** el semáforo propio de Proyectos (`plazoDias` + umbrales 30/15): las cartas de Proyectos no tienen etapa, y medirlas
+    contra la etapa 1 (5 días) pintaría todo de rojo. El documento pide reemplazarlo; **pendiente de decidir con el usuario**.
+  - Resolver y Archivar siguen idénticos (punto abierto A del documento); el reloj al rescatar se reinicia (B). Sin definir: C
+    (se eligió B: Proyectos solo lee), D, G, H.
+  - Tests: `testEtapas()`, `testPlazosEtapasProyectos()`, `testCartasValidaPlazosEtapas()` (worker).
 - **Pendientes**: reactivación automática desde Proyectos (sin definir cómo se detecta actividad); un cliente
   anterior a este deploy ve un `devuelto` como activo.
 - **Test**: `testResolverArchivar()` en `tests/ui.test.mjs` (T1–T6 y T9 del documento, dos páginas reales, 409 forzado en el rescate).
