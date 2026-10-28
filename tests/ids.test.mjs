@@ -108,7 +108,7 @@ ok(literalesKit.length === 0,
 //     declarar una familia con nombre (Roboto, Arial…); solo heredar o leer un
 //     token (inherit, var(--…)). Si alguien pone una fuente literal en una
 //     página o en un componente, cambiar la familia global deja de alcanzarla.
-const ARCHIVOS_FUENTE = ['ui-kit.css', 'header.js', 'plazos.js', 'confirmar-cambios.js',
+const ARCHIVOS_FUENTE = ['ui-kit.css', 'header.js', 'confirmar-cambios.js',
   ...PAGINAS.map((p) => `${p}.html`)];
 const familiasLiterales = [];
 for (const archivo of ARCHIVOS_FUENTE) {
