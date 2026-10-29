@@ -239,6 +239,10 @@
         {
           "hora": "21/10/2026 10:32",
           "texto": "Se cooridna reunion con Cecilia Borla 6/10/2026. Su presenta su representante (Su hijo) explicando la sutiacion. Se compromete a enviar los estudios ambientales"
+        },
+        {
+          "hora": "29/10/2026 15:57",
+          "texto": "Presenta nota con plan de trabajo. Falta estudios de imactos ambientales. Quedamos  en realizar un recorrido en planta,para inspección miércoles 4/11"
         }
       ],
       "parque": "Salta"
@@ -323,5 +327,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-10-28T15:03:04.591Z"
+  "timestamp": "2026-10-29T18:57:55.810Z"
 }
