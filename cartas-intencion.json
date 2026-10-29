@@ -4283,6 +4283,25 @@
       "contacto_mail_2": "",
       "fecha_ultimo_movimiento": "28/10/2026 10:16",
       "actualizado_en": "2026-10-28T13:16:24.399Z"
+    },
+    {
+      "id": "exp_mvtx4muy8nkrc",
+      "intervenciones": [],
+      "nro_expediente": "363-111566/2026-0",
+      "nombre_empresa": "JR SERVICIOS GENERALES",
+      "fecha_inicio": "29/05/2026",
+      "parque_industrial": "Güemes",
+      "rubro": "Servicios",
+      "superficie_solicitada_m2": 3000,
+      "actividad_empresa": "Lavadero industrial y gomería especializada",
+      "situacion": "En_tratamiento",
+      "representante_nombre": "Jesús Alberto Senh",
+      "contacto_tel": "387-2269298",
+      "contacto_tel_2": "",
+      "contacto_mail": "jr.serviciosgenerales@outlook.com",
+      "contacto_mail_2": "",
+      "fecha_ultimo_movimiento": "29/10/2026 16:10",
+      "actualizado_en": "2026-10-29T19:10:25.210Z"
     }
   ],
   "plazoDias": 20,
