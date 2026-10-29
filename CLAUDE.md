@@ -1377,9 +1377,10 @@ fuente, a diferencia del repo del Boletín donde lo genera el scraper.
       mobile). Ojo si se la toca: esta app debounce la subida 1500ms
       (`DEBOUNCE_MS`), no 100ms como las otras — un test que espera poco
       después de guardar va a fallar en falso.
-- [ ] **Rotar el token de GitHub.** Circuló por el chat de una sesión y quedó
-      cargado también en Settings → Builds, donde no sirve para nada. Rotarlo en
-      GitHub, actualizar **solo** el secret de runtime, y borrar el de Builds.
+- [x] **Rotar el token de GitHub.** Hecho el 2026-10-29: el token vencido
+      daba 401 en Proyectos y se reemplazó en el secret de runtime.
+- [ ] **Borrar el `GITHUB_TOKEN` viejo de Settings → Builds** (no sirve ahí).
+      Pendiente de confirmar por la persona que opera Cloudflare.
 - [ ] Verificar sync entre dos dispositivos reales (cargar en la compu, abrir en
       el celular).
 - [ ] **Última escritura gana en 1 de las 4 apps** (Resoluciones; Parques y

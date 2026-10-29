@@ -108,7 +108,7 @@
     "/api/sync-parques": "Parques (parques.json: parques/empresas/lotes/ocupaciones/reservas de Güemes y Salta). Protocolo simple, como /api/sync y /api/sync-resoluciones — GET devuelve el JSON, POST lo reescribe entero."
   },
   "pendiente": [
-    "Confirmar con el usuario: banner 401 resuelto en Proyectos y Seguimiento, y que GITHUB_TOKEN se borró de Settings → Builds. Rotación del token: marcar como cerrada después de esa confirmación (CLAUDE.md, Pendientes).",
+    "Confirmar que el banner 401 desapareció en Proyectos y que GITHUB_TOKEN se borró de Settings → Builds. Sin Cloudflare: no se toca nada allí desde la sesión.",
     "Mirar la tarjeta opción B en Proyectos en pantalla real (no se capturó screenshot) y decidir si se replica en Seguimiento, Resoluciones y Parques.",
     "proponer_eliminar_confirm_proyectos",
     "extender_tarjeta_seguimiento_resoluciones_parques",
