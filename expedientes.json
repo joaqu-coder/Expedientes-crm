@@ -303,6 +303,23 @@
       "final": "archivada",
       "fechaResolucion": "2026-10-28",
       "motivoFinal": "Estoy probando"
+    },
+    {
+      "id": "1793301066853613",
+      "numero": "363-111566/2026-0",
+      "tema": "JR SERVICIOS GENERALES",
+      "area": "Coordinación",
+      "responsable": "Joaquín Fernández Castro",
+      "fechaInicio": "2026-10-29",
+      "diasPlazo": 30,
+      "estado": "activo",
+      "intervenciones": [
+        {
+          "hora": "29/10/2026 16:11",
+          "texto": "Pasado desde Proyectos."
+        }
+      ],
+      "parque": "Güemes"
     }
   ],
   "areas": [
@@ -327,5 +344,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-10-29T18:59:36.678Z"
+  "timestamp": "2026-10-29T19:11:06.854Z"
 }
