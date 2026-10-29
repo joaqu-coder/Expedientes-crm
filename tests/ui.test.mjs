@@ -1121,19 +1121,18 @@ async function testParquesEnSeguimiento() {
   });
   ok(JSON.stringify(hijos) === JSON.stringify(['expediente-urgencia-tema', 'expediente-urgencia-label', 'expediente-parque-tag', 'expediente-urgencia-dias']), 'la tarjeta muestra Tema → Expediente → Parque → Vencimiento');
   ok((await page.locator('.expediente-parque-tag').first().textContent()).trim() === 'Rosario', 'el tag de la tarjeta dice Rosario');
-  // El tag va con el color del texto de urgencia roja, como línea de texto y sin chip de fondo
-  const tag = await page.evaluate(() => {
-    const probe = document.createElement('span');
-    probe.style.color = 'var(--urgencia-rojo-text)';
-    document.body.appendChild(probe);
-    const esperado = getComputedStyle(probe).color;
-    probe.remove();
-    const p = document.querySelector('.expediente-parque-tag');
+  // El tag va con el color de SU tarjeta en cualquier urgencia (no un rojo fijo): una verde no puede mostrar texto rojo.
+  // Se agrega una tarjeta vencida para cubrir rojo y verde en la misma pantalla.
+  await page.evaluate(() => { expedientes.push({ id: 'venc', numero: '363-3/2020-01', tema: 'Vencido con parque', area: 'Jurídica', responsable: 'Ana', estado: 'activo', intervenciones: [], fechaInicio: '2020-01-06', diasPlazo: 30, parque: 'Mosconi' }); guardarEnLS(false); renderizar(); });
+  const tags = await page.evaluate(() => [...document.querySelectorAll('.expediente-parque-tag')].map((p) => {
+    const cabecera = p.closest('.expediente-header-urgencia');
     const cs = getComputedStyle(p);
-    return { color: cs.color, esperado, fondo: cs.backgroundColor, radio: cs.borderRadius };
-  });
-  ok(tag.color === tag.esperado, `el tag usa var(--urgencia-rojo-text) (${tag.color})`);
-  ok(tag.fondo === 'rgba(0, 0, 0, 0)' && tag.radio === '0px', 'el tag va como línea de texto, sin chip de fondo');
+    return { color: cs.color, tarjeta: getComputedStyle(cabecera).color, clase: cabecera.classList[1], fondo: cs.backgroundColor, radio: cs.borderRadius };
+  }));
+  const clases = tags.map((t) => t.clase);
+  ok(clases.includes('verde') && clases.includes('rojo'), `hay tarjetas verde y roja con tag (${clases.join(', ')})`);
+  ok(tags.every((t) => t.color === t.tarjeta), 'cada tag tiene el color de su tarjeta: ' + tags.map((t) => `${t.clase} ${t.color}`).join(' | '));
+  ok(tags.every((t) => t.fondo === 'rgba(0, 0, 0, 0)' && t.radio === '0px'), 'el tag va como línea de texto, sin chip de fondo');
   ok(ctx.getUltimoPost()?.expedientes?.find((e) => e.tema === 'Expediente con parque')?.parque === 'Rosario', 'el parque elegido se sincroniza con el expediente');
   ok(JSON.stringify(ctx.getUltimoPost()?.parques) === JSON.stringify(esperados), 'la lista de parques se sincroniza con el servidor');
 
