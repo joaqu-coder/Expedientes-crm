@@ -320,6 +320,23 @@
         }
       ],
       "parque": "Güemes"
+    },
+    {
+      "id": "1793301177252413",
+      "numero": "111975/2010-1009",
+      "tema": "INDUSTRIAS FUNES",
+      "area": "Coordinación",
+      "responsable": "Joaquín Fernández Castro",
+      "fechaInicio": "2026-10-29",
+      "diasPlazo": 30,
+      "estado": "activo",
+      "intervenciones": [
+        {
+          "hora": "29/10/2026 16:12",
+          "texto": "Pasado desde Proyectos."
+        }
+      ],
+      "parque": "Salta"
     }
   ],
   "areas": [
@@ -344,5 +361,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-10-29T19:11:06.854Z"
+  "timestamp": "2026-10-29T19:12:57.252Z"
 }
