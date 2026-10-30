@@ -260,6 +260,10 @@
         {
           "hora": "21/10/2026 12:32",
           "texto": "Dante comenta, por msj (20/10/2026) que no se taparán zanjas aún, hasta realizá prueba hidráulica. Programar viaje (28/10/2026)."
+        },
+        {
+          "hora": "30/10/2026 09:02",
+          "texto": "Singh, pone en conocimiento vía wtt que se realiza la prueba hidáullica. Parte alta 9 kg presion parte baja se rompe una T. solucionado se realizara la prueba definitiva."
         }
       ],
       "parque": "Rosario"
@@ -378,5 +382,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-10-30T11:51:43.267Z"
+  "timestamp": "2026-10-30T12:02:46.965Z"
 }
