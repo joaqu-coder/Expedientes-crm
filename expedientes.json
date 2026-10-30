@@ -337,6 +337,23 @@
         }
       ],
       "parque": "Salta"
+    },
+    {
+      "id": "1793274768774",
+      "numero": "363-192800/2026-0",
+      "tema": "APIGG - Solicita información y acciónes de mantenimiento",
+      "area": "Coordinación",
+      "responsable": "Joaquín Fernández Castro",
+      "parque": "Güemes",
+      "fechaInicio": "2026-10-29",
+      "diasPlazo": 10,
+      "estado": "activo",
+      "intervenciones": [
+        {
+          "hora": "29/10/2026 08:52",
+          "texto": "(26/10/2026) Fernanda Rivadeneira qudo en reunirse con el ente a efectos de trabajar el expe."
+        }
+      ]
     }
   ],
   "areas": [
@@ -361,5 +378,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-10-29T19:12:57.252Z"
+  "timestamp": "2026-10-30T11:51:43.267Z"
 }
