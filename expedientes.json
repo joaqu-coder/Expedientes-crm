@@ -176,6 +176,10 @@
         {
           "hora": "23/10/2026 10:08",
           "texto": "Recibo expte 23/10/2026. consultar curso de acción con Patricia Delgado (SPA)."
+        },
+        {
+          "hora": "30/10/2026 09:08",
+          "texto": "Se debe Armar legajo de la camioneta ( compra, mantenimiento, etc) → Ministerio de la producción."
         }
       ],
       "parque": "Egpais"
@@ -382,5 +386,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-10-30T12:02:46.965Z"
+  "timestamp": "2026-10-30T12:08:12.272Z"
 }
