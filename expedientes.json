@@ -362,6 +362,23 @@
           "texto": "(26/10/2026) Fernanda Rivadeneira qudo en reunirse con el ente a efectos de trabajar el expe."
         }
       ]
+    },
+    {
+      "id": "179354254537965",
+      "numero": "363-17190/2022",
+      "tema": "PROVISIONES Y SERVICIOS INTEGRALES S.R.L",
+      "area": "Coordinación",
+      "responsable": "Joaquín Fernández Castro",
+      "fechaInicio": "2026-11-01",
+      "diasPlazo": 30,
+      "estado": "activo",
+      "intervenciones": [
+        {
+          "hora": "01/11/2026 11:15",
+          "texto": "Pasado desde Proyectos."
+        }
+      ],
+      "parque": "Salta"
     }
   ],
   "areas": [
@@ -386,5 +403,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-10-30T12:08:12.272Z"
+  "timestamp": "2026-11-01T14:15:45.380Z"
 }
