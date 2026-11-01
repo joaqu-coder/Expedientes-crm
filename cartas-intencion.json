@@ -2375,7 +2375,7 @@
       "representante_nombre": "Eric Bosh",
       "contacto_tel": "",
       "contacto_mail": "",
-      "fecha_ultimo_movimiento": "01/11/2026 11:21",
+      "fecha_ultimo_movimiento": "01/11/2026 11:22",
       "intervenciones": [
         {
           "hora": "02/02/2024",
@@ -2391,10 +2391,17 @@
           "hora": "01/11/2026 11:21",
           "texto": "Rescatado del archivo.",
           "tipo": "sistema"
+        },
+        {
+          "hora": "01/11/2026 11:22",
+          "texto": "28/09 21:37 Reunión con Leiva el 04/09/2026\n05/10/2026 08:56\nSolicita 7.413,93 m² (120.854.547,120)\n21/10/2026 10:36\nBosh habla con Leiva. Se solicita que se mantenga la reserva del lote. Realizará la op. comercial para el 2027, No quiere afrontar las obras con la lluvia.",
+          "tipo": "manual"
         }
       ],
       "archivado": false,
-      "actualizado_en": "2026-11-01T14:21:03.019Z"
+      "actualizado_en": "2026-11-01T14:22:23.188Z",
+      "contacto_tel_2": "",
+      "contacto_mail_2": ""
     },
     {
       "id": "exp_imp092",
