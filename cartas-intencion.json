@@ -2375,7 +2375,7 @@
       "representante_nombre": "Eric Bosh",
       "contacto_tel": "",
       "contacto_mail": "",
-      "fecha_ultimo_movimiento": "02/02/2024",
+      "fecha_ultimo_movimiento": "01/11/2026 11:21",
       "intervenciones": [
         {
           "hora": "02/02/2024",
@@ -2386,10 +2386,15 @@
           "hora": "12/10/2026 20:54",
           "texto": "Archivado automáticamente: superó los 6 meses hábiles sin tratamiento.",
           "tipo": "sistema"
+        },
+        {
+          "hora": "01/11/2026 11:21",
+          "texto": "Rescatado del archivo.",
+          "tipo": "sistema"
         }
       ],
-      "archivado": true,
-      "fecha_archivado": "12/10/2026 20:54"
+      "archivado": false,
+      "actualizado_en": "2026-11-01T14:21:03.019Z"
     },
     {
       "id": "exp_imp092",
