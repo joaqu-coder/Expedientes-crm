@@ -358,6 +358,23 @@
         }
       ],
       "parque": "Salta"
+    },
+    {
+      "id": "1793543012128982",
+      "numero": "363-186684/2023",
+      "tema": "SUNGREEN S.R.L",
+      "area": "Coordinación",
+      "responsable": "Joaquín Fernández Castro",
+      "fechaInicio": "2026-11-01",
+      "diasPlazo": 60,
+      "estado": "activo",
+      "intervenciones": [
+        {
+          "hora": "01/11/2026 11:23",
+          "texto": "Pasado desde Proyectos."
+        }
+      ],
+      "parque": "Güemes"
     }
   ],
   "areas": [
@@ -382,5 +399,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-11-01T14:22:50.487Z"
+  "timestamp": "2026-11-01T14:23:32.128Z"
 }
