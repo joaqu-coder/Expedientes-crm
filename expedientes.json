@@ -365,7 +365,7 @@
     },
     {
       "id": "179354254537965",
-      "numero": "363-17190/2022",
+      "numero": "363-17190/2022-0",
       "tema": "PROVISIONES Y SERVICIOS INTEGRALES S.R.L",
       "area": "Coordinación",
       "responsable": "Joaquín Fernández Castro",
@@ -376,6 +376,10 @@
         {
           "hora": "01/11/2026 11:15",
           "texto": "Pasado desde Proyectos."
+        },
+        {
+          "hora": "01/11/2026 11:17",
+          "texto": "Reunión 03/11/2026"
         }
       ],
       "parque": "Salta"
@@ -403,5 +407,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-11-01T14:15:45.380Z"
+  "timestamp": "2026-11-01T14:17:59.679Z"
 }
