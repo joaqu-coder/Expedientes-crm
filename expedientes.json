@@ -222,6 +222,10 @@
         {
           "hora": "29/10/2026 15:57",
           "texto": "Presenta nota con plan de trabajo. Falta estudios de imactos ambientales. Quedamos  en realizar un recorrido en planta,para inspección miércoles 4/11"
+        },
+        {
+          "hora": "02/11/2026 09:53",
+          "texto": "La nota con el plan de trabajo no se euncuetra bien dirigida. debe ingresarla correctamente"
         }
       ],
       "parque": "Salta"
@@ -403,5 +407,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-11-02T12:39:21.465Z"
+  "timestamp": "2026-11-02T12:53:47.050Z"
 }
