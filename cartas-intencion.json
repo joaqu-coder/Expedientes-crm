@@ -216,7 +216,15 @@
       "contacto_tel": "",
       "contacto_mail": "",
       "fecha_ultimo_movimiento": "23/04/2026",
-      "intervenciones": []
+      "intervenciones": [
+        {
+          "hora": "03/11/2026 09:00",
+          "texto": "Archivado automáticamente: superó los 6 meses hábiles sin tratamiento.",
+          "tipo": "sistema"
+        }
+      ],
+      "archivado": true,
+      "fecha_archivado": "03/11/2026 09:00"
     },
     {
       "id": "exp_imp011",
