@@ -387,6 +387,23 @@
         }
       ],
       "parque": "Güemes"
+    },
+    {
+      "id": "1793798453313354",
+      "numero": "363-93147/2026-0",
+      "tema": "TGLN S.A.S",
+      "area": "Coordinación",
+      "responsable": "Joaquín Fernández Castro",
+      "fechaInicio": "2026-11-04",
+      "diasPlazo": 10,
+      "estado": "activo",
+      "intervenciones": [
+        {
+          "hora": "04/11/2026 10:20",
+          "texto": "Pasado desde Proyectos."
+        }
+      ],
+      "parque": "Güemes"
     }
   ],
   "areas": [
@@ -411,5 +428,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-11-02T14:22:04.990Z"
+  "timestamp": "2026-11-04T13:20:53.313Z"
 }
