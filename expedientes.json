@@ -438,6 +438,23 @@
         }
       ],
       "parque": "Güemes"
+    },
+    {
+      "id": "179380064301673",
+      "numero": "111-813/2008-1002",
+      "tema": "CARTOON",
+      "area": "Coordinación",
+      "responsable": "Joaquín Fernández Castro",
+      "fechaInicio": "2026-11-04",
+      "diasPlazo": 10,
+      "estado": "activo",
+      "intervenciones": [
+        {
+          "hora": "04/11/2026 10:57",
+          "texto": "Pasado desde Proyectos."
+        }
+      ],
+      "parque": "Salta"
     }
   ],
   "areas": [
@@ -462,5 +479,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-11-04T13:53:17.892Z"
+  "timestamp": "2026-11-04T13:57:23.017Z"
 }
