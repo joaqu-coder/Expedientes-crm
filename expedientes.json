@@ -404,6 +404,23 @@
         }
       ],
       "parque": "Güemes"
+    },
+    {
+      "id": "1793799436783565",
+      "numero": "363-68257/2026-0",
+      "tema": "COOPERATIVA 4CENERGIA",
+      "area": "Coordinación",
+      "responsable": "Joaquín Fernández Castro",
+      "fechaInicio": "2026-11-04",
+      "diasPlazo": 10,
+      "estado": "activo",
+      "intervenciones": [
+        {
+          "hora": "04/11/2026 10:37",
+          "texto": "Pasado desde Proyectos."
+        }
+      ],
+      "parque": "Güemes"
     }
   ],
   "areas": [
@@ -428,5 +445,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-11-04T13:20:53.313Z"
+  "timestamp": "2026-11-04T13:37:16.784Z"
 }
