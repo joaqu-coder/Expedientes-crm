@@ -4368,6 +4368,31 @@
       "contacto_mail_2": "",
       "fecha_ultimo_movimiento": "04/11/2026 10:36",
       "actualizado_en": "2026-11-04T13:36:50.687Z"
+    },
+    {
+      "id": "exp_mw26fiiv6l6et",
+      "intervenciones": [
+        {
+          "hora": "04/11/2026 10:52",
+          "texto": "El expte se firma por el Sub - Secretario el  09/10/2026. Ingresa al Ente el 30/10/2026 Yo lo recibo en escritorio el 4/11/2026.",
+          "tipo": "manual"
+        }
+      ],
+      "nro_expediente": "363-32691/2026-0",
+      "nombre_empresa": "SMART WASTE S.A.S",
+      "fecha_inicio": "23/02/2026",
+      "parque_industrial": "Güemes",
+      "rubro": "Servicios",
+      "superficie_solicitada_m2": 3000,
+      "actividad_empresa": "Gestión de reciduos urbanos",
+      "situacion": "En_tratamiento",
+      "representante_nombre": "Andrés Coll Aráoz",
+      "contacto_tel": "387-4120537",
+      "contacto_tel_2": "",
+      "contacto_mail": "acoll@smartwaste.com",
+      "contacto_mail_2": "",
+      "fecha_ultimo_movimiento": "04/11/2026 10:52",
+      "actualizado_en": "2026-11-04T13:52:58.759Z"
     }
   ],
   "plazoDias": 20,
