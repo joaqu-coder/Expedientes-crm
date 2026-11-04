@@ -455,6 +455,23 @@
         }
       ],
       "parque": "Salta"
+    },
+    {
+      "id": "1793802487915",
+      "numero": "363-215871/2026-0",
+      "tema": "VECINOS FINCA LA FLORESTA - presentan denuncia por riesgo sanitario",
+      "area": "Coordinación",
+      "responsable": "Joaquín Fernández Castro",
+      "parque": "Salta",
+      "fechaInicio": "2026-11-04",
+      "diasPlazo": 5,
+      "estado": "activo",
+      "intervenciones": [
+        {
+          "hora": "04/11/2026 11:28",
+          "texto": "Se toma conocimiento. Este expte debe correrse vista por parte de APIS (el Pozo es de ellos)."
+        }
+      ]
     }
   ],
   "areas": [
@@ -479,5 +496,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-11-04T13:57:23.017Z"
+  "timestamp": "2026-11-04T14:28:08.018Z"
 }
