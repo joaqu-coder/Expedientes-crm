@@ -4313,6 +4313,31 @@
       "contacto_mail_2": "",
       "fecha_ultimo_movimiento": "29/10/2026 16:10",
       "actualizado_en": "2026-10-29T19:10:25.210Z"
+    },
+    {
+      "id": "exp_mw257gaq7rdx0",
+      "intervenciones": [
+        {
+          "hora": "04/11/2026 10:18",
+          "texto": "El expte se firma el 09/10/2026 pero sale de la mesa de entrada de la sec. el 27/10/2026. Yo lo recibo el 04/11/2026",
+          "tipo": "manual"
+        }
+      ],
+      "nro_expediente": "363-93147/2026-0",
+      "nombre_empresa": "TGLN S.A.S",
+      "fecha_inicio": "05/05/2026",
+      "parque_industrial": "Güemes",
+      "rubro": "Acopio",
+      "superficie_solicitada_m2": 150000,
+      "actividad_empresa": "Procesamiento, almacenamiento y servicios para la minería",
+      "situacion": "Sin_tratamiento",
+      "representante_nombre": "Carlos Martín O'Brian",
+      "contacto_tel": "",
+      "contacto_tel_2": "",
+      "contacto_mail": "martin.obrien@grupotgln.com",
+      "contacto_mail_2": "",
+      "fecha_ultimo_movimiento": "04/11/2026 10:18",
+      "actualizado_en": "2026-11-04T13:18:43.010Z"
     }
   ],
   "plazoDias": 20,
