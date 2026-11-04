@@ -4343,6 +4343,31 @@
       "contacto_mail_2": "",
       "fecha_ultimo_movimiento": "04/11/2026 10:19",
       "actualizado_en": "2026-11-04T13:19:10.661Z"
+    },
+    {
+      "id": "exp_mw25urjzh498t",
+      "intervenciones": [
+        {
+          "hora": "04/11/2026 10:36",
+          "texto": "El expte se firma por el Sub - Secretario el  09/10/2026. Ingresa al Ente el 30/10/2026 Yo lo recibo en escritorio el 2/11/2026.",
+          "tipo": "manual"
+        }
+      ],
+      "nro_expediente": "363-68257/2026-0",
+      "nombre_empresa": "COOPERATIVA 4CENERGIA",
+      "fecha_inicio": "06/04/2026",
+      "parque_industrial": "Güemes",
+      "rubro": "Otro",
+      "superficie_solicitada_m2": 10000,
+      "actividad_empresa": "Central de almacenamiento de energia Eléctrica en Batería (BESS)",
+      "situacion": "En_tratamiento",
+      "representante_nombre": "Matías Alberto Caso",
+      "contacto_tel": "3875283485",
+      "contacto_tel_2": "",
+      "contacto_mail": "4cenergias@gmail.com",
+      "contacto_mail_2": "",
+      "fecha_ultimo_movimiento": "04/11/2026 10:36",
+      "actualizado_en": "2026-11-04T13:36:50.687Z"
     }
   ],
   "plazoDias": 20,
