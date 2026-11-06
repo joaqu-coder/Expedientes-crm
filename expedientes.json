@@ -418,6 +418,10 @@
         {
           "hora": "04/11/2026 10:37",
           "texto": "Pasado desde Proyectos."
+        },
+        {
+          "hora": "06/11/2026 13:23",
+          "texto": "Se contesta el expe solicitando información."
         }
       ],
       "parque": "Güemes"
@@ -513,5 +517,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-11-06T16:18:38.814Z"
+  "timestamp": "2026-11-06T16:23:00.542Z"
 }
