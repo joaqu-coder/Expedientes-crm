@@ -251,6 +251,10 @@
         {
           "hora": "30/10/2026 09:02",
           "texto": "Singh, pone en conocimiento vía wtt que se realiza la prueba hidáullica. Parte alta 9 kg presion parte baja se rompe una T. solucionado se realizara la prueba definitiva."
+        },
+        {
+          "hora": "10/11/2026 10:42",
+          "texto": "Comisión realizada el 29/10. Se pudo observar que la sanja ya se encuentran tapadas Garcia Hamilton inicio el montaje del galpón."
         }
       ],
       "parque": "Rosario"
@@ -538,5 +542,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-11-10T13:31:21.095Z"
+  "timestamp": "2026-11-10T13:42:14.321Z"
 }
