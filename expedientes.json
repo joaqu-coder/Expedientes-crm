@@ -404,14 +404,21 @@
       "responsable": "Joaquín Fernández Castro",
       "fechaInicio": "2026-11-04",
       "diasPlazo": 10,
-      "estado": "activo",
+      "estado": "devuelto",
       "intervenciones": [
         {
           "hora": "04/11/2026 10:20",
           "texto": "Pasado desde Proyectos."
+        },
+        {
+          "hora": "10/11/2026 12:49",
+          "texto": "Expediente archivado. Motivo: La firma no cuenta con  datos de contacto correctos.No se puede comunicar. Vuelve a Proyectos."
         }
       ],
-      "parque": "Güemes"
+      "parque": "Güemes",
+      "final": "archivada",
+      "fechaResolucion": "2026-11-10",
+      "motivoFinal": "La firma no cuenta con  datos de contacto correctos.No se puede comunicar"
     },
     {
       "id": "1793799436783565",
@@ -553,5 +560,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-11-10T13:44:02.315Z"
+  "timestamp": "2026-11-10T15:49:49.853Z"
 }
