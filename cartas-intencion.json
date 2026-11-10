@@ -4351,6 +4351,11 @@
           "hora": "04/11/2026 10:36",
           "texto": "El expte se firma por el Sub - Secretario el  09/10/2026. Ingresa al Ente el 30/10/2026 Yo lo recibo en escritorio el 2/11/2026.",
           "tipo": "manual"
+        },
+        {
+          "hora": "10/11/2026 10:19",
+          "texto": "Intento comunicarme, sin resultado.",
+          "tipo": "manual"
         }
       ],
       "nro_expediente": "363-68257/2026-0",
@@ -4366,8 +4371,8 @@
       "contacto_tel_2": "",
       "contacto_mail": "4cenergias@gmail.com",
       "contacto_mail_2": "",
-      "fecha_ultimo_movimiento": "04/11/2026 10:36",
-      "actualizado_en": "2026-11-04T13:36:50.687Z"
+      "fecha_ultimo_movimiento": "10/11/2026 10:19",
+      "actualizado_en": "2026-11-10T13:19:29.257Z"
     },
     {
       "id": "exp_mw26fiiv6l6et",
