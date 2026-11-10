@@ -473,13 +473,20 @@
       "parque": "Salta",
       "fechaInicio": "2026-11-04",
       "diasPlazo": 5,
-      "estado": "activo",
+      "estado": "archivado",
       "intervenciones": [
         {
           "hora": "04/11/2026 11:28",
           "texto": "Se toma conocimiento. Este expte debe correrse vista por parte de APIS (el Pozo es de ellos)."
+        },
+        {
+          "hora": "10/11/2026 10:43",
+          "texto": "Expediente archivado. Motivo: La gestión corresponde al APIS. Pasa a Archivados."
         }
-      ]
+      ],
+      "final": "archivada",
+      "fechaResolucion": "2026-11-10",
+      "motivoFinal": "La gestión corresponde al APIS"
     },
     {
       "id": "1793981918707",
@@ -542,5 +549,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-11-10T13:42:14.321Z"
+  "timestamp": "2026-11-10T13:43:03.935Z"
 }
