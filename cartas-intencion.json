@@ -3681,12 +3681,21 @@
       "rubro": "Servicios",
       "superficie_solicitada_m2": 10000,
       "actividad_empresa": "Procesamiento de legumbres,semillas, snaks",
-      "situacion": "Adjudicada",
+      "situacion": "En_tratamiento",
       "representante_nombre": "Daniel Alejandro Calamaro",
       "contacto_tel": "",
       "contacto_mail": "",
-      "fecha_ultimo_movimiento": "20/05/2025",
-      "intervenciones": []
+      "fecha_ultimo_movimiento": "10/11/2026 10:29",
+      "intervenciones": [
+        {
+          "hora": "10/11/2026 10:29",
+          "texto": "Cambio de situación: Adjudicada → En tratamiento",
+          "tipo": "sistema"
+        }
+      ],
+      "contacto_tel_2": "",
+      "contacto_mail_2": "",
+      "actualizado_en": "2026-11-10T13:29:34.721Z"
     },
     {
       "id": "exp_imp139",
