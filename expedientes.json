@@ -277,6 +277,10 @@
         {
           "hora": "02/11/2026 09:39",
           "texto": "Se realiza inspección ( leiva - Montaldi) en companía de los propietarios el 28/10. Se conviene un plan de trabajo"
+        },
+        {
+          "hora": "10/11/2026 10:44",
+          "texto": "Se realiza inspección ( Leiva y Vera). Se determina un plazo perentorio para el inicio de actividades"
         }
       ]
     },
@@ -549,5 +553,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-11-10T13:43:03.935Z"
+  "timestamp": "2026-11-10T13:44:02.315Z"
 }
