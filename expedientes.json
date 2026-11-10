@@ -493,6 +493,23 @@
           "texto": "Se debe dar inicio al expte el día 10/10/2026."
         }
       ]
+    },
+    {
+      "id": "179431739006539",
+      "numero": "363-170782/2015",
+      "tema": "LOS NARANTAS",
+      "area": "Coordinación",
+      "responsable": "Alejandro Leiva",
+      "fechaInicio": "2026-11-10",
+      "diasPlazo": 10,
+      "estado": "activo",
+      "intervenciones": [
+        {
+          "hora": "10/11/2026 10:29",
+          "texto": "Pasado desde Proyectos."
+        }
+      ],
+      "parque": "Güemes"
     }
   ],
   "areas": [
@@ -517,5 +534,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-11-06T16:23:00.542Z"
+  "timestamp": "2026-11-10T13:29:50.065Z"
 }
