@@ -496,7 +496,7 @@
     },
     {
       "id": "179431739006539",
-      "numero": "363-170782/2015",
+      "numero": "363-170782/2015-01",
       "tema": "LOS NARANTAS",
       "area": "Coordinación",
       "responsable": "Alejandro Leiva",
@@ -507,6 +507,10 @@
         {
           "hora": "10/11/2026 10:29",
           "texto": "Pasado desde Proyectos."
+        },
+        {
+          "hora": "10/11/2026 10:31",
+          "texto": "Pasa a Leiva para reservar el lote por 1.4 has."
         }
       ],
       "parque": "Güemes"
@@ -534,5 +538,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-11-10T13:29:50.065Z"
+  "timestamp": "2026-11-10T13:31:21.095Z"
 }
