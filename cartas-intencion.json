@@ -4432,6 +4432,31 @@
       "contacto_mail_2": "",
       "fecha_ultimo_movimiento": "11/11/2026 11:35",
       "actualizado_en": "2026-11-11T14:35:19.926Z"
+    },
+    {
+      "id": "exp_mwcap7qlo0go3",
+      "intervenciones": [
+        {
+          "hora": "11/11/2026 12:50",
+          "texto": "recibo expe. No cuneta con pase dese la Sec. hacia el Ente.",
+          "tipo": "manual"
+        }
+      ],
+      "nro_expediente": "363-187527/2025-0",
+      "nombre_empresa": "ANDUJAR ALIMENTOS FRACIONADOS",
+      "fecha_inicio": "30/09/2025",
+      "parque_industrial": "Salta",
+      "rubro": "Manufactura",
+      "superficie_solicitada_m2": 3000,
+      "actividad_empresa": "Planta de fraccionamiento y acondicionamiento de productos alimentiicios",
+      "situacion": "En_tratamiento",
+      "representante_nombre": "Miguel Antonio Andujar",
+      "contacto_tel": "3878-444866",
+      "contacto_tel_2": "387-5330538",
+      "contacto_mail": "andujarm@hotmail.com",
+      "contacto_mail_2": "",
+      "fecha_ultimo_movimiento": "11/11/2026 12:50",
+      "actualizado_en": "2026-11-11T15:50:11.566Z"
     }
   ],
   "plazoDias": 20,
