@@ -553,6 +553,23 @@
         }
       ],
       "parque": "Güemes"
+    },
+    {
+      "id": "179441222934488",
+      "numero": "363-187527/2025-0",
+      "tema": "ANDUJAR ALIMENTOS FRACIONADOS",
+      "area": "Coordinación",
+      "responsable": "Joaquín Fernández Castro",
+      "fechaInicio": "2026-11-11",
+      "diasPlazo": 5,
+      "estado": "activo",
+      "intervenciones": [
+        {
+          "hora": "11/11/2026 12:50",
+          "texto": "Pasado desde Proyectos."
+        }
+      ],
+      "parque": "Salta"
     }
   ],
   "areas": [
@@ -577,5 +594,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-11-11T14:35:35.994Z"
+  "timestamp": "2026-11-11T15:50:29.344Z"
 }
