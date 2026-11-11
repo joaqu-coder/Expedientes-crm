@@ -536,6 +536,23 @@
         }
       ],
       "parque": "Güemes"
+    },
+    {
+      "id": "1794407735994809",
+      "numero": "363-222662/2025-0",
+      "tema": "OSIEL FLORES",
+      "area": "Coordinación",
+      "responsable": "Joaquín Fernández Castro",
+      "fechaInicio": "2026-11-11",
+      "diasPlazo": 5,
+      "estado": "activo",
+      "intervenciones": [
+        {
+          "hora": "11/11/2026 11:35",
+          "texto": "Pasado desde Proyectos."
+        }
+      ],
+      "parque": "Güemes"
     }
   ],
   "areas": [
@@ -560,5 +577,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-11-10T15:49:49.853Z"
+  "timestamp": "2026-11-11T14:35:35.994Z"
 }
