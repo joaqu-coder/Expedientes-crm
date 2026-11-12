@@ -4415,6 +4415,11 @@
           "hora": "11/11/2026 11:35",
           "texto": "Rexibo expe. Realizao pase a mesa de entrada para  envio de formularios.",
           "tipo": "manual"
+        },
+        {
+          "hora": "12/11/2026 13:16",
+          "texto": "Me comunico, se coordina una reunión para el día lunes a las 10 am",
+          "tipo": "manual"
         }
       ],
       "nro_expediente": "363-222662/2025-0",
@@ -4430,8 +4435,8 @@
       "contacto_tel_2": "",
       "contacto_mail": "raulortali68@gmail.com",
       "contacto_mail_2": "",
-      "fecha_ultimo_movimiento": "11/11/2026 11:35",
-      "actualizado_en": "2026-11-11T14:35:19.926Z"
+      "fecha_ultimo_movimiento": "12/11/2026 13:16",
+      "actualizado_en": "2026-11-12T16:16:40.006Z"
     },
     {
       "id": "exp_mwcap7qlo0go3",
