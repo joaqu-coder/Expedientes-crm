@@ -4457,6 +4457,31 @@
       "contacto_mail_2": "",
       "fecha_ultimo_movimiento": "11/11/2026 12:50",
       "actualizado_en": "2026-11-11T15:50:11.566Z"
+    },
+    {
+      "id": "exp_mwdqm7bqbb4it",
+      "intervenciones": [
+        {
+          "hora": "12/11/2026 13:03",
+          "texto": "Recibo expte.Se observa informe presentado por el Programa de Evaluación. (sin firma de N Sivila.)",
+          "tipo": "manual"
+        }
+      ],
+      "nro_expediente": "363-21959/2026-0",
+      "nombre_empresa": "RUPONT UNIFORMES",
+      "fecha_inicio": "04/02/2026",
+      "parque_industrial": "Salta",
+      "rubro": "Manufactura",
+      "superficie_solicitada_m2": 1000,
+      "actividad_empresa": "Fabricación de indumentaria de trabajo a gran escala ( minería, fuerzas públicas)",
+      "situacion": "En_tratamiento",
+      "representante_nombre": "Diego Ruiz de los Llanos / Marisol Ponce Sosa",
+      "contacto_tel": "",
+      "contacto_tel_2": "387-6181264",
+      "contacto_mail": "info@rupont.com",
+      "contacto_mail_2": "",
+      "fecha_ultimo_movimiento": "12/11/2026 13:03",
+      "actualizado_en": "2026-11-12T16:03:31.095Z"
     }
   ],
   "plazoDias": 20,
