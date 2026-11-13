@@ -159,6 +159,10 @@
         {
           "hora": "02/11/2026 11:22",
           "texto": "Conseguimos ppto. Se pasa a mesa de entrada"
+        },
+        {
+          "hora": "13/11/2026 11:03",
+          "texto": "Se envia expe al Servicio de administración financiera para que estime curso de acción y continuar con el trámite"
         }
       ],
       "parque": "Egpais"
@@ -602,5 +606,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-11-13T13:34:58.603Z"
+  "timestamp": "2026-11-13T14:03:02.450Z"
 }
