@@ -454,6 +454,10 @@
         {
           "hora": "04/11/2026 10:53",
           "texto": "Pasado desde Proyectos."
+        },
+        {
+          "hora": "13/11/2026 10:33",
+          "texto": "La firma presenta doc.Se le da intervencion al expe. Ente solicita PASE a la Sub para continuidad del trámite."
         }
       ],
       "parque": "Güemes"
@@ -594,5 +598,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-11-11T15:50:29.344Z"
+  "timestamp": "2026-11-13T13:33:44.709Z"
 }
