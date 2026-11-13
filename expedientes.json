@@ -554,6 +554,10 @@
         {
           "hora": "11/11/2026 11:35",
           "texto": "Pasado desde Proyectos."
+        },
+        {
+          "hora": "13/11/2026 10:34",
+          "texto": "Se mantendrá una reunión con represantante de la firma OSIEL el 16/11 a hs 10am"
         }
       ],
       "parque": "Güemes"
@@ -598,5 +602,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-11-13T13:33:44.709Z"
+  "timestamp": "2026-11-13T13:34:58.603Z"
 }
