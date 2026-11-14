@@ -1286,8 +1286,17 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
       return true;
     });
   }
+  // "Empresas" = las que tienen un vínculo con un lote: titular, o ocupante
+  // vigente por alquiler. Una ficha sin ninguno de los dos (no es titular ni
+  // ocupa nada) no entra en el contador ni en el listado; sigue en los datos.
+  function empresasConVinculo(){
+    var titulares = {};
+    state.lotes.forEach(function(l){ if(l.id_empresa) titulares[l.id_empresa] = true; });
+    state.ocupaciones.forEach(function(o){ if(o.vigente && o.id_empresa_ocupante) titulares[o.id_empresa_ocupante] = true; });
+    return empresasDelParque().filter(function(e){ return !!titulares[e.id_empresa]; });
+  }
   function empresasFiltradas(){
-    return empresasDelParque().filter(function(e){
+    return empresasConVinculo().filter(function(e){
       if(state.filterSituacionEmpresas && situacionDe(e)!==state.filterSituacionEmpresas) return false;
       if(state.searchEmpresas){
         var blob = [e.nombre_empresa,e.rubro,e.contacto_nombre].join(" ").toLowerCase();
@@ -1341,7 +1350,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     var filtradas = empresasFiltradas().slice().sort(function(a,b){
       return String(a.nombre_empresa||"").localeCompare(String(b.nombre_empresa||""));
     });
-    var total = empresasDelParque().length;
+    var total = empresasConVinculo().length;
     cuenta.textContent = !total ? ""
       : (filtradas.length===total ? total+" empresas" : filtradas.length+" de "+total+" empresas");
     // Contador en el chip de la pestaña (no en "Análisis": no es un listado,
@@ -2010,7 +2019,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   // ---- Dashboard ----
   function renderDashboard(){
     var lotes = lotesDelParque();
-    var empresas = empresasDelParque();
+    var empresas = empresasConVinculo();
     var idsLote = {};
     lotes.forEach(function(l){ idsLote[l.id_lote] = true; });
     var totalSup = lotes.reduce(function(s,l){ return s + (Number(l.superficie_m2)||0); }, 0);

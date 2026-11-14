@@ -2392,6 +2392,14 @@ async function testParques(viewport, puerto) {
   const empresasGuemes = datos.empresas.filter((e) => delParque(e, 'guemes'));
   const lotesSalta = datos.lotes.filter((l) => delParque(l, 'salta'));
   const empresasSalta = datos.empresas.filter((e) => delParque(e, 'salta'));
+  // Criterio del contador (2026-11-14, opción A): «Empresas» = las que tienen
+  // un vínculo con un lote, titular u ocupante vigente. Lo demás sigue en el
+  // archivo pero no se cuenta ni se lista.
+  const vinculadas = (lista) => lista.filter((e) =>
+    datos.lotes.some((l) => l.id_empresa === e.id_empresa) ||
+    datos.ocupaciones.some((o) => o.vigente && o.id_empresa_ocupante === e.id_empresa));
+  const vinculadasGuemes = vinculadas(empresasGuemes);
+  const vinculadasSalta = vinculadas(empresasSalta);
   const sinEmpresa = lotesGuemes.filter((l) => !l.id_empresa);
   // 139 desde el 2026-10-19: guemes_normalizado trajo un lote que no estaba
   // (en el origen «L40», sin el relleno de ceros, y por eso no chocaba con
@@ -2422,8 +2430,16 @@ async function testParques(viewport, puerto) {
      'la empresa que el usuario borró no volvió a aparecer en los datos');
   ok(totalLotes === lotesGuemes.length + lotesSalta.length && totalEmpresas === empresasGuemes.length + empresasSalta.length,
      'todos los lotes y empresas están atribuidos a uno de los dos parques (ninguno quedó sin id_parque)');
-  ok((await page.locator('#empresasCount').textContent()).includes(String(empresasGuemes.length)),
+  ok((await page.locator('#empresasCount').textContent()).includes(String(vinculadasGuemes.length)),
      'el contador de empresas muestra el total del parque activo, no la suma de los dos');
+  // Opción A: Güemes 52 (52 titulares; sin DJM MONTAJES ni el MIKUY duplicado),
+  // Salta 147 (132 titulares + 15 ocupantes sin registro).
+  ok(vinculadasGuemes.length === 52 && vinculadasSalta.length === 147,
+     `Empresas = las que tienen lote o alquilan: Güemes ${vinculadasGuemes.length} (52), Salta ${vinculadasSalta.length} (147)`);
+  ok(datos.empresas.filter((e) => /^MIKUY S\.R\.L$/i.test(e.nombre_empresa || '')).length === 1,
+     'MIKUY S.R.L figura una sola vez en los datos (el registro duplicado E042 se borró)');
+  ok(datos.eliminados.empresas.includes('E042') && !datos.empresas.some((e) => e.id_empresa === 'E042'),
+     'E042 quedó como baja (lápida) y no vuelve a subir en una fusión');
   ok((await page.locator('#parqueSwitch .parque-chip').count()) === 2,
      'el selector de parque ofrece los dos parques');
   ok((await page.locator('#parqueSwitch .parque-chip.active').textContent()).includes('Güemes'),
@@ -2445,7 +2461,7 @@ async function testParques(viewport, puerto) {
     // "Alquilada" describe al LOTE, no dice si su titular sigue operando.
     return ['Activa', 'En construcción', 'Sin actividad'].find((x) => estados.includes(x)) || null;
   };
-  for (const [parque, empresasDel] of [['guemes', empresasGuemes], ['salta', empresasSalta]]) {
+  for (const [parque, empresasDel] of [['guemes', vinculadasGuemes], ['salta', vinculadasSalta]]) {
     await page.locator(`#parqueSwitch [data-parque="${parque}"]`).click();
     await page.waitForFunction(() => document.querySelectorAll('#empresasList .emp-tile').length > 0);
     const opciones = await page.locator('#filterEstadoEmpresas option').evaluateAll((os) =>
@@ -2480,7 +2496,7 @@ async function testParques(viewport, puerto) {
   });
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForFunction(() => document.querySelectorAll('#empresasList .emp-tile').length > 0);
-  ok((await page.locator('#empresasList .emp-tile').count()) === empresasGuemes.length,
+  ok((await page.locator('#empresasList .emp-tile').count()) === vinculadasGuemes.length,
      'un filtro guardado que este parque no ofrece se descarta en vez de recortar la lista a ciegas');
 
   // El chip es una etiqueta corta al lado de "Güemes" (pedido del usuario
@@ -2719,7 +2735,7 @@ async function testParques(viewport, puerto) {
   // titular, que es exactamente la confusión que hay que no repetir.
   await page.locator('#parqueSwitch [data-parque="salta"]').click();
   await page.waitForFunction(() => document.querySelectorAll('#empresasList .emp-tile').length > 0);
-  ok((await page.locator('#empresasCount').textContent()).includes(String(empresasSalta.length)),
+  ok((await page.locator('#empresasCount').textContent()).includes(String(vinculadasSalta.length)),
      'al cambiar de parque el listado pasa a las empresas de Salta');
 
   const ocupSL010 = datos.ocupaciones.find((o) => o.id_lote === 'SL010');
@@ -2913,7 +2929,7 @@ async function testParques(viewport, puerto) {
   // Vuelta a Güemes: el cambio de parque no deja estado del otro colgado.
   await page.locator('#parqueSwitch [data-parque="guemes"]').click();
   await page.waitForFunction(() => document.querySelectorAll('#empresasList .emp-tile').length > 0);
-  ok((await page.locator('#empresasCount').textContent()).includes(String(empresasGuemes.length)),
+  ok((await page.locator('#empresasCount').textContent()).includes(String(vinculadasGuemes.length)),
      'al volver a Güemes el listado vuelve a sus empresas');
 
   // Bajas permanentes: una empresa borrada en pantalla se declara como baja
