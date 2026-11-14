@@ -79,10 +79,24 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 .lista{display:flex;flex-direction:column;gap:8px}
 .tarjeta-row{display:flex;align-items:center;gap:10px;min-width:0}
 
-/* Avatar con iniciales: no hay logos reales cargados, así que es texto,
-   no una imagen. Mismo color de acento que el resto de la suite. */
+/* Avatar con iniciales: es el respaldo cuando la empresa no tiene logo. Si
+   tiene (campo `logo` en parques.json), se dibuja la imagen en una caja
+   blanca con borde, porque los logos traen fondo propio y no son círculos. */
 .avatar{flex:0 0 auto;width:36px;height:36px;border-radius:50%;background:var(--c1-bg);color:var(--c1);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:var(--font-display)}
 .avatar.lg{width:44px;height:44px;font-size:15px}
+.logo-empresa{flex:0 0 auto;height:44px;width:auto;max-width:96px;min-width:44px;padding:4px 6px;box-sizing:border-box;background:#fff;border:1px solid var(--border);border-radius:8px;object-fit:contain}
+
+/* Listado de empresas como grilla de logos (directorio minero): baldosas
+   cuadradas, sin borde ni fondo, logos en gris para que se vean parejos. */
+#empresasList.lista{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media(min-width:700px){#empresasList.lista{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}}
+.emp-tile{background:none;border:0;padding:0;width:100%;aspect-ratio:1;display:grid;place-items:center;cursor:pointer;transition:opacity .15s;min-width:0}
+.emp-tile:hover{opacity:.7}
+.emp-tile:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+.emp-logo{width:100%;height:100%;object-fit:contain;padding:8px;filter:grayscale(1) brightness(.88) contrast(1.12)}
+.emp-tile-nombre{width:100%;height:100%;display:grid;place-items:center;padding:12px;text-align:center;overflow-wrap:anywhere;font-weight:700;font-size:13.5px;line-height:1.3;color:var(--text)}
+.emp-tile .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.emp-tile{position:relative}
 
 /* Bloque "a revisar": inconsistencia conocida del dato de origen (Excel de
    Güemes), no un error de la app — ámbar, no rojo. */
@@ -381,7 +395,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
   }
 
-  // Iniciales para el avatar: no hay logos cargados. Toma la primera letra
+  // Iniciales para el avatar: respaldo cuando la empresa no tiene `logo`. Toma la primera letra
   // de hasta 2 palabras significativas (ignora S.A./S.R.L./LTDA y artículos).
   var PALABRAS_IGNORADAS = /^(s\.?a\.?|s\.?r\.?l\.?|ltda\.?|de|del|la|el|los|las|y)$/i;
   function iniciales(nombre){
@@ -1227,15 +1241,26 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
         '</div>';
       return;
     }
+    // Grilla de logos (estilo del directorio minero): cada empresa es una
+    // baldosa cuadrada. Con logo, se ve solo el logo; sin logo, el nombre.
+    // Superficie, situación y contacto quedan en la ficha que se abre al tocar.
     cont.innerHTML = filtradas.map(function(e){
       var totalM2 = empresaTotalM2(e.id_empresa);
       var situ = situacionDe(e);
       var tono = {"Activa":"is-ok","En construcción":"is-warn","Sin actividad":"is-idle"}[situ] || "";
       var estado = situ ? '<div class="ui-card-estado '+tono+'"><i class="ui-dot"></i>'+esc(situ)+'</div>' : '';
-      return '<button class="ui-card" data-open-empresa="'+esc(e.id_empresa)+'">'+
-        '<div class="ui-card-title">'+esc(e.nombre_empresa)+'</div>'+
-        '<div class="ui-card-id">'+resumenSuperficie(lotesDeEmpresa(e.id_empresa), lotesOcupadosPor(e.id_empresa), totalM2)+'</div>'+
+      // El resumen completo sigue en el DOM (sr-only): lectores de pantalla
+      // y búsquedas lo leen; a la vista queda solo el logo o el nombre.
+      var resumen = '<span class="sr-only">'+
+        '<span class="ui-card-title">'+esc(e.nombre_empresa)+'</span>'+
+        '<span class="ui-card-id">'+resumenSuperficie(lotesDeEmpresa(e.id_empresa), lotesOcupadosPor(e.id_empresa), totalM2)+'</span>'+
         estado+
+        '</span>';
+      var contenido = e.logo
+        ? '<img class="emp-logo" src="'+esc(e.logo)+'" alt="" loading="lazy">'
+        : '<div class="emp-tile-nombre" aria-hidden="true">'+esc(e.nombre_empresa)+'</div>';
+      return '<button class="emp-tile" data-open-empresa="'+esc(e.id_empresa)+'">'+
+        contenido+resumen+
         '</button>';
     }).join("");
     cont.querySelectorAll("[data-open-empresa]").forEach(function(btn){
@@ -1742,7 +1767,9 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     modal.innerHTML =
       '<div class="modal-head"><button class="x-close" id="xCloseViewEmp">&times;</button></div>'+
       '<div class="view-head"><div class="tarjeta-row">'+
-        '<div class="avatar lg">'+esc(iniciales(e.nombre_empresa))+'</div>'+
+        (e.logo
+          ? '<img class="logo-empresa" src="'+esc(e.logo)+'" alt="Logo de '+esc(e.nombre_empresa)+'">'
+          : '<div class="avatar lg">'+esc(iniciales(e.nombre_empresa))+'</div>')+
         '<div><div class="view-title">'+esc(e.nombre_empresa)+'</div>'+
         // La superficie es de los lotes a su nombre. Una empresa que solo
         // ocupa por alquiler no tiene superficie propia, así que decir
