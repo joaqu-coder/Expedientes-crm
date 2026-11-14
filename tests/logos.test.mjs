@@ -48,5 +48,11 @@ for (const { id, archivo } of entradas) {
   if (profundidad !== 8 || tipo !== 2) falla(`${id}: ${archivo} es color type ${tipo}/${profundidad} bit; se espera RGB 8 bit (tipo 2)`);
 }
 
+// 5. Marcado válido: la baldosa de empresa es un <button>, cuyo contenido debe
+//    ser fraseante (sin <div>). Un <div> dentro se renderiza, pero es HTML inválido.
+const baldosa = html.match(/var resumen = [\s\S]*?<\/button>'/);
+if (!baldosa) falla('no se encontró la plantilla de baldosa .emp-tile en parques.html');
+else if (/<div[\s>]/.test(baldosa[0])) falla('la baldosa .emp-tile (un <button>) contiene <div>: usar <span>');
+
 if (fallos) process.exit(1);
-console.log(`OK logos: ${entradas.length} entradas en LOGOS, con id y archivo válidos, PNG RGB sin alfa; parques.json sin campo logo`);
+console.log(`OK logos: ${entradas.length} entradas en LOGOS, con id y archivo válidos, PNG RGB sin alfa; parques.json sin campo logo; baldosa sin <div>`);
