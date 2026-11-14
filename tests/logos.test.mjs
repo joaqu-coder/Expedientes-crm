@@ -25,7 +25,7 @@ if (conCampoLogo.length) falla(`parques.json tiene campo "logo" en ${conCampoLog
 const bloque = html.match(/var LOGOS = \{([\s\S]*?)\};/);
 if (!bloque) { falla('no se encontró el mapa LOGOS en parques.html'); process.exit(1); }
 const entradas = [...bloque[1].matchAll(/"([^"]+)"\s*:\s*"([^"]+)"/g)].map((m) => ({ id: m[1], archivo: m[2] }));
-if (entradas.length !== 27) falla(`se esperaban 27 logos en LOGOS, hay ${entradas.length}`);
+if (entradas.length !== 32) falla(`se esperaban 32 logos en LOGOS, hay ${entradas.length}`);
 
 const ids = new Set(datos.empresas.map((e) => e.id_empresa));
 for (const { id, archivo } of entradas) {
