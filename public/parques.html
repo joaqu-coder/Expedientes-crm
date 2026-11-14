@@ -93,7 +93,8 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 .emp-tile{background:none;border:0;padding:0;width:100%;aspect-ratio:1;display:grid;place-items:center;cursor:pointer;transition:opacity .15s;min-width:0}
 .emp-tile:hover{opacity:.7}
 .emp-tile:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
-.emp-logo{width:100%;height:100%;object-fit:contain;padding:8px;filter:grayscale(1) brightness(.88) contrast(1.12)}
+/* Los logos ya vienen normalizados (fondo blanco, misma escala de grises): sin filtro, que oscurecería el blanco. */
+.emp-logo{width:100%;height:100%;object-fit:contain;padding:8px;background:#fff;border-radius:8px}
 .emp-tile-nombre{width:100%;height:100%;display:grid;place-items:center;padding:12px;text-align:center;overflow-wrap:anywhere;font-weight:700;font-size:13.5px;line-height:1.3;color:var(--text)}
 .emp-tile .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 .emp-tile{position:relative}
@@ -403,10 +404,10 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     "E007":  "logos/sofia.png",
     "SE098": "logos/sofia.png",
     "E055":  "logos/salta-petrol.png",
-    "E057":  "logos/sanchez-huerta.jpg",
-    "E058":  "logos/semix.jpg",
+    "E057":  "logos/sanchez-huerta.png",
+    "E058":  "logos/semix.png",
     "E059":  "logos/servicios-andinos.png",
-    "E062":  "logos/transclor.jpg",
+    "E062":  "logos/transclor.png",
     "E063":  "logos/ypf-gas.png"
   };
   function logoDe(e){

@@ -36,5 +36,17 @@ for (const { id, archivo } of entradas) {
   }
 }
 
+// 4. Fondo blanco en todos los casos: cada logo es PNG RGB de 8 bits, sin canal
+//    alfa (color type 2). Con alfa o paleta, el fondo depende del navegador.
+for (const { id, archivo } of entradas) {
+  const ruta = path.join(RAIZ, 'public', archivo);
+  if (!archivo.endsWith('.png')) { falla(`${id}: ${archivo} no es PNG (la normalización genera PNG)`); continue; }
+  const cab = fs.readFileSync(ruta).subarray(0, 26);
+  const firma = cab.subarray(0, 8).toString('hex');
+  if (firma !== '89504e470d0a1a0a') { falla(`${id}: ${archivo} no tiene firma PNG`); continue; }
+  const profundidad = cab[24], tipo = cab[25];
+  if (profundidad !== 8 || tipo !== 2) falla(`${id}: ${archivo} es color type ${tipo}/${profundidad} bit; se espera RGB 8 bit (tipo 2)`);
+}
+
 if (fallos) process.exit(1);
-console.log(`OK logos: ${entradas.length} entradas en LOGOS, todas con id y archivo válidos; parques.json sin campo logo`);
+console.log(`OK logos: ${entradas.length} entradas en LOGOS, con id y archivo válidos, PNG RGB sin alfa; parques.json sin campo logo`);
