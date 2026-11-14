@@ -395,6 +395,24 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
   }
 
+  // Logos de empresas. Viven acá y no en parques.json a propósito: el dato
+  // se sincroniza y fusiona por registro; un celular con una copia vieja
+  // (sin logo) que edite una empresa pisaría el logo en el servidor. Así la
+  // fusión no los toca. Clave: id_empresa. Archivos en public/logos/.
+  var LOGOS = {
+    "E007":  "logos/sofia.png",
+    "SE098": "logos/sofia.png",
+    "E055":  "logos/salta-petrol.png",
+    "E057":  "logos/sanchez-huerta.jpg",
+    "E058":  "logos/semix.jpg",
+    "E059":  "logos/servicios-andinos.png",
+    "E062":  "logos/transclor.jpg",
+    "E063":  "logos/ypf-gas.png"
+  };
+  function logoDe(e){
+    return Object.prototype.hasOwnProperty.call(LOGOS, e.id_empresa) ? LOGOS[e.id_empresa] : "";
+  }
+
   // Iniciales para el avatar: respaldo cuando la empresa no tiene `logo`. Toma la primera letra
   // de hasta 2 palabras significativas (ignora S.A./S.R.L./LTDA y artículos).
   var PALABRAS_IGNORADAS = /^(s\.?a\.?|s\.?r\.?l\.?|ltda\.?|de|del|la|el|los|las|y)$/i;
@@ -1256,8 +1274,9 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
         '<span class="ui-card-id">'+resumenSuperficie(lotesDeEmpresa(e.id_empresa), lotesOcupadosPor(e.id_empresa), totalM2)+'</span>'+
         estado+
         '</span>';
-      var contenido = e.logo
-        ? '<img class="emp-logo" src="'+esc(e.logo)+'" alt="" loading="lazy">'
+      var logo = logoDe(e);
+      var contenido = logo
+        ? '<img class="emp-logo" src="'+esc(logo)+'" alt="" loading="lazy">'
         : '<div class="emp-tile-nombre" aria-hidden="true">'+esc(e.nombre_empresa)+'</div>';
       return '<button class="emp-tile" data-open-empresa="'+esc(e.id_empresa)+'">'+
         contenido+resumen+
@@ -1767,8 +1786,8 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     modal.innerHTML =
       '<div class="modal-head"><button class="x-close" id="xCloseViewEmp">&times;</button></div>'+
       '<div class="view-head"><div class="tarjeta-row">'+
-        (e.logo
-          ? '<img class="logo-empresa" src="'+esc(e.logo)+'" alt="Logo de '+esc(e.nombre_empresa)+'">'
+        (logoDe(e)
+          ? '<img class="logo-empresa" src="'+esc(logoDe(e))+'" alt="Logo de '+esc(e.nombre_empresa)+'">'
           : '<div class="avatar lg">'+esc(iniciales(e.nombre_empresa))+'</div>')+
         '<div><div class="view-title">'+esc(e.nombre_empresa)+'</div>'+
         // La superficie es de los lotes a su nombre. Una empresa que solo
