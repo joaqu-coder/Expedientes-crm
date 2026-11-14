@@ -381,14 +381,6 @@
       "id_parque": "guemes"
     },
     {
-      "id_empresa": "E042",
-      "nombre_empresa": "MIKUY S.R.L",
-      "rubro": "Elaboración de alimentos preparados para animales.Servicio de transporte de cargas y mercaderías a granel. Servicio de gestión y logística para el transporte de",
-      "propietario_matricula": "Ente General de Parques y Areas Industriales de Salta",
-      "observacion": "https://www.linkedin.com/company/manuchar/ No figura en el export normalizado del 2026-10-19; se conserva el registro anterior.",
-      "id_parque": "guemes"
-    },
-    {
       "id_empresa": "E043",
       "id_empresa_original": "E043",
       "nombre_empresa": "MINERA MARI MARI",
@@ -7989,7 +7981,9 @@
   ],
   "reservas": [],
   "eliminados": {
-    "empresas": [],
+    "empresas": [
+      "E042"
+    ],
     "lotes": []
   }
 }
