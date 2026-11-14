@@ -3709,7 +3709,8 @@ async function testResolverArchivar() {
   const hoy = new Date();
   const hoyISO = iso(hoy);
   ok(r.estado === 'activo' && r.final === undefined && r.motivoFinal === undefined && r.fechaResolucion === undefined, 'rescatar deja la carta activa, sin final ni motivo (tras reintentar el 409)');
-  ok(habilesEntre(r.fechaInicio, hoyISO) === 4, `el rescate retoma los 4 días hábiles usados, no arranca de cero (fechaInicio=${r.fechaInicio})`);
+  const usadosAlArchivar = habilesEntre(hace4, hoyISO); // lo que el archivo contó: depende del día de la semana
+  ok(habilesEntre(r.fechaInicio, hoyISO) === usadosAlArchivar, `el rescate retoma los ${usadosAlArchivar} días hábiles usados al archivar, no arranca de cero (fechaInicio=${r.fechaInicio})`);
   ok(r.fechaInicio !== hoyISO, 'el plazo no arranca de hoy');
   ok(r.intervenciones.length === 3 && r.intervenciones[0].texto === 'Nota previa' && /Rescatado desde Proyectos/.test(r.intervenciones[2].texto), 'el historial se conserva y suma la nota de rescate');
   ok(servidor.datos.expedientes.length === 3, 'T6: el rescate no duplica ni pierde expedientes');

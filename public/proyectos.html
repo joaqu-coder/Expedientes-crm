@@ -2783,10 +2783,16 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     if(!x.fechaInicio || !x.fechaResolucion) return 0;
     return diasHabilesEntre(isoAFecha(x.fechaInicio), isoAFecha(x.fechaResolucion));
   }
-  // Fecha de inicio tal que, desde ella hasta hoy, hay exactamente n días hábiles.
+  // Fecha de inicio tal que diasHabilesEntre(inicio, hoy) === n, es decir, n días
+  // hábiles en (inicio, hoy]. Hoy cuenta si es hábil: si fuera fin de semana, no.
   function fechaInicioConDiasUsados(n, hoy){
     var f = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()), k = 0;
-    while(k < n){ f.setDate(f.getDate()-1); if(esHabil(f)) k++; }
+    if(n <= 0) return fechaISO(f);
+    while(true){
+      if(esHabil(f)){ k++; if(k === n) break; }
+      f.setDate(f.getDate()-1);
+    }
+    f.setDate(f.getDate()-1); // el día anterior al n-ésimo hábil hacia atrás
     return fechaISO(f);
   }
 
