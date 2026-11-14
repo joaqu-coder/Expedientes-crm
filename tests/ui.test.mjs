@@ -2366,6 +2366,18 @@ async function testParques(viewport, puerto) {
       res.end(JSON.stringify(ultimoPost || datos));
       return;
     }
+    // Los logos son PNG reales de public/logos/. Antes este servidor devolvía
+    // HTML para cualquier ruta: las imágenes no cargaban y los tests de tamaño
+    // medían 0 logos.
+    if (req.url.startsWith('/logos/')) {
+      const archivo = path.join(RAIZ, 'public', decodeURIComponent(req.url.split('?')[0]));
+      if (fs.existsSync(archivo) && archivo.startsWith(path.join(RAIZ, 'public', 'logos'))) {
+        res.writeHead(200, { 'Content-Type': 'image/png' });
+        return res.end(fs.readFileSync(archivo));
+      }
+      res.writeHead(404);
+      return res.end();
+    }
     if (servirHeaderJs(req, res)) return;
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     res.end(html);
@@ -2380,6 +2392,38 @@ async function testParques(viewport, puerto) {
   await page.goto(`http://localhost:${puerto}/`, { waitUntil: 'networkidle' });
   // Empresas es la vista por defecto — ya no hay una pestaña "Lotes" suelta.
   await page.waitForFunction(() => document.querySelectorAll('#empresasList .emp-tile').length > 0);
+
+  // Tamaño de los logos en la grilla: ninguno se ve más grande que el resto.
+  // Antes cada logo se estiraba a la casilla completa (object-fit con 100%),
+  // así que un cuadrado de 137 px o uno de 129 px se veían enormes al lado de
+  // los anchos. Regla: ocupa como máximo ~75% de la casilla y nunca se agranda
+  // por encima de su tamaño natural (no se pixela).
+  // loading="lazy": un logo fuera de pantalla no carga y mide 0x0. Se lleva
+  // cada uno a la vista y se espera su carga antes de medir.
+  await page.evaluate(async () => {
+    const imgs = Array.from(document.querySelectorAll('#empresasList .emp-tile img.emp-logo'));
+    for (const img of imgs) {
+      img.scrollIntoView({ block: 'center' });
+      const t0 = Date.now();
+      while (!img.complete && Date.now() - t0 < 3000) await new Promise((r) => setTimeout(r, 50));
+    }
+  });
+  const medidasLogos = await page.evaluate(() => Array.from(document.querySelectorAll('#empresasList .emp-tile img.emp-logo')).filter((img) => img.complete && img.naturalWidth > 0).map((img) => {
+    // Lo que se ve es el dibujo dentro de la caja (object-fit: contain), no la
+    // caja: se calcula con la misma regla y descontando el padding.
+    const casilla = img.closest('.emp-tile').getBoundingClientRect();
+    const r = img.getBoundingClientRect();
+    const cs = getComputedStyle(img);
+    const cajaW = r.width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const cajaH = r.height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    const nw = img.naturalWidth, nh = img.naturalHeight;
+    const escala = Math.min(cajaW / nw, cajaH / nh);
+    return { id: img.getAttribute('src'), w: nw * escala, h: nh * escala, cw: casilla.width, ch: casilla.height, nw, nh, escala };
+  }));
+  const grandes = medidasLogos.filter((m) => m.w > m.cw * 0.76 || m.h > m.ch * 0.76);
+  ok(medidasLogos.length > 0 && grandes.length === 0, `ningún logo ocupa más del 76% de la casilla (${grandes.length} de ${medidasLogos.length}: ${grandes.slice(0, 3).map((m) => m.id + ' ' + Math.round(m.w) + 'x' + Math.round(m.h) + ' en ' + Math.round(m.cw)).join(' | ')})`);
+  const agrandados = medidasLogos.filter((m) => m.escala > 1.001);
+  ok(agrandados.length === 0, `ningún logo se agranda por encima de su tamaño natural (${agrandados.length}: ${agrandados.slice(0, 3).map((m) => m.id).join(' | ')})`);
 
   const totalLotes = datos.lotes.length;
   const totalEmpresas = datos.empresas.length;
