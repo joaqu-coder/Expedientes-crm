@@ -90,14 +90,13 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
    cuadradas, sin borde ni fondo, logos en gris para que se vean parejos. */
 #empresasList.lista{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 @media(min-width:700px){#empresasList.lista{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}}
-.emp-tile{background:none;border:0;padding:0;width:100%;aspect-ratio:1;display:grid;place-items:center;cursor:pointer;transition:opacity .15s;min-width:0}
+.emp-tile{position:relative;background:none;border:0;padding:0;width:100%;aspect-ratio:1;display:grid;place-items:center;cursor:pointer;transition:opacity .15s;min-width:0}
 .emp-tile:hover{opacity:.7}
 .emp-tile:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
 /* Los logos ya vienen normalizados (fondo blanco, misma escala de grises): sin filtro, que oscurecería el blanco. */
 .emp-logo{width:100%;height:100%;object-fit:contain;padding:8px;background:#fff;border-radius:8px}
 .emp-tile-nombre{width:100%;height:100%;display:grid;place-items:center;padding:12px;text-align:center;overflow-wrap:anywhere;font-weight:700;font-size:13.5px;line-height:1.3;color:var(--text)}
 .emp-tile .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
-.emp-tile{position:relative}
 
 /* Bloque "a revisar": inconsistencia conocida del dato de origen (Excel de
    Güemes), no un error de la app — ámbar, no rojo. */
@@ -1267,7 +1266,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
       var totalM2 = empresaTotalM2(e.id_empresa);
       var situ = situacionDe(e);
       var tono = {"Activa":"is-ok","En construcción":"is-warn","Sin actividad":"is-idle"}[situ] || "";
-      var estado = situ ? '<div class="ui-card-estado '+tono+'"><i class="ui-dot"></i>'+esc(situ)+'</div>' : '';
+      var estado = situ ? '<span class="ui-card-estado '+tono+'"><i class="ui-dot"></i>'+esc(situ)+'</span>' : '';
       // El resumen completo sigue en el DOM (sr-only): lectores de pantalla
       // y búsquedas lo leen; a la vista queda solo el logo o el nombre.
       var resumen = '<span class="sr-only">'+
@@ -1278,7 +1277,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
       var logo = logoDe(e);
       var contenido = logo
         ? '<img class="emp-logo" src="'+esc(logo)+'" alt="" loading="lazy">'
-        : '<div class="emp-tile-nombre" aria-hidden="true">'+esc(e.nombre_empresa)+'</div>';
+        : '<span class="emp-tile-nombre" aria-hidden="true">'+esc(e.nombre_empresa)+'</span>';
       return '<button class="emp-tile" data-open-empresa="'+esc(e.id_empresa)+'">'+
         contenido+resumen+
         '</button>';
