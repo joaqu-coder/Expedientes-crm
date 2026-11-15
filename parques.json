@@ -1619,7 +1619,12 @@
       "ubicacion": "Calle 2",
       "situacion": "Activa",
       "es_ocupante_sin_registro": false,
-      "id_parque": "salta"
+      "id_parque": "salta",
+      "telefono": "",
+      "cargo": "Representante",
+      "instagram": "",
+      "facebook": "",
+      "linkedin": ""
     },
     {
       "id_empresa": "SE064",
