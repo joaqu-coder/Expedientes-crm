@@ -504,7 +504,9 @@ async function testSyncYEscape() {
   await page.evaluate(() => window.dispatchEvent(new Event('online')));
   await page.waitForTimeout(600);
   ok(!(await avisoVisible()), 'al volver la red se reintenta y el aviso desaparece solo');
-  ok(ctx.getUltimoPost()?.expedientes?.[0]?.tema === 'cambio con red caída', 'el cambio pendiente llegó al servidor');
+  // Se busca por contenido, no por posición: la fusión no garantiza el orden del arreglo.
+  const temasSubidos = (ctx.getUltimoPost()?.expedientes || []).map((e) => e.tema);
+  ok(temasSubidos.filter((t) => t === 'cambio con red caída').length === 1, `el cambio pendiente llegó al servidor (temas subidos: ${JSON.stringify(temasSubidos)})`);
   ok(!(await page.evaluate(() => hayPendiente())), 'ya no queda pendiente');
 
   // --- edit durante un POST en vuelo ---
@@ -1043,7 +1045,8 @@ async function testFlujo() {
   await page.click('#syncAviso');
   await page.waitForTimeout(600);
   ok(await page.locator('#syncAviso').isHidden(), 'tocar el aviso reintenta, sincroniza y el aviso se va');
-  ok(ctx.getUltimoPost()?.expedientes?.[0]?.tema === 'editado sin red', 'el cambio pendiente llegó al servidor');
+  const temasEditados = (ctx.getUltimoPost()?.expedientes || []).map((e) => e.tema);
+  ok(temasEditados.filter((t) => t === 'editado sin red').length === 1, `el cambio pendiente llegó al servidor (temas subidos: ${JSON.stringify(temasEditados)})`);
 
   ok(problemas.length === 0, 'sin errores de JS ni diálogos nativos' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
   await browser.close();
