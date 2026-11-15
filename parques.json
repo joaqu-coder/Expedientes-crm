@@ -1391,12 +1391,11 @@
       "id_empresa": "SE046",
       "id_empresa_original": "107",
       "nombre_empresa": "NOA ABERTURAS",
-      "rubro": "VENTA DE GAS ENVASADO",
-      "mail": "facturascompras@cngrupo.com.ar | jtiscornia@cngrupo.com.ar",
-      "telefono": "3874688288",
-      "contacto_nombre": "Eduardo Gómez Naar",
-      "ubicacion": "Av. Rodríguez Durañona s/n",
-      "situacion": "Activa",
+      "rubro": "CARPINTERIA METALICA",
+      "mail": "gcortez@galvanizadosdelnorte.com.ar | Idiaz@todoobrassrl.com.ar",
+      "telefono": "3875788822",
+      "contacto_nombre": "Gustavo González",
+      "ubicacion": "Calle Costanera 370",
       "es_ocupante_sin_registro": false,
       "id_parque": "salta"
     },
@@ -1418,7 +1417,13 @@
       "id_empresa_original": "133",
       "nombre_empresa": "GAS DEL NORTE S.A",
       "es_ocupante_sin_registro": false,
-      "id_parque": "salta"
+      "id_parque": "salta",
+      "rubro": "VENTA DE GAS ENVASADO",
+      "mail": "facturascompras@cngrupo.com.ar | jtiscornia@cngrupo.com.ar",
+      "telefono": "3874688288",
+      "contacto_nombre": "Eduardo Gómez Naar",
+      "ubicacion": "Av. Rodríguez Durañona s/n",
+      "situacion": "Activa"
     },
     {
       "id_empresa": "SE049",
