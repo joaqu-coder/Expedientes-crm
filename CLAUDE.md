@@ -934,6 +934,30 @@ Seguimiento (`abrirOverlay`) y Proyectos ya lo tenían. Falta todavía el resto
 de `abrirOverlay()` en esas dos pantallas (foco inicial, trampa de Tab,
 retorno del foco).
 
+### Logos entre dispositivos: network-first (2026-11-15)
+
+Síntoma: un logo nuevo se veía en el escritorio y en el celular seguía el
+anterior. Los logos viven en `public/logos/` y se **reemplazan en el mismo
+nombre de archivo** (`ken.png`, `funes.png`, `el-moro.png`…). `sw.js` los
+servía con stale-while-revalidate: un dispositivo que ya los cacheó mostraba
+la copia vieja en la visita siguiente al deploy. Reproducido en Chromium con el
+service worker real (visita 3 de 4: versión vieja, en ambos viewports).
+
+- **Arreglo**: `/logos/*` va network-first, igual que el HTML y los estilos. Sin
+  conexión el fallback sigue siendo el caché, así que se ve el último logo
+  guardado.
+- **`CACHE_VERSION` pasó a v11**: un celular con v10 instalada toma el SW nuevo
+  en la siguiente navegación y borra el caché viejo (verificado: en la visita
+  siguiente al deploy ya muestra el logo nuevo).
+- **Regla**: si algo visible cambia sin cambiar de nombre (logos, íconos), no va
+  en stale-while-revalidate. Ver la lista de network-first arriba.
+- **Test**: `tests/logos-dispositivos.test.mjs` (dos viewports, caché previa,
+  sin conexión, dispositivo sin caché). Corre dentro de `test:concurrencia`.
+  Mide las dimensiones del `<img>` pintado, no colores.
+- **Lo que no cubre**: el `loading="lazy"` de la grilla hace que una imagen fuera
+  de pantalla no esté cargada hasta hacer scroll; es intencional, no es un
+  desfase de sincronización.
+
 ## Formato del número de expediente
 
 `XXX-XXXXX/YYYY-ZZ` — **sin paréntesis**.

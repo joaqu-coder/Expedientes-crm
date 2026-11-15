@@ -7,9 +7,12 @@
  *
  * Cambiar CACHE_VERSION cuando hay cambios incompatibles.
  */
+// v11: los logos pasan a network-first y el cache con copias viejas de logos
+// se borra en el activate. Sin esto, un celular con v10 seguiría mostrando el
+// logo anterior de cada empresa que ya había cacheado.
 // v10: fuerza que los celulares reemplacen el Service Worker instalado y
 // borren el cache viejo (el de v9 seguía sirviendo pantallas anteriores).
-const CACHE_VERSION = 'expedientes-crm-v10';
+const CACHE_VERSION = 'expedientes-crm-v11';
 const ASSETS = ['/manifest.json'];
 
 self.addEventListener('install', (event) => {
@@ -65,7 +68,13 @@ self.addEventListener('fetch', (event) => {
   // página —se grabó la navegación cuadro por cuadro y no hay un solo pixel
   // azulado en el viewport—, estaba en el manifest cacheado.
   const CRITICOS = ['/header.js', '/confirmar-cambios.js', '/design-system.css', '/ui-kit.css', '/manifest.json'];
-  const esCritico = isHTML || CRITICOS.includes(url.pathname);
+  // Los logos (public/logos/*) también van network-first. Se reemplazan en el
+  // mismo nombre de archivo (ken.png, funes.png…): con stale-while-revalidate
+  // un dispositivo que ya los cacheó mostraba la versión anterior en la visita
+  // siguiente al deploy. Sin conexión, el fallback sigue siendo el cache, así
+  // que se ve el último logo guardado.
+  const esLogo = url.pathname.startsWith('/logos/');
+  const esCritico = isHTML || esLogo || CRITICOS.includes(url.pathname);
 
   if (esCritico) {
     // Network-first: intenta red, si falla usa cache
