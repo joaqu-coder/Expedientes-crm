@@ -2484,7 +2484,12 @@
       "ubicacion": "Av. Rodriguez Durañona",
       "situacion": "Sin actividad",
       "es_ocupante_sin_registro": false,
-      "id_parque": "salta"
+      "id_parque": "salta",
+      "cargo": "Socio Gerente",
+      "pagweb": "",
+      "instagram": "",
+      "facebook": "",
+      "linkedin": ""
     },
     {
       "id_empresa": "SE131",
