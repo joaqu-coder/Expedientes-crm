@@ -1,7 +1,7 @@
 {
   "sesion_fecha": "2026-11-15",
-  "ultimo_commit": "logos entre dispositivos: network-first en sw.js (CACHE v11) + tests/logos-dispositivos.test.mjs",
-  "estado": "2026-11-15 (logos entre dispositivos): los logos no se sincronizaban porque sw.js los servía con stale-while-revalidate y se reemplazan en el mismo nombre de archivo. Un dispositivo con caché mostraba el logo anterior en la visita posterior al deploy. Arreglo: /logos/* network-first, CACHE v11. Reproducido en Chromium en móvil y escritorio antes y después. Pendiente de merge a main (deploy).",
+  "ultimo_commit": "iconos: Expedientes con ícono SECRET centrado y nítido; íconos network-first (fc04d74)",
+  "estado": "2026-11-15: logos y íconos entre dispositivos corregidos y mergeados a main (4e3b5c0, fc04d74). Caché de service worker: /logos/* e /icon-*.png network-first. Suite completa en verde (973 OK, 0 fallas).",
   "resuelto": [
     "Tag de parque en tarjetas de Seguimiento: color fijo rojo → color de la tarjeta (2026-10-29).",
     "2026-10-20: /api/health reporta tamanos_kb y alerta_tamano (700 KB) para los archivos de datos. Test en worker.test.mjs.",
@@ -97,9 +97,10 @@
     "Búsqueda 14px Roboto en las cuatro apps (token en design-system.css).",
     "Patrón único de pestañas en ui-kit.css (.app-tabs / .app-tab), también para chips de parque, secciones del Análisis y sub-pestañas de la ficha.",
     "Proyectos: filtros avanzados en panel desplegable; plazo fuera del encabezado, con Guardar/Cancelar en Análisis › Urgencias.",
-    "Logos entre dispositivos: /logos/* pasa a network-first en sw.js. Antes, stale-while-revalidate mostraba el logo viejo en un dispositivo con caché tras reemplazar el archivo con el mismo nombre. Sin conexión sigue el fallback a caché. CACHE_VERSION v11 limpia el caché v10. Test: tests/logos-dispositivos.test.mjs (en test:concurrencia)."
+    "Logos entre dispositivos: /logos/* pasa a network-first en sw.js. Antes, stale-while-revalidate mostraba el logo viejo en un dispositivo con caché tras reemplazar el archivo con el mismo nombre. Sin conexión sigue el fallback a caché. CACHE_VERSION v11 limpia el caché v10. Test: tests/logos-dispositivos.test.mjs (en test:concurrencia).",
+    "Íconos: icon-512 reencuadrado y centrado (antes tocaba los bordes); icon-192 regenerado desde el 512 (no pixela); íconos network-first en sw.js. Test en tests/logos.test.mjs."
   ],
-  "verificado_con": "npm test en verde (973 OK, 0 fallas, exit 0) en la rama de trabajo. Test nuevo tests/logos-dispositivos.test.mjs: falla con el código anterior (400x110 en vez de 200x160 con caché previa) y pasa con el arreglo. Actualización v10 -> v11 verificada en Chromium: en la visita posterior al deploy el logo ya es el nuevo, y el caché v10 se borra.",
+  "verificado_con": "npm test en verde (exit 0, 973 OK, 0 fallas) sobre fc04d74, antes del merge fast-forward a main. Ícono: 512 reencuadrado (márgenes 61/62/63/64 px), 192 reducido desde el 512.",
   "endpoints": {
     "/api/sync": "Seguimiento (expedientes.json). GET devuelve el JSON; POST lo escribe en GitHub",
     "/api/version-cartas": "Proyectos: sha del blob de cartas-intencion.json, para el sondeo del cliente (cada ~25s)",
@@ -109,8 +110,8 @@
     "/api/sync-parques": "Parques (parques.json: parques/empresas/lotes/ocupaciones/reservas de Güemes y Salta). Protocolo simple, como /api/sync y /api/sync-resoluciones — GET devuelve el JSON, POST lo reescribe entero."
   },
   "pendiente": [
+    "En el celular: quitar el acceso «Expedientes» de la pantalla de inicio y volver a agregarlo desde el navegador para que tome el ícono nuevo (el launcher no actualiza íconos ya agregados).",
     "Primera visita después del deploy: un celular con v10 instalada ya ve el logo nuevo; si alguno aún muestra el viejo, recargar una vez.",
-    "Merge de la rama de trabajo a main para desplegar el arreglo de logos (el deploy es automático al push a main; no se hizo sin confirmación explícita). Hasta entonces los celulares siguen con la versión anterior.",
     "Verificar la instalación PWA en Chrome de escritorio después del deploy (Application → Manifest sin errores; aparece «Instalar»). Si sigue sin aparecer, revisar Installability y el screenshot (form_factor wide) que pide el aviso «Richer PWA install UI».",
     "Mirar la tarjeta opción B en Proyectos en pantalla real (no se capturó screenshot) y decidir si se replica en Seguimiento, Resoluciones y Parques.",
     "proponer_eliminar_confirm_proyectos",
