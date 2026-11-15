@@ -951,12 +951,16 @@
       "rubro": "CORRALON",
       "mail": "corralonchacabuco@yahoo.com.ar | federicoreston@gmail.com",
       "telefono": "4225647 | 3874026780",
-      "contacto_nombre": "Sergio Reston",
+      "contacto_nombre": "Matías Reston",
       "instagram": "https://www.instagram.com/corralonchacabuco/?hl=es",
       "ubicacion": "Calle 2",
       "situacion": "Sin actividad",
       "es_ocupante_sin_registro": false,
-      "id_parque": "salta"
+      "id_parque": "salta",
+      "cargo": "Socio Gerente",
+      "pagweb": "",
+      "facebook": "",
+      "linkedin": ""
     },
     {
       "id_empresa": "SE013",
@@ -2480,7 +2484,12 @@
       "ubicacion": "Av. Rodriguez Durañona",
       "situacion": "Sin actividad",
       "es_ocupante_sin_registro": false,
-      "id_parque": "salta"
+      "id_parque": "salta",
+      "cargo": "Socio Gerente",
+      "pagweb": "",
+      "instagram": "",
+      "facebook": "",
+      "linkedin": ""
     },
     {
       "id_empresa": "SE131",
@@ -2546,7 +2555,17 @@
       "situacion": "Activa",
       "observacion": "Ocupante por alquiler, importado de la columna «Alquilada» del Sistema Salta el 2026-10-18. El origen no trae datos institucionales propios para esta empresa.",
       "es_ocupante_sin_registro": true,
-      "id_parque": "salta"
+      "id_parque": "salta",
+      "rubro": "Energía",
+      "telefono": "",
+      "contacto_nombre": "Andrea Silvana Sambucett",
+      "cargo": "Representante",
+      "mail": "",
+      "ubicacion": "",
+      "pagweb": "",
+      "instagram": "",
+      "facebook": "",
+      "linkedin": ""
     },
     {
       "id_empresa": "SE139",
