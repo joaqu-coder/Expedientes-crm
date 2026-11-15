@@ -951,12 +951,16 @@
       "rubro": "CORRALON",
       "mail": "corralonchacabuco@yahoo.com.ar | federicoreston@gmail.com",
       "telefono": "4225647 | 3874026780",
-      "contacto_nombre": "Sergio Reston",
+      "contacto_nombre": "Matías Reston",
       "instagram": "https://www.instagram.com/corralonchacabuco/?hl=es",
       "ubicacion": "Calle 2",
       "situacion": "Sin actividad",
       "es_ocupante_sin_registro": false,
-      "id_parque": "salta"
+      "id_parque": "salta",
+      "cargo": "Socio Gerente",
+      "pagweb": "",
+      "facebook": "",
+      "linkedin": ""
     },
     {
       "id_empresa": "SE013",
