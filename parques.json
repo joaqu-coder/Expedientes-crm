@@ -1354,12 +1354,16 @@
       "rubro": "VENTA AL POR MAYOR Y MENOR DE ARTICULOS DE FERRETERIA Y MATERIALES ELECTRICOS",
       "mail": "gabrielfiori@orestefiori.com.ar | gustavofiori@orestefiori.com.ar",
       "telefono": "3874096147 | 3875092151",
-      "contacto_nombre": "Oreste Fiori",
+      "contacto_nombre": "Gustavo Luciano Fiori",
       "pagweb": "https://fiori.com.ar/",
       "ubicacion": "Av. Rodríguez Durañona 207",
       "situacion": "Activa",
       "es_ocupante_sin_registro": false,
-      "id_parque": "salta"
+      "id_parque": "salta",
+      "cargo": "Gerente",
+      "instagram": "",
+      "facebook": "",
+      "linkedin": ""
     },
     {
       "id_empresa": "SE044",
