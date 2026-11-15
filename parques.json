@@ -2163,7 +2163,12 @@
       "ubicacion": "Av. Rodriguez Durañona 1720",
       "situacion": "Activa",
       "es_ocupante_sin_registro": false,
-      "id_parque": "salta"
+      "id_parque": "salta",
+      "cargo": "Socio Gerente",
+      "pagweb": "",
+      "instagram": "",
+      "facebook": "",
+      "linkedin": ""
     },
     {
       "id_empresa": "SE106",
