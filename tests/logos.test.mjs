@@ -54,5 +54,23 @@ const baldosa = html.match(/var resumen = [\s\S]*?<\/button>'/);
 if (!baldosa) falla('no se encontró la plantilla de baldosa .emp-tile en parques.html');
 else if (/<div[\s>]/.test(baldosa[0])) falla('la baldosa .emp-tile (un <button>) contiene <div>: usar <span>');
 
+// 6. Íconos de inicio: 192 y 512 exactos, PNG RGB sin alfa (un fondo transparente
+//    se oscurece en algunos lanzadores), y en sw.js van network-first. Si no,
+//    un celular con caché sigue mostrando el ícono anterior después del deploy.
+const iconos = { 'icon-192.png': 192, 'icon-512.png': 512 };
+for (const [archivo, lado] of Object.entries(iconos)) {
+  const ruta = path.join(RAIZ, 'public', archivo);
+  const cab = fs.readFileSync(ruta).subarray(0, 26);
+  if (cab.readUInt32BE(16) !== lado || cab.readUInt32BE(20) !== lado) falla(`${archivo} no mide ${lado}x${lado}`);
+  if (cab[25] !== 2 || cab[24] !== 8) falla(`${archivo} no es RGB 8 bit sin alfa (tipo ${cab[25]}/${cab[24]})`);
+}
+const sw = fs.readFileSync(path.join(RAIZ, 'public/sw.js'), 'utf8');
+const criticos = sw.match(/const CRITICOS = \[([^\]]*)\]/);
+const enRed = criticos ? criticos[1] : '';
+for (const r of ['/icon-192.png', '/icon-512.png', '/manifest.json']) {
+  if (!enRed.includes(`'${r}'`)) falla(`sw.js: ${r} no está en CRITICOS (network-first); quedaría con la versión vieja en el caché`);
+}
+if (!/pathname\.startsWith\('\/logos\/'\)/.test(sw)) falla('sw.js: /logos/* no va network-first');
+
 if (fallos) process.exit(1);
 console.log(`OK logos: ${entradas.length} entradas en LOGOS, con id y archivo válidos, PNG RGB sin alfa; parques.json sin campo logo; baldosa sin <div>`);

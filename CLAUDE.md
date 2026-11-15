@@ -951,6 +951,12 @@ service worker real (visita 3 de 4: versión vieja, en ambos viewports).
   siguiente al deploy ya muestra el logo nuevo).
 - **Regla**: si algo visible cambia sin cambiar de nombre (logos, íconos), no va
   en stale-while-revalidate. Ver la lista de network-first arriba.
+- **Íconos de inicio** (`icon-192.png`, `icon-512.png`): van en `CRITICOS` de
+  `sw.js`, y `tests/logos.test.mjs` lo exige. El 512 es el original (dibujo
+  recortado, centrado con 12% de margen sobre blanco, sin transparencia); el 192
+  se reduce desde ese 512, no desde el 192 anterior, que pixelaba. Un ícono ya
+  instalado en la pantalla de inicio **no se actualiza solo**: hay que quitar el
+  acceso y volver a agregarlo.
 - **Test**: `tests/logos-dispositivos.test.mjs` (dos viewports, caché previa,
   sin conexión, dispositivo sin caché). Corre dentro de `test:concurrencia`.
   Mide las dimensiones del `<img>` pintado, no colores.

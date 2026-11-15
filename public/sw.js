@@ -67,7 +67,10 @@ self.addEventListener('fetch', (event) => {
   // índigo de unos milisegundos" al cambiar de pantalla. No estaba en la
   // página —se grabó la navegación cuadro por cuadro y no hay un solo pixel
   // azulado en el viewport—, estaba en el manifest cacheado.
-  const CRITICOS = ['/header.js', '/confirmar-cambios.js', '/design-system.css', '/ui-kit.css', '/manifest.json'];
+  // Los íconos de inicio también van acá: se reemplazan en el mismo nombre
+  // (icon-192.png / icon-512.png), igual que los logos. Con stale-while-revalidate
+  // el celular seguía mostrando el ícono anterior una visita más.
+  const CRITICOS = ['/header.js', '/confirmar-cambios.js', '/design-system.css', '/ui-kit.css', '/manifest.json', '/icon-192.png', '/icon-512.png'];
   // Los logos (public/logos/*) también van network-first. Se reemplazan en el
   // mismo nombre de archivo (ken.png, funes.png…): con stale-while-revalidate
   // un dispositivo que ya los cacheó mostraba la versión anterior en la visita
