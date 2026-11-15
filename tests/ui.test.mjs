@@ -2366,6 +2366,18 @@ async function testParques(viewport, puerto) {
       res.end(JSON.stringify(ultimoPost || datos));
       return;
     }
+    // Los logos son PNG reales de public/logos/. Antes este servidor devolvía
+    // HTML para cualquier ruta: las imágenes no cargaban y los tests de tamaño
+    // medían 0 logos.
+    if (req.url.startsWith('/logos/')) {
+      const archivo = path.join(RAIZ, 'public', decodeURIComponent(req.url.split('?')[0]));
+      if (fs.existsSync(archivo) && archivo.startsWith(path.join(RAIZ, 'public', 'logos'))) {
+        res.writeHead(200, { 'Content-Type': 'image/png' });
+        return res.end(fs.readFileSync(archivo));
+      }
+      res.writeHead(404);
+      return res.end();
+    }
     if (servirHeaderJs(req, res)) return;
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     res.end(html);
@@ -2381,6 +2393,38 @@ async function testParques(viewport, puerto) {
   // Empresas es la vista por defecto — ya no hay una pestaña "Lotes" suelta.
   await page.waitForFunction(() => document.querySelectorAll('#empresasList .emp-tile').length > 0);
 
+  // Tamaño de los logos en la grilla: ninguno se ve más grande que el resto.
+  // Antes cada logo se estiraba a la casilla completa (object-fit con 100%),
+  // así que un cuadrado de 137 px o uno de 129 px se veían enormes al lado de
+  // los anchos. Regla: ocupa como máximo ~75% de la casilla y nunca se agranda
+  // por encima de su tamaño natural (no se pixela).
+  // loading="lazy": un logo fuera de pantalla no carga y mide 0x0. Se lleva
+  // cada uno a la vista y se espera su carga antes de medir.
+  await page.evaluate(async () => {
+    const imgs = Array.from(document.querySelectorAll('#empresasList .emp-tile img.emp-logo'));
+    for (const img of imgs) {
+      img.scrollIntoView({ block: 'center' });
+      const t0 = Date.now();
+      while (!img.complete && Date.now() - t0 < 3000) await new Promise((r) => setTimeout(r, 50));
+    }
+  });
+  const medidasLogos = await page.evaluate(() => Array.from(document.querySelectorAll('#empresasList .emp-tile img.emp-logo')).filter((img) => img.complete && img.naturalWidth > 0).map((img) => {
+    // Lo que se ve es el dibujo dentro de la caja (object-fit: contain), no la
+    // caja: se calcula con la misma regla y descontando el padding.
+    const casilla = img.closest('.emp-tile').getBoundingClientRect();
+    const r = img.getBoundingClientRect();
+    const cs = getComputedStyle(img);
+    const cajaW = r.width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const cajaH = r.height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    const nw = img.naturalWidth, nh = img.naturalHeight;
+    const escala = Math.min(cajaW / nw, cajaH / nh);
+    return { id: img.getAttribute('src'), w: nw * escala, h: nh * escala, cw: casilla.width, ch: casilla.height, nw, nh, escala };
+  }));
+  const grandes = medidasLogos.filter((m) => m.w > m.cw * 0.76 || m.h > m.ch * 0.76);
+  ok(medidasLogos.length > 0 && grandes.length === 0, `ningún logo ocupa más del 76% de la casilla (${grandes.length} de ${medidasLogos.length}: ${grandes.slice(0, 3).map((m) => m.id + ' ' + Math.round(m.w) + 'x' + Math.round(m.h) + ' en ' + Math.round(m.cw)).join(' | ')})`);
+  const agrandados = medidasLogos.filter((m) => m.escala > 1.001);
+  ok(agrandados.length === 0, `ningún logo se agranda por encima de su tamaño natural (${agrandados.length}: ${agrandados.slice(0, 3).map((m) => m.id).join(' | ')})`);
+
   const totalLotes = datos.lotes.length;
   const totalEmpresas = datos.empresas.length;
   // Hay dos parques en el mismo archivo y la pantalla muestra uno a la vez
@@ -2392,6 +2436,14 @@ async function testParques(viewport, puerto) {
   const empresasGuemes = datos.empresas.filter((e) => delParque(e, 'guemes'));
   const lotesSalta = datos.lotes.filter((l) => delParque(l, 'salta'));
   const empresasSalta = datos.empresas.filter((e) => delParque(e, 'salta'));
+  // Criterio del contador (2026-11-14, opción A): «Empresas» = las que tienen
+  // un vínculo con un lote, titular u ocupante vigente. Lo demás sigue en el
+  // archivo pero no se cuenta ni se lista.
+  const vinculadas = (lista) => lista.filter((e) =>
+    datos.lotes.some((l) => l.id_empresa === e.id_empresa) ||
+    datos.ocupaciones.some((o) => o.vigente && o.id_empresa_ocupante === e.id_empresa));
+  const vinculadasGuemes = vinculadas(empresasGuemes);
+  const vinculadasSalta = vinculadas(empresasSalta);
   const sinEmpresa = lotesGuemes.filter((l) => !l.id_empresa);
   // 139 desde el 2026-10-19: guemes_normalizado trajo un lote que no estaba
   // (en el origen «L40», sin el relleno de ceros, y por eso no chocaba con
@@ -2422,8 +2474,16 @@ async function testParques(viewport, puerto) {
      'la empresa que el usuario borró no volvió a aparecer en los datos');
   ok(totalLotes === lotesGuemes.length + lotesSalta.length && totalEmpresas === empresasGuemes.length + empresasSalta.length,
      'todos los lotes y empresas están atribuidos a uno de los dos parques (ninguno quedó sin id_parque)');
-  ok((await page.locator('#empresasCount').textContent()).includes(String(empresasGuemes.length)),
+  ok((await page.locator('#empresasCount').textContent()).includes(String(vinculadasGuemes.length)),
      'el contador de empresas muestra el total del parque activo, no la suma de los dos');
+  // Opción A: Güemes 52 (52 titulares; sin DJM MONTAJES ni el MIKUY duplicado),
+  // Salta 147 (132 titulares + 15 ocupantes sin registro).
+  ok(vinculadasGuemes.length === 52 && vinculadasSalta.length === 147,
+     `Empresas = las que tienen lote o alquilan: Güemes ${vinculadasGuemes.length} (52), Salta ${vinculadasSalta.length} (147)`);
+  ok(datos.empresas.filter((e) => /^MIKUY S\.R\.L$/i.test(e.nombre_empresa || '')).length === 1,
+     'MIKUY S.R.L figura una sola vez en los datos (el registro duplicado E042 se borró)');
+  ok(datos.eliminados.empresas.includes('E042') && !datos.empresas.some((e) => e.id_empresa === 'E042'),
+     'E042 quedó como baja (lápida) y no vuelve a subir en una fusión');
   ok((await page.locator('#parqueSwitch .parque-chip').count()) === 2,
      'el selector de parque ofrece los dos parques');
   ok((await page.locator('#parqueSwitch .parque-chip.active').textContent()).includes('Güemes'),
@@ -2445,7 +2505,7 @@ async function testParques(viewport, puerto) {
     // "Alquilada" describe al LOTE, no dice si su titular sigue operando.
     return ['Activa', 'En construcción', 'Sin actividad'].find((x) => estados.includes(x)) || null;
   };
-  for (const [parque, empresasDel] of [['guemes', empresasGuemes], ['salta', empresasSalta]]) {
+  for (const [parque, empresasDel] of [['guemes', vinculadasGuemes], ['salta', vinculadasSalta]]) {
     await page.locator(`#parqueSwitch [data-parque="${parque}"]`).click();
     await page.waitForFunction(() => document.querySelectorAll('#empresasList .emp-tile').length > 0);
     const opciones = await page.locator('#filterEstadoEmpresas option').evaluateAll((os) =>
@@ -2480,7 +2540,7 @@ async function testParques(viewport, puerto) {
   });
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForFunction(() => document.querySelectorAll('#empresasList .emp-tile').length > 0);
-  ok((await page.locator('#empresasList .emp-tile').count()) === empresasGuemes.length,
+  ok((await page.locator('#empresasList .emp-tile').count()) === vinculadasGuemes.length,
      'un filtro guardado que este parque no ofrece se descarta en vez de recortar la lista a ciegas');
 
   // El chip es una etiqueta corta al lado de "Güemes" (pedido del usuario
@@ -2719,7 +2779,7 @@ async function testParques(viewport, puerto) {
   // titular, que es exactamente la confusión que hay que no repetir.
   await page.locator('#parqueSwitch [data-parque="salta"]').click();
   await page.waitForFunction(() => document.querySelectorAll('#empresasList .emp-tile').length > 0);
-  ok((await page.locator('#empresasCount').textContent()).includes(String(empresasSalta.length)),
+  ok((await page.locator('#empresasCount').textContent()).includes(String(vinculadasSalta.length)),
      'al cambiar de parque el listado pasa a las empresas de Salta');
 
   const ocupSL010 = datos.ocupaciones.find((o) => o.id_lote === 'SL010');
@@ -2913,7 +2973,7 @@ async function testParques(viewport, puerto) {
   // Vuelta a Güemes: el cambio de parque no deja estado del otro colgado.
   await page.locator('#parqueSwitch [data-parque="guemes"]').click();
   await page.waitForFunction(() => document.querySelectorAll('#empresasList .emp-tile').length > 0);
-  ok((await page.locator('#empresasCount').textContent()).includes(String(empresasGuemes.length)),
+  ok((await page.locator('#empresasCount').textContent()).includes(String(vinculadasGuemes.length)),
      'al volver a Güemes el listado vuelve a sus empresas');
 
   // Bajas permanentes: una empresa borrada en pantalla se declara como baja

@@ -187,5 +187,28 @@ ok(!optinEnCss,
    optinEnCss ? 'design-system.css volvió a declarar @view-transition: el opt-in va solo inline (ver el comentario del archivo)'
               : 'design-system.css no duplica el opt-in; sí define la animación y qué se queda quieto');
 
+// 6. La franja del teléfono (la barra de estado y la de navegación del
+//    sistema) sale del theme-color de cada página y de theme_color/
+//    background_color del manifest. Tienen que ser blancos en las cinco
+//    páginas y en el manifest. Un índigo o un ámbar acá vuelve a pintar la
+//    barra de abajo del celular de otro color, y ya pasó: el 2026-11-02 seguía
+//    violeta (#667eea) en un teléfono con una copia instalada de antes.
+const BLANCO = '#ffffff';
+for (const nombre of PAGINAS) {
+  const html = fs.readFileSync(path.join(RAIZ, `public/${nombre}.html`), 'utf8');
+  const m = html.match(/<meta\s+name="theme-color"\s+content="([^"]+)"/i);
+  const valor = m ? m[1].toLowerCase() : null;
+  ok(valor === BLANCO,
+     valor === BLANCO ? `${nombre}.html: theme-color en blanco`
+       : `${nombre}.html: theme-color es ${valor ?? '(falta)'}, tiene que ser ${BLANCO}`);
+}
+const manifest = JSON.parse(fs.readFileSync(path.join(RAIZ, 'public/manifest.json'), 'utf8'));
+for (const campo of ['theme_color', 'background_color']) {
+  const valor = String(manifest[campo] ?? '').toLowerCase();
+  ok(valor === BLANCO,
+     valor === BLANCO ? `manifest.json: ${campo} en blanco`
+       : `manifest.json: ${campo} es ${valor || '(falta)'}, tiene que ser ${BLANCO}`);
+}
+
 console.log(fallas === 0 ? '\nEstructura OK' : `\n${fallas} fallas`);
 process.exit(fallas === 0 ? 0 : 1);
