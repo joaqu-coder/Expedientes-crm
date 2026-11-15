@@ -1333,6 +1333,72 @@ que quedó comentado.
 
 ---
 
+## Protocolo de sesión (aprendido 2026-11-15)
+
+Una sesión de cambios de datos o logos tardó de más por cuatro cosas que se
+repitieron: esperas mal hechas, un `stash` que quedó a medias, la rama vieja
+respecto de `main`, y un test que falló sin que se investigara a fondo. Esto
+es el procedimiento para que no vuelva a pasar.
+
+### 1. Antes de tocar nada
+
+- `git fetch` y, si la rama de trabajo está detrás de `main`, `git merge --ff-only origin/main`.
+- `main` recibe commits que no son tuyos (`sync: parques …` de la app, y
+  cambios de otras sesiones). Antes de commitear, mirá `git log HEAD..origin/main`.
+  Si hay commits nuevos, mergeálos **antes** de correr la suite, no después.
+
+### 2. Correr la suite (tarda ~10 minutos)
+
+- Siempre en segundo plano, con log:
+  `npm test > /tmp/npmtest.log 2>&1; echo "exit $?" >> /tmp/npmtest.log`
+  (con `run_in_background` o `&`; y ojo: `&` manda **toda** la cadena que lo precede).
+- Para esperar: `timeout 118 bash -c 'until grep -q "^exit" /tmp/npmtest.log; do sleep 3; done'`,
+  repetido las veces que haga falta. **No** `sleep` suelto ni `sleep` encadenado con
+  `tail`, que el harness bloquea. Los `Monitor` con `until` no devolvieron las
+  notificaciones: no son la forma de esperar acá.
+- Verde = `exit 0` **y** `grep -c FALLA` en 0. Con `1 fallas` al final, no está verde.
+
+### 3. Nunca `git stash` en una cadena con un comando largo
+
+`git stash push; <test largo>; git stash pop` se mandó a segundo plano como
+bloque: el `pop` corrió después, sin que nadie lo mirara, y el árbol quedó
+limpio mientras el test corría sobre código viejo. Para comparar contra la base
+usá un worktree, que no toca tu árbol:
+
+`git worktree add /tmp/base-wt <commit>` → correr ahí → `git worktree remove --force /tmp/base-wt`.
+
+### 4. Un test que falla se investiga antes de decir "flaky"
+
+- Reproducilo en la base (worktree) y con el mismo diff. Si la base pasa y tu
+  cambio falla, el cambio es la causa, aunque no lo parezca.
+- Los chequeos que leen una posición (`arreglo[0]`) son frágiles: la fusión no
+  garantiza el orden. Buscá por contenido (`some`/`filter`) y mostrá en el
+  mensaje qué había, para que la próxima falla se lea sola.
+- Si después de eso sigue sin explicarse, decilo con los datos y no lo des por resuelto.
+
+### 5. Logos desde el chat
+
+1. Las imágenes subidas en el chat están en `/tmp/claude-0/<sesión>/images/`
+   (`N.png`/`N.jpg`). Listá **todas** con `ls`: no alcanza con las tres que se ven en el mensaje.
+2. Antes de procesar, mirá cada una y cruzala con: (a) los archivos de
+   `public/logos/` (¿ya está?) y (b) las empresas sin logo (`parques.json`,
+   las que no tienen entrada en `LOGOS`).
+3. Si el nombre de la imagen no alcanza para saber a qué empresa va, **preguntá**.
+   No asignes por parecido ni por la inicial: esa vez costó una vuelta.
+4. Recorte: bbox de contenido + 4px sobre fondo blanco, PNG RGB 8 bits sin alfa.
+5. Registro: sumar la entrada a `LOGOS` y **actualizar el número exacto** en
+   `tests/logos.test.mjs`, leyéndolo de `main` (no de tu rama).
+6. "Barrido total" = lista completa: qué subió el usuario, qué ya estaba, qué
+   falta, qué no se pudo asignar. Sin estimaciones.
+
+### 6. Cierre
+
+- Commit en la rama de trabajo, `git push -u origin <rama>`, después
+  `git merge --ff-only` a `main` (o `--no-ff` si la rama tiene commits propios) y push.
+- Sólo a `main` con la suite en verde sobre **ese** árbol. Si mergeaste `main`
+  a la rama después de la última corrida, la corrida ya no vale.
+- Actualizá `.claude-state.json` con lo que quedó pendiente.
+
 ## Tests
 
 ```bash
