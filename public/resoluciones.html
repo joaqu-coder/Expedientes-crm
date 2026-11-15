@@ -566,6 +566,18 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   renderList();
   bajarCambiosIniciales();
 
+  window.addEventListener("online", function(){
+    if(haySyncPendiente()) programarSubida(0); else bajarCambiosIniciales();
+  });
+
+  var _ultimaDescargaRes = Date.now();
+  document.addEventListener("visibilitychange", function(){
+    if(document.hidden || !veil.hidden) return;
+    if(Date.now() - _ultimaDescargaRes < 30000) return;
+    _ultimaDescargaRes = Date.now();
+    if(haySyncPendiente()) programarSubida(0); else bajarCambiosIniciales();
+  });
+
   if('serviceWorker' in navigator){
     navigator.serviceWorker.register('sw.js').catch(function(){});
   }
