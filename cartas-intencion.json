@@ -14,8 +14,17 @@
       "representante_nombre": "Victor Funes",
       "contacto_tel": "3875411112",
       "contacto_mail": "",
-      "fecha_ultimo_movimiento": "01/09/2026",
-      "intervenciones": []
+      "fecha_ultimo_movimiento": "16/11/2026 12:04",
+      "intervenciones": [
+        {
+          "hora": "16/11/2026 12:04",
+          "texto": "Saravia solicita que se regularice la situacio con su doc. ( Presentacion del contrato, lo trato se envió a escribanía)",
+          "tipo": "manual"
+        }
+      ],
+      "contacto_tel_2": "",
+      "contacto_mail_2": "",
+      "actualizado_en": "2026-11-16T15:04:29.187Z"
     },
     {
       "id": "exp_imp002",
