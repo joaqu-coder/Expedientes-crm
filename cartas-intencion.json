@@ -2687,48 +2687,6 @@
       "fecha_archivado": "12/10/2026 20:54"
     },
     {
-      "id": "exp_imp101",
-      "nro_expediente": "363-17190/2022",
-      "fecha_inicio": "22/10/2026",
-      "anio_inicio_expediente": "2022",
-      "nombre_empresa": "PROVISIONES Y SERVICIOS INTEGRALES S.R.L",
-      "parque_industrial": "Salta",
-      "rubro": "Servicios",
-      "superficie_solicitada_m2": 5000,
-      "actividad_empresa": "Obras civiles e infraestructura",
-      "situacion": "En_tratamiento",
-      "representante_nombre": "Javier Enrique Rivero",
-      "contacto_tel": "",
-      "contacto_mail": "",
-      "fecha_ultimo_movimiento": "01/11/2026 11:15",
-      "intervenciones": [
-        {
-          "hora": "25/01/2022",
-          "texto": "28/01/2022.Se retira el informe generado por el programa de evaluación.",
-          "tipo": "manual"
-        },
-        {
-          "hora": "12/10/2026 20:54",
-          "texto": "Archivado automáticamente: superó los 6 meses hábiles sin tratamiento.",
-          "tipo": "sistema"
-        },
-        {
-          "hora": "27/10/2026 10:56",
-          "texto": "Rescatado del archivo (editado).",
-          "tipo": "sistema"
-        },
-        {
-          "hora": "01/11/2026 11:15",
-          "texto": "Cambio de situación: Sin tratamiento → En tratamiento",
-          "tipo": "sistema"
-        }
-      ],
-      "archivado": false,
-      "contacto_tel_2": "",
-      "contacto_mail_2": "",
-      "actualizado_en": "2026-11-01T14:15:25.406Z"
-    },
-    {
       "id": "exp_imp102",
       "nro_expediente": "355-1672/2022-0",
       "fecha_inicio": "04/01/2022",
@@ -4498,6 +4456,10 @@
     {
       "id": "exp_mvs51ioe78pa8",
       "en": "2026-11-01T14:19:44.544Z"
+    },
+    {
+      "id": "exp_imp101",
+      "en": "2026-11-16T14:56:58.795Z"
     }
   ]
 }
