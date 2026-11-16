@@ -329,23 +329,6 @@
       "parque": "Güemes"
     },
     {
-      "id": "1793301177252413",
-      "numero": "111975/2010-1009",
-      "tema": "INDUSTRIAS FUNES",
-      "area": "Coordinación",
-      "responsable": "Joaquín Fernández Castro",
-      "fechaInicio": "2026-10-29",
-      "diasPlazo": 30,
-      "estado": "activo",
-      "intervenciones": [
-        {
-          "hora": "29/10/2026 16:12",
-          "texto": "Pasado desde Proyectos."
-        }
-      ],
-      "parque": "Salta"
-    },
-    {
       "id": "1793274768774",
       "numero": "363-192800/2026-0",
       "tema": "APIGG - Solicita información y acciónes de mantenimiento",
@@ -634,5 +617,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-11-16T14:59:24.660Z"
+  "timestamp": "2026-11-16T15:03:25.350Z"
 }
