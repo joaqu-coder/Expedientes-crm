@@ -1211,6 +1211,17 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   }
   function situacionEsDerivada(e){ return !!e && !e.situacion && !!situacionSegunLotes(e.id_empresa); }
 
+  // «Alquilada» en el filtro de Empresas. NO es una situación de la empresa
+  // (describe al lote): por eso no entra en SITUACIONES ni en situacionDe().
+  // Es un criterio aparte: la empresa es titular de al menos un lote
+  // alquilado (estado Alquilada u ocupación vigente).
+  var FILTRO_ALQUILADA = "Alquilada";
+  function empresaTieneLoteAlquilado(e){
+    return !!e && lotesDeEmpresa(e.id_empresa).some(function(l){
+      return l.estado==="Alquilada" || !!ocupacionDeLote(l.id_lote);
+    });
+  }
+
   // Guardar el ocupante elegido en el formulario. Toca SOLO `ocupaciones`:
   // ni el lote ni ninguna de las dos empresas. Cambiar de ocupante cierra la
   // ocupación anterior (queda en el historial con su fecha_hasta, no se
@@ -1273,6 +1284,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     var sits = SITUACIONES.filter(function(s){
       return empresasDelParque().some(function(e){ return situacionDe(e)===s; });
     });
+    if(empresasDelParque().some(empresaTieneLoteAlquilado)) sits.push(FILTRO_ALQUILADA);
     // El filtro elegido sobrevive en localStorage. Si al volver no está
     // entre las opciones de este parque, `select.value = ...` no prende
     // nada y el desplegable dice "Todos los estados" mientras la lista
@@ -1322,7 +1334,9 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   }
   function empresasFiltradas(){
     return empresasConVinculo().filter(function(e){
-      if(state.filterSituacionEmpresas && situacionDe(e)!==state.filterSituacionEmpresas) return false;
+      if(state.filterSituacionEmpresas===FILTRO_ALQUILADA){
+        if(!empresaTieneLoteAlquilado(e)) return false;
+      } else if(state.filterSituacionEmpresas && situacionDe(e)!==state.filterSituacionEmpresas) return false;
       if(state.searchEmpresas){
         var blob = [e.nombre_empresa,e.rubro,e.contacto_nombre].join(" ").toLowerCase();
         if(blob.indexOf(state.searchEmpresas)===-1) return false;

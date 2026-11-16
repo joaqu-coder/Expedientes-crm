@@ -1,8 +1,9 @@
 {
-  "sesion_fecha": "2026-11-15",
+  "sesion_fecha": "2026-11-16",
   "ultimo_commit": "iconos: Expedientes con ícono SECRET centrado y nítido; íconos network-first (fc04d74)",
-  "estado": "2026-11-15: logos y íconos entre dispositivos corregidos y mergeados a main (4e3b5c0, fc04d74). Caché de service worker: /logos/* e /icon-*.png network-first. Suite completa en verde (973 OK, 0 fallas).",
+  "estado": "2026-11-15: logos y íconos entre dispositivos corregidos y mergeados a main (4e3b5c0, fc04d74). Caché de service worker: /logos/* e /icon-*.png network-first. Suite completa en verde (973 OK, 0 fallas). | 2026-11-16 (Parques): filtro «Alquilada» en Empresas (titular de lote alquilado; no es situación). Test en testParques, rojo antes del cambio.",
   "resuelto": [
+    "2026-11-16 (Parques): filtro de Empresas «Alquilada» (empresaTieneLoteAlquilado). Fuera de SITUACIONES a propósito. Pendiente: merge a main tras npm test verde.",
     "Tag de parque en tarjetas de Seguimiento: color fijo rojo → color de la tarjeta (2026-10-29).",
     "2026-10-20: /api/health reporta tamanos_kb y alerta_tamano (700 KB) para los archivos de datos. Test en worker.test.mjs.",
     "2026-10-20 (Parques): sync con base de versión (_baseSha + 409) y fusión por registro; altas con id repetido se renumeran; actualizar y volver a la pantalla traen lo último sin descartar cambios locales. Worker: GET de sync-parques devuelve _meta.sha y POST responde 409 en conflicto. Tests: concurrencia-parques (falla con el código anterior) y worker 409. Pendiente: Proyectos deshacer baja tras conflicto; límite 1 MB; ETag.",

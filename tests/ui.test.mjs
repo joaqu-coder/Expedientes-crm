@@ -2508,21 +2508,30 @@ async function testParques(viewport, puerto) {
     // "Alquilada" describe al LOTE, no dice si su titular sigue operando.
     return ['Activa', 'En construcción', 'Sin actividad'].find((x) => estados.includes(x)) || null;
   };
+  // «Alquilada» no es una situación de la empresa (describe al lote), pero
+  // el filtro la ofrece: empresas titulares de al menos un lote alquilado
+  // (estado Alquilada u ocupación vigente). Es un criterio aparte, no
+  // entra en situacionEsperada ni en SITUACIONES.
+  const alquilada = (e) => datos.lotes.some((l) => l.id_empresa === e.id_empresa &&
+    (l.estado === 'Alquilada' || datos.ocupaciones.some((o) => o.vigente && o.id_lote === l.id_lote)));
+  const cuenta = (empresasDel, valor) => valor === 'Alquilada'
+    ? empresasDel.filter(alquilada).length
+    : empresasDel.filter((e) => situacionEsperada(e) === valor).length;
   for (const [parque, empresasDel] of [['guemes', vinculadasGuemes], ['salta', vinculadasSalta]]) {
     await page.locator(`#parqueSwitch [data-parque="${parque}"]`).click();
     await page.waitForFunction(() => document.querySelectorAll('#empresasList .emp-tile').length > 0);
     const opciones = await page.locator('#filterEstadoEmpresas option').evaluateAll((os) =>
       os.map((o) => o.value).filter(Boolean));
-    const presentes = ['Activa', 'Sin actividad', 'En construcción']
-      .filter((x) => empresasDel.some((e) => situacionEsperada(e) === x));
+    const presentes = ['Activa', 'Sin actividad', 'En construcción', 'Alquilada']
+      .filter((x) => x === 'Alquilada' ? empresasDel.some(alquilada) : empresasDel.some((e) => situacionEsperada(e) === x));
     ok(opciones.join('|') === presentes.join('|'),
-       `${parque}: el filtro ofrece las situaciones que el parque realmente tiene (${presentes.join(', ') || 'ninguna'})`);
+       `${parque}: el filtro ofrece las situaciones que el parque realmente tiene (${presentes.join(', ') || 'ninguna'}); se obtuvo ${opciones.join(', ') || 'ninguna'}`);
     ok(!(await page.locator('#filterEstadoEmpresas').isDisabled()),
        `${parque}: el filtro de situación está habilitado`);
     for (const valor of presentes) {
       await page.selectOption('#filterEstadoEmpresas', valor);
       await page.waitForTimeout(120);
-      const esperadas = empresasDel.filter((e) => situacionEsperada(e) === valor).length;
+      const esperadas = cuenta(empresasDel, valor);
       ok((await page.locator('#empresasList .emp-tile').count()) === esperadas,
          `${parque}: filtrar por "${valor}" deja las ${esperadas} empresas que corresponden`);
     }

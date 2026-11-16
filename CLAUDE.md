@@ -863,6 +863,12 @@ también.
   estados" del listado de Empresas —que estuvo inerte desde el 2026-10-13
   esperando justamente esta definición— filtra por `situacion` desde el
   2026-10-18 (ver abajo lo que faltaba para que filtrara también en Güemes).
+  **Desde el 2026-11-16 el desplegable tiene «Alquilada» como filtro, sin
+  ser una situación**: `empresaTieneLoteAlquilado()` es true si la empresa es
+  titular de al menos un lote con `estado: "Alquilada"` o con ocupación
+  vigente. No entra en `SITUACIONES`, ni en `situacionDe()`, ni en la ficha ni
+  en el formulario. Ocupantes sin lote propio no cuentan. Test:
+  `testParques()` (ui.test.mjs), que ahora espera la opción en los dos parques.
 
 ### La situación de una empresa de Güemes sale de sus lotes (2026-10-19)
 
