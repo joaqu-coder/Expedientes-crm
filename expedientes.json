@@ -595,14 +595,21 @@
       "responsable": "Alejandro Leiva",
       "fechaInicio": "2026-11-16",
       "diasPlazo": 5,
-      "estado": "activo",
+      "estado": "devuelto",
       "intervenciones": [
         {
           "hora": "16/11/2026 11:58",
           "texto": "Pasado desde Proyectos."
+        },
+        {
+          "hora": "16/11/2026 11:59",
+          "texto": "Expediente archivado. Motivo: repetido. Vuelve a Proyectos."
         }
       ],
-      "parque": "Güemes"
+      "parque": "Güemes",
+      "final": "archivada",
+      "fechaResolucion": "2026-11-16",
+      "motivoFinal": "repetido"
     }
   ],
   "areas": [
@@ -627,5 +634,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-11-16T14:58:47.063Z"
+  "timestamp": "2026-11-16T14:59:24.660Z"
 }
