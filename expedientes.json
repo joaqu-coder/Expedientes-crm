@@ -562,6 +562,10 @@
         {
           "hora": "13/11/2026 10:34",
           "texto": "Se mantendrá una reunión con represantante de la firma OSIEL el 16/11 a hs 10am"
+        },
+        {
+          "hora": "16/11/2026 10:28",
+          "texto": "se comunica. Comenta que no podrá venir el dia de hoy. Está con conpromisos hata las 18, todos los días.Acordamos en juntarnos el día 19/11"
         }
       ],
       "parque": "Güemes"
@@ -606,5 +610,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-11-13T14:03:02.450Z"
+  "timestamp": "2026-11-16T13:28:33.997Z"
 }
