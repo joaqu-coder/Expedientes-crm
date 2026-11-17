@@ -224,16 +224,21 @@
       "representante_nombre": "",
       "contacto_tel": "",
       "contacto_mail": "",
-      "fecha_ultimo_movimiento": "23/04/2026",
+      "fecha_ultimo_movimiento": "17/11/2026 08:53",
       "intervenciones": [
         {
           "hora": "09/11/2026 18:16",
           "texto": "Archivado automáticamente: superó los 6 meses hábiles sin tratamiento.",
           "tipo": "sistema"
+        },
+        {
+          "hora": "17/11/2026 08:53",
+          "texto": "Rescatado del archivo.",
+          "tipo": "sistema"
         }
       ],
-      "archivado": true,
-      "fecha_archivado": "09/11/2026 18:16"
+      "archivado": false,
+      "actualizado_en": "2026-11-17T11:53:45.248Z"
     },
     {
       "id": "exp_imp011",
