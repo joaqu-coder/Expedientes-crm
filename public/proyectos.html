@@ -1003,7 +1003,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
         var msg = await leerError(resp);
         // 4xx (salvo 429) es culpa del payload o de la configuración:
         // reintentar en loop no lo arregla y oculta el problema.
-        if(resp.status >= 400 && resp.status < 500 && resp.status !== 429){
+        if(resp.status >= 400 && resp.status < 500 && ![401, 403, 408, 429].includes(resp.status)){
           errorPermanente = true;
         }
         throw new Error(msg);
