@@ -1,8 +1,9 @@
 {
-  "sesion_fecha": "2026-11-16",
-  "ultimo_commit": "iconos: Expedientes con ícono SECRET centrado y nítido; íconos network-first (fc04d74)",
+  "sesion_fecha": "2026-11-17",
+  "ultimo_commit": "sync: una clave cancelada (401) no detiene la subida en resoluciones, parques ni proyectos (5625810, rama ccr-97097687-eqzu1t, sin mergear a main)",
   "estado": "2026-11-15: logos y íconos entre dispositivos corregidos y mergeados a main (4e3b5c0, fc04d74). Caché de service worker: /logos/* e /icon-*.png network-first. Suite completa en verde (973 OK, 0 fallas). | 2026-11-16 (Parques): filtro «Alquilada» en Empresas (titular de lote alquilado; no es situación). Test en testParques, rojo antes del cambio.",
   "resuelto": [
+    "2026-11-17: 401 de clave cancelada ya no es error permanente en resoluciones, parques y proyectos (igual que Seguimiento: 401/403/408/429 se reintentan). Test: tests/clave-cancelada.test.mjs (en test:concurrencia; falla antes del arreglo en resoluciones y parques). Pendiente: el test no llega al POST de proyectos; el arreglo está, la prueba no.",
     "2026-11-16 (Parques): filtro de Empresas «Alquilada» (empresaTieneLoteAlquilado). Fuera de SITUACIONES a propósito. Pendiente: merge a main tras npm test verde.",
     "Tag de parque en tarjetas de Seguimiento: color fijo rojo → color de la tarjeta (2026-10-29).",
     "2026-10-20: /api/health reporta tamanos_kb y alerta_tamano (700 KB) para los archivos de datos. Test en worker.test.mjs.",

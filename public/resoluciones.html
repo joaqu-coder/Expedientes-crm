@@ -286,7 +286,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
       if(!resp.ok){
         // 4xx (salvo 429) es culpa del payload o de la configuración:
         // reintentar en loop no lo arregla y esconde el problema.
-        if(resp.status >= 400 && resp.status < 500 && resp.status !== 429) errorPermanente = true;
+        if(resp.status >= 400 && resp.status < 500 && ![401, 403, 408, 429].includes(resp.status)) errorPermanente = true;
         throw new Error("POST falló: "+resp.status);
       }
       try{ localStorage.removeItem(SYNC_PENDING_KEY); }catch(e){}
