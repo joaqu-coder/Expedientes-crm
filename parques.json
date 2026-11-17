@@ -1771,7 +1771,12 @@
       "pagweb": "https://www.manclean.com.ar/",
       "ubicacion": "Calle 8",
       "es_ocupante_sin_registro": false,
-      "id_parque": "salta"
+      "id_parque": "salta",
+      "cargo": "",
+      "situacion": "Activa",
+      "instagram": "",
+      "facebook": "",
+      "linkedin": ""
     },
     {
       "id_empresa": "SE075",
