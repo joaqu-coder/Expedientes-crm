@@ -138,6 +138,22 @@ Otros arreglos de la misma auditoría, cada uno con test en `ui.test.mjs`
   Editar un expediente borrado desde otro dispositivo avisa. Un 4xx dice «El servidor
   rechazó los datos» en vez de «Sin conexión».
 
+### Imprimir áreas de coordinación y legal (2026-11-19)
+
+Pedido del usuario: imprimir lo que es de coordinación y legal, según los tags del listado.
+Los «tags» son las **áreas** (`area`), no los parques.
+
+- Botón **Imprimir** (`#btnImprimir`) en la fila de «Áreas Responsables». Abre `#printOverlay`,
+  con las áreas marcadas por defecto las que matchean `coordinaci|juridic` (sin tildes) y los
+  estados Activos y Archivados. Confirmar llama a `window.print()`.
+- El papel se arma en `#printArea` (contenedor oculto en pantalla). En `@media print` se oculta
+  todo lo demás con `display:none` (no alcanza con `visibility`: el `body` de pantalla completa
+  generaba una hoja en blanco).
+- Sale lo que este dispositivo tiene en memoria. Si hay cambios sin subir, el papel lo dice.
+  Los devueltos a Proyectos no entran (no viven en Seguimiento).
+- Test: `testImprimir()` en `tests/ui.test.mjs` (intercepta `window.print`, revisa qué entra,
+  escape de HTML, vista de impresión, casos vacíos y 390px).
+
 ---
 
 ## Arquitectura (y por qué es así)

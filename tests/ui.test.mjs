@@ -336,6 +336,113 @@ async function testFeriadosYPlazoMaximo() {
 }
 
 // Problemas menores de la auditoría de Seguimiento (2026-10-22).
+// ===== IMPRIMIR (áreas de coordinación y legal) =====
+async function testImprimir() {
+  console.log('\n=== SEGUIMIENTO: IMPRIMIR ÁREAS DE COORDINACIÓN Y LEGAL ===');
+  const ctx = levantarServer(8798);
+  await new Promise((r) => ctx.server.listen(8798, r));
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
+  const problemas = [];
+  page.on('pageerror', (e) => problemas.push('pageerror: ' + e.message));
+  await page.goto('http://localhost:8798/seguimiento.html', { waitUntil: 'networkidle' });
+  // Interceptamos el diálogo del navegador: lo que importa es qué se mandaría al papel.
+  await page.evaluate(() => { window.__impresiones = 0; window.print = () => { window.__impresiones++; }; });
+
+  const base = { numero: '', responsable: 'María García', parque: 'Güemes', estado: 'activo', intervenciones: [], fechaInicio: '2099-01-05', diasPlazo: 30 };
+  await page.evaluate((lista) => { expedientes = lista; guardarEnLS(false); renderizar(); }, [
+    { ...base, id: 'i1', numero: '363-000001/2026-01', tema: 'Coord A', area: 'Coordinación', intervenciones: [{ hora: '01/10 09:00', texto: 'Nota <b>negrita</b>' }] },
+    { ...base, id: 'i2', tema: 'Coord B', area: 'Coordinación' },
+    { ...base, id: 'i3', tema: 'Legal cerrado', area: 'Jurídica', estado: 'archivado', fechaResolucion: '2026-10-01', motivoFinal: 'Cerrado por resolución' },
+    { ...base, id: 'i4', tema: 'Operativo', area: 'Operación' },
+    { ...base, id: 'i5', tema: 'Devuelto a Proyectos', area: 'Coordinación', estado: 'devuelto' },
+  ]);
+
+  const marcadas = () => page.evaluate(() => [...document.querySelectorAll('#printOverlay input[name="printArea"]:checked')].map((i) => i.value));
+  const imprimir = () => page.click('#printOverlay .modal-footer .btn-primary');
+
+  // 1. El botón existe en la pantalla y abre el diálogo con coordinación y legal marcadas por defecto.
+  ok(await page.isVisible('#btnImprimir'), 'el botón Imprimir se ve en el listado');
+  await page.click('#btnImprimir');
+  await page.waitForSelector('#printOverlay.active');
+  const defecto = await marcadas();
+  ok(defecto.includes('Coordinación') && defecto.includes('Jurídica') && !defecto.includes('Operación'),
+     `por defecto se marcan Coordinación y Jurídica, no Operación (${JSON.stringify(defecto)})`);
+
+  // 2. Imprimir: entran los activos y archivados de esas áreas; no los devueltos ni otras áreas.
+  await imprimir();
+  ok(await page.evaluate(() => window.__impresiones) === 1, 'Imprimir llama a la impresión una vez');
+  const papel = await page.evaluate(() => ({
+    cantidad: document.querySelectorAll('#printArea .print-exp').length,
+    texto: document.getElementById('printArea').textContent,
+    grupos: [...document.querySelectorAll('#printArea .print-grupo h2')].map((h) => h.textContent),
+    negritaEscapada: document.querySelectorAll('#printArea b').length === 0 && document.getElementById('printArea').textContent.includes('<b>negrita</b>')
+  }));
+  ok(papel.cantidad === 3, `en el papel hay 3 expedientes (Coordinación 2 + Jurídica 1 archivado), hay ${papel.cantidad}`);
+  ok(!papel.texto.includes('Operativo') && !papel.texto.includes('Devuelto a Proyectos'),
+     'no entran expedientes de otras áreas ni los devueltos a Proyectos');
+  // El orden del papel es el de la lista de áreas del diálogo (no un orden fijo de este test).
+  const ordenLista = await page.evaluate(() => [...document.querySelectorAll('#printOverlay input[name="printArea"]')]
+    .map((i) => i.value).filter((a) => ['Coordinación', 'Jurídica'].includes(a)));
+  const ordenPapel = papel.grupos.map((g) => g.replace(/ \(\d+\)$/, ''));
+  ok(JSON.stringify(ordenPapel) === JSON.stringify(ordenLista) && papel.grupos.length === 2,
+     `un grupo por área, en el orden de la lista (papel ${JSON.stringify(ordenPapel)} · lista ${JSON.stringify(ordenLista)})`);
+  ok(papel.negritaEscapada, 'una nota con HTML («<b>») sale como texto, no como negrita');
+
+  // 3. Vista de impresión: el listado queda invisible y solo el papel se ve.
+  await page.emulateMedia({ media: 'print' });
+  const vista = await page.evaluate(() => ({
+    app: getComputedStyle(document.querySelector('.app')).visibility,
+    papel: getComputedStyle(document.getElementById('printArea')).visibility,
+    papelDisplay: getComputedStyle(document.getElementById('printArea')).display
+  }));
+  await page.emulateMedia({ media: null });
+  ok(vista.app === 'hidden' && vista.papel === 'visible' && vista.papelDisplay === 'block',
+     `en impresión, la app queda oculta y el papel se ve (${JSON.stringify(vista)})`);
+
+  // 4. Aviso si hay cambios de este dispositivo sin subir: el papel no pasa por limpio.
+  await page.evaluate(() => marcarPendiente(true));
+  await page.click('#btnImprimir');
+  await page.waitForSelector('#printOverlay.active');
+  await imprimir();
+  const aviso = await page.evaluate(() => !!document.querySelector('#printArea .print-aviso'));
+  await page.evaluate(() => marcarPendiente(false));
+  ok(aviso, 'con cambios sin subir, el papel lo dice');
+
+  // 5. Escape cierra el diálogo sin imprimir.
+  await page.click('#btnImprimir');
+  await page.waitForSelector('#printOverlay.active');
+  const impresionesAntes = await page.evaluate(() => window.__impresiones);
+  await page.keyboard.press('Escape');
+  const cerrado = await page.evaluate(() => !document.getElementById('printOverlay').classList.contains('active'));
+  ok(cerrado && await page.evaluate(() => window.__impresiones) === impresionesAntes, 'Escape cierra el diálogo y no imprime');
+
+  // 6. Sin áreas marcadas, o un filtro sin expedientes, avisa en vez de imprimir un papel vacío.
+  await page.click('#btnImprimir');
+  await page.waitForSelector('#printOverlay.active');
+  await page.evaluate(() => document.querySelectorAll('input[name="printArea"]').forEach((i) => { i.checked = false; }));
+  await imprimir();
+  const sinArea = await page.evaluate(() => document.getElementById('printMensaje').hidden === false);
+  ok(sinArea && await page.evaluate(() => window.__impresiones) === impresionesAntes, 'sin áreas marcadas avisa y no imprime');
+
+  await page.evaluate(() => document.querySelectorAll('input[name="printArea"]').forEach((i) => { i.checked = i.value === 'Jurídica'; }));
+  await page.evaluate(() => { document.querySelector('input[name="printEstado"][value="archivado"]').checked = false; });
+  await imprimir();
+  const sinExp = await page.evaluate(() => document.getElementById('printMensaje').textContent);
+  ok(sinExp.includes('No hay expedientes') && await page.evaluate(() => window.__impresiones) === impresionesAntes,
+     `Jurídica sin archivados no imprime un papel vacío («${sinExp}»)`);
+  await page.keyboard.press('Escape');
+
+  // 7. En celular, el botón entra en el ancho de la pantalla.
+  await page.setViewportSize({ width: 390, height: 844 });
+  const caja = await page.evaluate(() => { const r = document.getElementById('btnImprimir').getBoundingClientRect(); return { derecha: r.right, ancho: window.innerWidth }; });
+  ok(caja.derecha <= caja.ancho, `en 390px el botón Imprimir no sale de la pantalla (borde ${caja.derecha} de ${caja.ancho})`);
+
+  ok(problemas.length === 0, 'sin errores de página' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
+  await browser.close();
+  ctx.server.close();
+}
+
 async function testMenoresSeguimiento() {
   console.log('\n=== SEGUIMIENTO: PROBLEMAS MENORES DE LA AUDITORÍA ===');
   const ctx = levantarServer(8797);
@@ -904,7 +1011,7 @@ async function testTecladoYFoco() {
   for (const sel of ['#btnMenu', '#fabNuevo', '#modalClose', '#configClose']) {
     ok(!!(await page.locator(sel).getAttribute('aria-label')), `${sel} tiene aria-label`);
   }
-  ok((await page.locator('[role="dialog"], [role="alertdialog"]').count()) === 4, 'los 4 modales tienen role dialog/alertdialog');
+  ok((await page.locator('[role="dialog"], [role="alertdialog"]').count()) === 5, 'los 5 modales tienen role dialog/alertdialog (incluye Imprimir)');
 
   // Abrir con teclado: la tarjeta es un botón real
   const boton = page.locator('.expediente-header-urgencia').first();
@@ -1930,15 +2037,19 @@ async function testProyectosValidacionYOrden() {
   await page.click('#expForm button[type=submit]');
   await page.waitForTimeout(2000);
   ok((await modalTexto()).includes('Formato: 363-1254/2025-01'), 'un número mal formado se rechaza con el formato esperado');
-  ok(posts.length === 0, 'y no sale ningún POST con ese número');
+  // El archivado automático de la carga (Sin_tratamiento vencidos) también hace POST:
+  // lo que importa es que ningún POST lleve el alta rechazada.
+  ok(!posts.some((p) => p.expedientes.some((e) => e.nombre_empresa === 'ALTA CON NRO MAL' || e.nro_expediente === '123')),
+     'y no sale ningún POST con ese número');
 
   // 3b) Alta con un número que ya existe, escrito con otros guiones y espacios.
   await page.fill('#f_nro_expediente', valido.nro_expediente.replace('-', ' – '));
+  const postsAntes3b = posts.length;
   await page.click('#expForm button[type=submit]');
   await page.waitForTimeout(300);
   ok((await modalTexto()).includes('Ya existe un expediente con ese número'),
      'un número repetido se rechaza aunque venga con otros guiones o espacios');
-  ok(posts.length === 0, 'y tampoco sale POST');
+  ok(posts.length === postsAntes3b, 'y tampoco sale POST');
 
   // 3c) Editar un registro viejo con otra forma sin tocar su número: se guarda.
   // Quedó texto sin guardar del 3b: la × ahora pregunta con la tarjeta, y el
@@ -1953,7 +2064,7 @@ async function testProyectosValidacionYOrden() {
   await page.fill('#f_nombre_empresa', legacy.nombre_empresa + ' EDITADO');
   await page.click('#expForm button[type=submit]');
   await page.waitForTimeout(2200);
-  ok(posts.length === 1 && posts[0].expedientes.some((e) => e.nombre_empresa === legacy.nombre_empresa + ' EDITADO' && e.nro_expediente === legacy.nro_expediente),
+  ok(posts.some((p) => p.expedientes.some((e) => e.nombre_empresa === legacy.nombre_empresa + ' EDITADO' && e.nro_expediente === legacy.nro_expediente)),
      'editar un expediente con número en otro formato guarda, sin tocar el número');
 
   // 5) Escape con texto sin guardar no cierra ni descarta.
@@ -3837,6 +3948,7 @@ await recorrido('MOBILE', { width: 390, height: 844 }, 8798);
 await testFechas();
 await testFeriadosYPlazoMaximo();
 await testMenoresSeguimiento();
+await testImprimir();
 await testSyncYEscape();
 await testPendienteAlAbrir();
 await testCampoNumero();
