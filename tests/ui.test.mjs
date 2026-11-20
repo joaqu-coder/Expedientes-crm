@@ -888,13 +888,18 @@ async function testMovilTactil() {
     // con la página bajada el ⋮ ya no está al lado de la búsqueda.
     window.scrollTo(0, 0);
     const menu = document.querySelector('#btnMenu').getBoundingClientRect();
+    const accion = document.querySelector('#btnImprimir').getBoundingClientRect();
     const busqueda = document.querySelector('.search-bar').getBoundingClientRect();
     const chip = document.querySelector('.area-btn').getBoundingClientRect();
     const tarjeta = document.querySelector('.expediente-card-new').getBoundingClientRect();
-    return { menuBusqueda: busqueda.top - menu.bottom, chipTarjeta: tarjeta.top - chip.bottom };
+    return { menuAccion: accion.top - menu.bottom, accionBusqueda: busqueda.top - accion.bottom, chipTarjeta: tarjeta.top - chip.bottom };
   });
-  ok(Math.abs(distancias.menuBusqueda - 2) < 0.6,
-     `el ⋮ y la búsqueda quedan a 2px, 0,5 mm (${distancias.menuBusqueda.toFixed(2)}px)`);
+  // La fila de Imprimir va entre el ⋮ y la búsqueda (pedido 2026-11-20, como en Agenda):
+  // el ⋮ queda a 18px del botón y la búsqueda arranca pegada a la fila.
+  ok(Math.abs(distancias.menuAccion - 18) < 1,
+     `el ⋮ y el botón Imprimir quedan a 18px (${distancias.menuAccion.toFixed(2)}px)`);
+  ok(Math.abs(distancias.accionBusqueda) < 1,
+     `la búsqueda arranca pegada a la fila de Imprimir (${distancias.accionBusqueda.toFixed(2)}px)`);
   ok(Math.abs(distancias.chipTarjeta - 16) < 0.6,
      `los chips de área y la primera tarjeta quedan a 16px (${distancias.chipTarjeta.toFixed(2)}px)`);
   ok(await page.evaluate(() => getComputedStyle(document.querySelector('.panel-areas')).borderBottomWidth) === '0px',

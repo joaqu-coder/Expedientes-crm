@@ -143,7 +143,8 @@ Otros arreglos de la misma auditoría, cada uno con test en `ui.test.mjs`
 Pedido del usuario: imprimir lo que es de coordinación y legal, según los tags del listado.
 Los «tags» son las **áreas** (`area`), no los parques.
 
-- Botón **Imprimir** (`#btnImprimir`) en la fila de «Áreas Responsables». Abre `#printOverlay`,
+- Botón **Imprimir** (`#btnImprimir`): icono cuadrado de borde suave a la derecha, en una fila propia
+  encima de la búsqueda (no pegajosa; mismo estilo que la pantalla Agenda). Abre `#printOverlay`,
   con las áreas marcadas por defecto las que matchean `coordinaci|juridic` (sin tildes) y los
   estados Activos y Archivados. Confirmar llama a `window.print()`.
 - El papel se arma en `#printArea` (contenedor oculto en pantalla). En `@media print` se oculta
