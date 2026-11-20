@@ -358,12 +358,19 @@ async function testImprimir() {
     { ...base, id: 'i5', tema: 'Devuelto a Proyectos', area: 'Coordinación', estado: 'devuelto' },
   ]);
 
+  // La opción vive en el menú ⋮ del encabezado, no en el listado.
+  const abrirImprimir = async () => {
+    await page.click('#btnMenu');
+    await page.click('.app-menu__item:has-text("Imprimir")');
+    await page.waitForSelector('#printOverlay.active');
+  };
   const marcadas = () => page.evaluate(() => [...document.querySelectorAll('#printOverlay input[name="printArea"]:checked')].map((i) => i.value));
   const imprimir = () => page.click('#printOverlay .modal-footer .btn-primary');
 
   // 1. El botón existe en la pantalla y abre el diálogo con coordinación y legal marcadas por defecto.
-  ok(await page.isVisible('#btnImprimir'), 'el botón Imprimir se ve en el listado');
-  await page.click('#btnImprimir');
+  await page.click('#btnMenu');
+  ok(await page.isVisible('.app-menu__item:has-text("Imprimir")'), 'el menú ⋮ tiene la opción Imprimir');
+  await page.click('.app-menu__item:has-text("Imprimir")');
   await page.waitForSelector('#printOverlay.active');
   const defecto = await marcadas();
   ok(defecto.includes('Coordinación') && defecto.includes('Jurídica') && !defecto.includes('Operación'),
@@ -402,24 +409,21 @@ async function testImprimir() {
 
   // 4. Aviso si hay cambios de este dispositivo sin subir: el papel no pasa por limpio.
   await page.evaluate(() => marcarPendiente(true));
-  await page.click('#btnImprimir');
-  await page.waitForSelector('#printOverlay.active');
+  await abrirImprimir();
   await imprimir();
   const aviso = await page.evaluate(() => !!document.querySelector('#printArea .print-aviso'));
   await page.evaluate(() => marcarPendiente(false));
   ok(aviso, 'con cambios sin subir, el papel lo dice');
 
   // 5. Escape cierra el diálogo sin imprimir.
-  await page.click('#btnImprimir');
-  await page.waitForSelector('#printOverlay.active');
+  await abrirImprimir();
   const impresionesAntes = await page.evaluate(() => window.__impresiones);
   await page.keyboard.press('Escape');
   const cerrado = await page.evaluate(() => !document.getElementById('printOverlay').classList.contains('active'));
   ok(cerrado && await page.evaluate(() => window.__impresiones) === impresionesAntes, 'Escape cierra el diálogo y no imprime');
 
   // 6. Sin áreas marcadas, o un filtro sin expedientes, avisa en vez de imprimir un papel vacío.
-  await page.click('#btnImprimir');
-  await page.waitForSelector('#printOverlay.active');
+  await abrirImprimir();
   await page.evaluate(() => document.querySelectorAll('input[name="printArea"]').forEach((i) => { i.checked = false; }));
   await imprimir();
   const sinArea = await page.evaluate(() => document.getElementById('printMensaje').hidden === false);
@@ -435,8 +439,9 @@ async function testImprimir() {
 
   // 7. En celular, el botón entra en el ancho de la pantalla.
   await page.setViewportSize({ width: 390, height: 844 });
-  const caja = await page.evaluate(() => { const r = document.getElementById('btnImprimir').getBoundingClientRect(); return { derecha: r.right, ancho: window.innerWidth }; });
-  ok(caja.derecha <= caja.ancho, `en 390px el botón Imprimir no sale de la pantalla (borde ${caja.derecha} de ${caja.ancho})`);
+  await page.click('#btnMenu');
+  const caja = await page.evaluate(() => { const el = [...document.querySelectorAll('.app-menu__item')].find((b) => b.textContent.includes('Imprimir')); const r = el.getBoundingClientRect(); return { derecha: r.right, ancho: window.innerWidth }; });
+  ok(caja.derecha <= caja.ancho, `en 390px la opción Imprimir del menú no sale de la pantalla (borde ${caja.derecha} de ${caja.ancho})`);
 
   ok(problemas.length === 0, 'sin errores de página' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
   await browser.close();
@@ -888,18 +893,13 @@ async function testMovilTactil() {
     // con la página bajada el ⋮ ya no está al lado de la búsqueda.
     window.scrollTo(0, 0);
     const menu = document.querySelector('#btnMenu').getBoundingClientRect();
-    const accion = document.querySelector('#btnImprimir').getBoundingClientRect();
     const busqueda = document.querySelector('.search-bar').getBoundingClientRect();
     const chip = document.querySelector('.area-btn').getBoundingClientRect();
     const tarjeta = document.querySelector('.expediente-card-new').getBoundingClientRect();
-    return { menuAccion: accion.top - menu.bottom, accionBusqueda: busqueda.top - accion.bottom, chipTarjeta: tarjeta.top - chip.bottom };
+    return { menuBusqueda: busqueda.top - menu.bottom, chipTarjeta: tarjeta.top - chip.bottom };
   });
-  // La fila de Imprimir va entre el ⋮ y la búsqueda (pedido 2026-11-20, como en Agenda):
-  // el ⋮ queda a 18px del botón y la búsqueda arranca pegada a la fila.
-  ok(Math.abs(distancias.menuAccion - 18) < 1,
-     `el ⋮ y el botón Imprimir quedan a 18px (${distancias.menuAccion.toFixed(2)}px)`);
-  ok(Math.abs(distancias.accionBusqueda) < 1,
-     `la búsqueda arranca pegada a la fila de Imprimir (${distancias.accionBusqueda.toFixed(2)}px)`);
+  ok(Math.abs(distancias.menuBusqueda - 2) < 0.6,
+     `el ⋮ y la búsqueda quedan a 2px, 0,5 mm (${distancias.menuBusqueda.toFixed(2)}px)`);
   ok(Math.abs(distancias.chipTarjeta - 16) < 0.6,
      `los chips de área y la primera tarjeta quedan a 16px (${distancias.chipTarjeta.toFixed(2)}px)`);
   ok(await page.evaluate(() => getComputedStyle(document.querySelector('.panel-areas')).borderBottomWidth) === '0px',
