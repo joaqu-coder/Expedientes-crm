@@ -1,8 +1,9 @@
 {
-  "sesion_fecha": "2026-11-19",
+  "sesion_fecha": "2026-11-20",
   "ultimo_commit": "sync: una clave cancelada (401) no detiene la subida en resoluciones, parques ni proyectos (5625810, rama ccr-97097687-eqzu1t, sin mergear a main)",
   "estado": "2026-11-15: logos y íconos entre dispositivos corregidos y mergeados a main (4e3b5c0, fc04d74). Caché de service worker: /logos/* e /icon-*.png network-first. Suite completa en verde (973 OK, 0 fallas). | 2026-11-16 (Parques): filtro «Alquilada» en Empresas (titular de lote alquilado; no es situación). Test en testParques, rojo antes del cambio.",
   "resuelto": [
+    "2026-11-20 (Seguimiento): botón Imprimir pasó a icono cuadrado encima de la búsqueda (estilo Agenda, fila no pegajosa). Test de cabecera reescrito: ⋮→botón 18px, botón→búsqueda 0px. npm test verde (0 fallas, 995 OK). Rama ccr-e878f5f2-mtloy0, sin mergear a main.",
     "2026-11-19 (Seguimiento): botón Imprimir en «Áreas Responsables». Imprime las áreas elegidas (por defecto Coordinación y Jurídica) y los estados activos/archivados, agrupadas por área; sin cambios de datos ni de sync. Aviso en el papel si hay cambios sin subir. Test: testImprimir() en ui.test.mjs. Vista de impresión verificada en PDF (una hoja).",
     "2026-11-19 (tests): Proyectos — los 3 fallos de «número» (testProyectosValidacionYOrden) eran del test, no de la validación: contaba todos los POST desde la carga y el archivado automático de Sin_tratamiento vencidos ya hacía uno. Ahora busca el alta rechazada dentro de los POST. Ya fallaban en el commit base (5625810/50cfa7c).",
     "2026-11-17: 401 de clave cancelada ya no es error permanente en resoluciones, parques y proyectos (igual que Seguimiento: 401/403/408/429 se reintentan). Test: tests/clave-cancelada.test.mjs (en test:concurrencia; falla antes del arreglo en resoluciones y parques). Pendiente: el test no llega al POST de proyectos; el arreglo está, la prueba no.",
