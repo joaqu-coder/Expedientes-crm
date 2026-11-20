@@ -376,6 +376,36 @@ async function testImprimir() {
   ok(defecto.includes('Coordinación') && defecto.includes('Jurídica') && !defecto.includes('Operación'),
      `por defecto se marcan Coordinación y Jurídica, no Operación (${JSON.stringify(defecto)})`);
 
+  // 1b. La opción del menú lleva icono de impresora y el atajo a la derecha, como en el navegador.
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('#printOverlay:not(.active)', { state: 'attached' });
+  await page.click('#btnMenu');
+  const itemImprimir = await page.evaluate(() => {
+    const b = [...document.querySelectorAll('.app-menu__item')].find((x) => x.textContent.includes('Imprimir'));
+    const atajo = b && b.querySelector('.app-menu__atajo');
+    const icono = b && b.querySelector('svg.app-menu__icono');
+    const r = icono && icono.getBoundingClientRect();
+    const rAtajo = atajo && atajo.getBoundingClientRect();
+    const rItem = b && b.getBoundingClientRect();
+    return {
+      etiqueta: b && b.querySelector('span').textContent,
+      atajo: atajo && atajo.textContent,
+      tieneIcono: !!icono && r.width === 18,
+      iconoIzq: !!icono && r.left < b.querySelector('span').getBoundingClientRect().left,
+      atajoDerecha: !!atajo && Math.abs(rAtajo.right - (rItem.right - 12)) <= 2,
+    };
+  });
+  ok(itemImprimir.etiqueta === 'Imprimir...', `la opción dice "Imprimir..." (${itemImprimir.etiqueta})`);
+  ok(itemImprimir.tieneIcono && itemImprimir.iconoIzq, 'la opción Imprimir tiene el icono de impresora a la izquierda');
+  ok(itemImprimir.atajo === 'Ctrl+P' && itemImprimir.atajoDerecha, `el atajo ${itemImprimir.atajo} queda alineado a la derecha`);
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.app-menu', { state: 'hidden' });
+
+  // 1c. Ctrl+P abre la misma pantalla de impresión (y no dispara la impresión del navegador).
+  await page.keyboard.press('Control+p');
+  await page.waitForSelector('#printOverlay.active');
+  ok(await page.evaluate(() => window.__impresiones) === 0, 'Ctrl+P abre la pantalla de impresión sin imprimir todavía');
+
   // 2. Imprimir: entran los activos y archivados de esas áreas; no los devueltos ni otras áreas.
   await imprimir();
   ok(await page.evaluate(() => window.__impresiones) === 1, 'Imprimir llama a la impresión una vez');

@@ -69,6 +69,12 @@
       "padding:0 12px;background:none;border:none;border-radius:8px;cursor:pointer;" +
       "font-family:inherit;font-size:14px;color:var(--fg);text-align:left}",
     ".app-menu__item:hover{background:var(--surface-2)}",
+    /* Ítem con icono a la izquierda y atajo de teclado alineado a la derecha,
+       como los menús del navegador. El atajo se muestra; el atajo en sí lo
+       registra cada página. */
+    ".app-menu__icono{width:18px;height:18px;flex:0 0 auto;display:block;color:var(--muted)}",
+    ".app-menu__atajo{margin-left:auto;padding-left:24px;font-size:12px;color:var(--muted);" +
+      "white-space:nowrap}",
     ".app-menu__item:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}",
 
     /* Diálogo de la clave compartida. Mismos tokens que el resto: el radio,
@@ -163,6 +169,10 @@
     archivar: TRAZO + '<rect width="20" height="5" x="2" y="3" rx="1"></rect>' +
       '<path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M10 12h4"></path></svg>',
     reabrir: TRAZO + '<path d="M3 2v6h6"></path><path d="M3 13a9 9 0 1 0 3-7.7L3 8"></path></svg>',
+    imprimir: TRAZO.replace('class="btn-icon"', 'class="app-menu__icono"') +
+      '<polyline points="6 9 6 2 18 2 18 9"></polyline>' +
+      '<path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>' +
+      '<rect width="12" height="8" x="6" y="14"></rect></svg>',
     buscar: TRAZO.replace('class="btn-icon"', 'class="search-icon"') +
       '<circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>'
   };
@@ -254,7 +264,11 @@
     var html = itemsMenu
       .map(function (it, i) {
         return (
-          '<button type="button" class="app-menu__item" data-i="' + i + '">' + esc(it.etiqueta) + "</button>"
+          '<button type="button" class="app-menu__item" data-i="' + i + '">' +
+          (it.icono ? icono(it.icono) : "") +
+          "<span>" + esc(it.etiqueta) + "</span>" +
+          (it.atajo ? '<span class="app-menu__atajo">' + esc(it.atajo) + "</span>" : "") +
+          "</button>"
         );
       })
       .join("");

@@ -2810,11 +2810,19 @@
     // Header común a las 4 apps (título + ⋮) y botón flotante de alta.
     // La configuración, que antes era un engranaje suelto en el header, vive
     // ahora en el menú ⋮ junto con el estado de sincronización.
+    // Ctrl+P (⌘P en Mac) abre la misma pantalla de impresión que el menú.
+    const ATAJO_IMPRIMIR = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘P' : 'Ctrl+P';
+    document.addEventListener('keydown', (e) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || e.key.toLowerCase() !== 'p') return;
+      if (OVERLAYS.some((id) => overlayAbierto(id))) return; // no pisar un modal ya abierto
+      e.preventDefault();
+      abrirImprimir();
+    });
     HeaderGlobal.init({
       titulo: 'Seguimiento',
       accion: { etiqueta: 'Nuevo expediente', onClick: abrirNuevo },
       menu: [
-        { etiqueta: 'Imprimir áreas de coordinación y legal', onClick: abrirImprimir },
+        { etiqueta: 'Imprimir...', icono: 'imprimir', atajo: ATAJO_IMPRIMIR, onClick: abrirImprimir },
         { etiqueta: 'Áreas y agentes', onClick: abrirConfigModal },
         { etiqueta: 'Actualizar datos', onClick: reintentarSync }
       ]
