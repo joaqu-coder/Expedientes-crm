@@ -1160,14 +1160,17 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   }
 
   function empresaPorId(id){ return state.empresas.find(function(e){return e.id_empresa===id;}); }
-  function lotesDeEmpresa(id){ return state.lotes.filter(function(l){return l.id_empresa===id;}); }
+  // Filtra solo los lotes del parque activo para no mezclar datos entre parques.
+  function lotesDeEmpresa(id){ return lotesDelParque().filter(function(l){return l.id_empresa===id;}); }
   // Lotes que una empresa ocupa por alquiler sin ser la titular. La
   // titularidad vive en lote.id_empresa y la ocupación en `ocupaciones`: son
   // dos vínculos distintos y ninguno sobreescribe al otro.
   function lotesOcupadosPor(id){
+    var lotesPorId = {};
+    lotesDelParque().forEach(function(l){ lotesPorId[l.id_lote] = l; });
     return state.ocupaciones
       .filter(function(o){ return o.vigente && o.id_empresa_ocupante===id; })
-      .map(function(o){ return state.lotes.find(function(l){ return l.id_lote===o.id_lote; }); })
+      .map(function(o){ return lotesPorId[o.id_lote]; })
       .filter(Boolean);
   }
   function empresaTotalM2(id){
@@ -1328,8 +1331,13 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   // ocupa nada) no entra en el contador ni en el listado; sigue en los datos.
   function empresasConVinculo(){
     var titulares = {};
-    state.lotes.forEach(function(l){ if(l.id_empresa) titulares[l.id_empresa] = true; });
-    state.ocupaciones.forEach(function(o){ if(o.vigente && o.id_empresa_ocupante) titulares[o.id_empresa_ocupante] = true; });
+    // Solo los lotes del parque activo para no mezclar empresas entre parques.
+    lotesDelParque().forEach(function(l){ if(l.id_empresa) titulares[l.id_empresa] = true; });
+    var lotesIds = {};
+    lotesDelParque().forEach(function(l){ lotesIds[l.id_lote] = true; });
+    state.ocupaciones.forEach(function(o){
+      if(o.vigente && o.id_empresa_ocupante && lotesIds[o.id_lote]) titulares[o.id_empresa_ocupante] = true;
+    });
     return empresasDelParque().filter(function(e){ return !!titulares[e.id_empresa]; });
   }
   function empresasFiltradas(){
