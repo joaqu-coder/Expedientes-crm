@@ -2673,7 +2673,17 @@
       "situacion": "Activa",
       "observacion": "Ocupante por alquiler, importado de la columna «Alquilada» del Sistema Salta el 2026-10-18. El origen no trae datos institucionales propios para esta empresa.",
       "es_ocupante_sin_registro": true,
-      "id_parque": "salta"
+      "id_parque": "salta",
+      "rubro": "MONTAJE Y CONSTRUCCION",
+      "telefono": "",
+      "contacto_nombre": "Cristian Fernández",
+      "cargo": "Representante",
+      "mail": "",
+      "ubicacion": "",
+      "pagweb": "",
+      "instagram": "",
+      "facebook": "",
+      "linkedin": ""
     },
     {
       "id_empresa": "SE146",
