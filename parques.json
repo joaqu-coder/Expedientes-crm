@@ -1000,7 +1000,15 @@
       "ubicacion": "Calle 4",
       "observacion": "Su fila del export 2026-10-19 vuelve a mezclar datos del inquilino: mail, contacto y links quedaron como estaban (desarmados el 2026-10-18).",
       "es_ocupante_sin_registro": false,
-      "id_parque": "salta"
+      "id_parque": "salta",
+      "rubro": "",
+      "cargo": "Socio Gerente",
+      "situacion": null,
+      "mail": "",
+      "pagweb": "",
+      "instagram": "",
+      "facebook": "",
+      "linkedin": ""
     },
     {
       "id_empresa": "SE016",
