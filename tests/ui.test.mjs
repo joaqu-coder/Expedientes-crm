@@ -2660,16 +2660,26 @@ async function testParques(viewport, puerto) {
   // entra en situacionEsperada ni en SITUACIONES.
   const alquilada = (e) => datos.lotes.some((l) => l.id_empresa === e.id_empresa &&
     (l.estado === 'Alquilada' || datos.ocupaciones.some((o) => o.vigente && o.id_lote === l.id_lote)));
+  const loteEscrituradoAEmpresa = (l) => {
+    if (l.matriculas && l.matriculas.length > 1)
+      return l.matriculas.some((m) => m.titulares && m.titulares.some((t) => t && !/^Egpais$/i.test(t.trim())));
+    return !!l.propietario_matricula && !/^Egpais$/i.test(l.propietario_matricula.trim());
+  };
   const cuenta = (empresasDel, valor) => valor === 'Alquilada'
     ? empresasDel.filter(alquilada).length
+    : valor === 'Escrituradas'
+    ? empresasDel.filter((e) => datos.lotes.some((l) => l.id_empresa === e.id_empresa && loteEscrituradoAEmpresa(l))).length
     : empresasDel.filter((e) => situacionEsperada(e) === valor).length;
   for (const [parque, empresasDel] of [['guemes', vinculadasGuemes], ['salta', vinculadasSalta]]) {
     await page.locator(`#parqueSwitch [data-parque="${parque}"]`).click();
     await page.waitForFunction(() => document.querySelectorAll('#empresasList .emp-tile').length > 0);
     const opciones = await page.locator('#filterEstadoEmpresas option').evaluateAll((os) =>
       os.map((o) => o.value).filter(Boolean));
-    const presentes = ['Activa', 'Sin actividad', 'En construcción', 'Alquilada']
-      .filter((x) => x === 'Alquilada' ? empresasDel.some(alquilada) : empresasDel.some((e) => situacionEsperada(e) === x));
+    const tieneEscriturada = (e) => datos.lotes.some((l) => l.id_empresa === e.id_empresa && loteEscrituradoAEmpresa(l));
+    const presentes = ['Activa', 'Sin actividad', 'En construcción', 'Alquilada', 'Escrituradas']
+      .filter((x) => x === 'Alquilada' ? empresasDel.some(alquilada)
+        : x === 'Escrituradas' ? empresasDel.some(tieneEscriturada)
+        : empresasDel.some((e) => situacionEsperada(e) === x));
     ok(opciones.join('|') === presentes.join('|'),
        `${parque}: el filtro ofrece las situaciones que el parque realmente tiene (${presentes.join(', ') || 'ninguna'}); se obtuvo ${opciones.join(', ') || 'ninguna'}`);
     ok(!(await page.locator('#filterEstadoEmpresas').isDisabled()),
@@ -2688,32 +2698,31 @@ async function testParques(viewport, puerto) {
   }
 
   // ======================================================================
-  // Filtro "No escrituradas (Egpais)" — checkbox en la pestaña Empresas
-  // Debe mostrar SOLO las empresas que tienen al menos un lote cuyo
-  // propietario_matricula === "Egpais" y cuyo campo escritura está vacío.
+  // Filtro "Escrituradas" en el select de estado de empresa (Güemes)
+  // Muestra SOLO las empresas que tienen al menos un lote cuyo
+  // propietario_matricula NO es Egpais (ya inscripto a nombre de la empresa).
   // ======================================================================
   await page.locator('#parqueSwitch [data-parque="guemes"]').click();
   await page.waitForFunction(() => document.querySelectorAll('#empresasList .emp-tile').length > 0);
-  const esEgpaisSinEsc = (l) => !l.escritura && l.propietario_matricula === 'Egpais';
-  const empresasConEgpaisSinEsc = vinculadasGuemes.filter((e) =>
-    datos.lotes.some((l) => l.id_empresa === e.id_empresa && esEgpaisSinEsc(l))
+  const escrituradasEsperadas = vinculadasGuemes.filter((e) =>
+    datos.lotes.some((l) => l.id_empresa === e.id_empresa && loteEscrituradoAEmpresa(l))
   );
-  await page.locator('#filterEgpaisSinEsc').check();
+  ok((await page.locator('#filterEstadoEmpresas option[value="Escrituradas"]').count()) === 1,
+     'el select de estado ofrece la opción "Escrituradas" en Güemes');
+  await page.selectOption('#filterEstadoEmpresas', 'Escrituradas');
   await page.waitForTimeout(150);
-  const conFiltro = await page.locator('#empresasList .emp-tile').count();
-  ok(conFiltro === empresasConEgpaisSinEsc.length,
-     `filtro "No escrituradas (Egpais)" muestra ${empresasConEgpaisSinEsc.length} empresa(s); se ve ${conFiltro}`);
-  // Todas las mostradas deben tener al menos un lote que califica
+  const conFiltroEsc = await page.locator('#empresasList .emp-tile').count();
+  ok(conFiltroEsc === escrituradasEsperadas.length,
+     `filtro "Escrituradas" muestra ${escrituradasEsperadas.length} empresa(s); se ve ${conFiltroEsc}`);
   const nombresVisibles = await page.locator('#empresasList .emp-tile .emp-nombre').allTextContents();
   const todasCalifican = nombresVisibles.every((n) =>
-    empresasConEgpaisSinEsc.some((e) => e.nombre_empresa === n)
+    escrituradasEsperadas.some((e) => e.nombre_empresa === n)
   );
-  ok(todasCalifican, 'todas las tarjetas visibles con el filtro marcado tienen un lote Egpais sin escritura');
-  // Desmarcar vuelve al total
-  await page.locator('#filterEgpaisSinEsc').uncheck();
+  ok(todasCalifican, 'todas las tarjetas visibles con el filtro "Escrituradas" tienen al menos un lote no Egpais');
+  await page.selectOption('#filterEstadoEmpresas', '');
   await page.waitForTimeout(150);
   ok((await page.locator('#empresasList .emp-tile').count()) === vinculadasGuemes.length,
-     'desmarcar el filtro restaura el listado completo de Güemes');
+     'volver a "Todos los estados" restaura el listado completo de Güemes');
 
   // Un filtro guardado que no existe en este parque no puede dejar la lista
   // recortada mientras el desplegable dice "Todos los estados": se ve como

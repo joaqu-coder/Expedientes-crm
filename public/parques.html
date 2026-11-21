@@ -258,7 +258,6 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
            una titular que alquila su lote puede seguir activa. Estuvo inerte
            hasta el 2026-10-18, cuando el dato llegó con el Sistema Salta. -->
       <select id="filterEstadoEmpresas"><option value="">Todos los estados</option></select>
-      <label class="toolbar-check"><input type="checkbox" id="filterEgpaisSinEsc"> No escrituradas (Egpais)</label>
     </div>
   </div>
   <div class="tarjeta-count" id="empresasCount"></div>
@@ -1098,7 +1097,6 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   var state = Object.assign({
     editingTipo:null, editingId:null, modalMode:null,
     filterEstadoComercial:"", filterManzanaComercial:"", filterDisponibleComercial:false,
-    filterEgpaisSinEsc:false,
     filterSituacionEmpresas:"", searchComercial:"", searchEmpresas:"", parqueActivo:null
   }, inicial);
 
@@ -1147,12 +1145,10 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
         // los estados del otro no existen acá.
         state.filterEstadoComercial=""; state.filterManzanaComercial="";
         state.filterDisponibleComercial=false; state.filterSituacionEmpresas="";
-        state.filterEgpaisSinEsc=false;
         state.searchComercial=""; state.searchEmpresas="";
         var bc = document.getElementById("searchComercial"); if(bc) bc.value="";
         var be = document.getElementById("searchEmpresas"); if(be) be.value="";
         var dc = document.getElementById("filterDisponibleComercial"); if(dc) dc.checked=false;
-        if(chkEgpaisSinEsc) chkEgpaisSinEsc.checked=false;
         guardarLocal(); // ver save(): elegir parque no es un cambio de datos
         renderParqueSwitch();
         renderFiltros();
@@ -1218,11 +1214,14 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   }
   function situacionEsDerivada(e){ return !!e && !e.situacion && !!situacionSegunLotes(e.id_empresa); }
 
-  // «Alquilada» en el filtro de Empresas. NO es una situación de la empresa
-  // (describe al lote): por eso no entra en SITUACIONES ni en situacionDe().
-  // Es un criterio aparte: la empresa es titular de al menos un lote
-  // alquilado (estado Alquilada u ocupación vigente).
+  // «Alquilada» y «Escrituradas» en el filtro de Empresas. NO son situaciones
+  // de la empresa (describen al lote o su titularidad registral): por eso no
+  // entran en SITUACIONES ni en situacionDe().
   var FILTRO_ALQUILADA = "Alquilada";
+  // «Escrituradas»: la empresa tiene al menos un lote cuyo propietario
+  // registral (propietario_matricula) NO es Egpais, es decir, el lote ya
+  // está inscripto a nombre de la empresa, no del Ente.
+  var FILTRO_ESCRITURADAS = "Escrituradas";
   function empresaTieneLoteAlquilado(e){
     return !!e && lotesDeEmpresa(e.id_empresa).some(function(l){
       return l.estado==="Alquilada" || !!ocupacionDeLote(l.id_lote);
@@ -1270,7 +1269,6 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   function lotesSinEmpresa(){ return lotesDelParque().filter(function(l){ return !l.id_empresa; }); }
 
   var selSituacionEmpresas = document.getElementById("filterEstadoEmpresas");
-  var chkEgpaisSinEsc = document.getElementById("filterEgpaisSinEsc");
   var selEstadoComercial = document.getElementById("filterEstadoComercial");
   var selManzanaComercial = document.getElementById("filterManzanaComercial");
   var chkDisponibleComercial = document.getElementById("filterDisponibleComercial");
@@ -1293,6 +1291,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
       return empresasDelParque().some(function(e){ return situacionDe(e)===s; });
     });
     if(empresasDelParque().some(empresaTieneLoteAlquilado)) sits.push(FILTRO_ALQUILADA);
+    if(empresasDelParque().some(empresaEscriturada)) sits.push(FILTRO_ESCRITURADAS);
     // El filtro elegido sobrevive en localStorage. Si al volver no está
     // entre las opciones de este parque, `select.value = ...` no prende
     // nada y el desplegable dice "Todos los estados" mientras la lista
@@ -1310,10 +1309,22 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   function empresaTieneEgpaisSinEsc(e){
     return lotesDeEmpresa(e.id_empresa).some(esEgpaisSinEsc);
   }
+  // «Escrituradas»: la empresa es titular de al menos un lote cuyo
+  // propietario_matricula no es Egpais (ya inscripto a nombre de la empresa).
+  function loteEscrituradoAEmpresa(l){
+    // Lotes con múltiples matrículas: alcanza con que al menos una no sea Egpais.
+    var mats = matriculasDe(l);
+    if(mats.length > 1) return mats.some(function(m){
+      return m.titulares && m.titulares.some(function(t){ return t && !/^Egpais$/i.test(t.trim()); });
+    });
+    return !!l.propietario_matricula && !/^Egpais$/i.test(l.propietario_matricula.trim());
+  }
+  function empresaEscriturada(e){
+    return lotesDeEmpresa(e.id_empresa).some(loteEscrituradoAEmpresa);
+  }
   selSituacionEmpresas.addEventListener("change", function(){
     state.filterSituacionEmpresas = this.value; renderEmpresas();
   });
-  chkEgpaisSinEsc.addEventListener("change", function(){ state.filterEgpaisSinEsc=this.checked; renderEmpresas(); });
   selEstadoComercial.addEventListener("change", function(){ state.filterEstadoComercial=this.value; renderComercial(); });
   selManzanaComercial.addEventListener("change", function(){ state.filterManzanaComercial=this.value; renderComercial(); });
   chkDisponibleComercial.addEventListener("change", function(){ state.filterDisponibleComercial=this.checked; renderComercial(); });
@@ -1352,9 +1363,10 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   }
   function empresasFiltradas(){
     return empresasConVinculo().filter(function(e){
-      if(state.filterEgpaisSinEsc && !empresaTieneEgpaisSinEsc(e)) return false;
       if(state.filterSituacionEmpresas===FILTRO_ALQUILADA){
         if(!empresaTieneLoteAlquilado(e)) return false;
+      } else if(state.filterSituacionEmpresas===FILTRO_ESCRITURADAS){
+        if(!empresaEscriturada(e)) return false;
       } else if(state.filterSituacionEmpresas && situacionDe(e)!==state.filterSituacionEmpresas) return false;
       if(state.searchEmpresas){
         var blob = [e.nombre_empresa,e.rubro,e.contacto_nombre].join(" ").toLowerCase();
