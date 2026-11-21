@@ -2687,6 +2687,34 @@ async function testParques(viewport, puerto) {
        `${parque}: volver a "Todos los estados" muestra las ${empresasDel.length} empresas otra vez`);
   }
 
+  // ======================================================================
+  // Filtro "No escrituradas (Egpais)" — checkbox en la pestaña Empresas
+  // Debe mostrar SOLO las empresas que tienen al menos un lote cuyo
+  // propietario_matricula === "Egpais" y cuyo campo escritura está vacío.
+  // ======================================================================
+  await page.locator('#parqueSwitch [data-parque="guemes"]').click();
+  await page.waitForFunction(() => document.querySelectorAll('#empresasList .emp-tile').length > 0);
+  const esEgpaisSinEsc = (l) => !l.escritura && l.propietario_matricula === 'Egpais';
+  const empresasConEgpaisSinEsc = vinculadasGuemes.filter((e) =>
+    datos.lotes.some((l) => l.id_empresa === e.id_empresa && esEgpaisSinEsc(l))
+  );
+  await page.locator('#filterEgpaisSinEsc').check();
+  await page.waitForTimeout(150);
+  const conFiltro = await page.locator('#empresasList .emp-tile').count();
+  ok(conFiltro === empresasConEgpaisSinEsc.length,
+     `filtro "No escrituradas (Egpais)" muestra ${empresasConEgpaisSinEsc.length} empresa(s); se ve ${conFiltro}`);
+  // Todas las mostradas deben tener al menos un lote que califica
+  const nombresVisibles = await page.locator('#empresasList .emp-tile .emp-nombre').allTextContents();
+  const todasCalifican = nombresVisibles.every((n) =>
+    empresasConEgpaisSinEsc.some((e) => e.nombre_empresa === n)
+  );
+  ok(todasCalifican, 'todas las tarjetas visibles con el filtro marcado tienen un lote Egpais sin escritura');
+  // Desmarcar vuelve al total
+  await page.locator('#filterEgpaisSinEsc').uncheck();
+  await page.waitForTimeout(150);
+  ok((await page.locator('#empresasList .emp-tile').count()) === vinculadasGuemes.length,
+     'desmarcar el filtro restaura el listado completo de Güemes');
+
   // Un filtro guardado que no existe en este parque no puede dejar la lista
   // recortada mientras el desplegable dice "Todos los estados": se ve como
   // "el filtro no funciona" y no hay forma de sacarlo desde la pantalla.
