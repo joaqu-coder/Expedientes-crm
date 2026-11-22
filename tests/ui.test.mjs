@@ -1457,6 +1457,41 @@ async function testResoluciones(viewport, puerto) {
      `el resumen aparte cuenta las ${sinExpte} resoluciones sin expediente identificado`);
   ok(!/^(sn|falta)/i.test(expTop), 'un marcador (Sn/Falta) nunca llega al ranking de expedientes');
 
+  // Resumen (arriba del análisis, como el de Proyectos): totales, firmantes y
+  // período de cada firmante, y el botón de imprimir.
+  const firmantes = {};
+  datos.resoluciones.forEach((r) => {
+    const k = (r.autoridad || '').trim() || '(sin firma)';
+    const f = firmantes[k] || (firmantes[k] = { n: 0, desde: r.anio, hasta: r.anio });
+    f.n++;
+    if (r.anio < f.desde) f.desde = r.anio;
+    if (r.anio > f.hasta) f.hasta = r.anio;
+  });
+  const nFirmantes = Object.keys(firmantes).length;
+  const anios = Object.keys(porAnio).sort();
+  ok((await page.locator('#resTotal').textContent()).trim() === String(total),
+     `el resumen muestra el total de resoluciones (${total})`);
+  ok((await page.locator('#resAnios').textContent()).includes(anios[0]) &&
+     (await page.locator('#resAnios').textContent()).includes(anios[anios.length - 1]),
+     `el resumen muestra el período ${anios[0]}–${anios[anios.length - 1]}`);
+  ok((await page.locator('#resFirmantesN').textContent()).trim() === String(nFirmantes),
+     `el resumen cuenta los ${nFirmantes} firmantes distintos`);
+  const filasFirm = page.locator('[data-firma]');
+  ok((await filasFirm.count()) === nFirmantes, `la tabla de firmantes tiene una fila por firmante (${nFirmantes})`);
+  const malFirm = await filasFirm.evaluateAll((els, esp) => els.filter((e) => {
+    const f = esp[e.dataset.firma];
+    return !f || Number(e.dataset.n) !== f.n || e.dataset.desde !== f.desde || e.dataset.hasta !== f.hasta;
+  }).map((e) => e.dataset.firma), firmantes);
+  ok(malFirm.length === 0, `cada firmante tiene su cantidad y su período exactos${malFirm.length ? ': mal en ' + malFirm.join(', ') : ''}`);
+  const ordFirm = await filasFirm.evaluateAll((els) => els.map((e) => Number(e.dataset.n)))
+    .then((ns) => ns.every((n, i) => i === 0 || ns[i - 1] >= n));
+  ok(ordFirm, 'los firmantes salen de mayor a menor cantidad');
+  const botonImp = page.locator('#resImprimir');
+  ok((await botonImp.count()) === 1, 'el análisis tiene un botón para imprimir el resumen');
+  await page.evaluate(() => { window.__printed = 0; window.print = function(){ window.__printed++; }; });
+  await botonImp.click();
+  ok((await page.evaluate(() => window.__printed)) === 1, 'el botón Imprimir llama a window.print una vez');
+
   await page.click('#tabList');
   await page.waitForSelector('#viewList:not([hidden])');
   ok(await page.locator('#viewDash').isHidden(), 'volver a Listado oculta el análisis');

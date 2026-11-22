@@ -132,6 +132,24 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 .kpi-col-bar{display:block;width:100%;min-height:2px;background:var(--accent);border-radius:5px 5px 0 0}
 .kpi-col-val{font-size:10.5px;font-weight:600;font-variant-numeric:tabular-nums;margin-bottom:3px}
 .kpi-col-lbl{font-size:10.5px;color:var(--muted);margin-top:5px;font-variant-numeric:tabular-nums}
+/* Resumen del análisis: totales, firmantes y botón de imprimir. */
+.res-resumen-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.res-resumen-head .btn{width:auto}
+.kpi-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+@media (min-width:860px){.kpi-tiles{grid-template-columns:repeat(5,minmax(0,1fr))}}
+.kpi-tile{background:var(--surface-2);border-radius:10px;padding:10px 12px;min-width:0}
+.kpi-num{font-family:var(--font-mono);font-size:24px;font-weight:700;line-height:1.1;overflow-wrap:anywhere}
+.kpi-num-sm{font-size:17px}
+.kpi-lbl{font-size:12px;color:var(--muted);margin-top:2px}
+.res-sub{margin-top:14px}
+.kpi-per{display:block;font-size:11.5px;color:var(--muted)}
+@media print{
+  body *{visibility:hidden}
+  #viewDash, #viewDash *{visibility:visible}
+  #viewDash{position:absolute;left:0;top:0;width:100%;padding:0;margin:0}
+  .app-tabs,#resImprimir,.bottom-nav,.veil{display:none !important}
+  .kpi-card{break-inside:avoid;border:1px solid #999}
+}
 </style>
 </head>
 <body>
@@ -161,6 +179,22 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 <div class="res-more" id="resMore"></div>
 </section>
 <section class="view" id="viewDash" role="tabpanel" aria-labelledby="tabDash" hidden>
+  <div class="kpi-card wide res-resumen">
+    <div class="res-resumen-head">
+      <div class="kpi-title">Resumen del archivo</div>
+      <button type="button" class="btn btn-outline" id="resImprimir">Imprimir</button>
+    </div>
+    <div class="kpi-tiles">
+      <div class="kpi-tile"><div class="kpi-num" id="resTotal">0</div><div class="kpi-lbl">Resoluciones</div></div>
+      <div class="kpi-tile"><div class="kpi-num kpi-num-sm" id="resAnios">—</div><div class="kpi-lbl">Período</div></div>
+      <div class="kpi-tile"><div class="kpi-num" id="resFirmantesN">0</div><div class="kpi-lbl">Firmantes</div></div>
+      <div class="kpi-tile"><div class="kpi-num" id="resExpedientes">0</div><div class="kpi-lbl">Expedientes distintos</div></div>
+      <div class="kpi-tile"><div class="kpi-num" id="resFaltantes">0</div><div class="kpi-lbl">Documento faltante</div></div>
+    </div>
+    <div class="kpi-hint" id="resNotas"></div>
+    <div class="kpi-title res-sub">Quién firma</div>
+    <div class="kpi-rows" id="resFirmantes" data-kpi="firmantes"></div>
+  </div>
   <div class="kpi-grid">
     <div class="kpi-card wide">
       <div class="kpi-title">Resoluciones por año</div>
@@ -649,8 +683,58 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
       '<span class="kpi-bar"><span style="width:'+Math.round(n/max*100)+'%"></span></span>'+
     '</div>';
   }
+  // Resumen: totales, período, firmantes con su cantidad y años, y las notas
+  // de calidad del archivo (fechas mal formadas, documentos faltantes).
+  // «Quién firma» sale de `autoridad`; sin firma se cuenta aparte.
+  function renderResumen(){
+    var res = state.resoluciones;
+    var anios = Array.from(new Set(res.map(function(r){ return r.anio; }).filter(Boolean))).sort();
+    var firmantes = {};
+    res.forEach(function(r){
+      var k = (r.autoridad || "").trim() || "(sin firma)";
+      var f = firmantes[k] || (firmantes[k] = { n: 0, desde: r.anio, hasta: r.anio });
+      f.n++;
+      if(r.anio < f.desde) f.desde = r.anio;
+      if(r.anio > f.hasta) f.hasta = r.anio;
+    });
+    var ranking = Object.keys(firmantes).sort(function(a, b){
+      if(firmantes[b].n !== firmantes[a].n) return firmantes[b].n - firmantes[a].n;
+      return a < b ? -1 : a > b ? 1 : 0;
+    });
+    var conExpte = res.filter(function(r){ return r.nro_expediente && !esMarcadorExpte(r.nro_expediente); });
+    var expDistintos = Object.keys(conteoPor(conExpte, function(r){ return r.nro_expediente; })).length;
+    var faltantes = res.filter(function(r){ return r.tema === "Falta"; }).length;
+    var fechasMal = res.filter(function(r){ return !/^\d{2}\/\d{2}\/\d{4}$/.test(r.fecha || ""); }).length;
+
+    document.getElementById("resTotal").textContent = res.length;
+    document.getElementById("resAnios").textContent = anios.length
+      ? (anios[0] === anios[anios.length - 1] ? anios[0] : anios[0]+"–"+anios[anios.length - 1]) : "—";
+    document.getElementById("resFirmantesN").textContent = ranking.length;
+    document.getElementById("resExpedientes").textContent = expDistintos;
+    document.getElementById("resFaltantes").textContent = faltantes;
+
+    var notas = [];
+    if(faltantes) notas.push(faltantes+" resoluciones tienen el documento faltante en el archivo (tema «Falta»): su número y año se conocen, el texto no.");
+    if(fechasMal) notas.push(fechasMal+" fechas no tienen formato dd/mm/aaaa y se muestran tal como vinieron.");
+    document.getElementById("resNotas").innerHTML = notas.map(function(n){ return "<div>"+esc(n)+"</div>"; }).join("");
+
+    var max = ranking.length ? firmantes[ranking[0]].n : 1;
+    document.getElementById("resFirmantes").innerHTML = ranking.length
+      ? ranking.map(function(k){
+          var f = firmantes[k];
+          var per = f.desde === f.hasta ? f.desde : f.desde+"–"+f.hasta;
+          return '<div class="kpi-row" data-firma="'+esc(k)+'" data-n="'+f.n+'" data-desde="'+esc(f.desde)+'" data-hasta="'+esc(f.hasta)+'">'+
+            '<span class="kpi-label">'+esc(k)+'<span class="kpi-per">'+esc(per)+'</span></span>'+
+            '<span class="kpi-val">'+f.n+' ('+Math.round(f.n/res.length*100)+'%)</span>'+
+            '<span class="kpi-bar"><span style="width:'+Math.round(f.n/max*100)+'%"></span></span>'+
+          '</div>';
+        }).join("")
+      : '<div class="empty-state">Sin resoluciones cargadas.</div>';
+  }
+  document.getElementById("resImprimir").addEventListener("click", function(){ window.print(); });
   function renderAnalisis(){
     if(!document.getElementById("kpiAnio")) return;
+    renderResumen();
     renderKpiAnio();
     renderKpiTemas();
     renderKpiExptes();
