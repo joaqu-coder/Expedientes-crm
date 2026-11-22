@@ -110,6 +110,28 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 .view-empty{font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);color:var(--muted)}
 .view-actions{display:flex;gap:8px;margin-top:16px}
 
+/* ---- Pestañas Listado / Análisis (el patrón de Proyectos: .app-tabs de ui-kit) ---- */
+.view[hidden]{display:none}
+/* ---- Análisis: tres KPIs de lectura sobre el archivo (no escriben nada) ---- */
+.kpi-grid{display:grid;grid-template-columns:1fr;gap:12px}
+@media (min-width:860px){.kpi-grid{grid-template-columns:1fr 1fr}}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;min-width:0}
+.kpi-card.wide{grid-column:1 / -1}
+.kpi-title{font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.kpi-hint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.4;font-variant-numeric:tabular-nums}
+.kpi-hint select{margin-left:6px;background:var(--surface-2);border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:6px 8px;font-size:13px}
+.kpi-rows{display:flex;flex-direction:column;gap:9px;margin-top:12px}
+.kpi-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;font-size:12.5px}
+.kpi-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kpi-val{font-weight:600;font-variant-numeric:tabular-nums}
+.kpi-bar{grid-column:1 / -1;height:7px;background:var(--surface-2);border-radius:999px;overflow:hidden}
+.kpi-bar span{display:block;height:100%;background:var(--accent);border-radius:999px}
+.kpi-cols{display:flex;align-items:flex-end;gap:5px;margin-top:14px}
+.kpi-col{display:flex;flex-direction:column;align-items:center;flex:1 1 0;min-width:0}
+.kpi-col-area{height:110px;width:100%;display:flex;align-items:flex-end}
+.kpi-col-bar{display:block;width:100%;min-height:2px;background:var(--accent);border-radius:5px 5px 0 0}
+.kpi-col-val{font-size:10.5px;font-weight:600;font-variant-numeric:tabular-nums;margin-bottom:3px}
+.kpi-col-lbl{font-size:10.5px;color:var(--muted);margin-top:5px;font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
@@ -119,6 +141,11 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 
 <!-- La búsqueda va directo debajo del título, fuera de la tarjeta de filtros:
      mismo orden que las otras apps (título → búsqueda → contenido). -->
+<div class="app-tabs" role="tablist" aria-label="Vistas">
+  <button class="app-tab tab" id="tabList" role="tab" aria-selected="true" aria-controls="viewList">Listado</button>
+  <button class="app-tab tab" id="tabDash" role="tab" aria-selected="false" aria-controls="viewDash">Análisis</button>
+</div>
+<section class="view" id="viewList" role="tabpanel" aria-labelledby="tabList">
 <div class="toolbar-search">
   <div class="search-bar"><input type="search" id="search" placeholder="Buscar por N° de resolución, expediente, autoridad o texto de la resolución…"></div>
 </div>
@@ -132,6 +159,26 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 <div class="res-count" id="resCount"></div>
 <div class="res-list" id="resList"></div>
 <div class="res-more" id="resMore"></div>
+</section>
+<section class="view" id="viewDash" role="tabpanel" aria-labelledby="tabDash" hidden>
+  <div class="kpi-grid">
+    <div class="kpi-card wide">
+      <div class="kpi-title">Resoluciones por año</div>
+      <div class="kpi-hint" id="kpiAnioTotal"></div>
+      <div class="kpi-cols" id="kpiAnio" data-kpi="anio"></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">Temas principales</div>
+      <div class="kpi-hint"><label>Año <select id="kpiTemaAnio"><option value="">Todos los años</option></select></label></div>
+      <div class="kpi-rows" id="kpiTema" data-kpi="tema"></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">Expedientes con más resoluciones</div>
+      <div class="kpi-hint" id="kpiExpteResumen"></div>
+      <div class="kpi-rows" id="kpiExpte" data-kpi="expte"></div>
+    </div>
+  </div>
+</section>
 
 <div class="veil" id="veil" hidden><div class="modal" id="modal"></div></div>
 
@@ -371,6 +418,9 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 
   // ---- Listado (tarjetas) ----
   function renderList(){
+    // Todo cambio de datos pasa por acá (alta, edición, baja, descarga del
+    // servidor, filtros), así que el análisis se recalcula en el mismo lugar.
+    renderAnalisis();
     var cont = document.getElementById("resList");
     var cuenta = document.getElementById("resCount");
     var mas = document.getElementById("resMore");
@@ -553,6 +603,112 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   }
 
 
+  // ---- Pestañas: Listado / Análisis (mismo patrón que Proyectos) ----
+  var tabList = document.getElementById("tabList"), tabDash = document.getElementById("tabDash");
+  var viewList = document.getElementById("viewList"), viewDash = document.getElementById("viewDash");
+  function showView(name){
+    var isDash = name === "analisis";
+    viewList.hidden = isDash; viewDash.hidden = !isDash;
+    tabList.classList.toggle("active", !isDash); tabDash.classList.toggle("active", isDash);
+    tabList.setAttribute("aria-selected", String(!isDash)); tabDash.setAttribute("aria-selected", String(isDash));
+    // El hash refleja la pestaña, así que recargar o volver con «atrás» queda
+    // en la misma. El hashchange que dispara vuelve a llamar acá, sin efecto.
+    if(isDash ? location.hash !== "#analisis" : location.hash === "#analisis")
+      location.hash = isDash ? "#analisis" : "#listado";
+  }
+  tabList.addEventListener("click", function(){ showView("listado"); });
+  tabDash.addEventListener("click", function(){ showView("analisis"); });
+  window.addEventListener("hashchange", function(){
+    showView(location.hash === "#analisis" ? "analisis" : "listado");
+  });
+
+  // ---- Análisis: tres KPIs de lectura sobre el archivo ----
+  // Solo leen state.resoluciones: no escriben nada. Se recalculan desde
+  // renderList(); el único estado propio es el año del ranking de temas.
+  var kpiAnioTema = "";
+  var TOP_N = 10;
+  function conteoPor(arr, fn){
+    var o = {};
+    arr.forEach(function(r){ var k = fn(r); if(k) o[k] = (o[k] || 0) + 1; });
+    return o;
+  }
+  // Ranking de mayor a menor. Empates: orden alfabético, para que el mismo
+  // archivo siempre dé la misma lista.
+  function rankear(o){
+    return Object.keys(o).map(function(k){ return { clave: k, n: o[k] }; })
+      .sort(function(a, b){
+        if(b.n !== a.n) return b.n - a.n;
+        return a.clave < b.clave ? -1 : a.clave > b.clave ? 1 : 0;
+      })
+      .slice(0, TOP_N);
+  }
+  function filaBarra(clave, etiqueta, n, max){
+    return '<div class="kpi-row" data-clave="'+esc(clave)+'" data-n="'+n+'">'+
+      '<span class="kpi-label" title="'+esc(etiqueta)+'">'+esc(etiqueta)+'</span>'+
+      '<span class="kpi-val">'+n+'</span>'+
+      '<span class="kpi-bar"><span style="width:'+Math.round(n/max*100)+'%"></span></span>'+
+    '</div>';
+  }
+  function renderAnalisis(){
+    if(!document.getElementById("kpiAnio")) return;
+    renderKpiAnio();
+    renderKpiTemas();
+    renderKpiExptes();
+  }
+  function renderKpiAnio(){
+    var res = state.resoluciones;
+    var porAnio = conteoPor(res, function(r){ return r.anio; });
+    var anios = Object.keys(porAnio).sort();
+    var max = anios.reduce(function(m, a){ return Math.max(m, porAnio[a]); }, 0) || 1;
+    var ultimo = anios[anios.length - 1];
+    document.getElementById("kpiAnioTotal").textContent = !res.length ? "Sin resoluciones cargadas"
+      : res.length+" resoluciones en "+anios.length+" años · último año "+ultimo+": "+porAnio[ultimo];
+    document.getElementById("kpiAnio").innerHTML = anios.map(function(a){
+      var n = porAnio[a], h = Math.max(2, Math.round(n/max*100));
+      // El año va como ’NN en la barra (cabe en 390px) y completo en el tooltip.
+      return '<div class="kpi-row kpi-col" data-clave="'+esc(a)+'" data-n="'+n+'" title="'+esc(a)+': '+n+'">'+
+        '<span class="kpi-col-val">'+n+'</span>'+
+        '<span class="kpi-col-area"><span class="kpi-col-bar" style="height:'+h+'px"></span></span>'+
+        '<span class="kpi-col-lbl">’'+esc(a.slice(-2))+'</span>'+
+      '</div>';
+    }).join("");
+  }
+  function renderKpiTemas(){
+    var selAnio = document.getElementById("kpiTemaAnio");
+    var anios = Array.from(new Set(state.resoluciones.map(function(r){ return r.anio; }).filter(Boolean))).sort().reverse();
+    if(kpiAnioTema && anios.indexOf(kpiAnioTema) === -1) kpiAnioTema = "";
+    selAnio.innerHTML = '<option value="">Todos los años</option>'+
+      anios.map(function(a){ return '<option value="'+esc(a)+'">'+esc(a)+'</option>'; }).join("");
+    selAnio.value = kpiAnioTema;
+    var base = state.resoluciones.filter(function(r){ return !kpiAnioTema || r.anio === kpiAnioTema; });
+    var ranking = rankear(conteoPor(base, function(r){ return r.tema; }));
+    document.getElementById("kpiTema").innerHTML = ranking.length
+      ? ranking.map(function(f){ return filaBarra(f.clave, f.clave, f.n, ranking[0].n); }).join("")
+      : '<div class="empty-state">Sin resoluciones en este año.</div>';
+  }
+  // «Sn expediente» (109) y «Falta» (15) son marcadores del archivo, no un
+  // número de expediente: si entraran al ranking, el primero sería un
+  // placeholder. Se cuentan aparte, para que el total no parezca completo.
+  function esMarcadorExpte(e){ return /^(sn\b|s\/n|falta$)/i.test(e); }
+  function renderKpiExptes(){
+    var todas = state.resoluciones.length;
+    var conExpte = state.resoluciones.filter(function(r){ return r.nro_expediente && !esMarcadorExpte(r.nro_expediente); });
+    var porExpte = conteoPor(conExpte, function(r){ return r.nro_expediente; });
+    var distintos = Object.keys(porExpte).length;
+    var sin = todas - conExpte.length;
+    document.getElementById("kpiExpteResumen").textContent = !distintos ? ""
+      : distintos+" expedientes distintos · promedio de "+(conExpte.length/distintos).toFixed(1).replace(".", ",")+
+        " resoluciones por expediente · "+sin+" sin expediente identificado";
+    var ranking = rankear(porExpte);
+    document.getElementById("kpiExpte").innerHTML = ranking.length
+      ? ranking.map(function(f){ return filaBarra(f.clave, "Expte. "+f.clave, f.n, ranking[0].n); }).join("")
+      : '<div class="empty-state">Ninguna resolución tiene expediente.</div>';
+  }
+  document.getElementById("kpiTemaAnio").addEventListener("change", function(){
+    kpiAnioTema = this.value;
+    renderKpiTemas();
+  });
+
   // Header común a las 4 apps (título + ⋮) y botón flotante de alta.
   HeaderGlobal.init({
     titulo: "Resoluciones",
@@ -564,6 +720,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 
   renderFiltros();
   renderList();
+  showView(location.hash === "#analisis" ? "analisis" : "listado");
   bajarCambiosIniciales();
 
   window.addEventListener("online", function(){

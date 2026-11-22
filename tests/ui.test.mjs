@@ -1388,6 +1388,80 @@ async function testResoluciones(viewport, puerto) {
   await page.fill('#search', '');
   await page.waitForTimeout(150);
 
+  // ---- Análisis: tres KPIs en su propia pestaña, como en Proyectos ----
+  // Los valores esperados se calculan acá desde resoluciones.json, no se
+  // hardcodean: si el archivo crece, el test sigue siendo el mismo.
+  const conteo = (arr, fn) => arr.reduce((o, r) => {
+    const k = fn(r);
+    if (k) o[k] = (o[k] || 0) + 1;
+    return o;
+  }, {});
+  const maxDe = (o) => Math.max(...Object.values(o));
+  const claveMax = (o) => Object.keys(o).find((k) => o[k] === maxDe(o));
+  const porAnio = conteo(datos.resoluciones, (r) => r.anio);
+  const porTema = conteo(datos.resoluciones, (r) => r.tema);
+  // «Sn expediente» (109) y «Falta» (15) son marcadores del archivo, no
+  // expedientes: contarlos hacía que el primero del ranking fuera un
+  // placeholder. Se excluyen igual que en la app.
+  const esMarcador = (e) => /^(sn\b|s\/n|falta$)/i.test(e);
+  const sinExpte = datos.resoluciones.filter((r) => !r.nro_expediente || esMarcador(r.nro_expediente)).length;
+  const porExpte = conteo(datos.resoluciones, (r) => (esMarcador(r.nro_expediente) ? null : r.nro_expediente));
+  const temaAnio2016 = conteo(datos.resoluciones.filter((r) => r.anio === '2016'), (r) => r.tema);
+
+  await page.click('#tabDash');
+  await page.waitForSelector('#viewDash:not([hidden])');
+  ok(await page.locator('#viewList').isHidden(), 'la pestaña Análisis oculta el listado');
+  ok(page.url().includes('#analisis'), 'la pestaña Análisis queda en el hash (#analisis)');
+
+  const desbordeX = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  ok(desbordeX <= 0, `Análisis no desborda en horizontal (${desbordeX}px de más)`);
+
+  // KPI 1: resoluciones por año. Una barra por año, y cada una con su cantidad.
+  const filasAnio = page.locator('[data-kpi="anio"] .kpi-row');
+  ok((await filasAnio.count()) === Object.keys(porAnio).length,
+     `el gráfico por año tiene una barra por año (${Object.keys(porAnio).length})`);
+  const malAnio = await filasAnio.evaluateAll((els, esp) =>
+    els.filter((e) => esp[e.dataset.clave] !== Number(e.dataset.n)).map((e) => e.dataset.clave), porAnio);
+  ok(malAnio.length === 0, `cada año muestra su cantidad exacta${malAnio.length ? ': mal en ' + malAnio.join(',') : ''}`);
+  ok((await page.locator('#kpiAnioTotal').textContent()).includes(String(total)),
+     'el KPI por año muestra el total del archivo');
+
+  // KPI 2: temas. Ranking de los 10 principales, y el selector de año lo recorta.
+  const filasTema = page.locator('[data-kpi="tema"] .kpi-row');
+  ok((await filasTema.count()) === 10, 'el ranking de temas muestra los 10 principales');
+  const temaTop = claveMax(porTema);
+  ok((await filasTema.first().getAttribute('data-clave')) === temaTop &&
+     Number(await filasTema.first().getAttribute('data-n')) === maxDe(porTema),
+     `el tema principal es "${temaTop}" (${maxDe(porTema)})`);
+  await page.selectOption('#kpiTemaAnio', '2016');
+  await page.waitForTimeout(100);
+  ok((await filasTema.first().getAttribute('data-clave')) === claveMax(temaAnio2016) &&
+     Number(await filasTema.first().getAttribute('data-n')) === maxDe(temaAnio2016),
+     `con año 2016 el tema principal es "${claveMax(temaAnio2016)}" (${maxDe(temaAnio2016)})`);
+  await page.selectOption('#kpiTemaAnio', '');
+
+  // KPI 3: expedientes con más resoluciones. Orden descendente, máximo 10.
+  const filasExp = page.locator('[data-kpi="expte"] .kpi-row');
+  ok((await filasExp.count()) === 10, 'el ranking de expedientes muestra los 10 principales');
+  const expTop = claveMax(porExpte);
+  ok((await filasExp.first().getAttribute('data-clave')) === expTop &&
+     Number(await filasExp.first().getAttribute('data-n')) === maxDe(porExpte),
+     `el expediente con más resoluciones es ${expTop} (${maxDe(porExpte)})`);
+  const ordenados = await filasExp.evaluateAll((els) => els.map((e) => Number(e.dataset.n)))
+    .then((ns) => ns.every((n, i) => i === 0 || ns[i - 1] >= n));
+  ok(ordenados, 'los expedientes salen de mayor a menor');
+  const resumenExp = await page.locator('#kpiExpteResumen').textContent();
+  ok(resumenExp.includes(String(Object.keys(porExpte).length)),
+     `el resumen dice cuántos expedientes distintos hay (${Object.keys(porExpte).length})`);
+  ok(resumenExp.includes(String(sinExpte)) && /sin expediente/.test(resumenExp),
+     `el resumen aparte cuenta las ${sinExpte} resoluciones sin expediente identificado`);
+  ok(!/^(sn|falta)/i.test(expTop), 'un marcador (Sn/Falta) nunca llega al ranking de expedientes');
+
+  await page.click('#tabList');
+  await page.waitForSelector('#viewList:not([hidden])');
+  ok(await page.locator('#viewDash').isHidden(), 'volver a Listado oculta el análisis');
+  ok((await page.locator('.res-card').count()) > 0, 'el listado vuelve con sus tarjetas');
+
   // Ficha: el contenido es el dato principal de una resolución.
   await page.locator('.res-card').first().click();
   await page.waitForSelector('.view-texto');
