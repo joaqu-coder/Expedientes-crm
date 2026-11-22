@@ -218,6 +218,16 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 .barra-fill{height:100%;border-radius:4px}
 .barra-val{flex:0 0 auto;font-variant-numeric:tabular-nums;color:var(--muted)}
 
+/* Imprimir (menú ⋮ o Ctrl+P): sale solo la pantalla con su contenido, sin
+   navegación, buscador ni el botón de alta. */
+@media print{
+  body *{visibility:hidden}
+  #viewEmpresas, #viewComercial, #viewEmpresas *, #viewComercial *{visibility:visible}
+  #viewEmpresas[hidden], #viewComercial[hidden]{display:none !important}
+  #viewEmpresas, #viewComercial{position:absolute;left:0;top:0;width:100%;padding:0;margin:0}
+  .app-tabs,.parque-switch,[data-buscador],.bottom-nav,.veil,#fabNuevo,.app-header,.header-global{display:none !important}
+  .emp-card,.lote-card,tr{break-inside:avoid}
+}
 </style>
 </head>
 <body>
@@ -2217,6 +2227,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     titulo: "Parques",
     accion: { etiqueta: "Nuevo lote", onClick: function(){ openModal("lote", null); } },
     menu: [
+      { etiqueta: "Imprimir...", icono: "imprimir", atajo: "Ctrl+P", onClick: function(){ window.print(); } },
       { etiqueta: "Actualizar datos", onClick: function(){ bajarCambiosIniciales(); } }
     ]
   });
