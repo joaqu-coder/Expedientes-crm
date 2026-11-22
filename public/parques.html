@@ -227,7 +227,13 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   #viewEmpresas, #viewComercial{position:absolute;left:0;top:0;width:100%;padding:0;margin:0}
   .app-tabs,.parque-switch,[data-buscador],.bottom-nav,.veil,#fabNuevo,.app-header,.header-global{display:none !important}
   .emp-card,.lote-card,tr{break-inside:avoid}
+  /* Ficha de empresa abierta: sale empresa + lotes + contacto, nada más. */
+  body.imprimiendo-empresa > *:not(#printEmpresa){display:none !important}
+  body.imprimiendo-empresa #printEmpresa{display:block !important}
+  body.imprimiendo-empresa #printEmpresa, body.imprimiendo-empresa #printEmpresa *{visibility:visible}
+  #printEmpresa h2{font-size:14pt;margin:14pt 0 6pt;border-bottom:1px solid #999}
 }
+#printEmpresa{display:none}
 </style>
 </head>
 <body>
@@ -309,6 +315,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   </div>
 </section>
 
+<div id="printEmpresa" aria-hidden="true"></div>
 <div class="veil" id="veil" hidden><div class="modal" id="modal"></div></div>
 
 <script src="/header.js"></script>
@@ -2003,6 +2010,43 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     });
   }
 
+  // Imprimir con una empresa abierta (vista): empresa, lotes y contacto,
+  // las tres pestañas, sin importar cuál esté activa. Sin empresa abierta
+  // imprime la pantalla tal como está.
+  function imprimirFicha(){
+    var abierta = state.editingTipo==="empresa" && state.modalMode==="view" && !veil.hidden;
+    var e = abierta ? empresaPorId(state.editingId) : null;
+    if(!e){ window.print(); return; }
+    var tabOriginal = state.empresaSubTab;
+    var secciones = ["empresa","lote","contacto"].map(function(t){
+      state.empresaSubTab = t;
+      renderEmpresaView(e);
+      var titulo = t==="empresa" ? "Empresa" : (t==="lote" ? "Lotes" : "Contacto");
+      return '<section><h2>'+titulo+'</h2>'+document.getElementById("empSubpanel").innerHTML+'</section>';
+    });
+    var cabecera = modal.querySelector(".view-head").innerHTML;
+    state.empresaSubTab = tabOriginal;
+    renderEmpresaView(e);
+    document.getElementById("printEmpresa").innerHTML = '<div class="view-head">'+cabecera+'</div>'+secciones.join("");
+    document.body.classList.add("imprimiendo-empresa");
+    window.addEventListener("afterprint", function limpiar(){
+      document.body.classList.remove("imprimiendo-empresa");
+      window.removeEventListener("afterprint", limpiar);
+    });
+    window.print();
+    // window.print() vuelve cuando cierra el diálogo; si el navegador no
+    // dispara afterprint, la clase no debe quedar puesta.
+    document.body.classList.remove("imprimiendo-empresa");
+  }
+  // Ctrl+P / ⌘P hacen lo mismo que el menú ⋮ (si no, el navegador imprime
+  // la pantalla entera, con la ficha tapada).
+  document.addEventListener("keydown", function(ev){
+    if((ev.ctrlKey||ev.metaKey) && !ev.shiftKey && !ev.altKey && (ev.key==="p"||ev.key==="P")){
+      ev.preventDefault();
+      imprimirFicha();
+    }
+  });
+
   function renderEmpresaEdit(e){
     var isNew = !e;
     modal.innerHTML =
@@ -2227,7 +2271,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     titulo: "Parques",
     accion: { etiqueta: "Nuevo lote", onClick: function(){ openModal("lote", null); } },
     menu: [
-      { etiqueta: "Imprimir...", icono: "imprimir", atajo: "Ctrl+P", onClick: function(){ window.print(); } },
+      { etiqueta: "Imprimir...", icono: "imprimir", atajo: "Ctrl+P", onClick: imprimirFicha },
       { etiqueta: "Actualizar datos", onClick: function(){ bajarCambiosIniciales(); } }
     ]
   });
