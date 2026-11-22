@@ -783,7 +783,10 @@ async function testPlazosYTarjetas() {
   ok(punto && punto.ancho === 8 && punto.fondo === punto.color, `el plazo lleva un punto de 8px del color del texto (${JSON.stringify(punto)})`);
   ok(punto && punto.dy < 2, 'el punto queda centrado con el texto del plazo');
   ok(await cards.first().locator('.expediente-header-urgencia.rojo').count() === 1, 'el vencido es rojo');
-  ok(/Vence:\s*\w+ \d\d\/\d\d\/2099/.test(await cards.nth(1).textContent()), 'la tarjeta muestra la fecha de vencimiento');
+  // La fecha de vencimiento está en el cuerpo, que se arma al abrir la tarjeta
+  // (perf: no se pinta el cuerpo de las colapsadas). Se abre antes de leerla.
+  await cards.nth(1).locator('.expediente-header-urgencia').click();
+  ok(/Vence:\s*\w+ \d\d\/\d\d\/2099/.test(await cards.nth(1).textContent()), 'la tarjeta muestra la fecha de vencimiento al abrirla');
   // El contador va pegado al nombre y SIN paréntesis ("Total 3"), igual que
   // en Parques y Proyectos — el paréntesis se sacó a pedido del usuario.
   ok(/^Total\s*3$/.test((await page.locator('.area-btn').first().textContent()).trim()), 'Total cuenta solo los activos (3), no el archivado, y sin paréntesis');

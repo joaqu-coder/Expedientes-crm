@@ -2300,6 +2300,39 @@
       renderizar();
     }
 
+    // Cuerpo de una tarjeta (fechas, notas, acciones). Se arma solo al abrirla:
+    // pintar todo el contenido de cada tarjeta colapsada era el grueso del
+    // tiempo de cambiar de pestaña.
+    function cuerpoTarjeta(exp, plazo, archivado) {
+      const notas = exp.intervenciones || [];
+      return `
+              <div class="expediente-expanded-dates">
+                <div><span class="label">Área responsable:</span><span>${esc(exp.area)}</span></div>
+                <div><span class="label">Agente:</span><span>${esc(exp.responsable)}</span></div>
+                <div><span class="label">Inicio:</span><span>${esc(formatearFechaCorta(parsearFecha(exp.fechaInicio)))}</span></div>
+                ${archivado && exp.motivoFinal ? `<div><span class="label">Motivo:</span><span>${esc(exp.motivoFinal)}</span></div>` : ''}
+                ${archivado ? '' : `<div><span class="label">Vence:</span><span>${esc(formatearFechaCorta(plazo.fechaFin))}</span></div>`}
+              </div>
+
+              <div class="notas-seccion">
+                <div class="notas-header">Notas${notas.length ? ` (${notas.length})` : ''}</div>
+                ${notas.length ? `<div class="notas-list">${notas.map(i => `
+                  <div class="nota-item">
+                    <span class="nota-hora">${esc(i.hora)}</span>
+                    <div class="nota-texto">${esc(i.texto)}</div>
+                  </div>`).join('')}</div>` : '<div class="notas-empty">Sin notas aún</div>'}
+              </div>
+
+              <div class="expediente-actions">
+                ${archivado
+                  ? `<button class="btn btn-secondary btn-grow" data-id="${esc(exp.id)}" onclick="reabrirExpediente(this.dataset.id)">${HeaderGlobal.icono('reabrir')} Reabrir</button>`
+                  : `<button class="btn btn-outline btn-grow" data-id="${esc(exp.id)}" onclick="archivarExpediente(this.dataset.id)">${HeaderGlobal.icono('archivar')} Archivar</button>`
+                }
+                <button class="btn btn-outline btn-grow" data-id="${esc(exp.id)}" onclick="abrirEditar(this.dataset.id)">${HeaderGlobal.icono('editar')} Editar</button>
+              </div>
+      `;
+    }
+
     function renderizar() {
       renderizarConfigAreas();
       renderizarConfigResponsables();
@@ -2366,31 +2399,7 @@
               </span>
             </button>
 
-            <div id="${esc(expandId)}" class="expediente-expanded-content${abierto ? ' expanded' : ''}">
-              <div class="expediente-expanded-dates">
-                <div><span class="label">Área responsable:</span><span>${esc(exp.area)}</span></div>
-                <div><span class="label">Agente:</span><span>${esc(exp.responsable)}</span></div>
-                <div><span class="label">Inicio:</span><span>${esc(formatearFechaCorta(parsearFecha(exp.fechaInicio)))}</span></div>
-                ${archivado && exp.motivoFinal ? `<div><span class="label">Motivo:</span><span>${esc(exp.motivoFinal)}</span></div>` : ''}
-                ${archivado ? '' : `<div><span class="label">Vence:</span><span>${esc(formatearFechaCorta(plazo.fechaFin))}</span></div>`}
-              </div>
-
-              <div class="notas-seccion">
-                <div class="notas-header">Notas${notas.length ? ` (${notas.length})` : ''}</div>
-                ${notas.length ? `<div class="notas-list">${notas.map(i => `
-                  <div class="nota-item">
-                    <span class="nota-hora">${esc(i.hora)}</span>
-                    <div class="nota-texto">${esc(i.texto)}</div>
-                  </div>`).join('')}</div>` : '<div class="notas-empty">Sin notas aún</div>'}
-              </div>
-
-              <div class="expediente-actions">
-                ${archivado
-                  ? `<button class="btn btn-secondary btn-grow" data-id="${esc(exp.id)}" onclick="reabrirExpediente(this.dataset.id)">${HeaderGlobal.icono('reabrir')} Reabrir</button>`
-                  : `<button class="btn btn-outline btn-grow" data-id="${esc(exp.id)}" onclick="archivarExpediente(this.dataset.id)">${HeaderGlobal.icono('archivar')} Archivar</button>`
-                }
-                <button class="btn btn-outline btn-grow" data-id="${esc(exp.id)}" onclick="abrirEditar(this.dataset.id)">${HeaderGlobal.icono('editar')} Editar</button>
-              </div>
+            <div id="${esc(expandId)}" class="expediente-expanded-content${abierto ? ' expanded' : ''}">${abierto ? cuerpoTarjeta(exp, plazo, archivado) : ''}
             </div>
           </div>
         `;
@@ -2507,7 +2516,12 @@
       const id = btn.closest('.expediente-card-new').dataset.id;
       if (abierto) expandidos.delete(id); else expandidos.add(id);
       btn.setAttribute('aria-expanded', String(!abierto));
-      document.getElementById(btn.dataset.target).classList.toggle('expanded', !abierto);
+      const panel = document.getElementById(btn.dataset.target);
+      if (!abierto && !panel.innerHTML.trim()) {
+        const exp = expedientes.find(e => e.id === id);
+        if (exp) panel.innerHTML = cuerpoTarjeta(exp, calcularPlazo(exp.fechaInicio, exp.diasPlazo), pestanaActiva === 'archivados');
+      }
+      panel.classList.toggle('expanded', !abierto);
     }
 
     function mensajeVacio() {
