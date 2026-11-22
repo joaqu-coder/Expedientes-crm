@@ -1486,11 +1486,29 @@ async function testResoluciones(viewport, puerto) {
   const ordFirm = await filasFirm.evaluateAll((els) => els.map((e) => Number(e.dataset.n)))
     .then((ns) => ns.every((n, i) => i === 0 || ns[i - 1] >= n));
   ok(ordFirm, 'los firmantes salen de mayor a menor cantidad');
-  const botonImp = page.locator('#resImprimir');
-  ok((await botonImp.count()) === 1, 'el análisis tiene un botón para imprimir el resumen');
+  // La impresión vive en el menú ⋮ (con su icono y el atajo Ctrl+P), no en la página.
+  ok((await page.locator('#resImprimir').count()) === 0, 'no hay un botón Imprimir suelto en la página');
   await page.evaluate(() => { window.__printed = 0; window.print = function(){ window.__printed++; }; });
-  await botonImp.click();
-  ok((await page.evaluate(() => window.__printed)) === 1, 'el botón Imprimir llama a window.print una vez');
+  await page.click('#menuBtn, .app-header__menu');
+  await page.waitForSelector('.app-menu__item:has-text("Imprimir")');
+  const atajoImp = await page.evaluate(() => {
+    const b = [...document.querySelectorAll('.app-menu__item')].find((x) => x.textContent.includes('Imprimir'));
+    return b ? (b.querySelector('.app-menu__atajo') || {}).textContent || '' : null;
+  });
+  ok(atajoImp === 'Ctrl+P', `el menú ⋮ tiene Imprimir con el atajo Ctrl+P (${atajoImp})`);
+  await page.click('.app-menu__item:has-text("Imprimir")');
+  ok((await page.evaluate(() => window.__printed)) === 1, 'Imprimir desde el menú llama a window.print una vez');
+
+  // Ctrl+P nativo: aunque esté abierto el listado, el papel sale con el análisis.
+  await page.click('#tabList');
+  await page.waitForSelector('#viewList:not([hidden])');
+  await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+  ok(await page.locator('#viewDash').isVisible() && await page.locator('#viewList').isHidden(),
+     'al imprimir (Ctrl+P) en Listado, el papel sale con el análisis');
+  await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+  ok(await page.locator('#viewList').isVisible(), 'al terminar la impresión vuelve el Listado');
+  await page.click('#tabDash');
+  await page.waitForSelector('#viewDash:not([hidden])');
 
   await page.click('#tabList');
   await page.waitForSelector('#viewList:not([hidden])');

@@ -182,7 +182,6 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   <div class="kpi-card wide res-resumen">
     <div class="res-resumen-head">
       <div class="kpi-title">Resumen del archivo</div>
-      <button type="button" class="btn btn-outline" id="resImprimir">Imprimir</button>
     </div>
     <div class="kpi-tiles">
       <div class="kpi-tile"><div class="kpi-num" id="resTotal">0</div><div class="kpi-lbl">Resoluciones</div></div>
@@ -731,7 +730,18 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
         }).join("")
       : '<div class="empty-state">Sin resoluciones cargadas.</div>';
   }
-  document.getElementById("resImprimir").addEventListener("click", function(){ window.print(); });
+  // Imprimir (menú ⋮ o Ctrl+P) siempre saca el análisis: si está abierto el
+  // listado, se muestra el análisis mientras dura la impresión y después se
+  // vuelve a la pestaña que había.
+  var vistaAntesDeImprimir = null;
+  window.addEventListener("beforeprint", function(){
+    vistaAntesDeImprimir = viewDash.hidden ? "listado" : "analisis";
+    showView("analisis");
+  });
+  window.addEventListener("afterprint", function(){
+    if(vistaAntesDeImprimir) showView(vistaAntesDeImprimir);
+    vistaAntesDeImprimir = null;
+  });
   function renderAnalisis(){
     if(!document.getElementById("kpiAnio")) return;
     renderResumen();
@@ -798,6 +808,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     titulo: "Resoluciones",
     accion: { etiqueta: "Nueva resolución", onClick: function(){ openModal(null); } },
     menu: [
+      { etiqueta: "Imprimir...", icono: "imprimir", atajo: "Ctrl+P", onClick: function(){ window.print(); } },
       { etiqueta: "Actualizar datos", onClick: function(){ bajarCambiosIniciales(); } }
     ]
   });
