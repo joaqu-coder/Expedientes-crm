@@ -60,7 +60,8 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 .toolbar-filters select{flex:1 1 160px}
 
 /* ---- Listado de tarjetas ---- */
-.res-list{display:flex;flex-direction:column;gap:8px}
+.res-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (min-width:860px){.res-list{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}}
 .res-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;cursor:pointer;text-align:left;width:100%}
 .res-card:hover{border-color:var(--accent)}
 .res-card-main{min-width:0}
