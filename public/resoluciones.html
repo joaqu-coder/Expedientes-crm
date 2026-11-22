@@ -205,11 +205,6 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
       <div class="kpi-hint"><label>Año <select id="kpiTemaAnio"><option value="">Todos los años</option></select></label></div>
       <div class="kpi-rows" id="kpiTema" data-kpi="tema"></div>
     </div>
-    <div class="kpi-card">
-      <div class="kpi-title">Expedientes con más resoluciones</div>
-      <div class="kpi-hint" id="kpiExpteResumen"></div>
-      <div class="kpi-rows" id="kpiExpte" data-kpi="expte"></div>
-    </div>
   </div>
 </section>
 
@@ -747,7 +742,6 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     renderResumen();
     renderKpiAnio();
     renderKpiTemas();
-    renderKpiExptes();
   }
   function renderKpiAnio(){
     var res = state.resoluciones;
@@ -781,23 +775,8 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
       : '<div class="empty-state">Sin resoluciones en este año.</div>';
   }
   // «Sn expediente» (109) y «Falta» (15) son marcadores del archivo, no un
-  // número de expediente: si entraran al ranking, el primero sería un
-  // placeholder. Se cuentan aparte, para que el total no parezca completo.
+  // número de expediente: no cuentan como expediente distinto.
   function esMarcadorExpte(e){ return /^(sn\b|s\/n|falta$)/i.test(e); }
-  function renderKpiExptes(){
-    var todas = state.resoluciones.length;
-    var conExpte = state.resoluciones.filter(function(r){ return r.nro_expediente && !esMarcadorExpte(r.nro_expediente); });
-    var porExpte = conteoPor(conExpte, function(r){ return r.nro_expediente; });
-    var distintos = Object.keys(porExpte).length;
-    var sin = todas - conExpte.length;
-    document.getElementById("kpiExpteResumen").textContent = !distintos ? ""
-      : distintos+" expedientes distintos · promedio de "+(conExpte.length/distintos).toFixed(1).replace(".", ",")+
-        " resoluciones por expediente · "+sin+" sin expediente identificado";
-    var ranking = rankear(porExpte);
-    document.getElementById("kpiExpte").innerHTML = ranking.length
-      ? ranking.map(function(f){ return filaBarra(f.clave, "Expte. "+f.clave, f.n, ranking[0].n); }).join("")
-      : '<div class="empty-state">Ninguna resolución tiene expediente.</div>';
-  }
   document.getElementById("kpiTemaAnio").addEventListener("change", function(){
     kpiAnioTema = this.value;
     renderKpiTemas();
