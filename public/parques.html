@@ -1767,7 +1767,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
         '<div class="row2">'+field("manzana","Manzana","text",l,"9")+field("parcela","Parcela","text",l,"11")+'</div>'+
         '<div class="row2">'+field("superficie_m2","Superficie (m²)","number",l,"3000")+field("matricula","Matrícula","text",l,"12041")+'</div>'+
         '<div class="field"><label for="f_id_empresa">Empresa titular</label><select id="f_id_empresa" name="id_empresa">'+empresasOpts+'</select></div>'+
-        field("propietario_matricula","Propietario de la matrícula","text",l,"Ente General de Parques...")+
+        field("propietario_matricula","Propietario de la matrícula","text",l,"Egpais")+
         '<div class="row2">'+
           '<div class="field"><label for="f_estado">Estado</label><select id="f_estado" name="estado">'+estadoOpts+'</select></div>'+
           field("escritura","Escritura","text",l,"Si / No")+
@@ -1866,7 +1866,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     var e = String(l.escritura||"").trim();
     if(!e) return { siNo:"Sin dato", propiedad: l.propietario_matricula || "—" };
     if(/^s/i.test(e)) return { siNo:"Sí", propiedad: l.propietario_matricula || (empresa&&empresa.nombre_empresa) || "—" };
-    return { siNo:"No", propiedad:"EGPAIS (Ente General de Parques y Áreas Industriales de Salta)" };
+    return { siNo:"No", propiedad:"Egpais" };
   }
 
   function renderEmpresaView(e){
