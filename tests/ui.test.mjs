@@ -1407,7 +1407,6 @@ async function testResoluciones(viewport, puerto) {
   // expedientes: contarlos hacía que el primero del ranking fuera un
   // placeholder. Se excluyen igual que en la app.
   const esMarcador = (e) => /^(sn\b|s\/n|falta$)/i.test(e);
-  const sinExpte = datos.resoluciones.filter((r) => !r.nro_expediente || esMarcador(r.nro_expediente)).length;
   const porExpte = conteo(datos.resoluciones, (r) => (esMarcador(r.nro_expediente) ? null : r.nro_expediente));
   const temaAnio2016 = conteo(datos.resoluciones.filter((r) => r.anio === '2016'), (r) => r.tema);
 
@@ -1443,22 +1442,12 @@ async function testResoluciones(viewport, puerto) {
      `con año 2016 el tema principal es "${claveMax(temaAnio2016)}" (${maxDe(temaAnio2016)})`);
   await page.selectOption('#kpiTemaAnio', '');
 
-  // KPI 3: expedientes con más resoluciones. Orden descendente, máximo 10.
-  const filasExp = page.locator('[data-kpi="expte"] .kpi-row');
-  ok((await filasExp.count()) === 10, 'el ranking de expedientes muestra los 10 principales');
-  const expTop = claveMax(porExpte);
-  ok((await filasExp.first().getAttribute('data-clave')) === expTop &&
-     Number(await filasExp.first().getAttribute('data-n')) === maxDe(porExpte),
-     `el expediente con más resoluciones es ${expTop} (${maxDe(porExpte)})`);
-  const ordenados = await filasExp.evaluateAll((els) => els.map((e) => Number(e.dataset.n)))
-    .then((ns) => ns.every((n, i) => i === 0 || ns[i - 1] >= n));
-  ok(ordenados, 'los expedientes salen de mayor a menor');
-  const resumenExp = await page.locator('#kpiExpteResumen').textContent();
-  ok(resumenExp.includes(String(Object.keys(porExpte).length)),
-     `el resumen dice cuántos expedientes distintos hay (${Object.keys(porExpte).length})`);
-  ok(resumenExp.includes(String(sinExpte)) && /sin expediente/.test(resumenExp),
-     `el resumen aparte cuenta las ${sinExpte} resoluciones sin expediente identificado`);
-  ok(!/^(sn|falta)/i.test(expTop), 'un marcador (Sn/Falta) nunca llega al ranking de expedientes');
+  // La tarjeta «Expedientes con más resoluciones» se quitó del análisis; el
+  // número de expedientes distintos sigue en el resumen de arriba.
+  ok((await page.locator('[data-kpi="expte"]').count()) === 0, 'Expedientes con más resoluciones ya no aparece en el análisis');
+  const expDistintos = Object.keys(porExpte).length;
+  ok((await page.locator('#resExpedientes').textContent()).trim() === String(expDistintos),
+     `el resumen dice cuántos expedientes distintos hay (${expDistintos})`);
 
   // Resumen (arriba del análisis, como el de Proyectos): totales, firmantes y
   // período de cada firmante, y el botón de imprimir.
