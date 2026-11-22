@@ -94,6 +94,14 @@ svg text{font-family:var(--font-body)}
 /* ---- Listado de tarjetas ---- */
 .list-count{font-size:12px;color:var(--muted);margin-bottom:8px;font-variant-numeric:tabular-nums}
 .exp-list{display:flex;flex-direction:column;gap:8px}
+/* Listado principal y Archivo: en celular 2 tarjetas por fila; en desktop,
+   tantas como entren a 280px. Los paneles de detalle del dashboard siguen en
+   columna: ahí el ancho es menor y dos tarjetas quedarían apretadas. */
+#expList,#archivoList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (min-width:860px){#expList,#archivoList{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}}
+/* En una tarjeta angosta el plazo («Vencido hace 684 d háb.») puede pasar a
+   dos líneas en vez de salirse del borde. */
+#expList .exp-plazo,#archivoList .exp-plazo{white-space:normal}
 .exp-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px 12px;cursor:pointer;text-align:left;width:100%;flex-wrap:wrap}
 .exp-card:hover{border-color:var(--accent)}
 .exp-card-main{min-width:0;flex:1 1 190px}

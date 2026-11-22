@@ -2217,6 +2217,53 @@ async function testProyectosValidacionYOrden() {
 // Proyectos: orden de la pantalla, filtros desplegables y configuración del
 // semáforo con Guardar / Cancelar. Pedido del usuario (2026-10-20): el plazo
 // sale del encabezado y vive en Análisis › Urgencias.
+// Las tarjetas de expediente van en grilla: 2 por fila en el celular y tantas
+// como entren en desktop. Se mide por las pistas que calcula el navegador
+// (grid-template-columns), no por el CSS escrito.
+async function testProyectosGrillaTarjetas(viewport, puerto) {
+  console.log(`\n=== PROYECTOS: GRILLA DE TARJETAS (${viewport.width}x${viewport.height}) ===`);
+  const html = fs.readFileSync(path.join(RAIZ, 'public/proyectos.html'), 'utf8');
+  const store = JSON.parse(fs.readFileSync(path.join(RAIZ, 'cartas-intencion.json'), 'utf8'));
+  const server = http.createServer((req, res) => {
+    const json = (obj) => { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
+    if (req.url.startsWith('/api/version-cartas')) return json({ version: 'sha-grilla' });
+    if (req.url.startsWith('/api/sync-cartas')) return json(Object.assign({}, store, { _meta: { existe: true, sha: 'sha-grilla' } }));
+    if (req.url.startsWith('/api/')) return json({});
+    if (servirHeaderJs(req, res)) return;
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(html);
+  });
+  await new Promise((r) => server.listen(puerto, r));
+
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const page = await browser.newPage({ viewport });
+  const problemas = [];
+  page.on('pageerror', (e) => problemas.push('pageerror: ' + e.message));
+  await page.goto(`http://localhost:${puerto}/`, { waitUntil: 'networkidle' });
+  await page.waitForFunction(() => document.querySelectorAll('#expList .exp-card').length > 0);
+
+  const pistas = await page.$eval('#expList', (el) =>
+    getComputedStyle(el).gridTemplateColumns.split(' ').filter(Boolean).length);
+  const esMovil = viewport.width < 600;
+  if (esMovil) {
+    ok(pistas === 2, `en celular las tarjetas van 2 por fila (hay ${pistas} columnas)`);
+  } else {
+    ok(pistas >= 3, `en desktop entran más de 2 por fila (hay ${pistas} columnas)`);
+  }
+
+  // Dos tarjetas en la misma fila: la segunda tiene el mismo top que la primera.
+  const tops = await page.$$eval('#expList .exp-card', (els) => els.slice(0, 3).map((e) => Math.round(e.getBoundingClientRect().top)));
+  const enFila = tops.filter((t) => t === tops[0]).length;
+  ok(enFila === (esMovil ? 2 : Math.min(pistas, 3)),
+     `la primera fila tiene ${esMovil ? 2 : Math.min(pistas, 3)} tarjetas (tiene ${enFila})`);
+
+  const desbordeX = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  ok(desbordeX <= 0, `la grilla no desborda en horizontal (${desbordeX}px de más)`);
+  ok(problemas.length === 0, 'sin errores de JS' + (problemas.length ? ': ' + problemas.join(' | ') : ''));
+  await browser.close();
+  server.close();
+}
+
 async function testProyectosLayoutYFiltros() {
   console.log('\n=== PROYECTOS: ORDEN DE LA PANTALLA, FILTROS Y CONFIGURACIÓN ===');
   const html = fs.readFileSync(path.join(RAIZ, 'public/proyectos.html'), 'utf8');
@@ -4112,6 +4159,8 @@ await testProyectosCargaSolapada();
 await testProyectosArranqueYArchivo();
 await testProyectosValidacionYOrden();
 await testProyectosSalidasYDeshacer();
+await testProyectosGrillaTarjetas({ width: 390, height: 844 }, 8801);
+await testProyectosGrillaTarjetas({ width: 1440, height: 900 }, 8802);
 await testProyectosLayoutYFiltros();
 await testProyectosEscalaFicha({ nombre: 'mobile', ancho: 390, alto: 844 });
 await testProyectosEscalaFicha({ nombre: 'desktop', ancho: 1280, alto: 800 });
