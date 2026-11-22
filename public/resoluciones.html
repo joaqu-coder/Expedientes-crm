@@ -476,12 +476,11 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     }
     var visibles = filtradas.slice(0, state.limite);
     cont.innerHTML = visibles.map(function(r){
-      var sub = [r.fecha, r.nro_expediente?("Expte. "+r.nro_expediente):"", r.autoridad].filter(Boolean).join(" · ");
+      var firma = (r.autoridad || "").trim();
       return '<button class="res-card" data-open="'+esc(r.id)+'">'+
         '<div class="res-card-main">'+
           '<div class="res-card-title">N° '+esc(r.nro_resolucion||"s/n")+(r.anio?('/'+esc(r.anio)):'')+'</div>'+
-          (r.contenido?'<div class="res-card-snippet">'+esc(r.contenido)+'</div>':'')+
-          (sub?'<div class="res-card-sub">'+esc(sub)+'</div>':'')+
+          (firma?'<div class="res-card-sub">'+esc(firma)+'</div>':'')+
         '</div>'+
         '<div class="res-card-aside">'+
           (r.tema?'<span class="badge" style="background:var(--'+claseTema(r.tema)+'-bg);color:var(--'+claseTema(r.tema)+')">'+esc(r.tema)+'</span>':'')+
