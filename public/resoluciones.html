@@ -70,6 +70,9 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 .res-count{font-size:12px;color:var(--muted);margin-bottom:12px;font-variant-numeric:tabular-nums}
 .res-more{display:flex;justify-content:center;margin-top:12px}
 .res-card-aside{flex:0 0 auto;display:flex;align-items:center;gap:6px}
+/* Línea de tema con punto de color, igual que .exp-estado de Proyectos. */
+.res-estado{display:flex;align-items:center;gap:6px;font-size:12px;line-height:16px;font-weight:600;margin-top:6px}
+.res-dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex:0 0 auto}
 @media (max-width:480px){
   .res-card{flex-direction:column;align-items:flex-start}
   .res-card-main{width:100%}
@@ -480,10 +483,8 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
       return '<button class="res-card" data-open="'+esc(r.id)+'">'+
         '<div class="res-card-main">'+
           '<div class="res-card-title">N° '+esc(r.nro_resolucion||"s/n")+(r.anio?('/'+esc(r.anio)):'')+'</div>'+
+          (r.tema?'<div class="res-estado" style="color:var(--'+claseTema(r.tema)+')"><i class="res-dot"></i>'+esc(r.tema)+'</div>':'')+
           (firma?'<div class="res-card-sub">'+esc(firma)+'</div>':'')+
-        '</div>'+
-        '<div class="res-card-aside">'+
-          (r.tema?'<span class="badge" style="background:var(--'+claseTema(r.tema)+'-bg);color:var(--'+claseTema(r.tema)+')">'+esc(r.tema)+'</span>':'')+
         '</div>'+
         '</button>';
     }).join("");
