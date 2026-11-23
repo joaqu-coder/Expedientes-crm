@@ -84,7 +84,13 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
    blanca con borde, porque los logos traen fondo propio y no son círculos. */
 .avatar{flex:0 0 auto;width:36px;height:36px;border-radius:50%;background:var(--c1-bg);color:var(--c1);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:var(--font-display)}
 .avatar.lg{width:44px;height:44px;font-size:15px}
-.logo-empresa{flex:0 0 auto;height:44px;width:auto;max-width:96px;min-width:44px;padding:4px 6px;box-sizing:border-box;background:#fff;border:1px solid var(--border);border-radius:8px;object-fit:contain}
+/* Contenedor del logo (cards y ficha). El <span class="logo-box"> envuelve
+   la imagen; la medida la da la casilla o la ficha, no la imagen. */
+.logo-box{width:100%;aspect-ratio:1;overflow:hidden;background:transparent;display:grid;place-items:center}
+/* scale-down en vez de contain: contain agranda los logos chicos hasta llenar
+   la caja y se pixelan. scale-down los reduce si hace falta y nunca los agranda. */
+.logo-box img{width:100%;height:100%;object-fit:scale-down;padding:8px;filter:grayscale(1) brightness(.88) contrast(1.12)}
+.view-head .logo-box{width:96px;flex:none;aspect-ratio:1}
 
 /* Listado de empresas como grilla de logos (directorio minero): baldosas
    cuadradas, sin borde ni fondo, logos en gris para que se vean parejos. */
@@ -93,10 +99,9 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 .emp-tile{position:relative;background:none;border:0;padding:0;width:100%;aspect-ratio:1;display:grid;place-items:center;cursor:pointer;transition:opacity .15s;min-width:0}
 .emp-tile:hover{opacity:.7}
 .emp-tile:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
-/* Los logos ya vienen normalizados (fondo blanco, misma escala de grises): sin filtro, que oscurecería el blanco. */
-/* Tamaño natural, tope de 72% de la casilla: ningún logo se estira para llenarla
-   (un logo chico o cuadrado se veía gigante al lado de uno ancho). */
-.emp-logo{display:block;width:auto;height:auto;max-width:72%;max-height:72%;margin:auto;background:#fff;border-radius:8px}
+/* Los logos de la grilla usan .logo-box (arriba). El <img> no lleva más medidas
+   propias: object-fit:contain dentro de la caja, con 8px de padding. */
+.emp-logo{display:block;min-width:0;min-height:0}
 .emp-tile-nombre{width:100%;height:100%;display:grid;place-items:center;padding:12px;text-align:center;overflow-wrap:anywhere;font-weight:700;font-size:13.5px;line-height:1.3;color:var(--text)}
 .emp-tile .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 
@@ -232,6 +237,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   body.imprimiendo-empresa #printEmpresa{display:block !important}
   body.imprimiendo-empresa #printEmpresa, body.imprimiendo-empresa #printEmpresa *{visibility:visible}
   #printEmpresa h2{font-size:14pt;margin:14pt 0 6pt;border-bottom:1px solid #999}
+  .logo-box{width:58px;height:58px;aspect-ratio:auto;flex:none;border:1px solid #ddd}
 }
 #printEmpresa{display:none}
 </style>
@@ -1466,7 +1472,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
         '</span>';
       var logo = logoDe(e);
       var contenido = logo
-        ? '<img class="emp-logo" src="'+esc(logo)+'" alt="" loading="lazy">'
+        ? '<span class="logo-box"><img class="emp-logo" src="'+esc(logo)+'" alt="" loading="lazy"></span>'
         : '<span class="emp-tile-nombre" aria-hidden="true">'+esc(e.nombre_empresa)+'</span>';
       return '<button class="emp-tile" data-open-empresa="'+esc(e.id_empresa)+'">'+
         contenido+resumen+
@@ -1977,7 +1983,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
       '<div class="modal-head"><button class="x-close" id="xCloseViewEmp">&times;</button></div>'+
       '<div class="view-head"><div class="tarjeta-row">'+
         (logoDe(e)
-          ? '<img class="logo-empresa" src="'+esc(logoDe(e))+'" alt="Logo de '+esc(e.nombre_empresa)+'">'
+          ? '<span class="logo-box"><img class="logo-empresa" src="'+esc(logoDe(e))+'" alt="Logo de '+esc(e.nombre_empresa)+'"></span>'
           : '<div class="avatar lg">'+esc(iniciales(e.nombre_empresa))+'</div>')+
         '<div><div class="view-title">'+esc(e.nombre_empresa)+'</div>'+
         // La superficie es de los lotes a su nombre. Una empresa que solo
