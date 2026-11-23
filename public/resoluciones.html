@@ -79,7 +79,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 #printArea dl{display:grid;grid-template-columns:max-content 1fr;gap:2pt 10pt;margin:6pt 0;font-size:10.5pt}
 #printArea dt{font-weight:700}
 #printArea dd{margin:0}
-#printArea p{font-size:10.5pt;line-height:1.4;white-space:pre-wrap;margin:4pt 0}
+#printArea p{font-size:10.5pt;line-height:1.4;white-space:pre-wrap;margin:4pt 0;text-align:justify}
 .res-more{display:flex;justify-content:center;margin-top:12px}
 .res-card-aside{flex:0 0 auto;display:flex;align-items:center;gap:6px}
 /* Línea de tema con punto de color, igual que .exp-estado de Proyectos. */
@@ -88,7 +88,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 @media (max-width:480px){
   .res-card{flex-direction:column;align-items:flex-start}
   .res-card-main{width:100%}
-  .res-card-sub{white-space:normal;overflow:visible;text-overflow:clip}
+  .res-card-sub{white-space:normal;overflow:visible;text-overflow:clip;text-align:justify}
 }
 .empty-state{padding:30px 14px;text-align:center;color:var(--muted);font-size:13px;background:var(--surface);border:1px solid var(--border);border-radius:10px}
 
@@ -120,8 +120,8 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 .view-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px 12px}
 .view-item label{display:block;font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);font-weight:700;color:var(--text)}
 .view-item .v{margin-top:1px;font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);font-weight:400;color:var(--muted)}
-.view-obs{font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);margin-top:11px;color:var(--muted);white-space:pre-wrap}
-.view-texto{font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);color:var(--muted);white-space:pre-wrap;margin:0}
+.view-obs{font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);margin-top:11px;color:var(--muted);white-space:pre-wrap;text-align:justify}
+.view-texto{font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);color:var(--muted);white-space:pre-wrap;margin:0;text-align:justify}
 .view-empty{font-size:var(--ds-text-info);line-height:var(--ds-text-info-lh);color:var(--muted)}
 .view-actions{display:flex;gap:8px;margin-top:16px}
 
