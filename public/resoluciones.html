@@ -79,6 +79,7 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 #printArea dl{display:grid;grid-template-columns:max-content 1fr;gap:2pt 10pt;margin:6pt 0;font-size:10.5pt}
 #printArea dt{font-weight:700}
 #printArea dd{margin:0}
+#printArea .print-rotulo{margin:10pt 0 2pt}
 #printArea p{font-size:10.5pt;line-height:1.4;white-space:pre-wrap;margin:4pt 0;text-align:justify}
 .res-more{display:flex;justify-content:center;margin-top:12px}
 .res-card-aside{flex:0 0 auto;display:flex;align-items:center;gap:6px}
@@ -567,12 +568,13 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
     var elegidas = state.resoluciones.filter(function(r){ return state.seleccion.indexOf(r.id) !== -1; });
     if(!elegidas.length) return;
     document.getElementById("printArea").innerHTML = elegidas.map(function(r){
-      return '<section><h2>Nº '+esc(r.nro_resolucion||"s/n")+(r.anio?('/'+esc(r.anio)):'')+(r.tema?' · '+esc(r.tema):'')+'</h2>'+
+      return '<section><h2>Res. Nro° '+esc(r.nro_resolucion||"s/n")+(r.anio?('/'+esc(r.anio)):'')+(r.tema?' · '+esc(r.tema):'')+'</h2>'+
         '<dl>'+
-          fila("Fecha", r.fecha)+
-          fila("Autoridad", r.autoridad)+
-          fila("Expediente", r.nro_expediente)+
+          fila("Fecha:", r.fecha)+
+          fila("Autoridad:", r.autoridad)+
+          fila("Expte:", r.nro_expediente)+
         '</dl>'+
+        '<p class="print-rotulo"><strong>Contenido</strong></p>'+
         (r.contenido ? '<p>'+esc(r.contenido)+'</p>' : '')+
         (r.observaciones ? '<p><strong>Observaciones:</strong> '+esc(r.observaciones)+'</p>' : '')+
         '</section>';
