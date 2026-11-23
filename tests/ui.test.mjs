@@ -2735,16 +2735,10 @@ async function testParques(viewport, puerto) {
     const escala = Math.min(cajaW / nw, cajaH / nh);
     return { id: img.getAttribute('src'), w: nw * escala, h: nh * escala, cw: casilla.width, ch: casilla.height, nw, nh, escala };
   }));
-  // Regla de .logo-box (2026-11-23): la caja ocupa la casilla entera y el logo
-  // se dibuja con object-fit:contain dentro de su padding. Un logo no puede
-  // salirse de la caja (si no, el overflow:hidden lo recorta en silencio).
-  const fuera = medidasLogos.filter((m) => m.w > m.cw || m.h > m.ch);
-  ok(medidasLogos.length > 0 && fuera.length === 0, `ningún logo se sale de su caja (${fuera.length} de ${medidasLogos.length}: ${fuera.slice(0, 3).map((m) => m.id + ' ' + Math.round(m.w) + 'x' + Math.round(m.h) + ' en ' + Math.round(m.cw)).join(' | ')})`);
-  // Con object-fit:contain el navegador agranda los logos chicos hasta llenar
-  // la caja (se pixelan). Se exige object-fit:scale-down o none, que nunca
-  // agranda; la medida de arriba no alcanza, porque calcula contain a mano.
-  const fitMal = await page.evaluate(() => Array.from(document.querySelectorAll('#empresasList .emp-tile img.emp-logo')).map((img) => getComputedStyle(img).objectFit).filter((f) => f !== 'scale-down' && f !== 'none'));
-  ok(fitMal.length === 0, `los logos usan object-fit scale-down o none, no se agrandan (${fitMal.length} con otro valor: ${[...new Set(fitMal)].join(', ')})`);
+  const grandes = medidasLogos.filter((m) => m.w > m.cw * 0.76 || m.h > m.ch * 0.76);
+  ok(medidasLogos.length > 0 && grandes.length === 0, `ningún logo ocupa más del 76% de la casilla (${grandes.length} de ${medidasLogos.length}: ${grandes.slice(0, 3).map((m) => m.id + ' ' + Math.round(m.w) + 'x' + Math.round(m.h) + ' en ' + Math.round(m.cw)).join(' | ')})`);
+  const agrandados = medidasLogos.filter((m) => m.escala > 1.001);
+  ok(agrandados.length === 0, `ningún logo se agranda por encima de su tamaño natural (${agrandados.length}: ${agrandados.slice(0, 3).map((m) => m.id).join(' | ')})`);
 
   const totalLotes = datos.lotes.length;
   const totalEmpresas = datos.empresas.length;
