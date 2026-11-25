@@ -215,13 +215,13 @@
       "fecha_ultimo_movimiento": "12/05/2026",
       "intervenciones": [
         {
-          "hora": "22/11/2026 12:40",
+          "hora": "25/11/2026 09:35",
           "texto": "Archivado automáticamente: superó los 6 meses hábiles sin tratamiento.",
           "tipo": "sistema"
         }
       ],
       "archivado": true,
-      "fecha_archivado": "22/11/2026 12:40"
+      "fecha_archivado": "25/11/2026 09:35"
     },
     {
       "id": "exp_imp010",
