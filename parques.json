@@ -2182,13 +2182,17 @@
       "nombre_empresa": "RIVAROLA RUBEN EDUARDO",
       "rubro": "COMERCIO DE BEBIDAD ALCOHOLICAS Y NO ALCOHOLICAS",
       "mail": "carlosperrono@rivarolasalta.com.ar | osvaldopettinaroli@rivarolasalta.com.ar",
-      "telefono": "4160520",
+      "telefono": "387 4160520",
       "contacto_nombre": "Ruben Armando Rivarola",
       "instagram": "https://www.instagram.com/distribuidoranortesalta/",
       "ubicacion": "Calle 3",
       "situacion": "Activa",
       "es_ocupante_sin_registro": false,
-      "id_parque": "salta"
+      "id_parque": "salta",
+      "cargo": "",
+      "pagweb": "",
+      "facebook": "",
+      "linkedin": ""
     },
     {
       "id_empresa": "SE105",
