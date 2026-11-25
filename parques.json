@@ -1991,13 +1991,17 @@
       "nombre_empresa": "NEUMATICOS SAN AGUSTIN ECO S.R.L",
       "rubro": "VENTA DE NEUMATICOS",
       "mail": "nsaecosrl@gmail.com",
-      "telefono": "38756835906 | 4283720",
+      "telefono": "387 4283720",
       "contacto_nombre": "Mariano Torrez",
       "pagweb": "https://www.neumaticossanagustin.com.ar/",
       "ubicacion": "Av. Rodriguez Durañona 813",
       "situacion": "Activa",
       "es_ocupante_sin_registro": false,
-      "id_parque": "salta"
+      "id_parque": "salta",
+      "cargo": "",
+      "instagram": "",
+      "facebook": "",
+      "linkedin": ""
     },
     {
       "id_empresa": "SE091",
