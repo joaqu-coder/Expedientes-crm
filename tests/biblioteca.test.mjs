@@ -58,13 +58,15 @@ if (indice) {
 }
 
 const html = fs.readFileSync(path.join(PUBLIC, 'proyectos.html'), 'utf8');
-for (const id of ['tabBiblio', 'viewBiblio', 'bibChips', 'bibCount', 'bibList', 'bibOv', 'bibBajar', 'bibCerrar', 'bibSel', 'bibSelN', 'bibSelTodos', 'bibSelLimpiar', 'bibSelWa', 'bibSelMail', 'bibSelAviso']) {
+for (const id of ['tabBiblio', 'viewBiblio', 'bibChips', 'bibCount', 'bibList', 'bibOv', 'bibBajar', 'bibCerrar', 'bibBarra', 'bibSelAviso']) {
   if (!html.includes(`id="${id}"`)) falla(`proyectos.html no tiene #${id}`);
 }
 // La ficha solo descarga: WhatsApp, Mail, resumen y metadatos se quitaron y no deben volver.
 for (const id of ['bibWhats', 'bibMail', 'bibAviso', 'bibResumen', 'bibMeta']) {
   if (html.includes(`id="${id}"`)) falla(`proyectos.html todavía tiene #${id} (la ficha ya no lo muestra)`);
 }
+// Seleccionar como en Resoluciones: sin casillas; la barra la pinta el script.
+if (html.includes('data-sel=') || html.includes('bib-check')) falla('proyectos.html todavía tiene casillas de selección en Biblioteca');
 if (html.includes('bib-doc-meta')) falla('proyectos.html todavía tiene la línea de metadatos de las tarjetas (bib-doc-meta)');
 const sw = fs.readFileSync(path.join(PUBLIC, 'sw.js'), 'utf8');
 if (!sw.includes("startsWith('/biblioteca/')")) falla('sw.js: /biblioteca/* no va network-first');
@@ -190,12 +192,16 @@ async function recorrido() {
       if (porPase.length !== 1 || !/pase/i.test(porPase[0])) falla(`Biblioteca: el filtro «notas» dio ${JSON.stringify(porPase)}`);
       await page.click('#bibChips [data-cat="todas"]');
 
-      // Selección: se marcan documentos y los iconos de WhatsApp y Mail mandan los elegidos.
-      if (await page.isVisible('#bibSelWa')) falla('Selección: los iconos de envío se ven sin nada seleccionado');
-      if (await page.isHidden('#bibSelTodos')) falla('Selección: «Todos» no está disponible sin selección');
-      await page.check('#bibList input[data-sel="ci-general"]');
-      if (await page.isHidden('#bibSelWa')) falla('Selección: los iconos de envío no aparecen al marcar un documento');
-      if (!(await page.isHidden('#bibOv'))) falla('Selección: marcar la casilla abrió la ficha');
+      // Selección, como en Resoluciones: «Seleccionar para enviar» entra al modo; dentro,
+      // tocar una tarjeta la marca con contorno en vez de abrir la ficha. Sin casillas.
+      if (await page.isVisible('#bibSelWa')) falla('Selección: los envíos se ven fuera del modo selección');
+      await page.click('#bibBarra [data-accion="iniciar"]');
+      if ((await page.$('#bibList input[type="checkbox"]'))) falla('Selección: quedaron casillas en las tarjetas');
+      if (!(await page.isDisabled('#bibSelWa'))) falla('Selección: WhatsApp habilitado sin nada marcado');
+      await page.click('#bibList [data-id="ci-general"]');
+      if (!(await page.isHidden('#bibOv'))) falla('Selección: tocar una tarjeta en el modo selección abrió la ficha');
+      const claseA = await page.getAttribute('#bibList [data-id="ci-general"]', 'class');
+      if (!/is-sel/.test(claseA)) falla(`Selección: la tarjeta marcada no tiene el contorno (${claseA})`);
       const n1 = await page.textContent('#bibSelN');
       if (n1 !== '1 seleccionado') falla(`Selección: el contador dice «${n1}»`);
       // Sin navigator.share (escritorio) WhatsApp y Mail mandan el enlace de cada documento.
@@ -203,7 +209,7 @@ async function recorrido() {
       const wa1 = decodeURIComponent(await ultimoEnlace(page));
       if (!wa1.startsWith('https://wa.me/?text=') || !wa1.includes('/biblioteca/archivos/ci-general.docx') || wa1.includes('pase-seguimiento'))
         falla(`Selección: WhatsApp con un documento no manda el elegido (${wa1})`);
-      await page.check('#bibList input[data-sel="pase-seguimiento"]');
+      await page.click('#bibList [data-id="pase-seguimiento"]');
       await page.click('#bibSelWa');
       const wa2 = decodeURIComponent(await ultimoEnlace(page));
       if (!wa2.includes('/biblioteca/archivos/ci-general.docx') || !wa2.includes('/biblioteca/archivos/pase-seguimiento.docx'))
@@ -213,19 +219,21 @@ async function recorrido() {
       if (!mail2.startsWith('mailto:?subject=') || !mail2.includes('Documentos de la Biblioteca (2)') || !mail2.includes('/biblioteca/archivos/pase-seguimiento.docx'))
         falla(`Selección: Mail con dos documentos no manda los dos (${mail2})`);
       if ((await page.textContent('#bibSelN')) !== '2 seleccionados') falla('Selección: el contador no pasó a 2');
-      await page.click('#bibSelLimpiar');
-      if (await page.isVisible('#bibSelWa')) falla('Selección: Limpiar no oculta los iconos de envío');
-      if (await page.$('#bibList input[data-sel]:checked')) falla('Selección: Limpiar no desmarcó las casillas');
+      await page.click('#bibBarra [data-accion="cancelar"]');
+      if (await page.isVisible('#bibSelWa')) falla('Selección: Cancelar no salió del modo');
+      if (await page.$('#bibList .bib-doc.is-sel')) falla('Selección: Cancelar no quitó las marcas');
 
       // «Todos» marca lo que se ve: con el filtro Notas, solo el pase.
+      await page.click('#bibBarra [data-accion="iniciar"]');
       await page.click('#bibChips [data-cat="notas"]');
-      await page.click('#bibSelTodos');
+      await page.click('#bibBarra [data-accion="todos"]');
       if ((await page.textContent('#bibSelN')) !== '1 seleccionado') falla(`Selección: «Todos» con filtro Notas dio «${await page.textContent('#bibSelN')}»`);
-      await page.click('#bibSelLimpiar');
+      await page.click('#bibBarra [data-accion="cancelar"]');
       await page.click('#bibChips [data-cat="todas"]');
-      await page.click('#bibSelTodos');
+      await page.click('#bibBarra [data-accion="iniciar"]');
+      await page.click('#bibBarra [data-accion="todos"]');
       if ((await page.textContent('#bibSelN')) !== '3 seleccionados') falla(`Selección: «Todos» sin filtro dio «${await page.textContent('#bibSelN')}»`);
-      await page.click('#bibSelLimpiar');
+      await page.click('#bibBarra [data-accion="cancelar"]');
 
       await page.click('#bibList [data-id="ci-general"]');
       await page.waitForSelector('#bibOv:not([hidden])');
@@ -288,7 +296,8 @@ async function recorrido() {
     {
       const { ctx, page } = await abrir(FIXTURE_REAL, { share: 'stub' });
       await page.click('#tabBiblio');
-      await page.check('#bibList input[data-sel="ley-7701"]');
+      await page.click('#bibBarra [data-accion="iniciar"]');
+      await page.click('#bibList [data-id="ley-7701"]');
       await page.waitForSelector('#bibSelWa:not([disabled])', { timeout: 10000 });
       await page.click('#bibSelWa');
       const enviado = await page.evaluate(() => window.__compartido);
@@ -312,7 +321,8 @@ async function recorrido() {
     {
       const { ctx, page } = await abrir(FIXTURE, { share: 'stub' });
       await page.click('#tabBiblio');
-      await page.check('#bibList input[data-sel="ci-general"]');
+      await page.click('#bibBarra [data-accion="iniciar"]');
+      await page.click('#bibList [data-id="ci-general"]');
       await page.waitForSelector('#bibSelWa:not([disabled])', { timeout: 10000 });
       await page.click('#bibSelWa');
       const enviado = await page.evaluate(() => window.__compartido);
@@ -327,7 +337,8 @@ async function recorrido() {
     {
       const { ctx, page } = await abrir(FIXTURE_REAL, { share: 'falla' });
       await page.click('#tabBiblio');
-      await page.check('#bibList input[data-sel="ley-7701"]');
+      await page.click('#bibBarra [data-accion="iniciar"]');
+      await page.click('#bibList [data-id="ley-7701"]');
       await page.waitForSelector('#bibSelWa:not([disabled])', { timeout: 10000 });
       await page.click('#bibSelWa');
       await page.waitForSelector('#bibSelAviso:not([hidden])', { timeout: 5000 }).catch(() => falla('Hoja rechazada: no apareció el aviso'));
@@ -341,8 +352,9 @@ async function recorrido() {
     {
       const { ctx, page } = await abrir(FIXTURE_DOS, { share: 'stub' });
       await page.click('#tabBiblio');
-      await page.check('#bibList input[data-sel="ley-7701"]');
-      await page.check('#bibList input[data-sel="anexo-i"]');
+      await page.click('#bibBarra [data-accion="iniciar"]');
+      await page.click('#bibList [data-id="ley-7701"]');
+      await page.click('#bibList [data-id="anexo-i"]');
       await page.waitForSelector('#bibSelWa:not([disabled])', { timeout: 10000 });
       await page.click('#bibSelWa');
       const porWa = await page.evaluate(() => window.__compartido);

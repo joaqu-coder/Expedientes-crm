@@ -1482,13 +1482,15 @@ en Word. **No se edita desde la app ni se sincroniza**: es un archivo estático.
   quien recibe el archivo o el enlace puede bajarlo: misma salvedad que la descarga.
   Test: escenarios A (enlace en escritorio y ficha sin botones de envío), D (adjunto PDF por WhatsApp
   y Mail desde la selección) y E (sin archivo, enlace) de `tests/biblioteca.test.mjs`.
-- **Selección para enviar varios**: cada documento del listado tiene una casilla. La barra de arriba
-  tiene «Todos» (marca lo que se ve con el filtro actual), «Limpiar» y los botones WhatsApp y Mail. Con
-  hoja de compartir mandan los archivos de todos los marcados (`bibEnviar`); sin ella, el enlace de cada
-  documento, y el asunto del mail dice «Documentos de la Biblioteca (N)» si son varios. Los botones
-  quedan deshabilitados mientras bajan los archivos. La selección vive mientras la pestaña esté
-  abierta. Test: escenarios A (enlaces en escritorio) y F (dos PDF reales en la hoja) de
-  `tests/biblioteca.test.mjs`.
+- **Selección para enviar varios**: igual que en Resoluciones. Un botón «Seleccionar para enviar»
+  entra al modo; dentro, tocar una tarjeta la marca con contorno (`.bib-doc.is-sel`, el mismo de
+  `.res-card.is-sel`) en vez de abrir la ficha. No hay casillas. La barra tiene el conteo, «Todos»
+  (marca lo que se ve con el filtro actual), «Cancelar» (sale del modo y limpia) y los botones WhatsApp
+  y Mail. Con hoja de compartir mandan los archivos de todos los marcados (`bibEnviar`); sin ella, el
+  enlace de cada documento, y el asunto del mail dice «Documentos de la Biblioteca (N)» si son varios.
+  Los botones quedan deshabilitados mientras bajan los archivos. La selección vive mientras la pestaña
+  esté abierta. Test: escenarios A (modo selección, contorno, enlaces en escritorio y Cancelar) y F (dos
+  PDF reales en la hoja) de `tests/biblioteca.test.mjs`.
 - **Solo PDF se comparte como archivo.** La hoja de compartir de Chrome en Android acepta PDF, imagen,
   audio, video y texto; un DOCX falla con `NotAllowedError` aunque `canShare` diga que sí. Por eso la
   biblioteca no tiene DOCX: la carta es solo el PDF exportado desde Word por el usuario («Carta de
