@@ -64,6 +64,23 @@
         "formulario"
       ],
       "archivo": "archivos/anexo-iii-formulario-impacto-ambiental.pdf"
+    },
+    {
+      "id": "egpais-anexo-iv",
+      "categoria": "cartas",
+      "titulo": "Anexo IV · Formulario legal y de representación",
+      "tipo": "PDF",
+      "version": "en blanco · EGPAIS",
+      "resumen": "Datos de la empresa y del representante legal, documentación societaria a certificar y declaración jurada.",
+      "tags": [
+        "anexo",
+        "legal",
+        "representación",
+        "EGPAIS",
+        "formulario",
+        "constitución"
+      ],
+      "archivo": "archivos/anexo-iv-formulario-legal.pdf"
     }
   ]
 }

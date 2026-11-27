@@ -1461,7 +1461,7 @@ en Word. **No se edita desde la app ni se sincroniza**: es un archivo estático.
 - **Índice**: `public/biblioteca/biblioteca.json`, `{"documentos": [...]}`. Cada documento:
   `id` (único), `categoria` (`cartas`, `pase`, `operativa`, `normativa`), `titulo`,
   `archivo` (relativo a `biblioteca/`, p. ej. `archivos/ci-general.docx`), `tipo`
-  (`DOCX`/`PDF`), `version`, `resumen`, `tags` y, opcional, `texto` (habilita «Copiar texto»).
+  (`DOCX`/`PDF`), `version`, `resumen`, `tags`. La ficha ofrece «Descargar» y nada más: no hay copia de texto.
 - **Archivos**: `public/biblioteca/archivos/`. Se reemplazan en el mismo nombre; el Service
   Worker los sirve network-first (`/biblioteca/*`), igual que los logos.
 - **Agregar un documento**: el archivo en `archivos/` y una entrada en el índice. Un

@@ -52,7 +52,7 @@ if (indice) {
 }
 
 const html = fs.readFileSync(path.join(PUBLIC, 'proyectos.html'), 'utf8');
-for (const id of ['tabBiblio', 'viewBiblio', 'bibChips', 'bibCount', 'bibList', 'bibOv', 'bibBajar', 'bibCopiar', 'bibCerrar']) {
+for (const id of ['tabBiblio', 'viewBiblio', 'bibChips', 'bibCount', 'bibList', 'bibOv', 'bibBajar', 'bibCerrar']) {
   if (!html.includes(`id="${id}"`)) falla(`proyectos.html no tiene #${id}`);
 }
 const sw = fs.readFileSync(path.join(PUBLIC, 'sw.js'), 'utf8');
@@ -147,7 +147,6 @@ async function recorrido() {
       await page.waitForSelector('#bibOv:not([hidden])');
       const href = await page.getAttribute('#bibBajar', 'href');
       if (href !== 'biblioteca/archivos/ci-general.docx') falla(`Ficha: el enlace de descarga es ${href}`);
-      if (await page.isHidden('#bibCopiar')) falla('Ficha: con texto tiene que aparecer «Copiar texto»');
       await page.keyboard.press('Escape');
       if (!(await page.isHidden('#bibOv'))) falla('Ficha: Escape no la cerró');
 

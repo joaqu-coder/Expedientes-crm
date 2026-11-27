@@ -303,7 +303,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   padding:5px 9px;font-size:12px;font-weight:600}
 
 /* ---- Biblioteca: plantillas, notas y normativa (pestaña de Proyectos) ---- */
-#viewBiblio[hidden],#bibOv[hidden],.bib-texto[hidden]{display:none}
+#viewBiblio[hidden],#bibOv[hidden]{display:none}
 .bib-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
 .bib-chip{min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--border);background:var(--bg);
   color:var(--fg);font:inherit;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
@@ -330,7 +330,6 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 .bib-meta{font-size:12px;color:var(--muted)}
 .bib-sheet h2{font-size:19px;line-height:1.3;margin:4px 0 0;overflow-wrap:anywhere}
 .bib-sheet p{margin:12px 0 0;font-size:14px}
-.bib-texto{margin-top:12px;padding:12px 14px;border-radius:8px;background:var(--surface);font-size:13px;white-space:pre-line}
 .bib-acciones{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
 .bib-acciones .btn{flex:1 1 0;text-decoration:none}
 .bib-nota{font-size:12px;color:var(--muted)}
@@ -422,10 +421,8 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     <h2 id="bibTitulo"></h2>
     <p id="bibResumen"></p>
     <div class="bib-tags" id="bibTags"></div>
-    <div class="bib-texto" id="bibTexto" hidden></div>
     <div class="bib-acciones">
       <a class="btn btn-primary" id="bibBajar" href="#" download>Descargar</a>
-      <button type="button" class="btn btn-outline" id="bibCopiar" hidden>Copiar texto</button>
       <button type="button" class="btn btn-secondary" id="bibCerrar">Cerrar</button>
     </div>
     <p class="bib-nota">Descargá el archivo, editalo en Word y usalo. Tus cambios quedan en tu copia.</p>
@@ -1356,9 +1353,8 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 
   // ---- Biblioteca: plantillas, notas y normativa ----
   // El índice es biblioteca/biblioteca.json: {"documentos":[{id, categoria, titulo,
-  // archivo, tipo, version, resumen, tags, texto}]}. «archivo» es relativo a
-  // biblioteca/ (p. ej. "archivos/ci-general.docx"). «texto» es opcional: si está,
-  // la ficha ofrece «Copiar texto». Es estático: se agrega con un commit, no desde
+  // archivo, tipo, version, resumen, tags}]}. «archivo» es relativo a
+  // biblioteca/ (p. ej. "archivos/ci-general.docx"). Es estático: se agrega con un commit, no desde
   // la app. Un documento con categoría desconocida o una ruta fuera de la carpeta
   // se descarta al leer, no se muestra a medias.
   var BIB_CATS = { cartas:"Cartas de intención", pase:"Notas de pase", operativa:"Notas a direcciones operativas", normativa:"Normativa" };
@@ -1433,10 +1429,6 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     document.getElementById("bibResumen").textContent = d.resumen || "";
     document.getElementById("bibResumen").hidden = !d.resumen;
     document.getElementById("bibTags").innerHTML = (d.tags||[]).map(function(g){ return '<span class="bib-tag">'+esc(g)+'</span>'; }).join("");
-    var texto = document.getElementById("bibTexto");
-    texto.textContent = d.texto || "";
-    texto.hidden = !d.texto;
-    document.getElementById("bibCopiar").hidden = !d.texto;
     var bajar = document.getElementById("bibBajar");
     bajar.href = "biblioteca/"+d.archivo;
     bajar.setAttribute("download", "");
@@ -1464,13 +1456,6 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   });
   document.getElementById("bibCerrar").addEventListener("click", function(){ bibCerrar(true); });
   bibOv.addEventListener("click", function(e){ if(e.target===bibOv) bibCerrar(true); });
-  document.getElementById("bibCopiar").addEventListener("click", function(){
-    if(!bibAbierto || !bibAbierto.texto) return;
-    var copia = navigator.clipboard && navigator.clipboard.writeText
-      ? navigator.clipboard.writeText(bibAbierto.texto) : Promise.reject(new Error("sin portapapeles"));
-    copia.then(function(){ mostrarToast("Texto copiado."); })
-      .catch(function(){ mostrarToast("No se pudo copiar. Seleccioná el texto a mano."); });
-  });
   document.addEventListener("keydown", function(e){
     if(bibOv.hidden) return;
     if(e.key==="Escape"){ e.preventDefault(); bibCerrar(true); return; }
