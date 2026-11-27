@@ -553,6 +553,10 @@
         {
           "hora": "16/11/2026 10:28",
           "texto": "se comunica. Comenta que no podrá venir el dia de hoy. Está con conpromisos hata las 18, todos los días.Acordamos en juntarnos el día 19/11"
+        },
+        {
+          "hora": "27/11/2026 11:38",
+          "texto": "Reunión en el Parque Guemes para el martes  1/12/2026"
         }
       ],
       "parque": "Güemes"
@@ -638,5 +642,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-11-27T14:35:48.068Z"
+  "timestamp": "2026-11-27T14:38:07.522Z"
 }
