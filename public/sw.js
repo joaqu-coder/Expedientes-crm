@@ -7,12 +7,13 @@
  *
  * Cambiar CACHE_VERSION cuando hay cambios incompatibles.
  */
+// v12: la Biblioteca (pestaña de Proyectos) pasa a network-first.
 // v11: los logos pasan a network-first y el cache con copias viejas de logos
 // se borra en el activate. Sin esto, un celular con v10 seguiría mostrando el
 // logo anterior de cada empresa que ya había cacheado.
 // v10: fuerza que los celulares reemplacen el Service Worker instalado y
 // borren el cache viejo (el de v9 seguía sirviendo pantallas anteriores).
-const CACHE_VERSION = 'expedientes-crm-v11';
+const CACHE_VERSION = 'expedientes-crm-v12';
 const ASSETS = ['/manifest.json'];
 
 self.addEventListener('install', (event) => {
@@ -77,7 +78,10 @@ self.addEventListener('fetch', (event) => {
   // siguiente al deploy. Sin conexión, el fallback sigue siendo el cache, así
   // que se ve el último logo guardado.
   const esLogo = url.pathname.startsWith('/logos/');
-  const esCritico = isHTML || esLogo || CRITICOS.includes(url.pathname);
+  // La Biblioteca (biblioteca/biblioteca.json y sus archivos) se reemplaza en el
+  // mismo nombre, como los logos: network-first, con el caché solo sin conexión.
+  const esBiblioteca = url.pathname.startsWith('/biblioteca/');
+  const esCritico = isHTML || esLogo || esBiblioteca || CRITICOS.includes(url.pathname);
 
   if (esCritico) {
     // Network-first: intenta red, si falla usa cache

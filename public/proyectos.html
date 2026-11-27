@@ -301,6 +301,39 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 .alerta-acciones{display:flex;gap:6px;flex:0 0 auto}
 .alerta button{background:none;border:1px solid var(--danger);color:var(--danger);border-radius:6px;
   padding:5px 9px;font-size:12px;font-weight:600}
+
+/* ---- Biblioteca: plantillas, notas y normativa (pestaña de Proyectos) ---- */
+#viewBiblio[hidden],#bibOv[hidden],.bib-texto[hidden]{display:none}
+.bib-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.bib-chip{min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--border);background:var(--bg);
+  color:var(--fg);font:inherit;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.bib-chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.bib-n{font-size:12px;opacity:.7;font-variant-numeric:tabular-nums}
+.bib-list{display:grid;gap:10px}
+.bib-doc{display:flex;gap:14px;align-items:flex-start;width:100%;padding:14px;border:1px solid var(--border);
+  border-radius:10px;background:var(--surface);color:var(--fg);font:inherit;text-align:left;cursor:pointer}
+.bib-doc:hover{border-color:var(--accent)}
+.bib-ext{flex:0 0 auto;width:44px;height:52px;border-radius:8px;border:1px solid var(--border);display:grid;
+  place-items:center;font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--muted)}
+.bib-doc-body{min-width:0;flex:1}
+.bib-doc-titulo{display:block;font-weight:700;font-size:15px;overflow-wrap:anywhere}
+.bib-doc-meta{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.bib-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.bib-tag{font-size:11.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--border);color:var(--muted)}
+.bib-vacio{padding:28px 16px;text-align:center;color:var(--muted);border:1px dashed var(--border);
+  border-radius:10px;font-size:14px}
+.bib-pie{margin-top:18px;font-size:12px;color:var(--muted)}
+.bib-ov{position:fixed;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:flex-end;justify-content:center;z-index:25}
+.bib-sheet{width:100%;max-width:560px;background:var(--bg);color:var(--fg);border-radius:16px 16px 0 0;
+  border:1px solid var(--border);padding:20px 20px calc(20px + env(safe-area-inset-bottom,0px));max-height:90vh;overflow:auto}
+@media (min-width:700px){.bib-ov{align-items:center}.bib-sheet{border-radius:16px}}
+.bib-meta{font-size:12px;color:var(--muted)}
+.bib-sheet h2{font-size:19px;line-height:1.3;margin:4px 0 0;overflow-wrap:anywhere}
+.bib-sheet p{margin:12px 0 0;font-size:14px}
+.bib-texto{margin-top:12px;padding:12px 14px;border-radius:8px;background:var(--surface);font-size:13px;white-space:pre-line}
+.bib-acciones{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.bib-acciones .btn{flex:1 1 0;text-decoration:none}
+.bib-nota{font-size:12px;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -319,6 +352,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   <button class="app-tab tab" id="tabList" role="tab" aria-selected="true" aria-controls="viewList">Listado</button>
   <button class="app-tab tab" id="tabArchivo" role="tab" aria-selected="false" aria-controls="viewArchivo">Archivo</button>
   <button class="app-tab tab" id="tabDash" role="tab" aria-selected="false" aria-controls="viewDash">Análisis</button>
+  <button class="app-tab tab" id="tabBiblio" role="tab" aria-selected="false" aria-controls="viewBiblio">Biblioteca</button>
 </div>
 
 <div class="alerta" id="alertaSync" hidden>
@@ -368,6 +402,35 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   <div class="list-count" id="archivoCount" role="status" aria-live="polite"></div>
   <div class="exp-list" id="archivoList"></div>
 </section>
+
+<!-- ===== VISTA BIBLIOTECA ===== -->
+<!-- Plantillas, notas y normativa. El índice sale de biblioteca/biblioteca.json
+     y los archivos de biblioteca/archivos/ (estáticos: se suman con un commit).
+     La búsqueda de arriba es la misma caja que la de Listado; cambia de texto. -->
+<section class="view" id="viewBiblio" role="tabpanel" aria-labelledby="tabBiblio" hidden>
+  <div class="bib-chips" id="bibChips" role="group" aria-label="Categorías"></div>
+  <div class="list-count" id="bibCount" role="status" aria-live="polite"></div>
+  <div class="bib-list" id="bibList"></div>
+  <p class="bib-pie">Las plantillas se bajan y se editan en Word. Lo que cambies queda en tu copia y no vuelve a la biblioteca.</p>
+</section>
+
+<!-- Ficha de un documento de la Biblioteca. Va aparte de #veil, que es la ficha de
+     expedientes con sus propias reglas de cambios sin guardar. -->
+<div class="bib-ov" id="bibOv" hidden>
+  <div class="bib-sheet" role="dialog" aria-modal="true" aria-labelledby="bibTitulo">
+    <div class="bib-meta" id="bibMeta"></div>
+    <h2 id="bibTitulo"></h2>
+    <p id="bibResumen"></p>
+    <div class="bib-tags" id="bibTags"></div>
+    <div class="bib-texto" id="bibTexto" hidden></div>
+    <div class="bib-acciones">
+      <a class="btn btn-primary" id="bibBajar" href="#" download>Descargar</a>
+      <button type="button" class="btn btn-outline" id="bibCopiar" hidden>Copiar texto</button>
+      <button type="button" class="btn btn-secondary" id="bibCerrar">Cerrar</button>
+    </div>
+    <p class="bib-nota">Descargá el archivo, editalo en Word y usalo. Tus cambios quedan en tu copia.</p>
+  </div>
+</div>
 
 <!-- ===== VISTA DASHBOARD ===== -->
 <!-- Pantalla separada del listado. El cuerpo lo arma renderDashboard() según
@@ -1239,23 +1302,49 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   var tabList = document.getElementById("tabList"), tabDash = document.getElementById("tabDash"), tabArchivo = document.getElementById("tabArchivo");
   var viewList = document.getElementById("viewList"), viewDash = document.getElementById("viewDash"), viewArchivo = document.getElementById("viewArchivo");
   var vistaActual = "list";
-  function vistaDeHash(h){ return h==="#dashboard" ? "dashboard" : h==="#archivo" ? "archivo" : "list"; }
-  function hashDeVista(name){ return name==="dashboard" ? "#dashboard" : name==="archivo" ? "#archivo" : "#listado"; }
+  function vistaDeHash(h){ return h==="#dashboard" ? "dashboard" : h==="#archivo" ? "archivo" : h==="#biblioteca" ? "biblioteca" : "list"; }
+  function hashDeVista(name){ return name==="dashboard" ? "#dashboard" : name==="archivo" ? "#archivo" : name==="biblioteca" ? "#biblioteca" : "#listado"; }
+  var tabBiblio = document.getElementById("tabBiblio"), viewBiblio = document.getElementById("viewBiblio");
+  var cajaBusqueda = document.getElementById("search");
+  var busquedaLista = "";
   function showView(name, desdeHash){
-    var isDash = name==="dashboard", isArchivo = name==="archivo";
+    var isDash = name==="dashboard", isArchivo = name==="archivo", isBiblio = name==="biblioteca";
+    var estabaBiblio = vistaActual==="biblioteca";
+    if(estabaBiblio !== isBiblio){
+      // Una sola caja de búsqueda: cada pestaña recuerda lo suyo al salir.
+      if(isBiblio){
+        busquedaLista = cajaBusqueda.value;
+        cajaBusqueda.value = bibQ;
+        cajaBusqueda.placeholder = "Buscar plantilla, nota o norma…";
+      } else {
+        bibQ = cajaBusqueda.value;
+        cajaBusqueda.value = busquedaLista;
+        cajaBusqueda.placeholder = "Buscar empresa, expediente o representante…";
+      }
+    }
+    if(!bibOv.hidden) bibCerrar(false); // una ficha de la Biblioteca no sobrevive al cambio de pestaña
     vistaActual = name;
-    viewList.hidden = isDash || isArchivo;
+    viewList.hidden = isDash || isArchivo || isBiblio;
     viewArchivo.hidden = !isArchivo;
     viewDash.hidden = !isDash;
-    tabList.classList.toggle("active", !isDash && !isArchivo);
+    viewBiblio.hidden = !isBiblio;
+    tabList.classList.toggle("active", !isDash && !isArchivo && !isBiblio);
     tabArchivo.classList.toggle("active", isArchivo);
     tabDash.classList.toggle("active", isDash);
-    tabList.setAttribute("aria-selected", String(!isDash && !isArchivo));
+    tabBiblio.classList.toggle("active", isBiblio);
+    tabList.setAttribute("aria-selected", String(!isDash && !isArchivo && !isBiblio));
     tabArchivo.setAttribute("aria-selected", String(isArchivo));
     tabDash.setAttribute("aria-selected", String(isDash));
+    tabBiblio.setAttribute("aria-selected", String(isBiblio));
     document.getElementById("busquedaListado").hidden = isDash;
+    // El botón + lo crea header.js al iniciar (después de este bloque): se busca al usarlo.
+    // Con `hidden` no alcanza: header.js le pone display:flex al botón y le gana.
+    // Se busca por clase: el id lo crea header.js y ids.test.mjs marca los getElementById sueltos.
+    var fabNuevo = document.querySelector(".app-fab");
+    if(fabNuevo) fabNuevo.style.display = isBiblio ? "none" : "";
     if(isDash) renderDashboard();
     if(isArchivo) renderArchivo();
+    if(isBiblio){ bibCargar(); renderBiblio(); }
     if(desdeHash) return; // vino del hash: no lo reescribas, sería un bucle
     var destino = hashDeVista(name);
     if(location.hash !== destino) location.hash = destino;
@@ -1263,6 +1352,137 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   tabList.addEventListener("click", function(){ showView("list"); });
   tabArchivo.addEventListener("click", function(){ showView("archivo"); });
   tabDash.addEventListener("click", function(){ showView("dashboard"); });
+  tabBiblio.addEventListener("click", function(){ showView("biblioteca"); });
+
+  // ---- Biblioteca: plantillas, notas y normativa ----
+  // El índice es biblioteca/biblioteca.json: {"documentos":[{id, categoria, titulo,
+  // archivo, tipo, version, resumen, tags, texto}]}. «archivo» es relativo a
+  // biblioteca/ (p. ej. "archivos/ci-general.docx"). «texto» es opcional: si está,
+  // la ficha ofrece «Copiar texto». Es estático: se agrega con un commit, no desde
+  // la app. Un documento con categoría desconocida o una ruta fuera de la carpeta
+  // se descarta al leer, no se muestra a medias.
+  var BIB_CATS = { cartas:"Cartas de intención", pase:"Notas de pase", operativa:"Notas a direcciones operativas", normativa:"Normativa" };
+  var bibDocs = null, bibError = false, bibCargando = false;
+  var bibCat = "todas", bibQ = "", bibAbierto = null, bibFocoPrevio = null;
+  var bibOv = document.getElementById("bibOv");
+  function bibNorm(s){ return String(s).normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase(); }
+  function bibValido(d){
+    return !!d && typeof d.id==="string" && !!BIB_CATS[d.categoria] && typeof d.titulo==="string"
+      && typeof d.archivo==="string" && d.archivo.length>0 && !/^[\/\\]|\.\.|^[a-z]+:/i.test(d.archivo);
+  }
+  function bibCargar(){
+    if(bibDocs || bibCargando) return;
+    bibCargando = true; bibError = false;
+    fetch("biblioteca/biblioteca.json", { cache:"no-cache" })
+      .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+      .then(function(j){
+        var lista = j && Array.isArray(j.documentos) ? j.documentos : [];
+        bibDocs = lista.filter(bibValido);
+      })
+      .catch(function(){ bibError = true; })
+      .then(function(){ bibCargando = false; if(vistaActual==="biblioteca") renderBiblio(); });
+  }
+  function bibCoincide(d, terminos){
+    var texto = bibNorm([d.titulo, BIB_CATS[d.categoria], d.resumen||"", (d.tags||[]).join(" ")].join(" "));
+    return terminos.every(function(t){ return texto.indexOf(t)!==-1; });
+  }
+  function renderBiblio(){
+    var chips = document.getElementById("bibChips"), count = document.getElementById("bibCount"), list = document.getElementById("bibList");
+    if(bibError){
+      chips.innerHTML = ""; count.textContent = "";
+      list.innerHTML = '<div class="bib-vacio">No se pudo cargar la biblioteca. Revisá la conexión y volvé a abrir la pestaña.</div>';
+      return;
+    }
+    if(!bibDocs){
+      chips.innerHTML = ""; count.textContent = "";
+      list.innerHTML = '<div class="bib-vacio">Cargando…</div>';
+      return;
+    }
+    if(!bibDocs.length){
+      chips.innerHTML = ""; count.textContent = "";
+      list.innerHTML = '<div class="bib-vacio">Todavía no hay documentos cargados. Acá van las cartas de intención, las notas de pase, las notas a direcciones operativas y la normativa.</div>';
+      return;
+    }
+    var terminos = bibNorm(bibQ).trim().split(/\s+/).filter(Boolean);
+    var opciones = [["todas","Todas"]].concat(Object.keys(BIB_CATS).map(function(k){ return [k, BIB_CATS[k]]; }));
+    chips.innerHTML = opciones.map(function(o){
+      var n = bibDocs.filter(function(d){ return (o[0]==="todas" || d.categoria===o[0]) && bibCoincide(d, terminos); }).length;
+      return '<button type="button" class="bib-chip" aria-pressed="'+(bibCat===o[0])+'" data-cat="'+o[0]+'">'+esc(o[1])+' <span class="bib-n">'+n+'</span></button>';
+    }).join("");
+    var lista = bibDocs.filter(function(d){ return (bibCat==="todas" || d.categoria===bibCat) && bibCoincide(d, terminos); });
+    count.textContent = lista.length===1 ? "1 documento" : lista.length+" documentos";
+    list.innerHTML = lista.length
+      ? lista.map(function(d){
+          return '<button type="button" class="bib-doc" data-id="'+esc(d.id)+'">'
+            + '<span class="bib-ext" aria-hidden="true">'+esc(d.tipo||"")+'</span>'
+            + '<span class="bib-doc-body">'
+            + '<span class="bib-doc-titulo">'+esc(d.titulo)+'</span>'
+            + '<span class="bib-doc-meta">'+esc(BIB_CATS[d.categoria])+(d.version?' · '+esc(d.version):'')+'</span>'
+            + '<span class="bib-tags">'+(d.tags||[]).slice(0,4).map(function(g){ return '<span class="bib-tag">'+esc(g)+'</span>'; }).join("")+'</span>'
+            + '</span></button>';
+        }).join("")
+      : '<div class="bib-vacio">Sin resultados para «'+esc(bibQ)+'». Probá otra palabra o quitá el filtro.</div>';
+  }
+  function bibAbrir(id){
+    var d = bibDocs && bibDocs.find(function(x){ return x.id===id; });
+    if(!d) return;
+    bibAbierto = d;
+    bibFocoPrevio = document.activeElement;
+    document.getElementById("bibMeta").textContent = BIB_CATS[d.categoria]+(d.tipo?" · "+d.tipo:"")+(d.version?" · "+d.version:"");
+    document.getElementById("bibTitulo").textContent = d.titulo;
+    document.getElementById("bibResumen").textContent = d.resumen || "";
+    document.getElementById("bibResumen").hidden = !d.resumen;
+    document.getElementById("bibTags").innerHTML = (d.tags||[]).map(function(g){ return '<span class="bib-tag">'+esc(g)+'</span>'; }).join("");
+    var texto = document.getElementById("bibTexto");
+    texto.textContent = d.texto || "";
+    texto.hidden = !d.texto;
+    document.getElementById("bibCopiar").hidden = !d.texto;
+    var bajar = document.getElementById("bibBajar");
+    bajar.href = "biblioteca/"+d.archivo;
+    bajar.setAttribute("download", "");
+    bibOv.hidden = false;
+    document.body.style.overflow = "hidden";
+    bajar.focus();
+  }
+  function bibCerrar(devolverFoco){
+    bibOv.hidden = true;
+    bibAbierto = null;
+    document.body.style.overflow = "";
+    if(devolverFoco && bibFocoPrevio && bibFocoPrevio.focus) bibFocoPrevio.focus();
+    bibFocoPrevio = null;
+  }
+  // Las categorías y los documentos se delegan en la lista: se rearman en cada filtro.
+  document.getElementById("bibChips").addEventListener("click", function(e){
+    var b = e.target.closest("[data-cat]");
+    if(!b) return;
+    bibCat = b.dataset.cat;
+    renderBiblio();
+  });
+  document.getElementById("bibList").addEventListener("click", function(e){
+    var b = e.target.closest("[data-id]");
+    if(b) bibAbrir(b.dataset.id);
+  });
+  document.getElementById("bibCerrar").addEventListener("click", function(){ bibCerrar(true); });
+  bibOv.addEventListener("click", function(e){ if(e.target===bibOv) bibCerrar(true); });
+  document.getElementById("bibCopiar").addEventListener("click", function(){
+    if(!bibAbierto || !bibAbierto.texto) return;
+    var copia = navigator.clipboard && navigator.clipboard.writeText
+      ? navigator.clipboard.writeText(bibAbierto.texto) : Promise.reject(new Error("sin portapapeles"));
+    copia.then(function(){ mostrarToast("Texto copiado."); })
+      .catch(function(){ mostrarToast("No se pudo copiar. Seleccioná el texto a mano."); });
+  });
+  document.addEventListener("keydown", function(e){
+    if(bibOv.hidden) return;
+    if(e.key==="Escape"){ e.preventDefault(); bibCerrar(true); return; }
+    if(e.key==="Tab"){
+      // Foco atrapado dentro de la ficha: Tab y Shift+Tab no escapan a la pantalla de atrás.
+      var f = Array.prototype.filter.call(bibOv.querySelectorAll("a[href],button"), function(el){ return !el.hidden; });
+      if(!f.length) return;
+      var primero = f[0], ultimo = f[f.length-1];
+      if(e.shiftKey && document.activeElement===primero){ e.preventDefault(); ultimo.focus(); }
+      else if(!e.shiftKey && document.activeElement===ultimo){ e.preventDefault(); primero.focus(); }
+    }
+  });
 
   // Sin esto, el botón "atrás" del navegador cambiaba la URL y dejaba la
   // vista como estaba.
@@ -1306,6 +1526,8 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   document.getElementById("filterSituacion").addEventListener("change", function(){ state.filterSituacion=this.value; renderList(); });
   document.getElementById("filterPlazo").addEventListener("change", function(){ state.filterPlazo=this.value; renderList(); });
   document.getElementById("search").addEventListener("input", function(){
+    if(vistaActual==="biblioteca"){ bibQ=this.value; renderBiblio(); return; }
+    busquedaLista=this.value;
     state.search=this.value.toLowerCase();
     // Filtra la pestaña que se ve. La otra se rearma al abrirse (showView).
     if(vistaActual==="archivo") renderArchivo(); else renderList();

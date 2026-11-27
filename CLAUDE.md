@@ -1451,6 +1451,35 @@ usá un worktree, que no toca tu árbol:
   a la rama después de la última corrida, la corrida ya no vale.
 - Actualizá `.claude-state.json` con lo que quedó pendiente.
 
+### Biblioteca: plantillas, notas y normativa, dentro de Proyectos (2026-11-27)
+
+Pestaña **Biblioteca** de `proyectos.html`, junto a Listado / Archivo / Análisis. Reúne
+las cartas de intención, las notas de pase, las notas a direcciones operativas y la
+normativa (Ley 7701, Reglamento de APIs). Es para buscar un documento, bajarlo y editarlo
+en Word. **No se edita desde la app ni se sincroniza**: es un archivo estático.
+
+- **Índice**: `public/biblioteca/biblioteca.json`, `{"documentos": [...]}`. Cada documento:
+  `id` (único), `categoria` (`cartas`, `pase`, `operativa`, `normativa`), `titulo`,
+  `archivo` (relativo a `biblioteca/`, p. ej. `archivos/ci-general.docx`), `tipo`
+  (`DOCX`/`PDF`), `version`, `resumen`, `tags` y, opcional, `texto` (habilita «Copiar texto»).
+- **Archivos**: `public/biblioteca/archivos/`. Se reemplazan en el mismo nombre; el Service
+  Worker los sirve network-first (`/biblioteca/*`), igual que los logos.
+- **Agregar un documento**: el archivo en `archivos/` y una entrada en el índice. Un
+  documento con categoría desconocida o una ruta que sale de la carpeta **se descarta al
+  leer** (`bibValido`), y `tests/biblioteca.test.mjs` lo marca en el test estático.
+- **Búsqueda**: ignora tildes y mira título, categoría, resumen y tags. Usa la misma caja
+  que Listado, que cambia de texto; cada pestaña recuerda su búsqueda al salir.
+- **Ficha**: `#bibOv`, aparte de `#veil` (la ficha de expedientes tiene sus reglas de
+  cambios sin guardar). Foco atrapado, Escape cierra y devuelve el foco.
+- **El botón + (Nuevo Proyecto) se oculta en Biblioteca.** Se oculta con `style.display`,
+  no con `hidden`: `header.js` le pone `display:flex`, que le gana al atributo.
+- **Pendiente con el usuario, antes de subir notas internas**: los archivos de `public/`
+  se sirven **sin clave** (el X-Clave solo protege `/api/`). Si las plantillas tienen nombres
+  de personas o expedientes, hay que servirlas por el Worker detrás de la clave. La Ley 7701
+  y el reglamento, si son públicos, pueden quedar en `public/`.
+- **Test**: `tests/biblioteca.test.mjs` (índice válido y archivos existentes; y en navegador a
+  390px: pestaña, filtros, ficha, Escape, búsqueda de Listado restaurada, estados vacío y de error).
+
 ## Logos de empresas: la misma línea para cada logo nuevo (2026-11-27)
 
 Todos los logos de Parques se ven como una sola colección: gris, fondo blanco,

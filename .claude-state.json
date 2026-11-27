@@ -1,8 +1,10 @@
 {
   "sesion_fecha": "2026-11-27",
-  "ultimo_commit": "parques: logo de Foodery para North Engine S.A.S (SE099, Salta) (59ade59, rama claude/funny-galileo-xi8hxf, sin mergear a main)",
+  "ultimo_commit": "Biblioteca en Proyectos (rama claude/funny-galileo-xi8hxf, sin mergear a main; ver git log)",
   "estado": "2026-11-15: logos y íconos entre dispositivos corregidos y mergeados a main (4e3b5c0, fc04d74). Caché de service worker: /logos/* e /icon-*.png network-first. Suite completa en verde (973 OK, 0 fallas). | 2026-11-16 (Parques): filtro «Alquilada» en Empresas (titular de lote alquilado; no es situación). Test en testParques, rojo antes del cambio.",
   "resuelto": [
+    "2026-11-27 (Proyectos, Biblioteca): pestaña Biblioteca en Proyectos (plantillas, notas y normativa). Índice estático public/biblioteca/biblioteca.json (vacío hasta que se suban los archivos) y archivos en public/biblioteca/archivos/. Búsqueda con la caja de Listado, categorías, ficha propia (#bibOv) con descarga y copiar texto. Botón + oculto en la pestaña (display, no hidden: header.js le pone display:flex). sw.js v12: /biblioteca/* network-first. tests/biblioteca.test.mjs (estático + navegador a 390px) sumado a npm test. Procedimiento en CLAUDE.md (sección Biblioteca).",
+    "2026-11-27 (Proyectos, tarjetas): las tarjetas de expedientes usaban align-items:center y los títulos quedaban a distinta altura. Ahora align-items:flex-start. Verificado en 390px (títulos a 16px del borde en todas). Commit e000a02.",
     "2026-11-27 (Parques, logos): el logo de Foodery era el único a color y se veía más claro que la colección. Pasado a gris con niveles (corte 100, sin engrosar trazos). tests/logos.test.mjs suma verificación de píxeles R=G=B (decodifica el PNG; falla con la versión a color). Regla para logos nuevos en CLAUDE.md (sección Logos de empresas). Rama claude/funny-galileo-xi8hxf, sin mergear a main.",
     "2026-11-27 (Parques): logo de Foodery asignado a NORTH ENGINE S.A.S (SE099, Salta, foodery.com.ar). public/logos/foodery.png (RGB 8 bit sin alfa) + entrada en LOGOS; tests/logos.test.mjs 125 -> 126. npm test en verde (exit 0, 0 fallas). Rama claude/funny-galileo-xi8hxf, sin mergear a main.",
     "2026-11-22 (Seguimiento, rendimiento): cambio de pestaña lento. Causas medidas con 400 expedientes y CPU 4x: formateador de fecha creado por tarjeta (ahora uno por página), plazo recalculado día por día sin caché (ahora caché por inicio/días/hoy) y feriados en array (ahora Set). ~300 ms -> ~110 ms de JS. Pendiente: el render sigue construyendo todas las tarjetas aunque estén colapsadas (~9.500 nodos); hacerlo perezoso si sigue lento en el celular. Branch claude/bold-brown-lf0hgr, sin mergear a main. test:ui y concurrencia-seguimiento en verde.",
@@ -120,6 +122,9 @@
     "/api/sync-parques": "Parques (parques.json: parques/empresas/lotes/ocupaciones/reservas de Güemes y Salta). Protocolo simple, como /api/sync y /api/sync-resoluciones — GET devuelve el JSON, POST lo reescribe entero."
   },
   "pendiente": [
+    "Biblioteca: decidir si las plantillas y la normativa son públicas (quedan en public/, sin clave) o internas (hay que servirlas por el Worker detrás de X-Clave). Antes de subir notas con nombres de personas o expedientes.",
+    "Biblioteca: la fila de pestañas de Proyectos (cuatro pestañas) no entra en 390px y se desplaza en horizontal (comportamiento del kit compartido). Ver si conviene acortar rótulos o reducir el padding.",
+    "Biblioteca: merge a main pendiente de decisión del usuario; el deploy es automático. Correr npm test en verde sobre el árbol antes de mergear.",
     "Merge a main pendiente de decisión del usuario (main deploya solo) para el commit 59ade59 (logo Foodery). Hasta entonces el logo no está en producción.",
     "Resoluciones › Análisis: decidir si se mergea la rama a main (la suite completa está en verde en la rama). Pendiente de datos: 18 fechas inválidas, no entran en ningún KPI por fecha todavía.",
     "Merge a main pendiente de decisión del usuario (main deploya solo). Rama: ccr-e878f5f2-mtloy0.",
