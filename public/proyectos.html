@@ -1436,7 +1436,9 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     var nombre = d.archivo.split("/").pop(), ext = (nombre.split(".").pop() || "").toLowerCase();
     fetch(bibUrlAbs(d), { cache: "no-cache" })
       .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.blob(); })
-      .then(function(b){ e.archivo = new File([b], nombre, { type: b.type || BIB_MIME[ext] || "" }); })
+      // El tipo sale de la extensión primero: el servidor a veces devuelve application/octet-stream
+      // y la hoja del teléfono no siempre acepta ese tipo genérico.
+      .then(function(b){ e.archivo = new File([b], nombre, { type: BIB_MIME[ext] || b.type || "" }); })
       .catch(function(){ e.archivo = null; })
       .then(function(){ e.listo = true; bibPintarEnvio(); });
   }
@@ -1456,8 +1458,11 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   }
   function bibTitulo(docs){ return docs.length===1 ? docs[0].titulo : "Documentos de la Biblioteca ("+docs.length+")"; }
   function bibEnlaces(docs){ return docs.map(function(d){ return d.titulo+"\n"+bibUrlAbs(d); }).join("\n\n"); }
-  function bibAvisar(){
-    document.getElementById(bibAbierto ? "bibAviso" : "bibSelAviso").hidden = false;
+  // El aviso nombra el error del navegador: sin eso no se puede saber por qué falló.
+  function bibAvisar(e){
+    var el = document.getElementById(bibAbierto ? "bibAviso" : "bibSelAviso");
+    el.textContent = "No se pudo enviar el archivo (" + ((e && e.name) || "error desconocido") + "). Probá de nuevo.";
+    el.hidden = false;
   }
   // Manda los documentos con su archivo adjunto por la hoja del teléfono. Si no hay
   // archivos disponibles, manda el enlace por WhatsApp o mail.
@@ -1470,7 +1475,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
       navigator.share({ title: titulo, text: titulo, files: archivos }).catch(function(e){
         // Cerrar la hoja a propósito no es un error.
         if(e && e.name==="AbortError") return;
-        bibAvisar();
+        bibAvisar(e);
       });
       return;
     }

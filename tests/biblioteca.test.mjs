@@ -99,6 +99,10 @@ function initCompartir(modo) {
   // window.open se anota en vez de abrir: WhatsApp y mail mandan el enlace por ahí.
   const abre = `window.__abierto = []; window.open = function(u){ window.__abierto.push(String(u)); return null; };`;
   if (modo === 'sin') return abre + "Object.defineProperty(navigator,'share',{value:undefined,configurable:true});";
+  // 'falla': la hoja existe pero rechaza el envío (error que no es cancelación).
+  if (modo === 'falla') return abre + `Object.defineProperty(navigator,'share',{configurable:true,value:function(){
+      return Promise.reject(new DOMException('no se pudo compartir','DataError'));}});
+    Object.defineProperty(navigator,'canShare',{configurable:true,value:function(d){return !!(d&&d.files);}});`;
   return abre + `window.__compartido = null;
     Object.defineProperty(navigator,'share',{configurable:true,value:function(d){
       window.__compartido={title:d.title,url:d.url||null,files:d.files?d.files.map(function(f){return {name:f.name,size:f.size,type:f.type};}):null};
@@ -112,6 +116,13 @@ const FIXTURE_REAL = {
   documentos: [
     { id: 'ley-7701', categoria: 'normativa', titulo: 'Ley 7701 · Parques y áreas industriales', tipo: 'PDF', version: 'vigente',
       resumen: 'Texto ordenado de la ley.', tags: ['ley'], archivo: 'archivos/ley-7701-parques-y-areas-industriales.pdf' }
+  ]
+};
+
+const FIXTURE_CARTA = {
+  documentos: [
+    { id: 'carta', categoria: 'formularios', titulo: 'Carta de intención y requisitos', tipo: 'DOCX', version: 'plantilla',
+      resumen: 'Plantilla.', tags: ['carta'], archivo: 'archivos/carta-intencion-requisitos.docx' }
   ]
 };
 
@@ -307,6 +318,34 @@ async function recorrido() {
       const enlace = decodeURIComponent(await ultimoEnlace(page));
       if (!enlace.startsWith('https://wa.me/?text=') || !enlace.includes('/biblioteca/archivos/ci-general.docx'))
         falla(`Compartir sin archivo: el enlace de WhatsApp es ${enlace}`);
+      await ctx.close();
+    }
+
+    // Escenario G: un DOCX se manda con su tipo real, no como application/octet-stream
+    // (el servidor puede devolver el tipo genérico, y la hoja del teléfono lo rechaza).
+    {
+      const { ctx, page } = await abrir(FIXTURE_CARTA, { share: 'stub' });
+      await page.click('#tabBiblio');
+      await page.check('#bibList input[data-sel="carta"]');
+      await page.waitForSelector('#bibSelWa:not([disabled])', { timeout: 10000 });
+      await page.click('#bibSelWa');
+      const enviado = await page.evaluate(() => window.__compartido);
+      const docx = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      if (!enviado || !enviado.files || enviado.files[0].type !== docx) falla(`DOCX: el tipo enviado es ${JSON.stringify(enviado && enviado.files)}`);
+      await ctx.close();
+    }
+
+    // Escenario H: la hoja rechaza el envío: el aviso dice por qué, y no se manda un enlace en su lugar.
+    {
+      const { ctx, page } = await abrir(FIXTURE_REAL, { share: 'falla' });
+      await page.click('#tabBiblio');
+      await page.check('#bibList input[data-sel="ley-7701"]');
+      await page.waitForSelector('#bibSelWa:not([disabled])', { timeout: 10000 });
+      await page.click('#bibSelWa');
+      await page.waitForSelector('#bibSelAviso:not([hidden])', { timeout: 5000 }).catch(() => falla('Hoja rechazada: no apareció el aviso'));
+      const aviso = await page.textContent('#bibSelAviso');
+      if (!/DataError/.test(aviso)) falla(`Hoja rechazada: el aviso no dice el error (${aviso})`);
+      if ((await page.evaluate(() => window.__abierto.length)) !== 0) falla('Hoja rechazada: se mandó un enlace en su lugar');
       await ctx.close();
     }
 
