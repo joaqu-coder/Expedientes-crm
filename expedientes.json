@@ -163,6 +163,10 @@
         {
           "hora": "13/11/2026 11:03",
           "texto": "Se envia expe al Servicio de administración financiera para que estime curso de acción y continuar con el trámite"
+        },
+        {
+          "hora": "27/11/2026 11:35",
+          "texto": "Causarano Mandó  el expte e parque automotor el 26/11/2026"
         }
       ],
       "parque": "Egpais"
@@ -634,5 +638,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-11-16T15:04:43.913Z"
+  "timestamp": "2026-11-27T14:35:48.068Z"
 }
