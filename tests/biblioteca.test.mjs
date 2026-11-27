@@ -52,7 +52,7 @@ if (indice) {
 }
 
 const html = fs.readFileSync(path.join(PUBLIC, 'proyectos.html'), 'utf8');
-for (const id of ['tabBiblio', 'viewBiblio', 'bibChips', 'bibCount', 'bibList', 'bibOv', 'bibBajar', 'bibCerrar', 'bibCompartir', 'bibWhats', 'bibMail', 'bibSel', 'bibSelN', 'bibSelTodos', 'bibSelLimpiar', 'bibSelWa', 'bibSelMail']) {
+for (const id of ['tabBiblio', 'viewBiblio', 'bibChips', 'bibCount', 'bibList', 'bibOv', 'bibBajar', 'bibCerrar', 'bibWhats', 'bibMail', 'bibSel', 'bibSelN', 'bibSelTodos', 'bibSelLimpiar', 'bibSelWa', 'bibSelMail', 'bibSelAviso', 'bibAviso']) {
   if (!html.includes(`id="${id}"`)) falla(`proyectos.html no tiene #${id}`);
 }
 const sw = fs.readFileSync(path.join(PUBLIC, 'sw.js'), 'utf8');
@@ -96,18 +96,31 @@ function servidor() {
 // Simula la hoja de compartir del teléfono. 'sin' la quita (escritorio); 'stub'
 // la reemplaza por una que anota qué recibió, para leerlo desde el test.
 function initCompartir(modo) {
-  if (modo === 'sin') return "Object.defineProperty(navigator,'share',{value:undefined,configurable:true});";
-  return `window.__compartido = null;
+  // window.open se anota en vez de abrir: WhatsApp y mail mandan el enlace por ahí.
+  const abre = `window.__abierto = []; window.open = function(u){ window.__abierto.push(String(u)); return null; };`;
+  if (modo === 'sin') return abre + "Object.defineProperty(navigator,'share',{value:undefined,configurable:true});";
+  return abre + `window.__compartido = null;
     Object.defineProperty(navigator,'share',{configurable:true,value:function(d){
       window.__compartido={title:d.title,url:d.url||null,files:d.files?d.files.map(function(f){return {name:f.name,size:f.size,type:f.type};}):null};
       return Promise.resolve();}});
     Object.defineProperty(navigator,'canShare',{configurable:true,value:function(d){return !!(d&&d.files);}});`;
 }
 
+const ultimoEnlace = (page) => page.evaluate(() => (window.__abierto || []).slice(-1)[0] || '');
+
 const FIXTURE_REAL = {
   documentos: [
     { id: 'ley-7701', categoria: 'normativa', titulo: 'Ley 7701 · Parques y áreas industriales', tipo: 'PDF', version: 'vigente',
       resumen: 'Texto ordenado de la ley.', tags: ['ley'], archivo: 'archivos/ley-7701-parques-y-areas-industriales.pdf' }
+  ]
+};
+
+const FIXTURE_DOS = {
+  documentos: [
+    { id: 'ley-7701', categoria: 'normativa', titulo: 'Ley 7701 · Parques y áreas industriales', tipo: 'PDF', version: 'vigente',
+      resumen: 'Texto ordenado de la ley.', tags: ['ley'], archivo: 'archivos/ley-7701-parques-y-areas-industriales.pdf' },
+    { id: 'anexo-i', categoria: 'formularios', titulo: 'Anexo I · Formulario técnico', tipo: 'PDF', version: 'vigente',
+      resumen: 'Formulario técnico del EGPAIS.', tags: ['anexo'], archivo: 'archivos/anexo-i-formulario-tecnico.pdf' }
   ]
 };
 
@@ -170,14 +183,18 @@ async function recorrido() {
       if (!(await page.isHidden('#bibOv'))) falla('Selección: marcar la casilla abrió la ficha');
       const n1 = await page.textContent('#bibSelN');
       if (n1 !== '1 seleccionado') falla(`Selección: el contador dice «${n1}»`);
-      const wa1 = decodeURIComponent((await page.getAttribute('#bibSelWa', 'href')) || '');
+      // Sin navigator.share (escritorio) WhatsApp y Mail mandan el enlace de cada documento.
+      await page.click('#bibSelWa');
+      const wa1 = decodeURIComponent(await ultimoEnlace(page));
       if (!wa1.startsWith('https://wa.me/?text=') || !wa1.includes('/biblioteca/archivos/ci-general.docx') || wa1.includes('pase-seguimiento'))
         falla(`Selección: WhatsApp con un documento no manda el elegido (${wa1})`);
       await page.check('#bibList input[data-sel="pase-seguimiento"]');
-      const wa2 = decodeURIComponent((await page.getAttribute('#bibSelWa', 'href')) || '');
+      await page.click('#bibSelWa');
+      const wa2 = decodeURIComponent(await ultimoEnlace(page));
       if (!wa2.includes('/biblioteca/archivos/ci-general.docx') || !wa2.includes('/biblioteca/archivos/pase-seguimiento.docx'))
         falla(`Selección: WhatsApp con dos documentos no manda los dos (${wa2})`);
-      const mail2 = decodeURIComponent((await page.getAttribute('#bibSelMail', 'href')) || '');
+      await page.click('#bibSelMail');
+      const mail2 = decodeURIComponent(await ultimoEnlace(page));
       if (!mail2.startsWith('mailto:?subject=') || !mail2.includes('Documentos de la Biblioteca (2)') || !mail2.includes('/biblioteca/archivos/pase-seguimiento.docx'))
         falla(`Selección: Mail con dos documentos no manda los dos (${mail2})`);
       if ((await page.textContent('#bibSelN')) !== '2 seleccionados') falla('Selección: el contador no pasó a 2');
@@ -199,16 +216,17 @@ async function recorrido() {
       await page.waitForSelector('#bibOv:not([hidden])');
       const href = await page.getAttribute('#bibBajar', 'href');
       if (href !== 'biblioteca/archivos/ci-general.docx') falla(`Ficha: el enlace de descarga es ${href}`);
-      // Compartir por WhatsApp y Mail va por enlace: funciona en cualquier navegador.
-      const wa = await page.getAttribute('#bibWhats', 'href');
-      if (!/^https:\/\/wa\.me\/\?text=/.test(wa || '') || !decodeURIComponent(wa).includes('/biblioteca/archivos/ci-general.docx'))
+      // Sin navigator.share (escritorio) WhatsApp y Mail mandan el enlace absoluto del documento.
+      if (await page.isDisabled('#bibWhats')) falla('Compartir: WhatsApp de la ficha quedó deshabilitado en escritorio');
+      await page.click('#bibWhats');
+      const wa = decodeURIComponent(await ultimoEnlace(page));
+      if (!wa.startsWith('https://wa.me/?text=') || !wa.includes('/biblioteca/archivos/ci-general.docx'))
         falla(`Compartir: el enlace de WhatsApp no lleva el documento (${wa})`);
-      if (wa && !decodeURIComponent(wa).includes('http://localhost:')) falla(`Compartir: el enlace de WhatsApp no es absoluto (${wa})`);
-      const mail = await page.getAttribute('#bibMail', 'href');
-      if (!/^mailto:\?subject=/.test(mail || '') || !decodeURIComponent(mail).includes('Carta de intención · modelo general'))
+      if (!wa.includes('http://localhost:')) falla(`Compartir: el enlace de WhatsApp no es absoluto (${wa})`);
+      await page.click('#bibMail');
+      const mail = decodeURIComponent(await ultimoEnlace(page));
+      if (!mail.startsWith('mailto:?subject=') || !mail.includes('Carta de intención · modelo general'))
         falla(`Compartir: el enlace de Mail no tiene el título (${mail})`);
-      // Sin navigator.share (escritorio) no hay botón de hoja nativa.
-      if (!(await page.isHidden('#bibCompartir'))) falla('Compartir: el botón de hoja nativa se muestra sin navigator.share');
       await page.keyboard.press('Escape');
       if (!(await page.isHidden('#bibOv'))) falla('Ficha: Escape no la cerró');
 
@@ -258,17 +276,22 @@ async function recorrido() {
       const { ctx, page } = await abrir(FIXTURE_REAL, { share: 'stub' });
       await page.click('#tabBiblio');
       await page.click('#bibList [data-id="ley-7701"]');
-      await page.waitForSelector('#bibCompartir:not([disabled])', { timeout: 10000 });
-      if (await page.isHidden('#bibCompartir')) falla('Compartir: con navigator.share el botón no aparece');
-      await page.click('#bibCompartir');
+      await page.waitForSelector('#bibWhats:not([disabled])', { timeout: 10000 });
+      await page.click('#bibWhats');
       const enviado = await page.evaluate(() => window.__compartido);
       const f = enviado && enviado.files && enviado.files[0];
-      if (!f || enviado.files.length !== 1) falla(`Compartir: no se adjuntó el archivo (${JSON.stringify(enviado)})`);
+      if (!f || enviado.files.length !== 1) falla(`Compartir: WhatsApp no adjuntó el archivo (${JSON.stringify(enviado)})`);
       else {
         if (f.name !== 'ley-7701-parques-y-areas-industriales.pdf') falla(`Compartir: el archivo adjunto se llama ${f.name}`);
         if (!f.size) falla('Compartir: el archivo adjunto está vacío');
         if (f.type !== 'application/pdf') falla(`Compartir: el tipo del adjunto es ${f.type}`);
       }
+      if ((await page.evaluate(() => window.__abierto.length)) !== 0) falla('Compartir: con hoja del teléfono se mandó además un enlace');
+      // Mail también adjunta el PDF, no el enlace.
+      await page.click('#bibMail');
+      const porMail = await page.evaluate(() => window.__compartido);
+      if (!porMail || !porMail.files || porMail.files.length !== 1 || porMail.files[0].name !== 'ley-7701-parques-y-areas-industriales.pdf')
+        falla(`Compartir: Mail no adjuntó el PDF (${JSON.stringify(porMail)})`);
       await ctx.close();
     }
 
@@ -277,11 +300,35 @@ async function recorrido() {
       const { ctx, page } = await abrir(FIXTURE, { share: 'stub' });
       await page.click('#tabBiblio');
       await page.click('#bibList [data-id="ci-general"]');
-      await page.waitForSelector('#bibCompartir:not([disabled])', { timeout: 10000 });
-      await page.click('#bibCompartir');
+      await page.waitForSelector('#bibWhats:not([disabled])', { timeout: 10000 });
+      await page.click('#bibWhats');
       const enviado = await page.evaluate(() => window.__compartido);
-      if (!enviado || enviado.files !== null) falla(`Compartir sin archivo: se mandó un adjunto (${JSON.stringify(enviado)})`);
-      if (!enviado || !/\/biblioteca\/archivos\/ci-general\.docx$/.test(enviado.url || '')) falla(`Compartir sin archivo: el enlace es ${enviado && enviado.url}`);
+      if (enviado) falla(`Compartir sin archivo: se abrió la hoja con algo adjunto (${JSON.stringify(enviado)})`);
+      const enlace = decodeURIComponent(await ultimoEnlace(page));
+      if (!enlace.startsWith('https://wa.me/?text=') || !enlace.includes('/biblioteca/archivos/ci-general.docx'))
+        falla(`Compartir sin archivo: el enlace de WhatsApp es ${enlace}`);
+      await ctx.close();
+    }
+
+    // Escenario F: selección de dos PDF reales. WhatsApp y Mail abren la hoja con los dos adjuntos.
+    {
+      const { ctx, page } = await abrir(FIXTURE_DOS, { share: 'stub' });
+      await page.click('#tabBiblio');
+      await page.check('#bibList input[data-sel="ley-7701"]');
+      await page.check('#bibList input[data-sel="anexo-i"]');
+      await page.waitForSelector('#bibSelWa:not([disabled])', { timeout: 10000 });
+      await page.click('#bibSelWa');
+      const porWa = await page.evaluate(() => window.__compartido);
+      const nombresWa = porWa && porWa.files ? porWa.files.map((f) => f.name).sort() : null;
+      const esperados = ['anexo-i-formulario-tecnico.pdf', 'ley-7701-parques-y-areas-industriales.pdf'];
+      if (JSON.stringify(nombresWa) !== JSON.stringify(esperados)) falla(`Selección WhatsApp: adjuntos ${JSON.stringify(nombresWa)}`);
+      else if (porWa.files.some((f) => !f.size || f.type !== 'application/pdf')) falla(`Selección WhatsApp: algún adjunto vacío o sin tipo PDF (${JSON.stringify(porWa.files)})`);
+      if ((await page.evaluate(() => window.__abierto.length)) !== 0) falla('Selección WhatsApp: además se mandó un enlace');
+      await page.waitForSelector('#bibSelMail:not([disabled])', { timeout: 10000 });
+      await page.click('#bibSelMail');
+      const porMail = await page.evaluate(() => window.__compartido);
+      if (!porMail || !porMail.files || porMail.files.length !== 2) falla(`Selección Mail: no llegaron los dos adjuntos (${JSON.stringify(porMail)})`);
+      else if (!/Documentos de la Biblioteca \(2\)/.test(porMail.title || '')) falla(`Selección Mail: el título es ${porMail.title}`);
       await ctx.close();
     }
   } finally {

@@ -1471,17 +1471,21 @@ en Word. **No se edita desde la app ni se sincroniza**: es un archivo estático.
   que Listado, que cambia de texto; cada pestaña recuerda su búsqueda al salir.
 - **Ficha**: `#bibOv`, aparte de `#veil` (la ficha de expedientes tiene sus reglas de
   cambios sin guardar). Foco atrapado, Escape cierra y devuelve el foco.
-- **Compartir**: la ficha tiene WhatsApp y Mail (enlace absoluto al archivo, sin depender del
-  navegador) y, si existe `navigator.share`, «Compartir», que abre la hoja del teléfono con el
-  archivo adjunto. El archivo se baja al abrir la ficha (el navegador exige que la hoja se abra
-  dentro del toque) y el botón se habilita cuando termina; si no se pudo bajar, se comparte el
-  enlace. Como `/biblioteca/*` es público, quien recibe el enlace puede bajar el archivo: misma
-  salvedad que la descarga. Test: escenarios A, D y E de `tests/biblioteca.test.mjs`.
+- **Compartir**: WhatsApp y Mail de la ficha mandan el **archivo**, no un enlace. WhatsApp y mail no
+  reciben adjuntos por URL, así que el único camino es la hoja de compartir del teléfono
+  (`navigator.share` con `files`): el usuario elige WhatsApp o Mail ahí. El archivo se baja al abrir
+  la ficha (`bibCargarArchivo`; el navegador exige que la hoja se abra dentro del toque) y el botón
+  queda deshabilitado hasta que termina. Sin `navigator.share` (escritorio), o si el archivo no se
+  pudo bajar, se abre el enlace de WhatsApp o mailto con `window.open`. Como `/biblioteca/*` es
+  público, quien recibe el archivo o el enlace puede bajarlo: misma salvedad que la descarga.
+  Test: escenarios A (enlace en escritorio), D (adjunto PDF por WhatsApp y Mail) y E (sin archivo,
+  enlace) de `tests/biblioteca.test.mjs`.
 - **Selección para enviar varios**: cada documento del listado tiene una casilla. La barra de arriba
-  tiene «Todos» (marca lo que se ve con el filtro actual), «Limpiar» y los iconos WhatsApp y Mail, que
-  mandan los marcados con su enlace (el asunto del mail dice «Documentos de la Biblioteca (N)» si son
-  varios). Desde la selección se envían enlaces, no adjuntos; el adjunto está en «Compartir» de la ficha
-  de un documento. La selección vive mientras la pestaña esté abierta. Test: escenario A de
+  tiene «Todos» (marca lo que se ve con el filtro actual), «Limpiar» y los botones WhatsApp y Mail. Con
+  hoja de compartir mandan los archivos de todos los marcados (`bibEnviar`); sin ella, el enlace de cada
+  documento, y el asunto del mail dice «Documentos de la Biblioteca (N)» si son varios. Los botones
+  quedan deshabilitados mientras bajan los archivos. La selección vive mientras la pestaña esté
+  abierta. Test: escenarios A (enlaces en escritorio) y F (dos PDF reales en la hoja) de
   `tests/biblioteca.test.mjs`.
 - **El botón + (Nuevo Proyecto) se oculta en Biblioteca.** Se oculta con `style.display`,
   no con `hidden`: `header.js` le pone `display:flex`, que le gana al atributo.

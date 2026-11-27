@@ -323,8 +323,9 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 .bib-sel-n{font-size:14px;font-weight:700}
 .bib-sel-acc,.bib-sel-envio{display:flex;flex-wrap:wrap;gap:8px}
 .bib-envio{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:999px;
-  border:1px solid var(--border);background:var(--bg);color:var(--fg);text-decoration:none;font-size:14px;font-weight:600}
+  border:1px solid var(--border);background:var(--bg);color:var(--fg);text-decoration:none;font:inherit;font-size:14px;font-weight:600;cursor:pointer}
 .bib-envio:hover{border-color:var(--accent)}
+.bib-envio:disabled{opacity:.45;cursor:default;border-color:var(--border)}
 .bib-envio svg{width:18px;height:18px;flex:0 0 auto}
 .bib-ext{flex:0 0 auto;width:44px;height:52px;border-radius:8px;border:1px solid var(--border);display:grid;
   place-items:center;font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--muted)}
@@ -344,7 +345,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 .bib-acciones{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
 .bib-acciones .btn{flex:1 1 0;text-decoration:none}
 .bib-nota{font-size:12px;color:var(--muted)}
-#bibCompartir[hidden],#bibAviso[hidden]{display:none}
+#bibAviso[hidden],#bibSelAviso[hidden]{display:none}
 .bib-compartir{margin-top:8px}
 .bib-aviso{margin:10px 0 0;font-size:13px;color:var(--danger,#b91c1c)}
 </style>
@@ -430,9 +431,10 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
       <button type="button" class="btn btn-outline" id="bibSelLimpiar" hidden>Limpiar</button>
     </div>
     <div class="bib-sel-envio" id="bibSelEnvio" hidden>
-      <a class="bib-envio" id="bibSelWa" href="#" aria-label="Enviar por WhatsApp" title="Enviar por WhatsApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>WhatsApp</a>
-      <a class="bib-envio" id="bibSelMail" href="#" aria-label="Enviar por mail" title="Enviar por mail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>Mail</a>
+      <button type="button" class="bib-envio" id="bibSelWa" aria-label="Enviar por WhatsApp" title="Enviar por WhatsApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>WhatsApp</button>
+      <button type="button" class="bib-envio" id="bibSelMail" aria-label="Enviar por mail" title="Enviar por mail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>Mail</button>
     </div>
+    <p class="bib-aviso" id="bibSelAviso" role="status" hidden>No se pudo enviar el archivo. Probá de nuevo.</p>
   </div>
   <div class="bib-list" id="bibList"></div>
   <p class="bib-pie">Las plantillas se bajan y se editan en Word. Lo que cambies queda en tu copia y no vuelve a la biblioteca.</p>
@@ -450,11 +452,10 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
       <button type="button" class="btn btn-secondary" id="bibCerrar">Cerrar</button>
     </div>
     <div class="bib-acciones bib-compartir" aria-label="Compartir">
-      <button type="button" class="btn btn-outline" id="bibCompartir" hidden disabled>Compartir</button>
-      <a class="btn btn-outline" id="bibWhats" href="#" rel="noopener">WhatsApp</a>
-      <a class="btn btn-outline" id="bibMail" href="#">Mail</a>
+      <button type="button" class="btn btn-outline" id="bibWhats">WhatsApp</button>
+      <button type="button" class="btn btn-outline" id="bibMail">Mail</button>
     </div>
-    <p class="bib-aviso" id="bibAviso" role="status" hidden>No se pudo compartir desde acá. Usá WhatsApp o Mail.</p>
+    <p class="bib-aviso" id="bibAviso" role="status" hidden>No se pudo enviar el archivo. Probá de nuevo.</p>
     <p class="bib-nota">Descargá el archivo, editalo en Word y usalo. Tus cambios quedan en tu copia.</p>
   </div>
 </div>
@@ -1390,10 +1391,13 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   var BIB_CATS = { formularios:"Formularios", normativa:"Normativa", notas:"Notas", requisitos:"Requisitos" };
   var bibDocs = null, bibError = false, bibCargando = false;
   var bibCat = "todas", bibQ = "", bibAbierto = null, bibFocoPrevio = null;
-  // Para compartir con archivo adjunto, el navegador exige que la hoja se abra
-  // dentro del toque: el archivo se baja al abrir la ficha y el botón se habilita
-  // cuando eso termina. Si no se pudo bajar, se comparte el enlace.
-  var bibArchivo = null, bibTurno = 0;
+  // WhatsApp y mail no reciben archivos por enlace: un documento llega como archivo
+  // solo por la hoja de compartir del teléfono. El archivo se baja antes del toque
+  // (el navegador exige que la hoja se abra dentro de él), así que el botón se
+  // habilita cuando el archivo está listo. Sin hoja (escritorio), o si un archivo
+  // no se pudo bajar, se manda el enlace.
+  var bibFiles = new Map(); // id -> { listo: bool, archivo: File|null }
+  var BIB_MIME = { pdf: "application/pdf", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" };
   // Selección para enviar varios a la vez. Vive mientras la pantalla esté abierta.
   var bibSel = new Set();
   function bibUrlAbs(d){ return new URL("biblioteca/"+d.archivo, location.href).href; }
@@ -1424,18 +1428,80 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     return bibDocs.filter(function(d){ return (bibCat==="todas" || d.categoria===bibCat) && bibCoincide(d, terminos); });
   }
   function bibSeleccionados(){ return bibDocs ? bibDocs.filter(function(d){ return bibSel.has(d.id); }) : []; }
-  // Los iconos de WhatsApp y Mail mandan los documentos marcados, con su enlace.
+  // Baja el archivo una sola vez por documento, sin esperar un toque.
+  function bibCargarArchivo(d){
+    if(!navigator.share || bibFiles.has(d.id)) return;
+    var e = { listo: false, archivo: null };
+    bibFiles.set(d.id, e);
+    var nombre = d.archivo.split("/").pop(), ext = (nombre.split(".").pop() || "").toLowerCase();
+    fetch(bibUrlAbs(d), { cache: "no-cache" })
+      .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.blob(); })
+      .then(function(b){ e.archivo = new File([b], nombre, { type: b.type || BIB_MIME[ext] || "" }); })
+      .catch(function(){ e.archivo = null; })
+      .then(function(){ e.listo = true; bibPintarEnvio(); });
+  }
+  // Hay que esperar a que bajen algunos archivos antes de poder enviarlos.
+  function bibPendiente(docs){
+    return !!navigator.share && docs.some(function(d){ var e = bibFiles.get(d.id); return !e || !e.listo; });
+  }
+  // Los archivos de estos documentos, o null si alguno no se pudo bajar.
+  function bibArchivosListos(docs){
+    var out = [];
+    for(var i=0; i<docs.length; i++){
+      var e = bibFiles.get(docs[i].id);
+      if(!e || !e.listo || !e.archivo) return null;
+      out.push(e.archivo);
+    }
+    return out.length ? out : null;
+  }
+  function bibTitulo(docs){ return docs.length===1 ? docs[0].titulo : "Documentos de la Biblioteca ("+docs.length+")"; }
+  function bibEnlaces(docs){ return docs.map(function(d){ return d.titulo+"\n"+bibUrlAbs(d); }).join("\n\n"); }
+  function bibAvisar(){
+    document.getElementById(bibAbierto ? "bibAviso" : "bibSelAviso").hidden = false;
+  }
+  // Manda los documentos con su archivo adjunto por la hoja del teléfono. Si no hay
+  // archivos disponibles, manda el enlace por WhatsApp o mail.
+  function bibEnviar(docs, canal){
+    document.getElementById("bibAviso").hidden = true;
+    document.getElementById("bibSelAviso").hidden = true;
+    var archivos = bibArchivosListos(docs);
+    if(archivos && navigator.canShare && navigator.canShare({ files: archivos })){
+      var titulo = bibTitulo(docs);
+      navigator.share({ title: titulo, text: titulo, files: archivos }).catch(function(e){
+        // Cerrar la hoja a propósito no es un error.
+        if(e && e.name==="AbortError") return;
+        bibAvisar();
+      });
+      return;
+    }
+    var url = canal==="wa"
+      ? "https://wa.me/?text=" + encodeURIComponent(bibEnlaces(docs))
+      : "mailto:?subject=" + encodeURIComponent(bibTitulo(docs)) + "&body=" + encodeURIComponent(bibEnlaces(docs));
+    window.open(url, "_blank", "noopener");
+  }
+  // Mantiene habilitados o deshabilitados los botones de envío según el estado de los archivos.
+  function bibPintarEnvio(){
+    var sel = bibSeleccionados();
+    sel.forEach(bibCargarArchivo);
+    var pendSel = bibPendiente(sel);
+    document.getElementById("bibSelWa").disabled = pendSel;
+    document.getElementById("bibSelMail").disabled = pendSel;
+    if(bibAbierto){
+      bibCargarArchivo(bibAbierto);
+      var pend = bibPendiente([bibAbierto]);
+      document.getElementById("bibWhats").disabled = pend;
+      document.getElementById("bibMail").disabled = pend;
+    }
+  }
+  // Los iconos de WhatsApp y Mail mandan los documentos marcados.
   function bibActualizarSel(){
     var docs = bibSeleccionados(), hay = docs.length>0;
     document.getElementById("bibSelEnvio").hidden = !hay;
     document.getElementById("bibSelLimpiar").hidden = !hay;
+    document.getElementById("bibSelAviso").hidden = true;
     document.getElementById("bibSelN").textContent = !hay ? "Elegí documentos para enviar"
       : docs.length===1 ? "1 seleccionado" : docs.length+" seleccionados";
-    if(!hay) return;
-    var cuerpo = docs.map(function(d){ return d.titulo+"\n"+bibUrlAbs(d); }).join("\n\n");
-    var asunto = docs.length===1 ? docs[0].titulo : "Documentos de la Biblioteca ("+docs.length+")";
-    document.getElementById("bibSelWa").href = "https://wa.me/?text=" + encodeURIComponent(cuerpo);
-    document.getElementById("bibSelMail").href = "mailto:?subject=" + encodeURIComponent(asunto) + "&body=" + encodeURIComponent(cuerpo);
+    bibPintarEnvio();
   }
   function renderBiblio(){
     bibActualizarSel();
@@ -1489,24 +1555,8 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     var bajar = document.getElementById("bibBajar");
     bajar.href = "biblioteca/"+d.archivo;
     bajar.setAttribute("download", "");
-    var url = bibUrlAbs(d), turno = ++bibTurno, compartir = document.getElementById("bibCompartir");
-    bibArchivo = null;
-    compartir.hidden = !navigator.share;
-    compartir.disabled = true;
     document.getElementById("bibAviso").hidden = true;
-    document.getElementById("bibWhats").href = "https://wa.me/?text=" + encodeURIComponent(d.titulo + "\n" + url);
-    document.getElementById("bibMail").href = "mailto:?subject=" + encodeURIComponent(d.titulo) + "&body=" + encodeURIComponent(d.titulo + "\n\n" + url);
-    if(navigator.share){
-      fetch(url, { cache:"no-cache" })
-        .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.blob(); })
-        .then(function(b){ return new File([b], d.archivo.split("/").pop(), { type: b.type || "" }); })
-        .catch(function(){ return null; })
-        .then(function(f){
-          if(turno !== bibTurno) return; // se abrió o cerró otra ficha mientras tanto
-          bibArchivo = f;
-          compartir.disabled = false;
-        });
-    }
+    bibPintarEnvio();
     bibOv.hidden = false;
     document.body.style.overflow = "hidden";
     bajar.focus();
@@ -1514,7 +1564,6 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   function bibCerrar(devolverFoco){
     bibOv.hidden = true;
     bibAbierto = null;
-    bibTurno++;
     document.body.style.overflow = "";
     if(devolverFoco && bibFocoPrevio && bibFocoPrevio.focus) bibFocoPrevio.focus();
     bibFocoPrevio = null;
@@ -1530,17 +1579,10 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     var b = e.target.closest("[data-id]");
     if(b) bibAbrir(b.dataset.id);
   });
-  document.getElementById("bibCompartir").addEventListener("click", function(){
-    if(!bibAbierto || !navigator.share) return;
-    var d = bibAbierto, datos = { title: d.titulo, text: d.titulo };
-    if(bibArchivo && navigator.canShare && navigator.canShare({ files:[bibArchivo] })) datos.files = [bibArchivo];
-    else datos.url = bibUrlAbs(d);
-    navigator.share(datos).catch(function(e){
-      // Cerrar la hoja a propósito no es un error.
-      if(e && e.name==="AbortError") return;
-      document.getElementById("bibAviso").hidden = false;
-    });
-  });
+  document.getElementById("bibWhats").addEventListener("click", function(){ if(bibAbierto) bibEnviar([bibAbierto], "wa"); });
+  document.getElementById("bibMail").addEventListener("click", function(){ if(bibAbierto) bibEnviar([bibAbierto], "mail"); });
+  document.getElementById("bibSelWa").addEventListener("click", function(){ var d = bibSeleccionados(); if(d.length) bibEnviar(d, "wa"); });
+  document.getElementById("bibSelMail").addEventListener("click", function(){ var d = bibSeleccionados(); if(d.length) bibEnviar(d, "mail"); });
   document.getElementById("bibList").addEventListener("change", function(e){
     var c = e.target;
     if(!c.dataset || !c.dataset.sel) return;
