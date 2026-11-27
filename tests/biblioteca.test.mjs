@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PUBLIC = path.join(RAIZ, 'public');
-const CATEGORIAS = ['cartas', 'pase', 'operativa', 'normativa'];
+const CATEGORIAS = ['formularios', 'normativa', 'notas', 'requisitos'];
 
 let fallos = 0;
 const falla = (msg) => { console.log('FAIL ' + msg); fallos++; };
@@ -66,10 +66,10 @@ for (const cand of ['playwright', '/opt/node22/lib/node_modules/playwright/index
 
 const FIXTURE = {
   documentos: [
-    { id: 'ci-general', categoria: 'cartas', titulo: 'Carta de intención · modelo general', tipo: 'DOCX', version: 'v3',
+    { id: 'ci-general', categoria: 'formularios', titulo: 'Carta de intención · modelo general', tipo: 'DOCX', version: 'v3',
       resumen: 'Modelo base para responder a un proyecto de inversión.', tags: ['carta', 'intención', 'modelo'],
       archivo: 'archivos/ci-general.docx', texto: 'Señores:\n[ORGANISMO]' },
-    { id: 'pase-seguimiento', categoria: 'pase', titulo: 'Nota de pase · a Seguimiento', tipo: 'DOCX', version: 'v2',
+    { id: 'pase-seguimiento', categoria: 'notas', titulo: 'Nota de pase · a Seguimiento', tipo: 'DOCX', version: 'v2',
       resumen: 'Pase de un expediente a la mesa de seguimiento.', tags: ['pase', 'seguimiento'],
       archivo: 'archivos/pase-seguimiento.docx' },
     { id: 'ley-7701', categoria: 'normativa', titulo: 'Ley de Parques Industriales 7701', tipo: 'PDF', version: 'vigente',
@@ -138,9 +138,9 @@ async function recorrido() {
       if (filtrados.length !== 1 || !/7701/.test(filtrados[0])) falla(`Biblioteca: buscar «7701» dio ${JSON.stringify(filtrados)}`);
       await page.fill('#search', '');
 
-      await page.click('#bibChips [data-cat="pase"]');
+      await page.click('#bibChips [data-cat="notas"]');
       const porPase = await page.$$eval('#bibList .bib-doc-titulo', (els) => els.map((e) => e.textContent));
-      if (porPase.length !== 1 || !/pase/i.test(porPase[0])) falla(`Biblioteca: el filtro «pase» dio ${JSON.stringify(porPase)}`);
+      if (porPase.length !== 1 || !/pase/i.test(porPase[0])) falla(`Biblioteca: el filtro «notas» dio ${JSON.stringify(porPase)}`);
       await page.click('#bibChips [data-cat="todas"]');
 
       await page.click('#bibList [data-id="ci-general"]');

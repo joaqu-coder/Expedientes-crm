@@ -1354,7 +1354,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   // biblioteca/ (p. ej. "archivos/ci-general.docx"). Es estático: se agrega con un commit, no desde
   // la app. Un documento con categoría desconocida o una ruta fuera de la carpeta
   // se descarta al leer, no se muestra a medias.
-  var BIB_CATS = { cartas:"Cartas de intención", pase:"Notas de pase", operativa:"Notas a direcciones operativas", normativa:"Normativa" };
+  var BIB_CATS = { formularios:"Formularios", normativa:"Normativa", notas:"Notas", requisitos:"Requisitos" };
   var bibDocs = null, bibError = false, bibCargando = false;
   var bibCat = "todas", bibQ = "", bibAbierto = null, bibFocoPrevio = null;
   var bibOv = document.getElementById("bibOv");
@@ -1393,7 +1393,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     }
     if(!bibDocs.length){
       chips.innerHTML = ""; count.textContent = "";
-      list.innerHTML = '<div class="bib-vacio">Todavía no hay documentos cargados. Acá van las cartas de intención, las notas de pase, las notas a direcciones operativas y la normativa.</div>';
+      list.innerHTML = '<div class="bib-vacio">Todavía no hay documentos cargados. Acá van los formularios, la normativa, las notas y los requisitos.</div>';
       return;
     }
     var terminos = bibNorm(bibQ).trim().split(/\s+/).filter(Boolean);

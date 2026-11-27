@@ -2,7 +2,7 @@
   "documentos": [
     {
       "id": "carta-intencion-requisitos",
-      "categoria": "cartas",
+      "categoria": "formularios",
       "titulo": "Carta de intención y requisitos",
       "tipo": "DOCX",
       "version": "plantilla · oct 2024",
@@ -19,8 +19,8 @@
     },
     {
       "id": "egpais-anexo-i",
-      "categoria": "cartas",
-      "titulo": "Anexo I · Formulario técnico",
+      "categoria": "formularios",
+      "titulo": "Formulario I · Técnico",
       "tipo": "PDF",
       "version": "en blanco · EGPAIS",
       "resumen": "Identificación de la empresa y de los socios, actividad, producto, infraestructura (energía, agua, gas) y localización.",
@@ -35,8 +35,8 @@
     },
     {
       "id": "egpais-anexo-ii",
-      "categoria": "cartas",
-      "titulo": "Anexo II · Formulario económico financiero",
+      "categoria": "formularios",
+      "titulo": "Formulario II · Económico financiero",
       "tipo": "PDF",
       "version": "en blanco · EGPAIS",
       "resumen": "Mercado de los bienes a producir, proceso productivo, costos y cronograma de inversiones.",
@@ -51,8 +51,8 @@
     },
     {
       "id": "egpais-anexo-iii",
-      "categoria": "cartas",
-      "titulo": "Anexo III · Formulario de impacto ambiental",
+      "categoria": "formularios",
+      "titulo": "Formulario III · Impacto ambiental",
       "tipo": "PDF",
       "version": "en blanco · EGPAIS",
       "resumen": "Residuos, efluentes, emisiones, ruidos, medidas de eficiencia y mercancías peligrosas del proceso.",
@@ -67,8 +67,8 @@
     },
     {
       "id": "egpais-anexo-iv",
-      "categoria": "cartas",
-      "titulo": "Anexo IV · Formulario legal y de representación",
+      "categoria": "formularios",
+      "titulo": "Formulario IV · Legal y de representación",
       "tipo": "PDF",
       "version": "en blanco · EGPAIS",
       "resumen": "Datos de la empresa y del representante legal, documentación societaria a certificar y declaración jurada.",

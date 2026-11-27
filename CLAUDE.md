@@ -1454,12 +1454,12 @@ usá un worktree, que no toca tu árbol:
 ### Biblioteca: plantillas, notas y normativa, dentro de Proyectos (2026-11-27)
 
 Pestaña **Biblioteca** de `proyectos.html`, junto a Listado / Archivo / Análisis. Reúne
-las cartas de intención, las notas de pase, las notas a direcciones operativas y la
-normativa (Ley 7701, Reglamento de APIs). Es para buscar un documento, bajarlo y editarlo
+los formularios (carta de intención, Formularios I–IV de EGPAIS), la normativa (Ley 7701,
+Reglamento de APIs), las notas y los requisitos. Es para buscar un documento, bajarlo y editarlo
 en Word. **No se edita desde la app ni se sincroniza**: es un archivo estático.
 
 - **Índice**: `public/biblioteca/biblioteca.json`, `{"documentos": [...]}`. Cada documento:
-  `id` (único), `categoria` (`cartas`, `pase`, `operativa`, `normativa`), `titulo`,
+  `id` (único), `categoria` (`formularios`, `normativa`, `notas`, `requisitos`), `titulo`,
   `archivo` (relativo a `biblioteca/`, p. ej. `archivos/ci-general.docx`), `tipo`
   (`DOCX`/`PDF`), `version`, `resumen`, `tags`. La ficha ofrece «Descargar» y nada más: no hay copia de texto.
 - **Archivos**: `public/biblioteca/archivos/`. Se reemplazan en el mismo nombre; el Service
