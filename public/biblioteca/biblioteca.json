@@ -1,6 +1,23 @@
 {
   "documentos": [
     {
+      "id": "carta-intencion-requisitos",
+      "categoria": "cartas",
+      "titulo": "Carta de intención y requisitos",
+      "tipo": "DOCX",
+      "version": "plantilla · oct 2024",
+      "resumen": "Nota al Interventor del Ente con los datos que debe tener la carta: empresa, actividad, parque, superficie, personal y servicios.",
+      "tags": [
+        "carta",
+        "intención",
+        "requisitos",
+        "ente",
+        "parque",
+        "plantilla"
+      ],
+      "archivo": "archivos/carta-intencion-requisitos.docx"
+    },
+    {
       "id": "egpais-anexo-i",
       "categoria": "cartas",
       "titulo": "Anexo I · Formulario técnico",
