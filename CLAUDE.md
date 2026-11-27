@@ -1477,6 +1477,12 @@ en Word. **No se edita desde la app ni se sincroniza**: es un archivo estático.
   dentro del toque) y el botón se habilita cuando termina; si no se pudo bajar, se comparte el
   enlace. Como `/biblioteca/*` es público, quien recibe el enlace puede bajar el archivo: misma
   salvedad que la descarga. Test: escenarios A, D y E de `tests/biblioteca.test.mjs`.
+- **Selección para enviar varios**: cada documento del listado tiene una casilla. La barra de arriba
+  tiene «Todos» (marca lo que se ve con el filtro actual), «Limpiar» y los iconos WhatsApp y Mail, que
+  mandan los marcados con su enlace (el asunto del mail dice «Documentos de la Biblioteca (N)» si son
+  varios). Desde la selección se envían enlaces, no adjuntos; el adjunto está en «Compartir» de la ficha
+  de un documento. La selección vive mientras la pestaña esté abierta. Test: escenario A de
+  `tests/biblioteca.test.mjs`.
 - **El botón + (Nuevo Proyecto) se oculta en Biblioteca.** Se oculta con `style.display`,
   no con `hidden`: `header.js` le pone `display:flex`, que le gana al atributo.
 - **Pendiente con el usuario, antes de subir notas internas**: los archivos de `public/`

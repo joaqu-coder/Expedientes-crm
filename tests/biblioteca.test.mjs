@@ -52,7 +52,7 @@ if (indice) {
 }
 
 const html = fs.readFileSync(path.join(PUBLIC, 'proyectos.html'), 'utf8');
-for (const id of ['tabBiblio', 'viewBiblio', 'bibChips', 'bibCount', 'bibList', 'bibOv', 'bibBajar', 'bibCerrar', 'bibCompartir', 'bibWhats', 'bibMail']) {
+for (const id of ['tabBiblio', 'viewBiblio', 'bibChips', 'bibCount', 'bibList', 'bibOv', 'bibBajar', 'bibCerrar', 'bibCompartir', 'bibWhats', 'bibMail', 'bibSel', 'bibSelN', 'bibSelTodos', 'bibSelLimpiar', 'bibSelWa', 'bibSelMail']) {
   if (!html.includes(`id="${id}"`)) falla(`proyectos.html no tiene #${id}`);
 }
 const sw = fs.readFileSync(path.join(PUBLIC, 'sw.js'), 'utf8');
@@ -161,6 +161,39 @@ async function recorrido() {
       const porPase = await page.$$eval('#bibList .bib-doc-titulo', (els) => els.map((e) => e.textContent));
       if (porPase.length !== 1 || !/pase/i.test(porPase[0])) falla(`Biblioteca: el filtro «notas» dio ${JSON.stringify(porPase)}`);
       await page.click('#bibChips [data-cat="todas"]');
+
+      // Selección: se marcan documentos y los iconos de WhatsApp y Mail mandan los elegidos.
+      if (await page.isVisible('#bibSelWa')) falla('Selección: los iconos de envío se ven sin nada seleccionado');
+      if (await page.isHidden('#bibSelTodos')) falla('Selección: «Todos» no está disponible sin selección');
+      await page.check('#bibList input[data-sel="ci-general"]');
+      if (await page.isHidden('#bibSelWa')) falla('Selección: los iconos de envío no aparecen al marcar un documento');
+      if (!(await page.isHidden('#bibOv'))) falla('Selección: marcar la casilla abrió la ficha');
+      const n1 = await page.textContent('#bibSelN');
+      if (n1 !== '1 seleccionado') falla(`Selección: el contador dice «${n1}»`);
+      const wa1 = decodeURIComponent((await page.getAttribute('#bibSelWa', 'href')) || '');
+      if (!wa1.startsWith('https://wa.me/?text=') || !wa1.includes('/biblioteca/archivos/ci-general.docx') || wa1.includes('pase-seguimiento'))
+        falla(`Selección: WhatsApp con un documento no manda el elegido (${wa1})`);
+      await page.check('#bibList input[data-sel="pase-seguimiento"]');
+      const wa2 = decodeURIComponent((await page.getAttribute('#bibSelWa', 'href')) || '');
+      if (!wa2.includes('/biblioteca/archivos/ci-general.docx') || !wa2.includes('/biblioteca/archivos/pase-seguimiento.docx'))
+        falla(`Selección: WhatsApp con dos documentos no manda los dos (${wa2})`);
+      const mail2 = decodeURIComponent((await page.getAttribute('#bibSelMail', 'href')) || '');
+      if (!mail2.startsWith('mailto:?subject=') || !mail2.includes('Documentos de la Biblioteca (2)') || !mail2.includes('/biblioteca/archivos/pase-seguimiento.docx'))
+        falla(`Selección: Mail con dos documentos no manda los dos (${mail2})`);
+      if ((await page.textContent('#bibSelN')) !== '2 seleccionados') falla('Selección: el contador no pasó a 2');
+      await page.click('#bibSelLimpiar');
+      if (await page.isVisible('#bibSelWa')) falla('Selección: Limpiar no oculta los iconos de envío');
+      if (await page.$('#bibList input[data-sel]:checked')) falla('Selección: Limpiar no desmarcó las casillas');
+
+      // «Todos» marca lo que se ve: con el filtro Notas, solo el pase.
+      await page.click('#bibChips [data-cat="notas"]');
+      await page.click('#bibSelTodos');
+      if ((await page.textContent('#bibSelN')) !== '1 seleccionado') falla(`Selección: «Todos» con filtro Notas dio «${await page.textContent('#bibSelN')}»`);
+      await page.click('#bibSelLimpiar');
+      await page.click('#bibChips [data-cat="todas"]');
+      await page.click('#bibSelTodos');
+      if ((await page.textContent('#bibSelN')) !== '3 seleccionados') falla(`Selección: «Todos» sin filtro dio «${await page.textContent('#bibSelN')}»`);
+      await page.click('#bibSelLimpiar');
 
       await page.click('#bibList [data-id="ci-general"]');
       await page.waitForSelector('#bibOv:not([hidden])');

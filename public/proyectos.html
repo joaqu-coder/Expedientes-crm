@@ -310,9 +310,22 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 .bib-chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
 .bib-n{font-size:12px;opacity:.7;font-variant-numeric:tabular-nums}
 .bib-list{display:grid;gap:10px}
-.bib-doc{display:flex;gap:14px;align-items:flex-start;width:100%;padding:14px;border:1px solid var(--border);
-  border-radius:10px;background:var(--surface);color:var(--fg);font:inherit;text-align:left;cursor:pointer}
+.bib-doc{display:flex;gap:4px;align-items:center;width:100%;padding:14px 14px 14px 6px;border:1px solid var(--border);
+  border-radius:10px;background:var(--surface);color:var(--fg)}
 .bib-doc:hover{border-color:var(--accent)}
+.bib-doc-abrir{display:flex;gap:14px;align-items:flex-start;flex:1 1 auto;min-width:0;padding:0;border:0;background:none;
+  color:inherit;font:inherit;text-align:left;cursor:pointer}
+.bib-check{flex:0 0 auto;min-width:44px;min-height:44px;display:grid;place-items:center;cursor:pointer}
+.bib-check input{width:22px;height:22px;margin:0;accent-color:var(--accent);cursor:pointer}
+.bib-sel{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;
+  border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:10px}
+#bibSelEnvio[hidden],#bibSelLimpiar[hidden]{display:none}
+.bib-sel-n{font-size:14px;font-weight:700}
+.bib-sel-acc,.bib-sel-envio{display:flex;flex-wrap:wrap;gap:8px}
+.bib-envio{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:999px;
+  border:1px solid var(--border);background:var(--bg);color:var(--fg);text-decoration:none;font-size:14px;font-weight:600}
+.bib-envio:hover{border-color:var(--accent)}
+.bib-envio svg{width:18px;height:18px;flex:0 0 auto}
 .bib-ext{flex:0 0 auto;width:44px;height:52px;border-radius:8px;border:1px solid var(--border);display:grid;
   place-items:center;font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--muted)}
 .bib-doc-body{min-width:0;flex:1}
@@ -410,6 +423,17 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 <section class="view" id="viewBiblio" role="tabpanel" aria-labelledby="tabBiblio" hidden>
   <div class="bib-chips" id="bibChips" role="group" aria-label="Categorías"></div>
   <div class="list-count" id="bibCount" role="status" aria-live="polite"></div>
+  <div class="bib-sel" id="bibSel">
+    <span class="bib-sel-n" id="bibSelN" role="status" aria-live="polite"></span>
+    <div class="bib-sel-acc">
+      <button type="button" class="btn btn-outline" id="bibSelTodos">Todos</button>
+      <button type="button" class="btn btn-outline" id="bibSelLimpiar" hidden>Limpiar</button>
+    </div>
+    <div class="bib-sel-envio" id="bibSelEnvio" hidden>
+      <a class="bib-envio" id="bibSelWa" href="#" aria-label="Enviar por WhatsApp" title="Enviar por WhatsApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>WhatsApp</a>
+      <a class="bib-envio" id="bibSelMail" href="#" aria-label="Enviar por mail" title="Enviar por mail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>Mail</a>
+    </div>
+  </div>
   <div class="bib-list" id="bibList"></div>
   <p class="bib-pie">Las plantillas se bajan y se editan en Word. Lo que cambies queda en tu copia y no vuelve a la biblioteca.</p>
 </section>
@@ -1370,6 +1394,8 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   // dentro del toque: el archivo se baja al abrir la ficha y el botón se habilita
   // cuando eso termina. Si no se pudo bajar, se comparte el enlace.
   var bibArchivo = null, bibTurno = 0;
+  // Selección para enviar varios a la vez. Vive mientras la pantalla esté abierta.
+  var bibSel = new Set();
   function bibUrlAbs(d){ return new URL("biblioteca/"+d.archivo, location.href).href; }
   var bibOv = document.getElementById("bibOv");
   function bibNorm(s){ return String(s).normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase(); }
@@ -1393,7 +1419,26 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     var texto = bibNorm([d.titulo, BIB_CATS[d.categoria], d.resumen||"", (d.tags||[]).join(" ")].join(" "));
     return terminos.every(function(t){ return texto.indexOf(t)!==-1; });
   }
+  function bibFiltrados(){
+    var terminos = bibNorm(bibQ).trim().split(/\s+/).filter(Boolean);
+    return bibDocs.filter(function(d){ return (bibCat==="todas" || d.categoria===bibCat) && bibCoincide(d, terminos); });
+  }
+  function bibSeleccionados(){ return bibDocs ? bibDocs.filter(function(d){ return bibSel.has(d.id); }) : []; }
+  // Los iconos de WhatsApp y Mail mandan los documentos marcados, con su enlace.
+  function bibActualizarSel(){
+    var docs = bibSeleccionados(), hay = docs.length>0;
+    document.getElementById("bibSelEnvio").hidden = !hay;
+    document.getElementById("bibSelLimpiar").hidden = !hay;
+    document.getElementById("bibSelN").textContent = !hay ? "Elegí documentos para enviar"
+      : docs.length===1 ? "1 seleccionado" : docs.length+" seleccionados";
+    if(!hay) return;
+    var cuerpo = docs.map(function(d){ return d.titulo+"\n"+bibUrlAbs(d); }).join("\n\n");
+    var asunto = docs.length===1 ? docs[0].titulo : "Documentos de la Biblioteca ("+docs.length+")";
+    document.getElementById("bibSelWa").href = "https://wa.me/?text=" + encodeURIComponent(cuerpo);
+    document.getElementById("bibSelMail").href = "mailto:?subject=" + encodeURIComponent(asunto) + "&body=" + encodeURIComponent(cuerpo);
+  }
   function renderBiblio(){
+    bibActualizarSel();
     var chips = document.getElementById("bibChips"), count = document.getElementById("bibCount"), list = document.getElementById("bibList");
     if(bibError){
       chips.innerHTML = ""; count.textContent = "";
@@ -1416,16 +1461,19 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
       var n = bibDocs.filter(function(d){ return (o[0]==="todas" || d.categoria===o[0]) && bibCoincide(d, terminos); }).length;
       return '<button type="button" class="bib-chip" aria-pressed="'+(bibCat===o[0])+'" data-cat="'+o[0]+'">'+esc(o[1])+' <span class="bib-n">'+n+'</span></button>';
     }).join("");
-    var lista = bibDocs.filter(function(d){ return (bibCat==="todas" || d.categoria===bibCat) && bibCoincide(d, terminos); });
+    var lista = bibFiltrados();
     count.textContent = lista.length===1 ? "1 documento" : lista.length+" documentos";
     list.innerHTML = lista.length
       ? lista.map(function(d){
-          return '<button type="button" class="bib-doc" data-id="'+esc(d.id)+'">'
+          return '<div class="bib-doc">'
+            + '<label class="bib-check"><input type="checkbox" data-sel="'+esc(d.id)+'"'+(bibSel.has(d.id)?' checked':'')
+            +   ' aria-label="Seleccionar '+esc(d.titulo)+'"></label>'
+            + '<button type="button" class="bib-doc-abrir" data-id="'+esc(d.id)+'">'
             + '<span class="bib-ext" aria-hidden="true">'+esc(d.tipo||"")+'</span>'
             + '<span class="bib-doc-body">'
             + '<span class="bib-doc-titulo">'+esc(d.titulo)+'</span>'
             + '<span class="bib-doc-meta">'+esc(BIB_CATS[d.categoria])+(d.version?' · '+esc(d.version):'')+'</span>'
-            + '</span></button>';
+            + '</span></button></div>';
         }).join("")
       : '<div class="bib-vacio">Sin resultados para «'+esc(bibQ)+'». Probá otra palabra o quitá el filtro.</div>';
   }
@@ -1492,6 +1540,22 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
       if(e && e.name==="AbortError") return;
       document.getElementById("bibAviso").hidden = false;
     });
+  });
+  document.getElementById("bibList").addEventListener("change", function(e){
+    var c = e.target;
+    if(!c.dataset || !c.dataset.sel) return;
+    if(c.checked) bibSel.add(c.dataset.sel); else bibSel.delete(c.dataset.sel);
+    bibActualizarSel();
+  });
+  document.getElementById("bibSelTodos").addEventListener("click", function(){
+    bibFiltrados().forEach(function(d){ bibSel.add(d.id); });
+    document.querySelectorAll("#bibList input[data-sel]").forEach(function(c){ c.checked = bibSel.has(c.dataset.sel); });
+    bibActualizarSel();
+  });
+  document.getElementById("bibSelLimpiar").addEventListener("click", function(){
+    bibSel.clear();
+    document.querySelectorAll("#bibList input[data-sel]").forEach(function(c){ c.checked = false; });
+    bibActualizarSel();
   });
   document.getElementById("bibCerrar").addEventListener("click", function(){ bibCerrar(true); });
   bibOv.addEventListener("click", function(e){ if(e.target===bibOv) bibCerrar(true); });
