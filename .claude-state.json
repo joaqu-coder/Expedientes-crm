@@ -1,6 +1,6 @@
 {
   "sesion_fecha": "2026-11-27",
-  "ultimo_commit": "Biblioteca en Proyectos (rama claude/funny-galileo-xi8hxf, sin mergear a main; ver git log)",
+  "ultimo_commit": "2b39a55 Biblioteca: la ficha solo descarga; tarjetas con título centrado (en main)",
   "estado": "2026-11-15: logos y íconos entre dispositivos corregidos y mergeados a main (4e3b5c0, fc04d74). Caché de service worker: /logos/* e /icon-*.png network-first. Suite completa en verde (973 OK, 0 fallas). | 2026-11-16 (Parques): filtro «Alquilada» en Empresas (titular de lote alquilado; no es situación). Test en testParques, rojo antes del cambio.",
   "resuelto": [
     "2026-11-27 (Proyectos, Biblioteca): pestaña Biblioteca en Proyectos (plantillas, notas y normativa). Índice estático public/biblioteca/biblioteca.json (vacío hasta que se suban los archivos) y archivos en public/biblioteca/archivos/. Búsqueda con la caja de Listado, categorías, ficha propia (#bibOv) con descarga y copiar texto. Botón + oculto en la pestaña (display, no hidden: header.js le pone display:flex). sw.js v12: /biblioteca/* network-first. tests/biblioteca.test.mjs (estático + navegador a 390px) sumado a npm test. Procedimiento en CLAUDE.md (sección Biblioteca).",
@@ -124,7 +124,6 @@
   "pendiente": [
     "Biblioteca: decidir si las plantillas y la normativa son públicas (quedan en public/, sin clave) o internas (hay que servirlas por el Worker detrás de X-Clave). Antes de subir notas con nombres de personas o expedientes.",
     "Biblioteca: la fila de pestañas de Proyectos (cuatro pestañas) no entra en 390px y se desplaza en horizontal (comportamiento del kit compartido). Ver si conviene acortar rótulos o reducir el padding.",
-    "Biblioteca: merge a main pendiente de decisión del usuario; el deploy es automático. Correr npm test en verde sobre el árbol antes de mergear.",
     "Merge a main pendiente de decisión del usuario (main deploya solo) para el commit 59ade59 (logo Foodery). Hasta entonces el logo no está en producción.",
     "Resoluciones › Análisis: decidir si se mergea la rama a main (la suite completa está en verde en la rama). Pendiente de datos: 18 fechas inválidas, no entran en ningún KPI por fecha todavía.",
     "Merge a main pendiente de decisión del usuario (main deploya solo). Rama: ccr-e878f5f2-mtloy0.",
