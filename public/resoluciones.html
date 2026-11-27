@@ -51,11 +51,16 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 .nav-item.active .nav-icon{background:color-mix(in srgb, var(--accent) 16%, transparent)}
 
 /* ---- Toolbar: búsqueda siempre visible + filtros ---- */
-.toolbar-search{padding:12px 0 8px}
+.toolbar-search{padding:12px 0 8px;margin-bottom:var(--ds-gap)}
 .toolbar-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:var(--ds-gap);display:flex;flex-direction:column;gap:12px}
 /* El campo de búsqueda lo dibuja .search-bar de ui-kit.css: acá quedan
    solo los desplegables de filtro. */
 .toolbar-card select{background:var(--surface-2);border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:8px 10px;font-size:13px}
+.search-row{display:flex;align-items:center;gap:8px}
+.search-row .search-bar{flex:1 1 auto;min-width:0}
+.search-row .app-tab{flex:0 0 auto}
+#btnFiltros[aria-expanded="true"]{background:var(--surface-2)}
+#filtrosPanel[hidden]{display:none}
 .toolbar-filters{display:flex;gap:8px;flex-wrap:wrap}
 .toolbar-filters select{flex:1 1 160px}
 
@@ -185,9 +190,12 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 </div>
 <section class="view" id="viewList" role="tabpanel" aria-labelledby="tabList">
 <div class="toolbar-search">
-  <div class="search-bar"><input type="search" id="search" placeholder="Buscar por N° de resolución, expediente, autoridad o texto de la resolución…"></div>
+  <div class="search-row">
+    <div class="search-bar"><input type="search" id="search" placeholder="Buscar por N° de resolución, expediente, autoridad o texto de la resolución…"></div>
+    <button type="button" class="app-tab tab" id="btnFiltros" aria-expanded="false" aria-controls="filtrosPanel">Filtros</button>
+  </div>
 </div>
-<div class="toolbar-card">
+<div class="toolbar-card" id="filtrosPanel" hidden>
   <div class="toolbar-filters">
     <select id="filterTema"><option value="">Todos los temas</option></select>
     <select id="filterAnio"><option value="">Todos los años</option></select>
@@ -452,6 +460,13 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
   selTema.addEventListener("change", function(){ state.filterTema=this.value; cambioFiltro(); });
   selAnio.addEventListener("change", function(){ state.filterAnio=this.value; cambioFiltro(); });
   document.getElementById("search").addEventListener("input", function(){ state.search=this.value.toLowerCase(); cambioFiltro(); });
+  // «Filtros» despliega los desplegables de tema y año; no cambian el filtro por sí solos.
+  var btnFiltros = document.getElementById("btnFiltros"), panelFiltros = document.getElementById("filtrosPanel");
+  btnFiltros.addEventListener("click", function(){
+    var abrir = panelFiltros.hidden;
+    panelFiltros.hidden = !abrir;
+    btnFiltros.setAttribute("aria-expanded", String(abrir));
+  });
 
   function resolucionesFiltradas(){
     return state.resoluciones.filter(function(r){
