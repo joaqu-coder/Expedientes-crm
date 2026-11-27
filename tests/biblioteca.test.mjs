@@ -39,6 +39,13 @@ if (indice) {
       ids.add(d.id);
       if (!CATEGORIAS.includes(d.categoria)) falla(`${d.id}: categoría "${d.categoria}" no existe (usar ${CATEGORIAS.join(', ')})`);
       if (typeof d.titulo !== 'string' || !d.titulo) falla(`${d.id}: falta el título`);
+      // Los formularios llevan número en la columna izquierda de la tarjeta: Carta 0, I 1 … IV 4.
+      if (d.categoria === 'formularios') {
+        const romanos = { I: 1, II: 2, III: 3, IV: 4 };
+        const m = d.titulo.match(/^Formulario (I|II|III|IV) ·/);
+        const esperado = d.id === 'carta-intencion-requisitos-pdf' ? 0 : m ? romanos[m[1]] : undefined;
+        if (esperado !== undefined && d.numero !== esperado) falla(`${d.id}: numero es ${d.numero}, debía ser ${esperado}`);
+      }
       if (typeof d.archivo !== 'string' || !d.archivo) { falla(`${d.id}: falta el archivo`); continue; }
       if (d.archivo.startsWith('/') || d.archivo.includes('..') || /^[a-z]+:/i.test(d.archivo)) {
         falla(`${d.id}: la ruta "${d.archivo}" tiene que ser relativa a biblioteca/ y no salir de la carpeta`);
@@ -255,10 +262,10 @@ async function recorrido() {
       await page.keyboard.press('Escape');
       if (!(await page.isHidden('#bibOv'))) falla('Ficha: Escape no la cerró');
 
-      // Tarjetas: sin línea de metadatos, y el título centrado.
+      // Tarjetas: sin línea de metadatos; el título va a la derecha del número.
       if (await page.$('#bibList .bib-doc-meta')) falla('Tarjetas: quedó la línea de metadatos (bib-doc-meta)');
       const alineado = await page.$eval('#bibList .bib-doc-titulo', (e) => getComputedStyle(e).textAlign);
-      if (alineado !== 'center') falla(`Tarjetas: el título no está centrado (text-align: ${alineado})`);
+      if (alineado !== 'left') falla(`Tarjetas: el título no está alineado a la izquierda (text-align: ${alineado})`);
 
       // La búsqueda de Listado sobrevive al paso por Biblioteca. Primero se vuelve
       // a Listado: escribir acá sin salir filtraría los documentos, no los expedientes.

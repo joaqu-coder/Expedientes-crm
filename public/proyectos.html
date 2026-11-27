@@ -310,8 +310,8 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 .bib-chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
 .bib-n{font-size:12px;opacity:.7;font-variant-numeric:tabular-nums}
 .bib-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.bib-doc{display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:flex-start;width:100%;min-width:0;padding:12px 8px;border:1px solid var(--border);
-  border-radius:10px;background:var(--surface);color:var(--fg);font:inherit;text-align:center;cursor:pointer}
+.bib-doc{display:flex;flex-direction:row;gap:8px;align-items:stretch;justify-content:flex-start;width:100%;min-width:0;padding:0;border:1px solid var(--border);
+  border-radius:10px;background:var(--surface);color:var(--fg);font:inherit;text-align:left;cursor:pointer;overflow:hidden}
 .bib-doc:hover{border-color:var(--accent)}
 .bib-doc.is-sel{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
 .bib-barra{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:10px}
@@ -329,10 +329,11 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 .bib-head-btn:hover{background:var(--surface-2)}
 .bib-head-btn:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .bib-head-btn svg{width:24px;height:24px;display:block}
-.bib-ext{flex:0 0 auto;width:44px;height:52px;border-radius:8px;border:1px solid var(--border);display:grid;
-  place-items:center;font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--muted)}
-.bib-doc-body{min-width:0;flex:1}
-.bib-doc-titulo{display:block;font-weight:700;font-size:13px;line-height:1.3;overflow-wrap:anywhere;text-align:center}
+.bib-ext{flex:0 0 auto;width:40px;display:grid;place-items:center;font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--muted);
+  border-right:1px solid var(--border)}
+.bib-ext.bib-ext-num{font-size:22px;line-height:1;color:var(--fg);letter-spacing:0;font-variant-numeric:tabular-nums}
+.bib-doc-body{min-width:0;flex:1;display:flex;align-items:center;padding:10px 8px 10px 0}
+.bib-doc-titulo{display:block;font-weight:600;font-size:12.5px;line-height:1.3;overflow-wrap:break-word;hyphens:auto;text-align:left}
 .bib-vacio{padding:28px 16px;text-align:center;color:var(--muted);border:1px dashed var(--border);
   border-radius:10px;font-size:14px}
 .bib-pie{margin-top:18px;font-size:12px;color:var(--muted)}
@@ -1532,10 +1533,11 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     list.innerHTML = lista.length
       ? lista.map(function(d){
           var on = bibSel.has(d.id);
+          var tieneNum = typeof d.numero === "number";
           return '<button type="button" class="bib-doc'+(on?' is-sel':'')+'" data-id="'+esc(d.id)+'"'+(bibSeleccionando?' aria-pressed="'+on+'"':'')+'>'
-            + '<span class="bib-ext" aria-hidden="true">'+esc(d.tipo||"")+'</span>'
+            + '<span class="bib-ext'+(tieneNum?' bib-ext-num':'')+'" aria-hidden="true">'+esc(tieneNum?String(d.numero):(d.tipo||""))+'</span>'
             + '<span class="bib-doc-body">'
-            + '<span class="bib-doc-titulo">'+esc(d.titulo)+'</span>'
+            + '<span class="bib-doc-titulo">'+esc(d.etiqueta||d.titulo)+'</span>'
             + '</span></button>';
         }).join("")
       : '<div class="bib-vacio">Sin resultados para «'+esc(bibQ)+'». Probá otra palabra o quitá el filtro.</div>';
