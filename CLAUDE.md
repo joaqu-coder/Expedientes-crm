@@ -1490,8 +1490,7 @@ en Word. **No se edita desde la app ni se sincroniza**: es un archivo estático.
 - **Solo PDF se comparte como archivo.** La hoja de compartir de Chrome en Android acepta PDF, imagen,
   audio, video y texto; un DOCX falla con `NotAllowedError` aunque `canShare` diga que sí. Por eso la
   carta tiene dos entradas: la DOCX (para editar en Word) y «Carta de intención y requisitos (PDF)»
-  (copia generada con LibreOffice desde el mismo DOCX, para enviar). Si se actualiza la plantilla,
-  regenerar el PDF. `tests/biblioteca.test.mjs` exige que todo documento marcado `PDF` sea un PDF real.
+  (PDF exportado desde Word por el usuario, para enviar). Si cambia la plantilla DOCX, volver a exportar el PDF. `tests/biblioteca.test.mjs` exige que todo documento marcado `PDF` sea un PDF real.
   El aviso muestra el nombre del error (`NotAllowedError`, `DataError`…).
 - **El botón + (Nuevo Proyecto) se oculta en Biblioteca.** Se oculta con `style.display`,
   no con `hidden`: `header.js` le pone `display:flex`, que le gana al atributo.
