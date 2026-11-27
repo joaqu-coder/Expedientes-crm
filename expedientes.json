@@ -163,6 +163,10 @@
         {
           "hora": "13/11/2026 11:03",
           "texto": "Se envia expe al Servicio de administración financiera para que estime curso de acción y continuar con el trámite"
+        },
+        {
+          "hora": "27/11/2026 11:35",
+          "texto": "Causarano Mandó  el expte e parque automotor el 26/11/2026"
         }
       ],
       "parque": "Egpais"
@@ -549,6 +553,10 @@
         {
           "hora": "16/11/2026 10:28",
           "texto": "se comunica. Comenta que no podrá venir el dia de hoy. Está con conpromisos hata las 18, todos los días.Acordamos en juntarnos el día 19/11"
+        },
+        {
+          "hora": "27/11/2026 11:38",
+          "texto": "Reunión en el Parque Guemes para el martes  1/12/2026"
         }
       ],
       "parque": "Güemes"
@@ -634,5 +642,5 @@
     "Egpais",
     "Salta"
   ],
-  "timestamp": "2026-11-16T15:04:43.913Z"
+  "timestamp": "2026-11-27T14:38:07.522Z"
 }
