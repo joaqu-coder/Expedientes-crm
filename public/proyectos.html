@@ -318,8 +318,6 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 .bib-doc-body{min-width:0;flex:1}
 .bib-doc-titulo{display:block;font-weight:700;font-size:15px;overflow-wrap:anywhere}
 .bib-doc-meta{display:block;font-size:12px;color:var(--muted);margin-top:2px}
-.bib-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.bib-tag{font-size:11.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--border);color:var(--muted)}
 .bib-vacio{padding:28px 16px;text-align:center;color:var(--muted);border:1px dashed var(--border);
   border-radius:10px;font-size:14px}
 .bib-pie{margin-top:18px;font-size:12px;color:var(--muted)}
@@ -420,7 +418,6 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     <div class="bib-meta" id="bibMeta"></div>
     <h2 id="bibTitulo"></h2>
     <p id="bibResumen"></p>
-    <div class="bib-tags" id="bibTags"></div>
     <div class="bib-acciones">
       <a class="btn btn-primary" id="bibBajar" href="#" download>Descargar</a>
       <button type="button" class="btn btn-secondary" id="bibCerrar">Cerrar</button>
@@ -1414,7 +1411,6 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
             + '<span class="bib-doc-body">'
             + '<span class="bib-doc-titulo">'+esc(d.titulo)+'</span>'
             + '<span class="bib-doc-meta">'+esc(BIB_CATS[d.categoria])+(d.version?' · '+esc(d.version):'')+'</span>'
-            + '<span class="bib-tags">'+(d.tags||[]).slice(0,4).map(function(g){ return '<span class="bib-tag">'+esc(g)+'</span>'; }).join("")+'</span>'
             + '</span></button>';
         }).join("")
       : '<div class="bib-vacio">Sin resultados para «'+esc(bibQ)+'». Probá otra palabra o quitá el filtro.</div>';
@@ -1428,7 +1424,6 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     document.getElementById("bibTitulo").textContent = d.titulo;
     document.getElementById("bibResumen").textContent = d.resumen || "";
     document.getElementById("bibResumen").hidden = !d.resumen;
-    document.getElementById("bibTags").innerHTML = (d.tags||[]).map(function(g){ return '<span class="bib-tag">'+esc(g)+'</span>'; }).join("");
     var bajar = document.getElementById("bibBajar");
     bajar.href = "biblioteca/"+d.archivo;
     bajar.setAttribute("download", "");
