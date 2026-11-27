@@ -1451,6 +1451,34 @@ usá un worktree, que no toca tu árbol:
   a la rama después de la última corrida, la corrida ya no vale.
 - Actualizá `.claude-state.json` con lo que quedó pendiente.
 
+## Logos de empresas: la misma línea para cada logo nuevo (2026-11-27)
+
+Todos los logos de Parques se ven como una sola colección: gris, fondo blanco,
+misma escala. Un logo que entra con otro criterio (el de Foodery entró a color y
+más claro, y se vio distinto en la grilla) se corrige **en el archivo**, no en el
+CSS. `.emp-logo` y `.logo-empresa` no llevan filtro ni se les cambia el tamaño
+para compensar.
+
+Cada logo nuevo se procesa así:
+
+1. **Formato**: PNG RGB de 8 bits, sin canal alfa, fondo blanco. Recorte al
+   contenido (bbox de lo que no es blanco) con 4px de blanco alrededor.
+2. **Escala de grises**: R=G=B en todos los píxeles. Si el logo es a color, se
+   pasa a gris (`convert('L')`).
+3. **Peso de la tinta**: si después de pasarlo a gris la tinta queda más clara
+   que la de la colección (la mediana es ~24% de píxeles oscuros, bajo 128), se
+   aplican niveles con corte en 100: `v <= 100 → 0`, el resto se estira a 255.
+   **No** se engrosan los trazos con un filtro (MinFilter u otro): eso cambia el
+   dibujo del logo.
+4. **Registro**: `public/logos/<empresa>.png` y la entrada en `LOGOS`
+   (`public/parques.html`), con el `id_empresa` correcto. Sumar 1 al conteo de
+   `tests/logos.test.mjs`.
+5. **Verificación**: `node tests/logos.test.mjs` (formato, id válido, y que no
+   haya píxeles a color) y mirar la baldosa en la grilla y la ficha, en
+   escritorio y en 390px, al lado de un vecino de la misma grilla.
+
+Referencia de Foodery (SE099): gris con niveles 100 (`public/logos/foodery.png`).
+
 ## Tests
 
 ```bash

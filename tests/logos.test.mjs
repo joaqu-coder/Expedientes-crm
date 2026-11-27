@@ -10,6 +10,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -46,6 +47,43 @@ for (const { id, archivo } of entradas) {
   if (firma !== '89504e470d0a1a0a') { falla(`${id}: ${archivo} no tiene firma PNG`); continue; }
   const profundidad = cab[24], tipo = cab[25];
   if (profundidad !== 8 || tipo !== 2) falla(`${id}: ${archivo} es color type ${tipo}/${profundidad} bit; se espera RGB 8 bit (tipo 2)`);
+}
+
+// 4b. Escala de grises: todos los logos van en gris (R=G=B en cada píxel), como
+//     el resto de la colección. Un logo a color se ve distinto al lado de los
+//     demás y no se corrige desde el CSS (`.emp-logo` no lleva filtro).
+// Decodificador PNG mínimo: RGB 8 bit, no entrelazado, los cinco filtros.
+function pixelesPng(buf) {
+  let pos = 8, w = 0, h = 0;
+  const idat = [];
+  while (pos < buf.length) {
+    const len = buf.readUInt32BE(pos), tipo = buf.subarray(pos + 4, pos + 8).toString('latin1');
+    const datos = buf.subarray(pos + 8, pos + 8 + len);
+    if (tipo === 'IHDR') { w = datos.readUInt32BE(0); h = datos.readUInt32BE(4); }
+    if (tipo === 'IDAT') idat.push(datos);
+    pos += 12 + len;
+  }
+  const raw = zlib.inflateSync(Buffer.concat(idat));
+  const stride = w * 3, out = Buffer.alloc(stride * h);
+  const paeth = (a, b, c) => { const p = a + b - c, pa = Math.abs(p - a), pb = Math.abs(p - b), pc = Math.abs(p - c); return pa <= pb && pa <= pc ? a : pb <= pc ? b : c; };
+  for (let y = 0; y < h; y++) {
+    const f = raw[y * (stride + 1)];
+    for (let x = 0; x < stride; x++) {
+      const r = raw[y * (stride + 1) + 1 + x];
+      const a = x >= 3 ? out[y * stride + x - 3] : 0;
+      const b = y > 0 ? out[(y - 1) * stride + x] : 0;
+      const c = x >= 3 && y > 0 ? out[(y - 1) * stride + x - 3] : 0;
+      const pred = f === 0 ? 0 : f === 1 ? a : f === 2 ? b : f === 3 ? (a + b) >> 1 : paeth(a, b, c);
+      out[y * stride + x] = (r + pred) & 255;
+    }
+  }
+  return out;
+}
+for (const { id, archivo } of entradas) {
+  const px = pixelesPng(fs.readFileSync(path.join(RAIZ, 'public', archivo)));
+  let color = 0;
+  for (let i = 0; i < px.length; i += 3) if (px[i] !== px[i + 1] || px[i] !== px[i + 2]) color++;
+  if (color) falla(`${id}: ${archivo} tiene ${color} píxeles a color; los logos van en escala de grises (R=G=B)`);
 }
 
 // 5. Marcado válido: la baldosa de empresa es un <button>, cuyo contenido debe
