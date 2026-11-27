@@ -1360,7 +1360,8 @@ async function testResoluciones(viewport, puerto) {
   const primera = await page.locator('.res-card-title').first().textContent();
   ok(/\/2025$/.test(primera), `la primera tarjeta es del año más nuevo (${primera})`);
 
-  // Filtros
+  // Filtros: los desplegables viven en el panel que abre «Filtros».
+  await page.click('#btnFiltros');
   await page.selectOption('#filterAnio', '2016');
   await page.waitForTimeout(150);
   const esperado2016 = datos.resoluciones.filter((r) => r.anio === '2016').length;
@@ -4258,8 +4259,8 @@ async function testEspaciadoYAncho(puerto) {
     seguimiento: { ref: '.area-btn', sig: '#expedientesList' },
     proyectos: { ref: '.app-tabs', sig: null },
     parques: { ref: '.app-tabs', sig: null },
-    // Resoluciones no tiene fila de chips: la tarjeta de filtros es lo que va sobre el listado.
-    resoluciones: { ref: '.toolbar-card', sig: null },
+    // Resoluciones no tiene fila de chips: la búsqueda con «Filtros» es lo que va sobre el listado.
+    resoluciones: { ref: '.toolbar-search', sig: null },
   };
   for (const p of Object.keys(espacios)) {
     await movil.goto(`http://localhost:${puerto}/${p}.html`, { waitUntil: 'networkidle' });
