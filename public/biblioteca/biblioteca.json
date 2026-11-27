@@ -1,3 +1,52 @@
 {
-  "documentos": []
+  "documentos": [
+    {
+      "id": "egpais-anexo-i",
+      "categoria": "cartas",
+      "titulo": "Anexo I · Formulario técnico",
+      "tipo": "PDF",
+      "version": "en blanco · EGPAIS",
+      "resumen": "Identificación de la empresa y de los socios, actividad, producto, infraestructura (energía, agua, gas) y localización.",
+      "tags": [
+        "anexo",
+        "técnico",
+        "EGPAIS",
+        "formulario",
+        "proyecto"
+      ],
+      "archivo": "archivos/anexo-i-formulario-tecnico.pdf"
+    },
+    {
+      "id": "egpais-anexo-ii",
+      "categoria": "cartas",
+      "titulo": "Anexo II · Formulario económico financiero",
+      "tipo": "PDF",
+      "version": "en blanco · EGPAIS",
+      "resumen": "Mercado de los bienes a producir, proceso productivo, costos y cronograma de inversiones.",
+      "tags": [
+        "anexo",
+        "económico",
+        "financiero",
+        "EGPAIS",
+        "formulario"
+      ],
+      "archivo": "archivos/anexo-ii-formulario-economico-financiero.pdf"
+    },
+    {
+      "id": "egpais-anexo-iii",
+      "categoria": "cartas",
+      "titulo": "Anexo III · Formulario de impacto ambiental",
+      "tipo": "PDF",
+      "version": "en blanco · EGPAIS",
+      "resumen": "Residuos, efluentes, emisiones, ruidos, medidas de eficiencia y mercancías peligrosas del proceso.",
+      "tags": [
+        "anexo",
+        "impacto ambiental",
+        "EGPAIS",
+        "residuos",
+        "formulario"
+      ],
+      "archivo": "archivos/anexo-iii-formulario-impacto-ambiental.pdf"
+    }
+  ]
 }
