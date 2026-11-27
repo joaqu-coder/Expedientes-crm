@@ -321,6 +321,10 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 .bib-barra-envio{display:flex;gap:8px;width:100%}
 .bib-barra-envio .btn{flex:1 1 0}
 .bib-barra .btn:disabled{opacity:.45;cursor:default}
+#bibHeadAcciones[hidden]{display:none}
+.bib-head-acciones{display:flex;gap:6px;margin-left:auto}
+.bib-head-acciones .app-header__menu:disabled{opacity:.4;cursor:default}
+.bib-head-acciones .app-header__menu.is-on{background:var(--surface-2)}
 .bib-ext{flex:0 0 auto;width:44px;height:52px;border-radius:8px;border:1px solid var(--border);display:grid;
   place-items:center;font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--muted)}
 .bib-doc-body{min-width:0;flex:1}
@@ -1312,6 +1316,10 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     var isDash = name==="dashboard", isArchivo = name==="archivo", isBiblio = name==="biblioteca";
     var estabaBiblio = vistaActual==="biblioteca";
     if(estabaBiblio !== isBiblio){
+      // El modo de envío no sobrevive al cambio de pestaña, y sus íconos solo se ven en Biblioteca.
+      bibSeleccionando = false; bibSel.clear();
+      var acc = document.getElementById("bibHeadAcciones");
+      if(acc) acc.hidden = !isBiblio;
       // Una sola caja de búsqueda: cada pestaña recuerda lo suyo al salir.
       if(isBiblio){
         busquedaLista = cajaBusqueda.value;
@@ -1463,28 +1471,25 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     sel.forEach(bibCargarArchivo);
     var pendSel = bibPendiente(sel);
     var wa = document.getElementById("bibSelWa"), mail = document.getElementById("bibSelMail");
-    if(wa) wa.disabled = pendSel || !sel.length;
-    if(mail) mail.disabled = pendSel || !sel.length;
+    // Fuera del modo los íconos siempre están activos: el primer toque entra al modo.
+    var apagado = bibSeleccionando && (pendSel || !sel.length);
+    if(wa) wa.disabled = apagado;
+    if(mail) mail.disabled = apagado;
   }
   // Seleccionar para enviar: el mismo patrón que Resoluciones para imprimir. Un botón entra
   // al modo; dentro, tocar una tarjeta la marca con contorno en vez de abrir la ficha.
   function bibPintarBarra(){
     var barra = document.getElementById("bibBarra");
     if(bibError || !bibDocs || !bibDocs.length){ barra.innerHTML = ""; return; }
-    if(!bibSeleccionando){
-      barra.innerHTML = '<button type="button" class="btn btn-outline" data-accion="iniciar">Seleccionar para enviar</button>';
-    } else {
+    // Sin botones: el envío vive en los íconos del encabezado. Acá solo va el conteo del modo.
+    if(!bibSeleccionando){ barra.innerHTML = ""; }
+    else {
       var n = bibSel.size;
-      barra.innerHTML = '<div class="bib-barra-fila">'
-        + '<span class="bib-barra-txt" id="bibSelN" role="status" aria-live="polite">'+(n===0?"Elegí documentos":n===1?"1 seleccionado":n+" seleccionados")+'</span>'
-        + '<button type="button" class="btn btn-outline" data-accion="todos">Todos</button>'
-        + '<button type="button" class="btn btn-secondary" data-accion="cancelar">Cancelar</button>'
-        + '</div>'
-        + '<div class="bib-barra-envio">'
-        + '<button type="button" class="btn btn-primary" id="bibSelWa" data-accion="wa"'+(n?'':' disabled')+'>WhatsApp</button>'
-        + '<button type="button" class="btn btn-outline" id="bibSelMail" data-accion="mail"'+(n?'':' disabled')+'>Mail</button>'
-        + '</div>';
+      barra.innerHTML = '<span class="bib-barra-txt" id="bibSelN" role="status" aria-live="polite">'
+        + (n===0?"Tocá los documentos que querés mandar":n===1?"1 seleccionado":n+" seleccionados")+'</span>';
     }
+    var acc = document.getElementById("bibHeadAcciones");
+    if(acc) acc.classList.toggle("is-on", bibSeleccionando);
     bibPintarEnvio();
   }
   function bibAlternar(id){
@@ -1560,20 +1565,39 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     if(!b) return;
     if(bibSeleccionando) bibAlternar(b.dataset.id); else bibAbrir(b.dataset.id);
   });
-  // Barra de selección: un solo delegado, porque la barra se vuelve a pintar entera.
-  document.getElementById("bibBarra").addEventListener("click", function(e){
-    var b = e.target.closest("[data-accion]");
-    if(!b || b.disabled) return;
-    var a = b.dataset.accion;
-    if(a==="iniciar"){ bibSeleccionando = true; bibSel.clear(); renderBiblio(); }
-    else if(a==="cancelar"){ bibSeleccionando = false; bibSel.clear(); document.getElementById("bibSelAviso").hidden = true; renderBiblio(); }
-    else if(a==="todos"){ bibFiltrados().forEach(function(d){ bibSel.add(d.id); }); renderBiblio(); }
-    else if(a==="wa" || a==="mail"){ var d = bibSeleccionados(); if(d.length) bibEnviar(d, a); }
-  });
+  // Íconos de envío en el encabezado (solo en Biblioteca). Primer toque: entra al modo con
+  // todo lo visible marcado. Tocar una tarjeta la desmarca. Otro toque: envía lo marcado.
+  function montarAccionesBiblio(){
+    var h = document.querySelector(".app-header"), menu = document.getElementById("btnMenu");
+    var g = document.createElement("div");
+    g.id = "bibHeadAcciones"; g.className = "bib-head-acciones"; g.hidden = true;
+    g.innerHTML =
+      '<button type="button" class="app-header__menu" id="bibSelWa" data-accion="wa" aria-label="Enviar por WhatsApp" title="Enviar por WhatsApp">'+
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.6 7.3L3 20l1.3-5.2A8.4 8.4 0 1 1 21 11.5z"/></svg></button>'+
+      '<button type="button" class="app-header__menu" id="bibSelMail" data-accion="mail" aria-label="Enviar por mail" title="Enviar por mail">'+
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></button>';
+    h.insertBefore(g, menu);
+    g.addEventListener("click", function(e){
+      var b = e.target.closest("[data-accion]");
+      if(!b || b.disabled) return;
+      if(!bibSeleccionando){
+        bibSeleccionando = true;
+        bibSel = new Set(bibFiltrados().map(function(d){ return d.id; }));
+        renderBiblio();
+        return;
+      }
+      var d = bibSeleccionados();
+      if(d.length) bibEnviar(d, b.dataset.accion);
+    });
+  }
   document.getElementById("bibCerrar").addEventListener("click", function(){ bibCerrar(true); });
   bibOv.addEventListener("click", function(e){ if(e.target===bibOv) bibCerrar(true); });
   document.addEventListener("keydown", function(e){
-    if(bibOv.hidden) return;
+    if(bibOv.hidden){
+      // Escape sale del modo de envío (no hay botón de cancelar).
+      if(e.key==="Escape" && bibSeleccionando && vistaActual==="biblioteca"){ bibSeleccionando = false; bibSel.clear(); renderBiblio(); }
+      return;
+    }
     if(e.key==="Escape"){ e.preventDefault(); bibCerrar(true); return; }
     if(e.key==="Tab"){
       // Foco atrapado dentro de la ficha: Tab y Shift+Tab no escapan a la pantalla de atrás.
@@ -3068,6 +3092,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
       { etiqueta: "Actualizar datos", onClick: function(){ bajarCambiosIniciales(); } }
     ]
   });
+  montarAccionesBiblio();
 
   // ---- Devueltos desde Seguimiento ----
   // Seguimiento resuelve o archiva sus expedientes con motivo. Si el número es el de
