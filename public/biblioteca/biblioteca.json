@@ -18,6 +18,21 @@
       "archivo": "archivos/carta-intencion-requisitos.docx"
     },
     {
+      "id": "carta-intencion-requisitos-pdf",
+      "categoria": "formularios",
+      "titulo": "Carta de intención y requisitos (PDF)",
+      "tipo": "PDF",
+      "version": "copia en PDF · oct 2024",
+      "resumen": "La misma carta que la plantilla Word, en PDF para enviar. Para editarla, usar la versión DOCX.",
+      "tags": [
+        "carta",
+        "intención",
+        "requisitos",
+        "PDF"
+      ],
+      "archivo": "archivos/carta-intencion-requisitos.pdf"
+    },
+    {
       "id": "egpais-anexo-i",
       "categoria": "formularios",
       "titulo": "Formulario I · Técnico",

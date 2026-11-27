@@ -46,6 +46,12 @@ if (indice) {
       }
       const ruta = path.join(PUBLIC, 'biblioteca', d.archivo);
       if (!fs.existsSync(ruta) || fs.statSync(ruta).size === 0) falla(`${d.id}: no existe public/biblioteca/${d.archivo}`);
+      // La hoja de compartir del teléfono solo acepta PDF (y imagen, audio, video, texto):
+      // un documento marcado PDF tiene que ser un PDF de verdad, si no WhatsApp/Mail fallan.
+      if (d.tipo === 'PDF' && fs.existsSync(ruta)) {
+        const cabecera = fs.readFileSync(ruta).subarray(0, 5).toString('latin1');
+        if (!/\.pdf$/i.test(d.archivo) || cabecera !== '%PDF-') falla(`${d.id}: marcado PDF pero "${d.archivo}" no es un PDF`);
+      }
       if (d.tags !== undefined && !Array.isArray(d.tags)) falla(`${d.id}: "tags" tiene que ser una lista`);
     }
   }
