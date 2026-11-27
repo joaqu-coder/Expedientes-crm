@@ -81,6 +81,23 @@
         "constitución"
       ],
       "archivo": "archivos/anexo-iv-formulario-legal.pdf"
+    },
+    {
+      "id": "ley-7701",
+      "categoria": "normativa",
+      "titulo": "Ley 7701 · Parques y áreas industriales",
+      "tipo": "PDF",
+      "version": "texto ordenado · Boletín Oficial",
+      "resumen": "Ámbito de aplicación, objeto, promoción y objetivos de los parques y áreas industriales de Salta (texto ordenado por Ley 7913, actualizado al 31/07/2015).",
+      "tags": [
+        "ley",
+        "7701",
+        "parques",
+        "áreas industriales",
+        "promoción industrial",
+        "Salta"
+      ],
+      "archivo": "archivos/ley-7701-parques-y-areas-industriales.pdf"
     }
   ]
 }
