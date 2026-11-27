@@ -1,29 +1,12 @@
 {
   "documentos": [
     {
-      "id": "carta-intencion-requisitos",
-      "categoria": "formularios",
-      "titulo": "Carta de intención y requisitos",
-      "tipo": "DOCX",
-      "version": "plantilla · oct 2024",
-      "resumen": "Nota al Interventor del Ente con los datos que debe tener la carta: empresa, actividad, parque, superficie, personal y servicios.",
-      "tags": [
-        "carta",
-        "intención",
-        "requisitos",
-        "ente",
-        "parque",
-        "plantilla"
-      ],
-      "archivo": "archivos/carta-intencion-requisitos.docx"
-    },
-    {
       "id": "carta-intencion-requisitos-pdf",
       "categoria": "formularios",
       "titulo": "Carta de intención y requisitos (PDF)",
       "tipo": "PDF",
-      "version": "copia en PDF · oct 2024",
-      "resumen": "La misma carta que la plantilla Word, en PDF para enviar. Para editarla, usar la versión DOCX.",
+      "version": "oct 2024",
+      "resumen": "Nota al Interventor del Ente con los datos que debe tener la carta: empresa, actividad, parque, superficie, personal y servicios. Lista para enviar por WhatsApp o Mail.",
       "tags": [
         "carta",
         "intención",

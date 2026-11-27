@@ -58,9 +58,14 @@ if (indice) {
 }
 
 const html = fs.readFileSync(path.join(PUBLIC, 'proyectos.html'), 'utf8');
-for (const id of ['tabBiblio', 'viewBiblio', 'bibChips', 'bibCount', 'bibList', 'bibOv', 'bibBajar', 'bibCerrar', 'bibWhats', 'bibMail', 'bibSel', 'bibSelN', 'bibSelTodos', 'bibSelLimpiar', 'bibSelWa', 'bibSelMail', 'bibSelAviso', 'bibAviso']) {
+for (const id of ['tabBiblio', 'viewBiblio', 'bibChips', 'bibCount', 'bibList', 'bibOv', 'bibBajar', 'bibCerrar', 'bibSel', 'bibSelN', 'bibSelTodos', 'bibSelLimpiar', 'bibSelWa', 'bibSelMail', 'bibSelAviso']) {
   if (!html.includes(`id="${id}"`)) falla(`proyectos.html no tiene #${id}`);
 }
+// La ficha solo descarga: WhatsApp, Mail, resumen y metadatos se quitaron y no deben volver.
+for (const id of ['bibWhats', 'bibMail', 'bibAviso', 'bibResumen', 'bibMeta']) {
+  if (html.includes(`id="${id}"`)) falla(`proyectos.html todavía tiene #${id} (la ficha ya no lo muestra)`);
+}
+if (html.includes('bib-doc-meta')) falla('proyectos.html todavía tiene la línea de metadatos de las tarjetas (bib-doc-meta)');
 const sw = fs.readFileSync(path.join(PUBLIC, 'sw.js'), 'utf8');
 if (!sw.includes("startsWith('/biblioteca/')")) falla('sw.js: /biblioteca/* no va network-first');
 
@@ -122,13 +127,6 @@ const FIXTURE_REAL = {
   documentos: [
     { id: 'ley-7701', categoria: 'normativa', titulo: 'Ley 7701 · Parques y áreas industriales', tipo: 'PDF', version: 'vigente',
       resumen: 'Texto ordenado de la ley.', tags: ['ley'], archivo: 'archivos/ley-7701-parques-y-areas-industriales.pdf' }
-  ]
-};
-
-const FIXTURE_CARTA = {
-  documentos: [
-    { id: 'carta', categoria: 'formularios', titulo: 'Carta de intención y requisitos', tipo: 'DOCX', version: 'plantilla',
-      resumen: 'Plantilla.', tags: ['carta'], archivo: 'archivos/carta-intencion-requisitos.docx' }
   ]
 };
 
@@ -234,18 +232,16 @@ async function recorrido() {
       const href = await page.getAttribute('#bibBajar', 'href');
       if (href !== 'biblioteca/archivos/ci-general.docx') falla(`Ficha: el enlace de descarga es ${href}`);
       // Sin navigator.share (escritorio) WhatsApp y Mail mandan el enlace absoluto del documento.
-      if (await page.isDisabled('#bibWhats')) falla('Compartir: WhatsApp de la ficha quedó deshabilitado en escritorio');
-      await page.click('#bibWhats');
-      const wa = decodeURIComponent(await ultimoEnlace(page));
-      if (!wa.startsWith('https://wa.me/?text=') || !wa.includes('/biblioteca/archivos/ci-general.docx'))
-        falla(`Compartir: el enlace de WhatsApp no lleva el documento (${wa})`);
-      if (!wa.includes('http://localhost:')) falla(`Compartir: el enlace de WhatsApp no es absoluto (${wa})`);
-      await page.click('#bibMail');
-      const mail = decodeURIComponent(await ultimoEnlace(page));
-      if (!mail.startsWith('mailto:?subject=') || !mail.includes('Carta de intención · modelo general'))
-        falla(`Compartir: el enlace de Mail no tiene el título (${mail})`);
+      // La ficha no ofrece WhatsApp ni Mail: el envío sale de la barra de selección.
+      if (await page.$('#bibOv #bibWhats, #bibOv #bibMail')) falla('Ficha: quedaron los botones de WhatsApp o Mail');
+      if (await page.$('#bibOv #bibResumen, #bibOv #bibMeta')) falla('Ficha: quedó el resumen o la línea de metadatos');
       await page.keyboard.press('Escape');
       if (!(await page.isHidden('#bibOv'))) falla('Ficha: Escape no la cerró');
+
+      // Tarjetas: sin línea de metadatos, y el título centrado.
+      if (await page.$('#bibList .bib-doc-meta')) falla('Tarjetas: quedó la línea de metadatos (bib-doc-meta)');
+      const alineado = await page.$eval('#bibList .bib-doc-titulo', (e) => getComputedStyle(e).textAlign);
+      if (alineado !== 'center') falla(`Tarjetas: el título no está centrado (text-align: ${alineado})`);
 
       // La búsqueda de Listado sobrevive al paso por Biblioteca. Primero se vuelve
       // a Listado: escribir acá sin salir filtraría los documentos, no los expedientes.
@@ -292,9 +288,9 @@ async function recorrido() {
     {
       const { ctx, page } = await abrir(FIXTURE_REAL, { share: 'stub' });
       await page.click('#tabBiblio');
-      await page.click('#bibList [data-id="ley-7701"]');
-      await page.waitForSelector('#bibWhats:not([disabled])', { timeout: 10000 });
-      await page.click('#bibWhats');
+      await page.check('#bibList input[data-sel="ley-7701"]');
+      await page.waitForSelector('#bibSelWa:not([disabled])', { timeout: 10000 });
+      await page.click('#bibSelWa');
       const enviado = await page.evaluate(() => window.__compartido);
       const f = enviado && enviado.files && enviado.files[0];
       if (!f || enviado.files.length !== 1) falla(`Compartir: WhatsApp no adjuntó el archivo (${JSON.stringify(enviado)})`);
@@ -305,7 +301,7 @@ async function recorrido() {
       }
       if ((await page.evaluate(() => window.__abierto.length)) !== 0) falla('Compartir: con hoja del teléfono se mandó además un enlace');
       // Mail también adjunta el PDF, no el enlace.
-      await page.click('#bibMail');
+      await page.click('#bibSelMail');
       const porMail = await page.evaluate(() => window.__compartido);
       if (!porMail || !porMail.files || porMail.files.length !== 1 || porMail.files[0].name !== 'ley-7701-parques-y-areas-industriales.pdf')
         falla(`Compartir: Mail no adjuntó el PDF (${JSON.stringify(porMail)})`);
@@ -316,28 +312,14 @@ async function recorrido() {
     {
       const { ctx, page } = await abrir(FIXTURE, { share: 'stub' });
       await page.click('#tabBiblio');
-      await page.click('#bibList [data-id="ci-general"]');
-      await page.waitForSelector('#bibWhats:not([disabled])', { timeout: 10000 });
-      await page.click('#bibWhats');
+      await page.check('#bibList input[data-sel="ci-general"]');
+      await page.waitForSelector('#bibSelWa:not([disabled])', { timeout: 10000 });
+      await page.click('#bibSelWa');
       const enviado = await page.evaluate(() => window.__compartido);
       if (enviado) falla(`Compartir sin archivo: se abrió la hoja con algo adjunto (${JSON.stringify(enviado)})`);
       const enlace = decodeURIComponent(await ultimoEnlace(page));
       if (!enlace.startsWith('https://wa.me/?text=') || !enlace.includes('/biblioteca/archivos/ci-general.docx'))
         falla(`Compartir sin archivo: el enlace de WhatsApp es ${enlace}`);
-      await ctx.close();
-    }
-
-    // Escenario G: un DOCX se manda con su tipo real, no como application/octet-stream
-    // (el servidor puede devolver el tipo genérico, y la hoja del teléfono lo rechaza).
-    {
-      const { ctx, page } = await abrir(FIXTURE_CARTA, { share: 'stub' });
-      await page.click('#tabBiblio');
-      await page.check('#bibList input[data-sel="carta"]');
-      await page.waitForSelector('#bibSelWa:not([disabled])', { timeout: 10000 });
-      await page.click('#bibSelWa');
-      const enviado = await page.evaluate(() => window.__compartido);
-      const docx = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-      if (!enviado || !enviado.files || enviado.files[0].type !== docx) falla(`DOCX: el tipo enviado es ${JSON.stringify(enviado && enviado.files)}`);
       await ctx.close();
     }
 

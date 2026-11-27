@@ -1471,15 +1471,17 @@ en Word. **No se edita desde la app ni se sincroniza**: es un archivo estático.
   que Listado, que cambia de texto; cada pestaña recuerda su búsqueda al salir.
 - **Ficha**: `#bibOv`, aparte de `#veil` (la ficha de expedientes tiene sus reglas de
   cambios sin guardar). Foco atrapado, Escape cierra y devuelve el foco.
-- **Compartir**: WhatsApp y Mail de la ficha mandan el **archivo**, no un enlace. WhatsApp y mail no
-  reciben adjuntos por URL, así que el único camino es la hoja de compartir del teléfono
-  (`navigator.share` con `files`): el usuario elige WhatsApp o Mail ahí. El archivo se baja al abrir
-  la ficha (`bibCargarArchivo`; el navegador exige que la hoja se abra dentro del toque) y el botón
-  queda deshabilitado hasta que termina. Sin `navigator.share` (escritorio), o si el archivo no se
-  pudo bajar, se abre el enlace de WhatsApp o mailto con `window.open`. Como `/biblioteca/*` es
-  público, quien recibe el archivo o el enlace puede bajarlo: misma salvedad que la descarga.
-  Test: escenarios A (enlace en escritorio), D (adjunto PDF por WhatsApp y Mail) y E (sin archivo,
-  enlace) de `tests/biblioteca.test.mjs`.
+- **Compartir**: WhatsApp y Mail mandan el **archivo**, no un enlace, y solo desde la barra de
+  selección (la ficha solo tiene Descargar y Cerrar; no tiene resumen ni línea de metadatos, y las
+  tarjetas muestran solo el título, centrado). WhatsApp y mail no reciben adjuntos por URL, así que
+  el único camino es la hoja de compartir del teléfono (`navigator.share` con `files`): el usuario
+  elige WhatsApp o Mail ahí. Los archivos de los marcados se bajan al marcar la casilla
+  (`bibCargarArchivo`; el navegador exige que la hoja se abra dentro del toque) y los botones quedan
+  deshabilitados hasta que terminan. Sin `navigator.share` (escritorio), o si un archivo no se pudo
+  bajar, se abre el enlace de WhatsApp o mailto con `window.open`. Como `/biblioteca/*` es público,
+  quien recibe el archivo o el enlace puede bajarlo: misma salvedad que la descarga.
+  Test: escenarios A (enlace en escritorio y ficha sin botones de envío), D (adjunto PDF por WhatsApp
+  y Mail desde la selección) y E (sin archivo, enlace) de `tests/biblioteca.test.mjs`.
 - **Selección para enviar varios**: cada documento del listado tiene una casilla. La barra de arriba
   tiene «Todos» (marca lo que se ve con el filtro actual), «Limpiar» y los botones WhatsApp y Mail. Con
   hoja de compartir mandan los archivos de todos los marcados (`bibEnviar`); sin ella, el enlace de cada
@@ -1489,8 +1491,10 @@ en Word. **No se edita desde la app ni se sincroniza**: es un archivo estático.
   `tests/biblioteca.test.mjs`.
 - **Solo PDF se comparte como archivo.** La hoja de compartir de Chrome en Android acepta PDF, imagen,
   audio, video y texto; un DOCX falla con `NotAllowedError` aunque `canShare` diga que sí. Por eso la
-  carta tiene dos entradas: la DOCX (para editar en Word) y «Carta de intención y requisitos (PDF)»
-  (PDF exportado desde Word por el usuario, para enviar). Si cambia la plantilla DOCX, volver a exportar el PDF. `tests/biblioteca.test.mjs` exige que todo documento marcado `PDF` sea un PDF real.
+  biblioteca no tiene DOCX: la carta es solo el PDF exportado desde Word por el usuario («Carta de
+  intención y requisitos (PDF)»). El DOCX de la carta se quitó el 2026-11-27 por pedido del usuario;
+  para editarla hay que volver a tenerlo fuera de la biblioteca. `tests/biblioteca.test.mjs` exige que
+  todo documento marcado `PDF` sea un PDF real.
   El aviso muestra el nombre del error (`NotAllowedError`, `DataError`…).
 - **El botón + (Nuevo Proyecto) se oculta en Biblioteca.** Se oculta con `style.display`,
   no con `hidden`: `header.js` le pone `display:flex`, que le gana al atributo.

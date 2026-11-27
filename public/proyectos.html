@@ -330,8 +330,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 .bib-ext{flex:0 0 auto;width:44px;height:52px;border-radius:8px;border:1px solid var(--border);display:grid;
   place-items:center;font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--muted)}
 .bib-doc-body{min-width:0;flex:1}
-.bib-doc-titulo{display:block;font-weight:700;font-size:15px;overflow-wrap:anywhere}
-.bib-doc-meta{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.bib-doc-titulo{display:block;font-weight:700;font-size:15px;overflow-wrap:anywhere;text-align:center}
 .bib-vacio{padding:28px 16px;text-align:center;color:var(--muted);border:1px dashed var(--border);
   border-radius:10px;font-size:14px}
 .bib-pie{margin-top:18px;font-size:12px;color:var(--muted)}
@@ -339,15 +338,12 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 .bib-sheet{width:100%;max-width:560px;background:var(--bg);color:var(--fg);border-radius:16px 16px 0 0;
   border:1px solid var(--border);padding:20px 20px calc(20px + env(safe-area-inset-bottom,0px));max-height:90vh;overflow:auto}
 @media (min-width:700px){.bib-ov{align-items:center}.bib-sheet{border-radius:16px}}
-.bib-meta{font-size:12px;color:var(--muted)}
 .bib-sheet h2{font-size:19px;line-height:1.3;margin:4px 0 0;overflow-wrap:anywhere}
 .bib-sheet p{margin:12px 0 0;font-size:14px}
 .bib-acciones{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
 .bib-acciones .btn{flex:1 1 0;text-decoration:none}
 .bib-nota{font-size:12px;color:var(--muted)}
-#bibAviso[hidden],#bibSelAviso[hidden]{display:none}
-.bib-compartir{margin-top:8px}
-.bib-aviso{margin:10px 0 0;font-size:13px;color:var(--danger,#b91c1c)}
+#bibSelAviso[hidden]{display:none}.bib-aviso{margin:10px 0 0;font-size:13px;color:var(--danger,#b91c1c)}
 </style>
 </head>
 <body>
@@ -444,18 +440,11 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
      expedientes con sus propias reglas de cambios sin guardar. -->
 <div class="bib-ov" id="bibOv" hidden>
   <div class="bib-sheet" role="dialog" aria-modal="true" aria-labelledby="bibTitulo">
-    <div class="bib-meta" id="bibMeta"></div>
     <h2 id="bibTitulo"></h2>
-    <p id="bibResumen"></p>
     <div class="bib-acciones">
       <a class="btn btn-primary" id="bibBajar" href="#" download>Descargar</a>
       <button type="button" class="btn btn-secondary" id="bibCerrar">Cerrar</button>
     </div>
-    <div class="bib-acciones bib-compartir" aria-label="Compartir">
-      <button type="button" class="btn btn-outline" id="bibWhats">WhatsApp</button>
-      <button type="button" class="btn btn-outline" id="bibMail">Mail</button>
-    </div>
-    <p class="bib-aviso" id="bibAviso" role="status" hidden>No se pudo enviar el archivo. Probá de nuevo.</p>
     <p class="bib-nota">Descargá el archivo, editalo en Word y usalo. Tus cambios quedan en tu copia.</p>
   </div>
 </div>
@@ -1390,7 +1379,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   // se descarta al leer, no se muestra a medias.
   var BIB_CATS = { formularios:"Formularios", normativa:"Normativa", notas:"Notas", requisitos:"Requisitos" };
   var bibDocs = null, bibError = false, bibCargando = false;
-  var bibCat = "todas", bibQ = "", bibAbierto = null, bibFocoPrevio = null;
+  var bibCat = "todas", bibQ = "", bibFocoPrevio = null;
   // WhatsApp y mail no reciben archivos por enlace: un documento llega como archivo
   // solo por la hoja de compartir del teléfono. El archivo se baja antes del toque
   // (el navegador exige que la hoja se abra dentro de él), así que el botón se
@@ -1460,14 +1449,13 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   function bibEnlaces(docs){ return docs.map(function(d){ return d.titulo+"\n"+bibUrlAbs(d); }).join("\n\n"); }
   // El aviso nombra el error del navegador: sin eso no se puede saber por qué falló.
   function bibAvisar(e){
-    var el = document.getElementById(bibAbierto ? "bibAviso" : "bibSelAviso");
+    var el = document.getElementById("bibSelAviso");
     el.textContent = "No se pudo enviar el archivo (" + ((e && e.name) || "error desconocido") + "). Probá de nuevo.";
     el.hidden = false;
   }
   // Manda los documentos con su archivo adjunto por la hoja del teléfono. Si no hay
   // archivos disponibles, manda el enlace por WhatsApp o mail.
   function bibEnviar(docs, canal){
-    document.getElementById("bibAviso").hidden = true;
     document.getElementById("bibSelAviso").hidden = true;
     var archivos = bibArchivosListos(docs);
     if(archivos && navigator.canShare && navigator.canShare({ files: archivos })){
@@ -1491,12 +1479,6 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     var pendSel = bibPendiente(sel);
     document.getElementById("bibSelWa").disabled = pendSel;
     document.getElementById("bibSelMail").disabled = pendSel;
-    if(bibAbierto){
-      bibCargarArchivo(bibAbierto);
-      var pend = bibPendiente([bibAbierto]);
-      document.getElementById("bibWhats").disabled = pend;
-      document.getElementById("bibMail").disabled = pend;
-    }
   }
   // Los iconos de WhatsApp y Mail mandan los documentos marcados.
   function bibActualizarSel(){
@@ -1543,7 +1525,6 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
             + '<span class="bib-ext" aria-hidden="true">'+esc(d.tipo||"")+'</span>'
             + '<span class="bib-doc-body">'
             + '<span class="bib-doc-titulo">'+esc(d.titulo)+'</span>'
-            + '<span class="bib-doc-meta">'+esc(BIB_CATS[d.categoria])+(d.version?' · '+esc(d.version):'')+'</span>'
             + '</span></button></div>';
         }).join("")
       : '<div class="bib-vacio">Sin resultados para «'+esc(bibQ)+'». Probá otra palabra o quitá el filtro.</div>';
@@ -1551,24 +1532,17 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   function bibAbrir(id){
     var d = bibDocs && bibDocs.find(function(x){ return x.id===id; });
     if(!d) return;
-    bibAbierto = d;
     bibFocoPrevio = document.activeElement;
-    document.getElementById("bibMeta").textContent = BIB_CATS[d.categoria]+(d.tipo?" · "+d.tipo:"")+(d.version?" · "+d.version:"");
     document.getElementById("bibTitulo").textContent = d.titulo;
-    document.getElementById("bibResumen").textContent = d.resumen || "";
-    document.getElementById("bibResumen").hidden = !d.resumen;
     var bajar = document.getElementById("bibBajar");
     bajar.href = "biblioteca/"+d.archivo;
     bajar.setAttribute("download", "");
-    document.getElementById("bibAviso").hidden = true;
-    bibPintarEnvio();
     bibOv.hidden = false;
     document.body.style.overflow = "hidden";
     bajar.focus();
   }
   function bibCerrar(devolverFoco){
     bibOv.hidden = true;
-    bibAbierto = null;
     document.body.style.overflow = "";
     if(devolverFoco && bibFocoPrevio && bibFocoPrevio.focus) bibFocoPrevio.focus();
     bibFocoPrevio = null;
@@ -1584,8 +1558,6 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     var b = e.target.closest("[data-id]");
     if(b) bibAbrir(b.dataset.id);
   });
-  document.getElementById("bibWhats").addEventListener("click", function(){ if(bibAbierto) bibEnviar([bibAbierto], "wa"); });
-  document.getElementById("bibMail").addEventListener("click", function(){ if(bibAbierto) bibEnviar([bibAbierto], "mail"); });
   document.getElementById("bibSelWa").addEventListener("click", function(){ var d = bibSeleccionados(); if(d.length) bibEnviar(d, "wa"); });
   document.getElementById("bibSelMail").addEventListener("click", function(){ var d = bibSeleccionados(); if(d.length) bibEnviar(d, "mail"); });
   document.getElementById("bibList").addEventListener("change", function(e){
