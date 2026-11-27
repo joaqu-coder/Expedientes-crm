@@ -123,6 +123,13 @@ function initCompartir(modo) {
     Object.defineProperty(navigator,'canShare',{configurable:true,value:function(d){return !!(d&&d.files);}});`;
 }
 
+// Elige documentos como lo hace una persona: el primer toque en un ícono de envío entra al modo
+// con todo lo visible marcado; después se desmarca lo que no va.
+const elegir = async (page, ids) => {
+  await page.click('#bibSelWa');
+  const visibles = await page.$$eval('#bibList .bib-doc', (els) => els.map((e) => e.dataset.id));
+  for (const id of visibles) if (!ids.includes(id)) await page.click(`#bibList [data-id="${id}"]`);
+};
 const ultimoEnlace = (page) => page.evaluate(() => (window.__abierto || []).slice(-1)[0] || '');
 
 const FIXTURE_REAL = {
@@ -190,15 +197,22 @@ async function recorrido() {
       await page.click('#bibChips [data-cat="notas"]');
       const porPase = await page.$$eval('#bibList .bib-doc-titulo', (els) => els.map((e) => e.textContent));
       if (porPase.length !== 1 || !/pase/i.test(porPase[0])) falla(`Biblioteca: el filtro «notas» dio ${JSON.stringify(porPase)}`);
-      await page.click('#bibChips [data-cat="todas"]');
+      // Sin chip «Todas»: tocar la categoría activa vuelve a mostrar todo.
+      await page.click('#bibChips [data-cat="notas"]');
+      if ((await page.$$('#bibList .bib-doc')).length !== 3) falla('Biblioteca: tocar la categoría activa no volvió a mostrar todo');
+      if (await page.$('#bibChips [data-cat="todas"]')) falla('Biblioteca: quedó el chip «Todas»');
 
-      // Selección, como en Resoluciones: «Seleccionar para enviar» entra al modo; dentro,
-      // tocar una tarjeta la marca con contorno en vez de abrir la ficha. Sin casillas.
-      if (await page.isVisible('#bibSelWa')) falla('Selección: los envíos se ven fuera del modo selección');
-      await page.click('#bibBarra [data-accion="iniciar"]');
-      if ((await page.$('#bibList input[type="checkbox"]'))) falla('Selección: quedaron casillas en las tarjetas');
-      if (!(await page.isDisabled('#bibSelWa'))) falla('Selección: WhatsApp habilitado sin nada marcado');
-      await page.click('#bibList [data-id="ci-general"]');
+      // Selección desde los íconos del encabezado (solo en Biblioteca). El primer toque entra al
+      // modo con todo lo visible marcado; tocar una tarjeta la desmarca; otro toque envía lo marcado.
+      // Sin botones en la barra ni casillas. Escape sale del modo.
+      if (!(await page.isVisible('#bibHeadAcciones'))) falla('Selección: los íconos de envío no se ven en Biblioteca');
+      if (await page.$('#bibBarra button')) falla('Selección: quedaron botones en la barra');
+      if (await page.$('#bibList input[type="checkbox"]')) falla('Selección: quedaron casillas en las tarjetas');
+      const ids = await page.$$eval('#bibList .bib-doc', (els) => els.map((e) => e.dataset.id));
+      await page.click('#bibSelWa');
+      const todos = `${ids.length} seleccionados`;
+      if ((await page.textContent('#bibSelN')) !== todos) falla(`Selección: entrar al modo no marcó lo visible (${await page.textContent('#bibSelN')}, esperaba ${todos})`);
+      for (const id of ids) if (id !== 'ci-general') await page.click(`#bibList [data-id="${id}"]`);
       if (!(await page.isHidden('#bibOv'))) falla('Selección: tocar una tarjeta en el modo selección abrió la ficha');
       const claseA = await page.getAttribute('#bibList [data-id="ci-general"]', 'class');
       if (!/is-sel/.test(claseA)) falla(`Selección: la tarjeta marcada no tiene el contorno (${claseA})`);
@@ -219,21 +233,16 @@ async function recorrido() {
       if (!mail2.startsWith('mailto:?subject=') || !mail2.includes('Documentos de la Biblioteca (2)') || !mail2.includes('/biblioteca/archivos/pase-seguimiento.docx'))
         falla(`Selección: Mail con dos documentos no manda los dos (${mail2})`);
       if ((await page.textContent('#bibSelN')) !== '2 seleccionados') falla('Selección: el contador no pasó a 2');
-      await page.click('#bibBarra [data-accion="cancelar"]');
-      if (await page.isVisible('#bibSelWa')) falla('Selección: Cancelar no salió del modo');
-      if (await page.$('#bibList .bib-doc.is-sel')) falla('Selección: Cancelar no quitó las marcas');
+      await page.keyboard.press('Escape');
+      if (await page.$('#bibSelN')) falla('Selección: Escape no salió del modo');
+      if (await page.$('#bibList .bib-doc.is-sel')) falla('Selección: Escape no quitó las marcas');
 
-      // «Todos» marca lo que se ve: con el filtro Notas, solo el pase.
-      await page.click('#bibBarra [data-accion="iniciar"]');
+      // Con el filtro Notas, entrar al modo marca solo lo que se ve (el pase).
       await page.click('#bibChips [data-cat="notas"]');
-      await page.click('#bibBarra [data-accion="todos"]');
-      if ((await page.textContent('#bibSelN')) !== '1 seleccionado') falla(`Selección: «Todos» con filtro Notas dio «${await page.textContent('#bibSelN')}»`);
-      await page.click('#bibBarra [data-accion="cancelar"]');
-      await page.click('#bibChips [data-cat="todas"]');
-      await page.click('#bibBarra [data-accion="iniciar"]');
-      await page.click('#bibBarra [data-accion="todos"]');
-      if ((await page.textContent('#bibSelN')) !== '3 seleccionados') falla(`Selección: «Todos» sin filtro dio «${await page.textContent('#bibSelN')}»`);
-      await page.click('#bibBarra [data-accion="cancelar"]');
+      await page.click('#bibSelWa');
+      if ((await page.textContent('#bibSelN')) !== '1 seleccionado') falla(`Selección: entrar con filtro Notas dio «${await page.textContent('#bibSelN')}»`);
+      await page.keyboard.press('Escape');
+      await page.click('#bibChips [data-cat="notas"]');
 
       await page.click('#bibList [data-id="ci-general"]');
       await page.waitForSelector('#bibOv:not([hidden])');
@@ -296,8 +305,7 @@ async function recorrido() {
     {
       const { ctx, page } = await abrir(FIXTURE_REAL, { share: 'stub' });
       await page.click('#tabBiblio');
-      await page.click('#bibBarra [data-accion="iniciar"]');
-      await page.click('#bibList [data-id="ley-7701"]');
+      await elegir(page, ['ley-7701']);
       await page.waitForSelector('#bibSelWa:not([disabled])', { timeout: 10000 });
       await page.click('#bibSelWa');
       const enviado = await page.evaluate(() => window.__compartido);
@@ -321,8 +329,7 @@ async function recorrido() {
     {
       const { ctx, page } = await abrir(FIXTURE, { share: 'stub' });
       await page.click('#tabBiblio');
-      await page.click('#bibBarra [data-accion="iniciar"]');
-      await page.click('#bibList [data-id="ci-general"]');
+      await elegir(page, ['ci-general']);
       await page.waitForSelector('#bibSelWa:not([disabled])', { timeout: 10000 });
       await page.click('#bibSelWa');
       const enviado = await page.evaluate(() => window.__compartido);
@@ -337,8 +344,7 @@ async function recorrido() {
     {
       const { ctx, page } = await abrir(FIXTURE_REAL, { share: 'falla' });
       await page.click('#tabBiblio');
-      await page.click('#bibBarra [data-accion="iniciar"]');
-      await page.click('#bibList [data-id="ley-7701"]');
+      await elegir(page, ['ley-7701']);
       await page.waitForSelector('#bibSelWa:not([disabled])', { timeout: 10000 });
       await page.click('#bibSelWa');
       await page.waitForSelector('#bibSelAviso:not([hidden])', { timeout: 5000 }).catch(() => falla('Hoja rechazada: no apareció el aviso'));
@@ -352,9 +358,7 @@ async function recorrido() {
     {
       const { ctx, page } = await abrir(FIXTURE_DOS, { share: 'stub' });
       await page.click('#tabBiblio');
-      await page.click('#bibBarra [data-accion="iniciar"]');
-      await page.click('#bibList [data-id="ley-7701"]');
-      await page.click('#bibList [data-id="anexo-i"]');
+      await elegir(page, ['ley-7701', 'anexo-i']);
       await page.waitForSelector('#bibSelWa:not([disabled])', { timeout: 10000 });
       await page.click('#bibSelWa');
       const porWa = await page.evaluate(() => window.__compartido);
