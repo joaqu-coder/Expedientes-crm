@@ -309,9 +309,9 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   color:var(--fg);font:inherit;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
 .bib-chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
 .bib-n{font-size:12px;opacity:.7;font-variant-numeric:tabular-nums}
-.bib-list{display:grid;gap:10px}
-.bib-doc{display:flex;gap:14px;align-items:center;width:100%;padding:13px 14px;border:1px solid var(--border);
-  border-radius:10px;background:var(--surface);color:var(--fg);font:inherit;text-align:left;cursor:pointer}
+.bib-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.bib-doc{display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:flex-start;width:100%;min-width:0;padding:12px 8px;border:1px solid var(--border);
+  border-radius:10px;background:var(--surface);color:var(--fg);font:inherit;text-align:center;cursor:pointer}
 .bib-doc:hover{border-color:var(--accent)}
 .bib-doc.is-sel{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
 .bib-barra{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:10px}
@@ -324,7 +324,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 .bib-ext{flex:0 0 auto;width:44px;height:52px;border-radius:8px;border:1px solid var(--border);display:grid;
   place-items:center;font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--muted)}
 .bib-doc-body{min-width:0;flex:1}
-.bib-doc-titulo{display:block;font-weight:700;font-size:15px;overflow-wrap:anywhere;text-align:center}
+.bib-doc-titulo{display:block;font-weight:700;font-size:13px;line-height:1.3;overflow-wrap:anywhere;text-align:center}
 .bib-vacio{padding:28px 16px;text-align:center;color:var(--muted);border:1px dashed var(--border);
   border-radius:10px;font-size:14px}
 .bib-pie{margin-top:18px;font-size:12px;color:var(--muted)}
@@ -1511,7 +1511,8 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
       return;
     }
     var terminos = bibNorm(bibQ).trim().split(/\s+/).filter(Boolean);
-    var opciones = [["todas","Todas"]].concat(Object.keys(BIB_CATS).map(function(k){ return [k, BIB_CATS[k]]; }));
+    // Sin chip «Todas»: tocar la categoría activa vuelve a mostrar todo (ver el listener de #bibChips).
+    var opciones = Object.keys(BIB_CATS).map(function(k){ return [k, BIB_CATS[k]]; });
     chips.innerHTML = opciones.map(function(o){
       var n = bibDocs.filter(function(d){ return (o[0]==="todas" || d.categoria===o[0]) && bibCoincide(d, terminos); }).length;
       return '<button type="button" class="bib-chip" aria-pressed="'+(bibCat===o[0])+'" data-cat="'+o[0]+'">'+esc(o[1])+' <span class="bib-n">'+n+'</span></button>';
@@ -1551,7 +1552,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   document.getElementById("bibChips").addEventListener("click", function(e){
     var b = e.target.closest("[data-cat]");
     if(!b) return;
-    bibCat = b.dataset.cat;
+    bibCat = bibCat===b.dataset.cat ? "todas" : b.dataset.cat;
     renderBiblio();
   });
   document.getElementById("bibList").addEventListener("click", function(e){

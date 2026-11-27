@@ -190,7 +190,10 @@ async function recorrido() {
       await page.click('#bibChips [data-cat="notas"]');
       const porPase = await page.$$eval('#bibList .bib-doc-titulo', (els) => els.map((e) => e.textContent));
       if (porPase.length !== 1 || !/pase/i.test(porPase[0])) falla(`Biblioteca: el filtro «notas» dio ${JSON.stringify(porPase)}`);
-      await page.click('#bibChips [data-cat="todas"]');
+      // Sin chip «Todas»: tocar la categoría activa vuelve a mostrar todo.
+      await page.click('#bibChips [data-cat="notas"]');
+      if ((await page.$$('#bibList .bib-doc')).length !== 3) falla('Biblioteca: tocar la categoría activa no volvió a mostrar todo');
+      if (await page.$('#bibChips [data-cat="todas"]')) falla('Biblioteca: quedó el chip «Todas»');
 
       // Selección, como en Resoluciones: «Seleccionar para enviar» entra al modo; dentro,
       // tocar una tarjeta la marca con contorno en vez de abrir la ficha. Sin casillas.
@@ -229,7 +232,7 @@ async function recorrido() {
       await page.click('#bibBarra [data-accion="todos"]');
       if ((await page.textContent('#bibSelN')) !== '1 seleccionado') falla(`Selección: «Todos» con filtro Notas dio «${await page.textContent('#bibSelN')}»`);
       await page.click('#bibBarra [data-accion="cancelar"]');
-      await page.click('#bibChips [data-cat="todas"]');
+      await page.click('#bibChips [data-cat="notas"]');
       await page.click('#bibBarra [data-accion="iniciar"]');
       await page.click('#bibBarra [data-accion="todos"]');
       if ((await page.textContent('#bibSelN')) !== '3 seleccionados') falla(`Selección: «Todos» sin filtro dio «${await page.textContent('#bibSelN')}»`);
