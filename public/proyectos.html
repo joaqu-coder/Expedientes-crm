@@ -323,8 +323,12 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 .bib-barra .btn:disabled{opacity:.45;cursor:default}
 #bibHeadAcciones[hidden]{display:none}
 .bib-head-acciones{display:flex;gap:6px;margin-left:auto}
-.bib-head-acciones .app-header__menu:disabled{opacity:.4;cursor:default}
-.bib-head-acciones .app-header__menu.is-on{background:var(--surface-2)}
+.bib-head-acciones .bib-head-btn:disabled{opacity:.4;cursor:default}
+.bib-head-acciones .bib-head-btn.is-on{background:var(--surface-2)}
+.bib-head-btn{flex:0 0 auto;width:48px;height:48px;display:flex;align-items:center;justify-content:center;border:0;background:none;color:var(--fg);border-radius:10px;cursor:pointer;padding:0}
+.bib-head-btn:hover{background:var(--surface-2)}
+.bib-head-btn:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.bib-head-btn svg{width:24px;height:24px;display:block}
 .bib-ext{flex:0 0 auto;width:44px;height:52px;border-radius:8px;border:1px solid var(--border);display:grid;
   place-items:center;font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--muted)}
 .bib-doc-body{min-width:0;flex:1}
@@ -1318,7 +1322,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     if(estabaBiblio !== isBiblio){
       // El modo de envío no sobrevive al cambio de pestaña, y sus íconos solo se ven en Biblioteca.
       bibSeleccionando = false; bibSel.clear();
-      var acc = document.getElementById("bibHeadAcciones");
+      var acc = bibHeadEl;
       if(acc) acc.hidden = !isBiblio;
       // Una sola caja de búsqueda: cada pestaña recuerda lo suyo al salir.
       if(isBiblio){
@@ -1381,6 +1385,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   var BIB_MIME = { pdf: "application/pdf", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" };
   // Selección para enviar varios a la vez. Vive mientras la pantalla esté abierta.
   var bibSel = new Set();
+  var bibHeadEl = null; // contenedor de los íconos de envío en el encabezado (lo crea montarAccionesBiblio)
   var bibSeleccionando = false; // modo «Seleccionar para enviar», como en Resoluciones
   function bibUrlAbs(d){ return new URL("biblioteca/"+d.archivo, location.href).href; }
   var bibOv = document.getElementById("bibOv");
@@ -1488,7 +1493,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
       barra.innerHTML = '<span class="bib-barra-txt" id="bibSelN" role="status" aria-live="polite">'
         + (n===0?"Tocá los documentos que querés mandar":n===1?"1 seleccionado":n+" seleccionados")+'</span>';
     }
-    var acc = document.getElementById("bibHeadAcciones");
+    var acc = bibHeadEl;
     if(acc) acc.classList.toggle("is-on", bibSeleccionando);
     bibPintarEnvio();
   }
@@ -1568,15 +1573,15 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   // Íconos de envío en el encabezado (solo en Biblioteca). Primer toque: entra al modo con
   // todo lo visible marcado. Tocar una tarjeta la desmarca. Otro toque: envía lo marcado.
   function montarAccionesBiblio(){
-    var h = document.querySelector(".app-header"), menu = document.getElementById("btnMenu");
+    var h = document.querySelector(".app-header"), menu = h.querySelector("#btnMenu");
     var g = document.createElement("div");
     g.id = "bibHeadAcciones"; g.className = "bib-head-acciones"; g.hidden = true;
     g.innerHTML =
-      '<button type="button" class="app-header__menu" id="bibSelWa" data-accion="wa" aria-label="Enviar por WhatsApp" title="Enviar por WhatsApp">'+
+      '<button type="button" class="bib-head-btn" id="bibSelWa" data-accion="wa" aria-label="Enviar por WhatsApp" title="Enviar por WhatsApp">'+
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.6 7.3L3 20l1.3-5.2A8.4 8.4 0 1 1 21 11.5z"/></svg></button>'+
-      '<button type="button" class="app-header__menu" id="bibSelMail" data-accion="mail" aria-label="Enviar por mail" title="Enviar por mail">'+
+      '<button type="button" class="bib-head-btn" id="bibSelMail" data-accion="mail" aria-label="Enviar por mail" title="Enviar por mail">'+
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></button>';
-    h.insertBefore(g, menu);
+    h.insertBefore(g, menu); bibHeadEl = g;
     g.addEventListener("click", function(e){
       var b = e.target.closest("[data-accion]");
       if(!b || b.disabled) return;
