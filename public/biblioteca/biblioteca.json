@@ -113,6 +113,22 @@
         "Salta"
       ],
       "archivo": "archivos/ley-7701-parques-y-areas-industriales.pdf"
+    },
+    {
+      "id": "requisitos-para-escriturar",
+      "categoria": "requisitos",
+      "titulo": "Requisitos para escriturar",
+      "tipo": "PDF",
+      "version": "Ente General · EGPAIS",
+      "resumen": "Documentación que pide el Ente para escriturar el lote adjudicado: habilitación municipal, CAAM, libres de deuda, inscripciones y, para personas jurídicas, documentación societaria.",
+      "tags": [
+        "requisitos",
+        "escritura",
+        "lote",
+        "Ente",
+        "EGPAIS"
+      ],
+      "archivo": "archivos/requisitos-para-escriturar.pdf"
     }
   ]
 }
