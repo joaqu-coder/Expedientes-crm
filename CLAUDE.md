@@ -1471,6 +1471,12 @@ en Word. **No se edita desde la app ni se sincroniza**: es un archivo estático.
   que Listado, que cambia de texto; cada pestaña recuerda su búsqueda al salir.
 - **Ficha**: `#bibOv`, aparte de `#veil` (la ficha de expedientes tiene sus reglas de
   cambios sin guardar). Foco atrapado, Escape cierra y devuelve el foco.
+- **Compartir**: la ficha tiene WhatsApp y Mail (enlace absoluto al archivo, sin depender del
+  navegador) y, si existe `navigator.share`, «Compartir», que abre la hoja del teléfono con el
+  archivo adjunto. El archivo se baja al abrir la ficha (el navegador exige que la hoja se abra
+  dentro del toque) y el botón se habilita cuando termina; si no se pudo bajar, se comparte el
+  enlace. Como `/biblioteca/*` es público, quien recibe el enlace puede bajar el archivo: misma
+  salvedad que la descarga. Test: escenarios A, D y E de `tests/biblioteca.test.mjs`.
 - **El botón + (Nuevo Proyecto) se oculta en Biblioteca.** Se oculta con `style.display`,
   no con `hidden`: `header.js` le pone `display:flex`, que le gana al atributo.
 - **Pendiente con el usuario, antes de subir notas internas**: los archivos de `public/`

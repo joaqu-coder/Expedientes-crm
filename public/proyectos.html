@@ -331,6 +331,9 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
 .bib-acciones{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
 .bib-acciones .btn{flex:1 1 0;text-decoration:none}
 .bib-nota{font-size:12px;color:var(--muted)}
+#bibCompartir[hidden],#bibAviso[hidden]{display:none}
+.bib-compartir{margin-top:8px}
+.bib-aviso{margin:10px 0 0;font-size:13px;color:var(--danger,#b91c1c)}
 </style>
 </head>
 <body>
@@ -422,6 +425,12 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
       <a class="btn btn-primary" id="bibBajar" href="#" download>Descargar</a>
       <button type="button" class="btn btn-secondary" id="bibCerrar">Cerrar</button>
     </div>
+    <div class="bib-acciones bib-compartir" aria-label="Compartir">
+      <button type="button" class="btn btn-outline" id="bibCompartir" hidden disabled>Compartir</button>
+      <a class="btn btn-outline" id="bibWhats" href="#" rel="noopener">WhatsApp</a>
+      <a class="btn btn-outline" id="bibMail" href="#">Mail</a>
+    </div>
+    <p class="bib-aviso" id="bibAviso" role="status" hidden>No se pudo compartir desde acá. Usá WhatsApp o Mail.</p>
     <p class="bib-nota">Descargá el archivo, editalo en Word y usalo. Tus cambios quedan en tu copia.</p>
   </div>
 </div>
@@ -1357,6 +1366,11 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   var BIB_CATS = { formularios:"Formularios", normativa:"Normativa", notas:"Notas", requisitos:"Requisitos" };
   var bibDocs = null, bibError = false, bibCargando = false;
   var bibCat = "todas", bibQ = "", bibAbierto = null, bibFocoPrevio = null;
+  // Para compartir con archivo adjunto, el navegador exige que la hoja se abra
+  // dentro del toque: el archivo se baja al abrir la ficha y el botón se habilita
+  // cuando eso termina. Si no se pudo bajar, se comparte el enlace.
+  var bibArchivo = null, bibTurno = 0;
+  function bibUrlAbs(d){ return new URL("biblioteca/"+d.archivo, location.href).href; }
   var bibOv = document.getElementById("bibOv");
   function bibNorm(s){ return String(s).normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase(); }
   function bibValido(d){
@@ -1427,6 +1441,24 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
     var bajar = document.getElementById("bibBajar");
     bajar.href = "biblioteca/"+d.archivo;
     bajar.setAttribute("download", "");
+    var url = bibUrlAbs(d), turno = ++bibTurno, compartir = document.getElementById("bibCompartir");
+    bibArchivo = null;
+    compartir.hidden = !navigator.share;
+    compartir.disabled = true;
+    document.getElementById("bibAviso").hidden = true;
+    document.getElementById("bibWhats").href = "https://wa.me/?text=" + encodeURIComponent(d.titulo + "\n" + url);
+    document.getElementById("bibMail").href = "mailto:?subject=" + encodeURIComponent(d.titulo) + "&body=" + encodeURIComponent(d.titulo + "\n\n" + url);
+    if(navigator.share){
+      fetch(url, { cache:"no-cache" })
+        .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.blob(); })
+        .then(function(b){ return new File([b], d.archivo.split("/").pop(), { type: b.type || "" }); })
+        .catch(function(){ return null; })
+        .then(function(f){
+          if(turno !== bibTurno) return; // se abrió o cerró otra ficha mientras tanto
+          bibArchivo = f;
+          compartir.disabled = false;
+        });
+    }
     bibOv.hidden = false;
     document.body.style.overflow = "hidden";
     bajar.focus();
@@ -1434,6 +1466,7 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   function bibCerrar(devolverFoco){
     bibOv.hidden = true;
     bibAbierto = null;
+    bibTurno++;
     document.body.style.overflow = "";
     if(devolverFoco && bibFocoPrevio && bibFocoPrevio.focus) bibFocoPrevio.focus();
     bibFocoPrevio = null;
@@ -1448,6 +1481,17 @@ button.mrow.sel .mrow-track{box-shadow:0 0 0 2px var(--accent)}
   document.getElementById("bibList").addEventListener("click", function(e){
     var b = e.target.closest("[data-id]");
     if(b) bibAbrir(b.dataset.id);
+  });
+  document.getElementById("bibCompartir").addEventListener("click", function(){
+    if(!bibAbierto || !navigator.share) return;
+    var d = bibAbierto, datos = { title: d.titulo, text: d.titulo };
+    if(bibArchivo && navigator.canShare && navigator.canShare({ files:[bibArchivo] })) datos.files = [bibArchivo];
+    else datos.url = bibUrlAbs(d);
+    navigator.share(datos).catch(function(e){
+      // Cerrar la hoja a propósito no es un error.
+      if(e && e.name==="AbortError") return;
+      document.getElementById("bibAviso").hidden = false;
+    });
   });
   document.getElementById("bibCerrar").addEventListener("click", function(){ bibCerrar(true); });
   bibOv.addEventListener("click", function(e){ if(e.target===bibOv) bibCerrar(true); });

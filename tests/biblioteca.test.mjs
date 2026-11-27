@@ -52,7 +52,7 @@ if (indice) {
 }
 
 const html = fs.readFileSync(path.join(PUBLIC, 'proyectos.html'), 'utf8');
-for (const id of ['tabBiblio', 'viewBiblio', 'bibChips', 'bibCount', 'bibList', 'bibOv', 'bibBajar', 'bibCerrar']) {
+for (const id of ['tabBiblio', 'viewBiblio', 'bibChips', 'bibCount', 'bibList', 'bibOv', 'bibBajar', 'bibCerrar', 'bibCompartir', 'bibWhats', 'bibMail']) {
   if (!html.includes(`id="${id}"`)) falla(`proyectos.html no tiene #${id}`);
 }
 const sw = fs.readFileSync(path.join(PUBLIC, 'sw.js'), 'utf8');
@@ -87,11 +87,29 @@ function servidor() {
     if (u.pathname.startsWith('/api/')) return json({});
     const f = path.join(PUBLIC, u.pathname === '/' ? 'proyectos.html' : decodeURIComponent(u.pathname));
     if (!f.startsWith(PUBLIC) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.statusCode = 404; return res.end(); }
-    const tipos = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.json': 'application/json' };
+    const tipos = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.json': 'application/json', '.pdf': 'application/pdf' };
     res.setHeader('content-type', tipos[path.extname(f)] || 'application/octet-stream');
     res.end(fs.readFileSync(f));
   });
 }
+
+// Simula la hoja de compartir del teléfono. 'sin' la quita (escritorio); 'stub'
+// la reemplaza por una que anota qué recibió, para leerlo desde el test.
+function initCompartir(modo) {
+  if (modo === 'sin') return "Object.defineProperty(navigator,'share',{value:undefined,configurable:true});";
+  return `window.__compartido = null;
+    Object.defineProperty(navigator,'share',{configurable:true,value:function(d){
+      window.__compartido={title:d.title,url:d.url||null,files:d.files?d.files.map(function(f){return {name:f.name,size:f.size,type:f.type};}):null};
+      return Promise.resolve();}});
+    Object.defineProperty(navigator,'canShare',{configurable:true,value:function(d){return !!(d&&d.files);}});`;
+}
+
+const FIXTURE_REAL = {
+  documentos: [
+    { id: 'ley-7701', categoria: 'normativa', titulo: 'Ley 7701 · Parques y áreas industriales', tipo: 'PDF', version: 'vigente',
+      resumen: 'Texto ordenado de la ley.', tags: ['ley'], archivo: 'archivos/ley-7701-parques-y-areas-industriales.pdf' }
+  ]
+};
 
 async function recorrido() {
   const srv = servidor();
@@ -102,8 +120,9 @@ async function recorrido() {
   const errores = [];
   try {
     // Cada escenario en contexto propio: el índice simulado cambia por escenario.
-    async function abrir(indiceSimulado, { hash = '' } = {}) {
+    async function abrir(indiceSimulado, { hash = '', share = 'sin' } = {}) {
       const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+      await ctx.addInitScript(initCompartir(share));
       const page = await ctx.newPage();
       page.on('pageerror', (e) => errores.push(e.message));
       await page.route('**/biblioteca/biblioteca.json', (route) => indiceSimulado === 500
@@ -147,6 +166,16 @@ async function recorrido() {
       await page.waitForSelector('#bibOv:not([hidden])');
       const href = await page.getAttribute('#bibBajar', 'href');
       if (href !== 'biblioteca/archivos/ci-general.docx') falla(`Ficha: el enlace de descarga es ${href}`);
+      // Compartir por WhatsApp y Mail va por enlace: funciona en cualquier navegador.
+      const wa = await page.getAttribute('#bibWhats', 'href');
+      if (!/^https:\/\/wa\.me\/\?text=/.test(wa || '') || !decodeURIComponent(wa).includes('/biblioteca/archivos/ci-general.docx'))
+        falla(`Compartir: el enlace de WhatsApp no lleva el documento (${wa})`);
+      if (wa && !decodeURIComponent(wa).includes('http://localhost:')) falla(`Compartir: el enlace de WhatsApp no es absoluto (${wa})`);
+      const mail = await page.getAttribute('#bibMail', 'href');
+      if (!/^mailto:\?subject=/.test(mail || '') || !decodeURIComponent(mail).includes('Carta de intención · modelo general'))
+        falla(`Compartir: el enlace de Mail no tiene el título (${mail})`);
+      // Sin navigator.share (escritorio) no hay botón de hoja nativa.
+      if (!(await page.isHidden('#bibCompartir'))) falla('Compartir: el botón de hoja nativa se muestra sin navigator.share');
       await page.keyboard.press('Escape');
       if (!(await page.isHidden('#bibOv'))) falla('Ficha: Escape no la cerró');
 
@@ -188,6 +217,38 @@ async function recorrido() {
       const { ctx, page } = await abrir(500);
       await page.click('#tabBiblio');
       await page.waitForFunction(() => /No se pudo cargar/.test(document.getElementById('bibList').textContent), null, { timeout: 10000 });
+      await ctx.close();
+    }
+
+    // Escenario D: con hoja de compartir y archivo real, se manda el archivo adjunto.
+    {
+      const { ctx, page } = await abrir(FIXTURE_REAL, { share: 'stub' });
+      await page.click('#tabBiblio');
+      await page.click('#bibList [data-id="ley-7701"]');
+      await page.waitForSelector('#bibCompartir:not([disabled])', { timeout: 10000 });
+      if (await page.isHidden('#bibCompartir')) falla('Compartir: con navigator.share el botón no aparece');
+      await page.click('#bibCompartir');
+      const enviado = await page.evaluate(() => window.__compartido);
+      const f = enviado && enviado.files && enviado.files[0];
+      if (!f || enviado.files.length !== 1) falla(`Compartir: no se adjuntó el archivo (${JSON.stringify(enviado)})`);
+      else {
+        if (f.name !== 'ley-7701-parques-y-areas-industriales.pdf') falla(`Compartir: el archivo adjunto se llama ${f.name}`);
+        if (!f.size) falla('Compartir: el archivo adjunto está vacío');
+        if (f.type !== 'application/pdf') falla(`Compartir: el tipo del adjunto es ${f.type}`);
+      }
+      await ctx.close();
+    }
+
+    // Escenario E: el archivo no se puede bajar: se comparte el enlace, no un adjunto vacío.
+    {
+      const { ctx, page } = await abrir(FIXTURE, { share: 'stub' });
+      await page.click('#tabBiblio');
+      await page.click('#bibList [data-id="ci-general"]');
+      await page.waitForSelector('#bibCompartir:not([disabled])', { timeout: 10000 });
+      await page.click('#bibCompartir');
+      const enviado = await page.evaluate(() => window.__compartido);
+      if (!enviado || enviado.files !== null) falla(`Compartir sin archivo: se mandó un adjunto (${JSON.stringify(enviado)})`);
+      if (!enviado || !/\/biblioteca\/archivos\/ci-general\.docx$/.test(enviado.url || '')) falla(`Compartir sin archivo: el enlace es ${enviado && enviado.url}`);
       await ctx.close();
     }
   } finally {
