@@ -51,15 +51,12 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 .nav-item.active .nav-icon{background:color-mix(in srgb, var(--accent) 16%, transparent)}
 
 /* ---- Toolbar: búsqueda siempre visible + filtros ---- */
-.toolbar-search{padding:12px 0 8px;margin-bottom:var(--ds-gap)}
+.toolbar-search{padding:12px 0 8px}
 .toolbar-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:var(--ds-gap);display:flex;flex-direction:column;gap:12px}
 /* El campo de búsqueda lo dibuja .search-bar de ui-kit.css: acá quedan
    solo los desplegables de filtro. */
 .toolbar-card select{background:var(--surface-2);border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:8px 10px;font-size:13px}
-.search-row{display:flex;align-items:center;gap:8px}
-.search-row .search-bar{flex:1 1 auto;min-width:0}
-.search-row .app-tab{flex:0 0 auto}
-#btnFiltros[aria-expanded="true"]{background:var(--surface-2)}
+#btnFiltros{margin-bottom:8px}
 #filtrosPanel[hidden]{display:none}
 .toolbar-filters{display:flex;gap:8px;flex-wrap:wrap}
 .toolbar-filters select{flex:1 1 160px}
@@ -182,19 +179,16 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
 <!-- El header (título + ⋮) lo monta header.js, común a las 4 apps.
      El alta vive ahora en el botón flotante (+), como en Seguimiento. -->
 
-<!-- La búsqueda va directo debajo del título, fuera de la tarjeta de filtros:
-     mismo orden que las otras apps (título → búsqueda → contenido). -->
+<!-- Orden de la pantalla, igual que Proyectos: título → búsqueda → pestañas → contenido. -->
+<div class="toolbar-search">
+  <div class="search-bar"><input type="search" id="search" placeholder="Buscar por N° de resolución, expediente, autoridad o texto de la resolución…"></div>
+</div>
 <div class="app-tabs" role="tablist" aria-label="Vistas">
   <button class="app-tab tab" id="tabList" role="tab" aria-selected="true" aria-controls="viewList">Listado</button>
   <button class="app-tab tab" id="tabDash" role="tab" aria-selected="false" aria-controls="viewDash">Análisis</button>
 </div>
 <section class="view" id="viewList" role="tabpanel" aria-labelledby="tabList">
-<div class="toolbar-search">
-  <div class="search-row">
-    <div class="search-bar"><input type="search" id="search" placeholder="Buscar por N° de resolución, expediente, autoridad o texto de la resolución…"></div>
-    <button type="button" class="app-tab tab" id="btnFiltros" aria-expanded="false" aria-controls="filtrosPanel">Filtros</button>
-  </div>
-</div>
+<button type="button" class="app-tab filtros-toggle" id="btnFiltros" aria-expanded="false" aria-controls="filtrosPanel">Filtros</button>
 <div class="toolbar-card" id="filtrosPanel" hidden>
   <div class="toolbar-filters">
     <select id="filterTema"><option value="">Todos los temas</option></select>
