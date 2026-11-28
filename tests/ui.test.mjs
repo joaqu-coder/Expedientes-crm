@@ -793,8 +793,8 @@ async function testPlazosYTarjetas() {
   ok(/Jurídica\s*2/.test(await page.locator('#areaBotones').textContent()), 'el contador de área respeta la pestaña (Jurídica = 2)');
   ok(/^Activos\s*3$/.test((await page.locator('.pestana-btn.active').textContent()).trim()), 'la pestaña Activos muestra su cantidad, sin paréntesis');
   ok(/^Archivados\s*1$/.test((await page.locator('.pestana-btn').nth(1).textContent()).trim()), 'la pestaña Archivados muestra su cantidad, sin paréntesis');
-  ok(await page.locator('.pestana-btn.active .count').count() === 1, 'el contador de la pestaña va en su propio <span class="count"> (seminegrita)');
-  ok(await page.locator('.area-btn .count').first().evaluate((el) => getComputedStyle(el).fontWeight) === '600', 'el contador se pinta en seminegrita');
+  ok(await page.locator('.pestana-btn.active .count').count() === 1, 'el contador de la pestaña va en su propio <span class="count">');
+  ok(await page.locator('.area-btn .count').first().evaluate((el) => getComputedStyle(el).fontWeight) === '400', 'el contador se pinta sin negrita (400)');
 
   await page.locator('.pestana-btn', { hasText: 'Archivados' }).click();
   ok((await cards.count()) === 1, 'la pestaña Archivados lista 1');
