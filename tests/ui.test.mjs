@@ -4260,7 +4260,7 @@ async function testEspaciadoYAncho(puerto) {
     proyectos: { ref: '.app-tabs', sig: null },
     parques: { ref: '.app-tabs', sig: null },
     // Resoluciones no tiene fila de chips: la búsqueda con «Filtros» es lo que va sobre el listado.
-    resoluciones: { ref: '.toolbar-search', sig: null },
+    resoluciones: { ref: '.app-tabs', sig: null },
   };
   for (const p of Object.keys(espacios)) {
     await movil.goto(`http://localhost:${puerto}/${p}.html`, { waitUntil: 'networkidle' });
